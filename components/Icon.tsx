@@ -38,7 +38,8 @@ export type IconProps = ImgHTMLAttributes<HTMLImageElement> & {
  * ```
  */
 export const Icon: FC<IconProps> = ({ set = "Base", name, alt, ...imgProps }) => {
-  const src = `/icons/${set}/${name}.svg`;
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const src = `${basePath}/icons/${set}/${name}.svg`;
   const computedAlt = alt ?? `${set} ${name} icon`;
 
   return <img src={src} alt={computedAlt} {...imgProps} />;

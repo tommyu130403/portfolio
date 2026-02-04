@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import type { Tables } from "@/types/supabase";
+import { supabase } from "@/src/lib/supabase";
+import type { Tables } from "@/src/types/supabase";
 import RadarChart, {
   type RadarChartData,
   type RadarLegendItem,

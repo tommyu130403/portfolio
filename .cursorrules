@@ -1,0 +1,9 @@
+// Cursor rules for this portfolio project.
+
+# プロジェクトの基本ルール
+- すべての新規ファイル生成は、このディレクトリ（portfolio/）配下の適切なフォルダ（app, components, lib等）に行うこと。
+- 絶対に親ディレクトリ（Site/等）にファイルを作らないこと。
+- インポートパスは常に `@/`（エイリアス）を使用すること。
+- Supabaseを使用する際は、常に @src/lib/supabase.ts のクライアントを使用すること。
+- 型定義は常に @src/types/supabase.ts を参照し、Database 型に基づいて実装すること。
+- 新しいデータ取得コードを書く際は、この2つのファイルを前提とした型安全なコードを書くこと。

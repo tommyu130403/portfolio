@@ -101,7 +101,7 @@ export default function Home() {
           </section>
 
           {/* Introduction */}
-          <section className="w-full max-w-[916px] min-w-[728px]">
+          <section id="introduction" className="w-full max-w-[916px] min-w-[728px]">
             <Headline label="Introduction" title="自己紹介" />
             <div className="flex flex-col gap-4 text-[17px] leading-relaxed tracking-[0.85px] text-white">
               <p>
@@ -117,7 +117,7 @@ export default function Home() {
           </section>
 
           {/* Career */}
-          <section className="w-full max-w-[916px] min-w-[728px]">
+          <section id="career" className="w-full max-w-[916px] min-w-[728px]">
             <Headline label="Career" title="経歴" />
             <div className="flex flex-col gap-10">
               <p className="text-[17px] leading-relaxed tracking-[0.85px] text-white">
@@ -132,7 +132,7 @@ export default function Home() {
           </section>
 
           {/* Projects */}
-          <section className="w-full max-w-[916px] min-w-[728px]">
+          <section id="projects" className="w-full max-w-[916px] min-w-[728px]">
             <Headline label="Projects" title="プロジェクト" />
             <div className="flex flex-wrap gap-8">
               {PROJECTS.map((project, i) => (
@@ -142,7 +142,7 @@ export default function Home() {
           </section>
 
           {/* Skills */}
-          <section className="mb-10 w-full max-w-[916px] min-w-[728px]">
+          <section id="skills" className="mb-10 w-full max-w-[916px] min-w-[728px]">
             <Headline label="Skills" title="スキル" />
             <div className="flex flex-col items-center gap-10">
               <TabBar tabs={SKILL_TABS} defaultActiveId="product-design" />

@@ -1,4 +1,7 @@
-import SideMenuBar from "@/components/SideMenuBar";
+"use client";
+
+import { useEffect, useState } from "react";
+import SideMenuBar, { type SideMenuSectionId } from "@/components/SideMenuBar";
 import Headline from "@/components/Headline";
 import HistoryItem from "@/components/HistoryItem";
 import ProjectCard from "@/components/ProjectCard";
@@ -66,12 +69,37 @@ const PROJECTS = [
   },
 ];
 
+const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "projects", "skills"];
+
 export default function Home() {
+  const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const TRIGGER_OFFSET = 120;
+
+    const updateActive = () => {
+      let current: SideMenuSectionId = SECTION_IDS[0];
+      for (const id of SECTION_IDS) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= TRIGGER_OFFSET) current = id;
+      }
+      setActiveSection(current);
+    };
+
+    updateActive();
+    window.addEventListener("scroll", updateActive, { passive: true });
+    return () => window.removeEventListener("scroll", updateActive);
+  }, []);
+
   return (
     <div className="flex min-h-screen items-start bg-[#212121] text-white">
       {/* Side Menu */}
       <div className="sticky top-0 shrink-0 z-[2]">
-        <SideMenuBar />
+        <SideMenuBar activeSection={activeSection} />
       </div>
 
       {/* Main content */}

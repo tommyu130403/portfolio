@@ -1,4 +1,7 @@
-import SideMenuBar from "@/components/SideMenuBar";
+"use client";
+
+import { useEffect, useState } from "react";
+import SideMenuBar, { type SideMenuSectionId } from "@/components/SideMenuBar";
 import Headline from "@/components/Headline";
 import HistoryItem from "@/components/HistoryItem";
 import ProjectCard from "@/components/ProjectCard";
@@ -66,12 +69,37 @@ const PROJECTS = [
   },
 ];
 
+const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "projects", "skills"];
+
 export default function Home() {
+  const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const TRIGGER_OFFSET = 120;
+
+    const updateActive = () => {
+      let current: SideMenuSectionId = SECTION_IDS[0];
+      for (const id of SECTION_IDS) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= TRIGGER_OFFSET) current = id;
+      }
+      setActiveSection(current);
+    };
+
+    updateActive();
+    window.addEventListener("scroll", updateActive, { passive: true });
+    return () => window.removeEventListener("scroll", updateActive);
+  }, []);
+
   return (
     <div className="flex min-h-screen items-start bg-[#212121] text-white">
       {/* Side Menu */}
       <div className="sticky top-0 shrink-0 z-[2]">
-        <SideMenuBar />
+        <SideMenuBar activeSection={activeSection} />
       </div>
 
       {/* Main content */}
@@ -101,7 +129,7 @@ export default function Home() {
           </section>
 
           {/* Introduction */}
-          <section className="w-full max-w-[916px] min-w-[728px]">
+          <section id="introduction" className="w-full max-w-[916px] min-w-[728px]">
             <Headline label="Introduction" title="自己紹介" />
             <div className="flex flex-col gap-4 text-[17px] leading-relaxed tracking-[0.85px] text-white">
               <p>
@@ -117,7 +145,7 @@ export default function Home() {
           </section>
 
           {/* Career */}
-          <section className="w-full max-w-[916px] min-w-[728px]">
+          <section id="career" className="w-full max-w-[916px] min-w-[728px]">
             <Headline label="Career" title="経歴" />
             <div className="flex flex-col gap-10">
               <p className="text-[17px] leading-relaxed tracking-[0.85px] text-white">
@@ -132,7 +160,7 @@ export default function Home() {
           </section>
 
           {/* Projects */}
-          <section className="w-full max-w-[916px] min-w-[728px]">
+          <section id="projects" className="w-full max-w-[916px] min-w-[728px]">
             <Headline label="Projects" title="プロジェクト" />
             <div className="flex flex-wrap gap-8">
               {PROJECTS.map((project, i) => (
@@ -142,7 +170,7 @@ export default function Home() {
           </section>
 
           {/* Skills */}
-          <section className="mb-10 w-full max-w-[916px] min-w-[728px]">
+          <section id="skills" className="mb-10 w-full max-w-[916px] min-w-[728px]">
             <Headline label="Skills" title="スキル" />
             <div className="flex flex-col items-center gap-10">
               <TabBar tabs={SKILL_TABS} defaultActiveId="product-design" />

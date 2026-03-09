@@ -1,0 +1,16 @@
+branch=$(git symbolic-ref --short HEAD)
+
+# main/master/develop/claude/* はチェックをスキップ
+if echo "$branch" | grep -qE '^(main|master|develop|claude\/.+)$'; then
+  exit 0
+fi
+
+# 許可するプレフィックス
+if ! echo "$branch" | grep -qE '^(feat|fix|docs|style|refactor|test|chore)/.+'; then
+  echo "Error: ブランチ名が規則に合っていません。"
+  echo "  現在: $branch"
+  echo "  形式: <type>/<description>"
+  echo "  例:   feat/add-login, fix/header-bug"
+  echo "  type: feat, fix, docs, style, refactor, test, chore"
+  exit 1
+fi

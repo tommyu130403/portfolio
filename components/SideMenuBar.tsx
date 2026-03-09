@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import type { FC } from "react";
 import Icon, { IconProps } from "./Icon";
+import {
+  getItemClasses,
+  ITEM_STATUS_CLASSES,
+  resolveItemStatus,
+} from "@/lib/figma-variants";
+
+export type SideMenuSectionId = "introduction" | "career" | "projects" | "skills";
+
+/** サブアイテム用の簡易クラス（Size=small 相当） */
+const SUB_ITEM_BASE = "rounded-[8px] px-3 py-2 text-left text-[12px] tracking-[0.6px] whitespace-nowrap transition-colors";
 
 const AVATAR_URL =
   "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=88&q=80";
@@ -13,6 +23,7 @@ const AVATAR_URL =
 type SideMenuItemProps = {
   icon: Pick<IconProps, "set" | "name">;
   label: string;
+  href?: string;
   active?: boolean;
   collapsed?: boolean;
 };
@@ -20,23 +31,17 @@ type SideMenuItemProps = {
 const SideMenuItem: FC<SideMenuItemProps> = ({
   icon,
   label,
+  href,
   active = false,
   collapsed = false,
 }) => {
-  const state = active
-    ? "bg-[rgba(255,255,255,0.05)] text-[#E0E0E0]"
-    : "text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.03)]";
+  const status = resolveItemStatus(active);
+  const width = collapsed ? "short" : "default";
+  const className = getItemClasses(status, width);
 
-  return (
-    <button
-      type="button"
-      className={[
-        "flex items-center rounded-[8px] shrink-0 transition-colors overflow-hidden",
-        collapsed ? "w-10 h-10 justify-center" : "w-[208px] gap-3 px-3 py-[10px]",
-        state,
-      ].join(" ")}
-    >
-      <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" aria-hidden />
+  const content = (
+    <>
+      <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" style={{ minWidth: 20, minHeight: 20 }} aria-hidden />
       <span
         className={[
           "flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap overflow-hidden transition-all duration-300",
@@ -45,6 +50,20 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       >
         {label}
       </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a href={href} className={className}>
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <button type="button" className={className}>
+      {content}
     </button>
   );
 };
@@ -58,52 +77,64 @@ type DropdownItem = { label: string; active?: boolean };
 type ItemDropdownProps = {
   icon: Pick<IconProps, "set" | "name">;
   label: string;
+  href?: string;
   collapsed?: boolean;
   items: DropdownItem[];
+  active?: boolean;
 };
 
 const ItemDropdown: FC<ItemDropdownProps> = ({
   icon,
   label,
+  href,
   collapsed = false,
   items,
+  active = false,
 }) => {
   const [open, setOpen] = useState(false);
+
+  // Figma _ItemDropdown Open=on → トリガーは Status=Active。セクション表示中 or ドロップダウン展開時
+  const isActive = active || open;
+  const status = resolveItemStatus(isActive);
+  const width = collapsed ? "short" : "default";
 
   // サイドバー縮小時はドロップダウンを閉じる
   useEffect(() => {
     if (collapsed) setOpen(false);
   }, [collapsed]);
 
-  /* ── short（縮小）モード ──────────────────── */
+  /* ── short（縮小）モード Width=short ───────── */
   if (collapsed) {
+    const collapsedClass = [
+      "group relative",
+      getItemClasses(status, width),
+      "overflow-hidden transition-colors",
+    ].join(" ");
+    const collapsedContent = (
+      <>
+        <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" style={{ minWidth: 20, minHeight: 20 }} aria-hidden />
+        {/* ツールチップ（hover時・閉じているとき） */}
+        {!open && (
+          <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-1 flex -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <div className="h-0 w-0 shrink-0" style={{ borderTop: "7px solid transparent", borderBottom: "7px solid transparent", borderRight: "7px solid #9e9e9e" }} />
+            <div className="rounded-[4px] bg-[#212121] px-3 py-[10px] text-[14px] leading-5 text-white/80 whitespace-nowrap shadow-[0_0_0_1px_#9e9e9e]">
+              {label}
+            </div>
+          </div>
+        )}
+      </>
+    );
     return (
       <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="group relative flex items-center px-3 py-[10px] rounded-[8px] bg-[rgba(255,255,255,0.05)] text-[#E0E0E0] transition-colors"
-        >
-          <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" aria-hidden />
-
-          {/* ツールチップ（hover時・閉じているとき） */}
-          {!open && (
-            <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-1 flex -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-              {/* 左向き三角 */}
-              <div
-                className="h-0 w-0 shrink-0"
-                style={{
-                  borderTop: "7px solid transparent",
-                  borderBottom: "7px solid transparent",
-                  borderRight: "7px solid #9e9e9e",
-                }}
-              />
-              <div className="rounded-[4px] bg-[#212121] px-3 py-[10px] text-[14px] leading-5 text-white/80 whitespace-nowrap shadow-[0_0_0_1px_#9e9e9e]">
-                {label}
-              </div>
-            </div>
-          )}
-        </button>
+        {href ? (
+          <a href={href} className={collapsedClass} onClick={() => setOpen((v) => !v)}>
+            {collapsedContent}
+          </a>
+        ) : (
+          <button type="button" onClick={() => setOpen((v) => !v)} className={collapsedClass}>
+            {collapsedContent}
+          </button>
+        )}
 
         {/* フローティングドロップダウン（クリック時） */}
         {open && (
@@ -113,10 +144,9 @@ const ItemDropdown: FC<ItemDropdownProps> = ({
                 key={i}
                 type="button"
                 className={[
-                  "w-[172px] rounded-[8px] px-3 py-2 text-left text-[12px] tracking-[0.6px] whitespace-nowrap transition-colors",
-                  item.active
-                    ? "bg-[rgba(255,255,255,0.05)] text-[#E0E0E0]"
-                    : "text-white/50 hover:bg-[rgba(255,255,255,0.03)]",
+                  "w-[172px]",
+                  SUB_ITEM_BASE,
+                  item.active ? ITEM_STATUS_CLASSES.Active : ITEM_STATUS_CLASSES.defalut + " " + ITEM_STATUS_CLASSES.hover,
                 ].join(" ")}
               >
                 {item.label}
@@ -128,25 +158,27 @@ const ItemDropdown: FC<ItemDropdownProps> = ({
     );
   }
 
-  /* ── default（展開）モード ───────────────── */
+  /* ── default（展開）モード Width=default ──── */
+  const triggerClass = [getItemClasses(status, width), "transition-colors"].join(" ");
+  const triggerContent = (
+    <>
+      <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" style={{ minWidth: 20, minHeight: 20 }} aria-hidden />
+      <span className="flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap">{label}</span>
+      <Icon set="Arrows" name={open ? "up" : "down"} className="h-4 w-4 shrink-0" aria-hidden />
+    </>
+  );
+
   return (
     <div className="flex flex-col items-end">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-[208px] items-center gap-3 rounded-[8px] bg-[rgba(255,255,255,0.05)] px-3 py-[10px] text-[#E0E0E0] transition-colors hover:bg-[rgba(255,255,255,0.08)]"
-      >
-        <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" aria-hidden />
-        <span className="flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap">
-          {label}
-        </span>
-        <Icon
-          set="Arrows"
-          name={open ? "up" : "down"}
-          className="h-4 w-4 shrink-0"
-          aria-hidden
-        />
-      </button>
+      {href ? (
+        <a href={href} className={triggerClass} onClick={() => setOpen((v) => !v)}>
+          {triggerContent}
+        </a>
+      ) : (
+        <button type="button" onClick={() => setOpen((v) => !v)} className={triggerClass}>
+          {triggerContent}
+        </button>
+      )}
 
       {/* インラインサブリスト */}
       <div
@@ -160,10 +192,8 @@ const ItemDropdown: FC<ItemDropdownProps> = ({
             key={i}
             type="button"
             className={[
-              "rounded-[8px] px-3 py-2 text-left text-[12px] tracking-[0.6px] whitespace-nowrap transition-colors",
-              item.active
-                ? "bg-[rgba(255,255,255,0.05)] text-[#E0E0E0]"
-                : "text-white/50 hover:bg-[rgba(255,255,255,0.03)]",
+              SUB_ITEM_BASE,
+              item.active ? ITEM_STATUS_CLASSES.Active : ITEM_STATUS_CLASSES.defalut + " " + ITEM_STATUS_CLASSES.hover,
             ].join(" ")}
           >
             {item.label}
@@ -179,20 +209,24 @@ const ItemDropdown: FC<ItemDropdownProps> = ({
 // ─────────────────────────────────────────────
 const PROJECTS_ITEMS: DropdownItem[] = [
   { label: "label" },
-  { label: "label", active: true },
+  { label: "label" },
   { label: "label" },
   { label: "label" },
 ];
 
-export const SideMenuBar: FC = () => {
+type SideMenuBarProps = {
+  activeSection?: SideMenuSectionId;
+};
+
+export const SideMenuBar: FC<SideMenuBarProps> = ({ activeSection }) => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside
       className={[
-        "relative flex min-h-screen flex-col gap-6 border-r border-[#424242] bg-[#212121] p-6 rounded-[12px]",
+        "relative flex min-h-screen flex-col gap-6 border-r border-[#424242] bg-[#212121] p-6 rounded-[12px] items-start",
         "transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-[88px] items-center" : "w-[256px] items-start",
+        collapsed ? "w-[88px]" : "w-[256px]",
       ].join(" ")}
     >
       {/* Title */}
@@ -207,10 +241,7 @@ export const SideMenuBar: FC = () => {
 
       {/* Profile */}
       <div
-        className={[
-          "flex items-center w-full transition-all duration-300",
-          collapsed ? "justify-center" : "gap-3",
-        ].join(" ")}
+        className="flex items-center w-full gap-3"
       >
         <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[36px]">
           <img
@@ -236,30 +267,24 @@ export const SideMenuBar: FC = () => {
       <div className="h-px w-full rounded-[2px] bg-[#424242] shrink-0" />
 
       {/* Navigation */}
-      <nav
-        className={[
-          "flex flex-1 flex-col gap-2 w-full transition-all duration-300",
-          collapsed ? "items-center" : "items-start",
-        ].join(" ")}
-      >
+      <nav className="flex flex-1 flex-col gap-2 w-full items-start">
         {/* Profile section */}
-        <p
-          className={[
-            "text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap transition-all duration-300",
-            collapsed ? "text-center" : "px-3",
-          ].join(" ")}
-        >
+        <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
           Profile
         </p>
 
         <SideMenuItem
           icon={{ set: "Peoples", name: "user" }}
           label="Introduction"
+          href="#introduction"
+          active={activeSection === "introduction"}
           collapsed={collapsed}
         />
         <SideMenuItem
           icon={{ set: "Edit", name: "list-top" }}
           label="Career"
+          href="#career"
+          active={activeSection === "career"}
           collapsed={collapsed}
         />
 
@@ -267,13 +292,17 @@ export const SideMenuBar: FC = () => {
         <ItemDropdown
           icon={{ set: "Charts", name: "ranking" }}
           label="Projects"
+          href="#projects"
           collapsed={collapsed}
+          active={activeSection === "projects"}
           items={PROJECTS_ITEMS}
         />
 
         <SideMenuItem
           icon={{ set: "Charts", name: "radar-chart" }}
           label="Skills"
+          href="#skills"
+          active={activeSection === "skills"}
           collapsed={collapsed}
         />
 
@@ -281,12 +310,7 @@ export const SideMenuBar: FC = () => {
         <div className="my-2 h-px w-full rounded-[2px] bg-[#424242] shrink-0" />
 
         {/* Social section */}
-        <p
-          className={[
-            "text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap transition-all duration-300",
-            collapsed ? "text-center" : "px-3",
-          ].join(" ")}
-        >
+        <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
           Social
         </p>
 

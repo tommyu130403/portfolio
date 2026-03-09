@@ -1,6 +1,7 @@
 import type { FC, ImgHTMLAttributes } from "react";
 
 type IconSet =
+  | "Abstract"
   | "Arrows"
   | "Base"
   | "Build"
@@ -13,7 +14,8 @@ type IconSet =
   | "Graphics"
   | "Makeups"
   | "Office"
-  | "Peoples";
+  | "Peoples"
+  | "Time";
 
 export type IconProps = ImgHTMLAttributes<HTMLImageElement> & {
   /**

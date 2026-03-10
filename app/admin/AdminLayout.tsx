@@ -386,8 +386,10 @@ function CareerSection() {
     [next[index], next[target]] = [next[target], next[index]];
     const updated = next.map((it, i) => ({ ...it, sort_order: i }));
     setItems(updated);
-    await supabase.from("career_items").upsert(
-      updated.map(({ id, sort_order }) => ({ id, sort_order }))
+    await Promise.all(
+      updated.map(({ id, sort_order }) =>
+        supabase.from("career_items").update({ sort_order }).eq("id", id)
+      )
     );
   };
 

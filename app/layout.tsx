@@ -1,10 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Afacad, Geist_Mono, Noto_Sans_JP, M_PLUS_1p } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// 英字フォント: Afacad (variable font, 400–700)
+const afacad = Afacad({
+  variable: "--font-afacad",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// 日本語見出しフォント: M PLUS 1p (typo.guide.jp)
+const mplusOnep = M_PLUS_1p({
+  variable: "--font-mplus-1p",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
+
+// 日本語本文フォント: Noto Sans JP (typo.body.jp)
+const notoSansJP = Noto_Sans_JP({
+  variable: "--font-noto-sans-jp",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -25,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${afacad.variable} ${mplusOnep.variable} ${notoSansJP.variable} ${geistMono.variable} antialiased`}
       >
         {children}
       </body>

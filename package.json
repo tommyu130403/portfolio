@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:cursor": "next dev -p 3001",
-    "dev:claude": "next dev -p 3002",
+    "dev:cursor": "NEXT_DIST_DIR=.next-cursor next dev -p 3001",
+    "dev:claude": "NEXT_DIST_DIR=.next-claude next dev -p 3002",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -22,6 +22,8 @@
     "@commitlint/cli": "^20.4.3",
     "@commitlint/config-conventional": "^20.4.3",
     "@tailwindcss/postcss": "^4",
+    "@textlint/kernel": "^15.5.2",
+    "@textlint/textlint-plugin-text": "^15.5.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -31,6 +33,11 @@
     "husky": "^9.1.7",
     "supabase": "^2.75.2",
     "tailwindcss": "^4",
+    "textlint-rule-ja-no-abusage": "^3.0.0",
+    "textlint-rule-ja-no-mixed-period": "^3.0.2",
+    "textlint-rule-ja-no-redundant-expression": "^4.0.1",
+    "textlint-rule-no-doubled-joshi": "^5.1.1",
+    "textlint-rule-no-nfd": "^2.0.2",
     "typescript": "^5",
     "vite": "^7.3.1"
   }

@@ -20,7 +20,7 @@ Example: `feat: HistoryItemコンポーネントを追加`
 
 ## Branch Rules
 
-Format: `<type>/<description>`
+Format: `<type>/<yyyymmdd>-<description>`
 
 | Type | Usage |
 |------|-------|
@@ -28,13 +28,36 @@ Format: `<type>/<description>`
 | `fix/` | Bug fixes |
 | `refactor/` | Refactoring |
 | `chore/` | Maintenance |
+| `temp/` | Work content not yet decided |
 
 Examples:
-- `feat/project-card-component`
-- `fix/icon-path`
-- `refactor/extract-page-components`
+- `feat/20260310-project-card-component`
+- `fix/20260310-icon-path`
+- `refactor/20260310-extract-page-components`
 
 Main branch: `main`
+
+When creating a new branch, always update main first:
+```bash
+git checkout main
+git pull origin main
+git checkout -b <type>/<yyyymmdd>-<description>
+```
+
+## Style Guide Auto-Update Rules
+
+When making changes that affect the following files, **always update the style guide** (`app/styleguide/StyleguideLayout.tsx`) in the same task:
+
+| Trigger | Required action |
+|---------|----------------|
+| New file added to `components/` | Add import + `<ComponentPreview>` entry to `ComponentsSection` |
+| Existing component props / variants changed | Update the corresponding `<ComponentPreview>` example in `ComponentsSection` |
+| `lib/design-tokens.ts` token added / removed | Update the relevant section in `StyleguideLayout.tsx` (Colors / Tokens) |
+| `app/globals.css` `@theme` block changed | Verify the color / radius swatches in the style guide still reflect the values |
+
+No update is needed when:
+- Only internal component logic changes (no prop API or visual change)
+- Changes are inside `app/` pages unrelated to the design system
 
 ## Project Structure
 

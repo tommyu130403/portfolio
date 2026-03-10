@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      profile: {
+        Row: {
+          id: number
+          name_jp: string
+          name_en: string
+          title: string
+          bio: string
+          hero_image_url: string
+          introduction: string[]
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          name_jp: string
+          name_en: string
+          title: string
+          bio: string
+          hero_image_url: string
+          introduction?: string[]
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          name_jp?: string
+          name_en?: string
+          title?: string
+          bio?: string
+          hero_image_url?: string
+          introduction?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      career_items: {
+        Row: {
+          id: string
+          role: string
+          company: string
+          period: string
+          description: string
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          role: string
+          company: string
+          period: string
+          description: string
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role?: string
+          company?: string
+          period?: string
+          description?: string
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           id: string

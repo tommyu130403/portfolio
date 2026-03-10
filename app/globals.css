@@ -16,6 +16,66 @@ html {
   --font-mono: var(--font-geist-mono);
 }
 
+/* ─── Design Tokens ────────────────────────────────────────────────────────── */
+/* Source: lib/design-tokens.ts (derived from Figma variable JSON)             */
+/* Tailwind utilities generated:                                                */
+/*   Color  → bg-main-100 / text-main-100 / border-main-100 etc.               */
+/*   Radius → rounded-r2 / rounded-r8 / rounded-r40 etc. (prefix r = token)   */
+@theme {
+  /* Color / Main */
+  --color-main-050: #B3FFE7;
+  --color-main-100: #48F4BE;
+  --color-main-200: #39C89B;
+  --color-main-300: #2B9E7A;
+  --color-main-400: #1E765A;
+  --color-main-500: #11503C;
+  --color-main-600: #062D20;
+  --color-main-700: #02140D;
+  --color-main-base: #48F4BE;
+
+  /* Color / Danger */
+  --color-danger-100: #FACBD4;
+  --color-danger-200: #F792A9;
+  --color-danger-300: #F4487E;
+  --color-danger-400: #C1235B;
+  --color-danger-500: #84153C;
+  --color-danger-600: #4D0820;
+  --color-danger-700: #29020E;
+  --color-danger-base: #F4487E;
+
+  /* Color / Warning */
+  --color-warning-100: #D4F448;
+  --color-warning-200: #AFCA3A;
+  --color-warning-300: #8BA12C;
+  --color-warning-400: #697A1F;
+  --color-warning-500: #495613;
+  --color-warning-600: #2B3408;
+  --color-warning-700: #101402;
+  --color-warning-base: #D4F448;
+
+  /* Color / System */
+  --color-system-050: #FAFAFA;
+  --color-system-100: #F5F5F5;
+  --color-system-200: #EEEEEE;
+  --color-system-300: #E0E0E0;
+  --color-system-400: #BDBDBD;
+  --color-system-500: #9E9E9E;
+  --color-system-600: #757575;
+  --color-system-700: #616161;
+  --color-system-800: #424242;
+  --color-system-900: #212121;
+  --color-system-black: #000000;
+  --color-system-white: #FFFFFF;
+
+  /* Radius (prefix "r" to avoid collision with Tailwind built-ins) */
+  --radius-r2:  2px;
+  --radius-r4:  4px;
+  --radius-r8:  8px;
+  --radius-r16: 16px;
+  --radius-r40: 40px;
+  --radius-r80: 80px;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

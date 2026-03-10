@@ -136,6 +136,18 @@ export const container = {
       screen: 1024,
     },
   },
+  /** iPad Pro 12.9" portrait (1024px) / 11" landscape (1194px) */
+  tablet: {
+    width: {
+      screen:  1024,
+      mainMax:  704,  // 1024 - sidebar(256) - padding(64)
+      mainMin:  480,
+      side:      88,  // collapsed sidebar
+    },
+    height: {
+      screen: 1366,   // iPad Pro 12.9" landscape
+    },
+  },
   mobile: {
     width: {
       screen: 390,
@@ -161,7 +173,17 @@ export const typo = {
   },
 } as const;
 
+// ─── Breakpoints ──────────────────────────────────────────────────────────────
+
+/** Tailwind responsive prefix reference: lg = tablet, xl = desktop */
+export const breakpoint = {
+  /** 1024px — Tailwind `lg`: iPad Pro 12.9" portrait baseline */
+  tablet:  1024,
+  /** 1280px — Tailwind `xl`: standard desktop baseline */
+  desktop: 1280,
+} as const;
+
 // ─── Aggregate export ─────────────────────────────────────────────────────────
 
-export const tokens = { color, radius, size, container, typo } as const;
+export const tokens = { color, radius, size, container, typo, breakpoint } as const;
 export type Tokens = typeof tokens;

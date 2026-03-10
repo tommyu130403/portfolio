@@ -10,7 +10,7 @@ import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
 import ProjectCard from "@/components/ProjectCard";
 import SideMenuBar from "@/components/SideMenuBar";
-import { color, radius, size, container, typo } from "@/lib/design-tokens";
+import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
 
 // ─── 型 ───────────────────────────────────────────────
 export type IconSetData = { name: string; icons: string[] };
@@ -178,12 +178,12 @@ function TypographySection() {
       <div className="mb-10 grid grid-cols-2 gap-4">
         {(
           [
-            { role: "Guide / JP", family: typo.guide.jp,  token: "typo.guide.jp",  sample: "見出しガイド" },
-            { role: "Guide / EN", family: typo.guide.en,  token: "typo.guide.en",  sample: "Heading Guide" },
-            { role: "Body / JP",  family: typo.body.jp,   token: "typo.body.jp",   sample: "本文テキスト" },
-            { role: "Body / EN",  family: typo.body.en,   token: "typo.body.en",   sample: "Body Text" },
+            { role: "Guide / JP", family: typo.guide.jp, token: "typo.guide.jp", cssVar: "--font-mplus-1p",     sample: "見出しガイド" },
+            { role: "Guide / EN", family: typo.guide.en, token: "typo.guide.en", cssVar: "--font-afacad",       sample: "Heading Guide" },
+            { role: "Body / JP",  family: typo.body.jp,  token: "typo.body.jp",  cssVar: "--font-noto-sans-jp", sample: "本文テキスト" },
+            { role: "Body / EN",  family: typo.body.en,  token: "typo.body.en",  cssVar: undefined,             sample: "Body Text" },
           ] as const
-        ).map(({ role, family, token, sample }) => (
+        ).map(({ role, family, token, cssVar, sample }) => (
           <div
             key={token}
             className="flex flex-col gap-3 rounded-[10px] border border-[#424242] bg-[#212121] p-4"
@@ -192,13 +192,17 @@ function TypographySection() {
               <p className="text-[11px] text-[#9e9e9e]">{role}</p>
               <TokenBadge>{token}</TokenBadge>
             </div>
+            {/* CSS変数経由で参照することでnext/fontのローカルフォントが正しく当たる */}
             <p
               className="truncate text-[22px] text-white"
-              style={{ fontFamily: family }}
+              style={{ fontFamily: cssVar ? `var(${cssVar})` : family }}
             >
               {sample}
             </p>
-            <p className="text-[12px] text-[#616161]">{family}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[12px] text-[#616161]">{family}</p>
+              {cssVar && <TokenBadge>{cssVar}</TokenBadge>}
+            </div>
           </div>
         ))}
       </div>
@@ -291,6 +295,10 @@ function TokensSection() {
             { label: "Desktop / Main Width Max",  token: "container.desktop.width.mainMax", value: container.desktop.width.mainMax },
             { label: "Desktop / Main Width Min",  token: "container.desktop.width.mainMin", value: container.desktop.width.mainMin },
             { label: "Desktop / Sidebar Width",   token: "container.desktop.width.side",    value: container.desktop.width.side },
+            { label: "Tablet / Screen Width",     token: "container.tablet.width.screen",   value: container.tablet.width.screen },
+            { label: "Tablet / Screen Height",    token: "container.tablet.height.screen",  value: container.tablet.height.screen },
+            { label: "Tablet / Main Width Max",   token: "container.tablet.width.mainMax",  value: container.tablet.width.mainMax },
+            { label: "Tablet / Sidebar Width",    token: "container.tablet.width.side",     value: container.tablet.width.side },
             { label: "Mobile / Screen Width",     token: "container.mobile.width.screen",   value: container.mobile.width.screen },
             { label: "Mobile / Screen Height",    token: "container.mobile.height.screen",  value: container.mobile.height.screen },
           ] as const
@@ -304,6 +312,27 @@ function TokensSection() {
               <TokenBadge>{token}</TokenBadge>
             </div>
             <p className="font-mono text-[16px] font-semibold text-[#48f4be]">{value}px</p>
+          </div>
+        ))}
+      </div>
+      {/* ── Breakpoints ── */}
+      <SubHeading>Breakpoints</SubHeading>
+      <p className="mb-4 text-[12px] text-[#616161]">
+        Tailwind レスポンシブプレフィックス:
+        {" "}<TokenBadge>lg:</TokenBadge> = tablet (1024px〜)
+        {" "}<TokenBadge>xl:</TokenBadge> = desktop (1280px〜)
+      </p>
+      <div className="mb-12 grid grid-cols-2 gap-3">
+        {(Object.entries(breakpoint) as [string, number][]).map(([key, val]) => (
+          <div
+            key={key}
+            className="flex items-center justify-between rounded-[8px] border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-3"
+          >
+            <div>
+              <p className="text-[12px] capitalize text-white">{key}</p>
+              <TokenBadge>breakpoint.{key}</TokenBadge>
+            </div>
+            <p className="font-mono text-[16px] font-semibold text-[#48f4be]">{val}px</p>
           </div>
         ))}
       </div>

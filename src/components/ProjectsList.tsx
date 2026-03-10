@@ -1,0 +1,199 @@
+"use client";
+
+import type { FC } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/src/lib/supabase";
+import type { Tables, TablesInsert } from "@/src/types/supabase";
+import ProjectCard from "@/components/ProjectCard";
+import Modal from "@/components/Modal";
+import ProjectModalContent from "@/components/ProjectModalContent";
+
+type Project = Tables<"projects">;
+
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
+
+/** ダミーデータ（Supabase にデータがない場合にシード） */
+const SEED_PROJECTS: TablesInsert<"projects">[] = [
+  {
+    title: "キャリアチケットスカウトサービスの立ち上げ（ベータ版リリース）",
+    category: "プラットフォーム開発",
+    thumbnail_url: DEFAULT_IMAGE,
+    role: null,
+    period: null,
+    skills: ["UI Design", "Project Management"],
+    tools: null,
+    sections: null,
+    sort_order: 0,
+  },
+  {
+    title: "キャリアチケットスカウト正規版",
+    category: "プラットフォーム開発",
+    thumbnail_url: DEFAULT_IMAGE,
+    role: null,
+    period: null,
+    skills: ["UI Design", "UX Research"],
+    tools: null,
+    sections: null,
+    sort_order: 1,
+  },
+  {
+    title: "ECサイトリニューアル",
+    category: "組織開発",
+    thumbnail_url: DEFAULT_IMAGE,
+    role: null,
+    period: null,
+    skills: ["UI Design", "Product Design"],
+    tools: null,
+    sections: null,
+    sort_order: 2,
+  },
+  {
+    title: "ECサイトリニューアル",
+    category: "Webデザイン",
+    thumbnail_url: DEFAULT_IMAGE,
+    role: null,
+    period: null,
+    skills: ["UI Design", "Webデザイン"],
+    tools: null,
+    sections: null,
+    sort_order: 3,
+  },
+  {
+    title: "ECサイトリニューアル",
+    category: "Webデザイン",
+    thumbnail_url: DEFAULT_IMAGE,
+    role: null,
+    period: null,
+    skills: ["UI Design", "Webデザイン", "UX Research"],
+    tools: null,
+    sections: null,
+    sort_order: 4,
+  },
+];
+
+export type ProjectsListProps = {
+  /** サイドバー折りたたみ時は true。Modal のオフセット計算に使用 */
+  sidebarCollapsed?: boolean;
+};
+
+export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }) => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from("projects")
+        .select("*")
+        .order("sort_order", { ascending: true });
+
+      if (fetchError) {
+        console.error("Failed to fetch projects:", fetchError);
+        setError(fetchError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        const { error: insertError } = await supabase
+          .from("projects")
+          .insert(SEED_PROJECTS);
+
+        if (insertError) {
+          console.error("Failed to seed projects:", insertError);
+          setError(insertError.message);
+        } else {
+          const { data: refetched } = await supabase
+            .from("projects")
+            .select("*")
+            .order("sort_order", { ascending: true });
+          setProjects(refetched ?? []);
+        }
+      } else {
+        setProjects(data);
+      }
+
+      setLoading(false);
+    };
+
+    fetchProjects();
+  }, []);
+
+  const handleClose = () => setSelectedIndex(null);
+
+  const handlePrev = () => {
+    setSelectedIndex((prev) =>
+      prev === null ? null : (prev - 1 + projects.length) % projects.length
+    );
+  };
+
+  const handleNext = () => {
+    setSelectedIndex((prev) =>
+      prev === null ? null : (prev + 1) % projects.length
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-wrap gap-8 text-[17px] text-white/50">
+        プロジェクトを読み込み中…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-md border border-red-500/40 bg-red-900/20 p-4 text-sm text-red-200">
+        プロジェクトの取得に失敗しました: {error}
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="flex flex-wrap gap-8 text-[17px] text-white/50">
+        プロジェクトがありません。
+      </div>
+    );
+  }
+
+  const selectedProject =
+    selectedIndex !== null ? projects[selectedIndex] : null;
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-8">
+        {projects.map((project, i) => (
+          <ProjectCard
+            key={project.id}
+            category={project.category ?? "カテゴリなし"}
+            title={project.title}
+            tags={project.skills ?? []}
+            image={project.thumbnail_url ?? DEFAULT_IMAGE}
+            onClick={() => setSelectedIndex(i)}
+          />
+        ))}
+      </div>
+
+      {selectedProject && (
+        <Modal
+          onClose={handleClose}
+          sidebarOffset={sidebarCollapsed ? 88 : 256}
+          carousel
+          onPrev={handlePrev}
+          onNext={handleNext}
+          currentIndex={selectedIndex ?? 0}
+          total={projects.length}
+        >
+          <ProjectModalContent project={selectedProject} />
+        </Modal>
+      )}
+    </>
+  );
+};

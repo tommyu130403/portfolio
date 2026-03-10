@@ -4,16 +4,13 @@ import { useEffect, useState } from "react";
 import SideMenuBar, { type SideMenuSectionId } from "@/components/SideMenuBar";
 import Headline from "@/components/Headline";
 import HistoryItem from "@/components/HistoryItem";
-import ProjectCard from "@/components/ProjectCard";
+import { ProjectsList } from "@/src/components/ProjectsList";
 import TabBar from "@/components/TabBar";
 import SkillsRadarChart from "@/src/components/SkillsRadarChart";
-import Icon from "@/components/Icon";
+import { ButtonAction } from "@/components/ButtonAction";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80";
-const PROJECT_IMAGE =
-  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
-
 const SKILL_TABS = [
   { id: "people", label: "People Management", icon: { set: "Peoples" as const, name: "every-user" } },
   { id: "product-design", label: "Product Design", icon: { set: "Edit" as const, name: "writing-fluently" } },
@@ -36,43 +33,11 @@ const CAREER = [
   },
 ];
 
-const PROJECTS = [
-  {
-    category: "プラットフォーム開発",
-    title: "キャリアチケットスカウトサービスの立ち上げ（ベータ版リリース）",
-    tags: ["UI Design", "Project Management"],
-    image: PROJECT_IMAGE,
-  },
-  {
-    category: "プラットフォーム開発",
-    title: "キャリアチケットスカウト正規版",
-    tags: ["UI Design", "UX Research"],
-    image: PROJECT_IMAGE,
-  },
-  {
-    category: "組織開発",
-    title: "ECサイトリニューアル",
-    tags: ["UI Design", "Product Design"],
-    image: PROJECT_IMAGE,
-  },
-  {
-    category: "Webデザイン",
-    title: "ECサイトリニューアル",
-    tags: ["UI Design", "Webデザイン"],
-    image: PROJECT_IMAGE,
-  },
-  {
-    category: "Webデザイン",
-    title: "ECサイトリニューアル",
-    tags: ["UI Design", "Webデザイン", "UX Research"],
-    image: PROJECT_IMAGE,
-  },
-];
-
 const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "projects", "skills"];
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -99,7 +64,11 @@ export default function Home() {
     <div className="flex min-h-screen items-start bg-[#212121] text-white">
       {/* Side Menu */}
       <div className="sticky top-0 shrink-0 z-[2]">
-        <SideMenuBar activeSection={activeSection} />
+        <SideMenuBar
+          activeSection={activeSection}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+        />
       </div>
 
       {/* Main content */}
@@ -118,10 +87,11 @@ export default function Home() {
               <p className="text-[17px] leading-relaxed tracking-[0.85px] text-white">
                 ユーザー体験を最優先に考え、美しく使いやすいデザインを創造します。5年以上の経験を活かし、ビジネスゴールとユーザーニーズを両立するソリューションを提供します。
               </p>
-              <button className="flex items-center gap-2 text-[16px] font-semibold leading-6 tracking-[-0.31px] text-[#48f4be]">
-                View more
-                <Icon set="Arrows" name="right" className="h-5 w-5" />
-              </button>
+              <ButtonAction
+                label="View more"
+                type="primary"
+                iconRight={{ set: "Arrows", name: "right" }}
+              />
             </div>
             <div className="relative aspect-square max-h-[400px] max-w-[400px] flex-1 overflow-hidden rounded-[32px]">
               <img src={HERO_IMAGE} alt="Profile" className="h-full w-full object-cover" />
@@ -162,11 +132,7 @@ export default function Home() {
           {/* Projects */}
           <section id="projects" className="w-full max-w-[916px] min-w-[728px]">
             <Headline label="Projects" title="プロジェクト" />
-            <div className="flex flex-wrap gap-8">
-              {PROJECTS.map((project, i) => (
-                <ProjectCard key={i} {...project} />
-              ))}
-            </div>
+            <ProjectsList sidebarCollapsed={sidebarCollapsed} />
           </section>
 
           {/* Skills */}

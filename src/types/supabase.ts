@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      projects: {
+        Row: {
+          id: string
+          title: string
+          category: string | null
+          thumbnail_url: string | null
+          role: string | null
+          period: string | null
+          skills: string[] | null
+          tools: string[] | null
+          sections: Json | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          category?: string | null
+          thumbnail_url?: string | null
+          role?: string | null
+          period?: string | null
+          skills?: string[] | null
+          tools?: string[] | null
+          sections?: Json | null
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          category?: string | null
+          thumbnail_url?: string | null
+          role?: string | null
+          period?: string | null
+          skills?: string[] | null
+          tools?: string[] | null
+          sections?: Json | null
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       todos: {
         Row: {
           contents: string | null

@@ -1,24 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FC } from "react";
 import Icon, { IconProps } from "./Icon";
-import {
-  getItemClasses,
-  ITEM_STATUS_CLASSES,
-  resolveItemStatus,
-} from "@/lib/figma-variants";
+import { ButtonFunction } from "./ButtonFunction";
+import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
 
 export type SideMenuSectionId = "introduction" | "career" | "projects" | "skills";
-
-/** サブアイテム用の簡易クラス（Size=small 相当） */
-const SUB_ITEM_BASE = "rounded-[8px] px-3 py-2 text-left text-[12px] tracking-[0.6px] whitespace-nowrap transition-colors";
 
 const AVATAR_URL =
   "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=88&q=80";
 
 // ─────────────────────────────────────────────
-// SideMenuItem（ドロップダウンなしの通常アイテム）
+// SideMenuItem（Figma _Item: Size, Status, Width）
 // ─────────────────────────────────────────────
 type SideMenuItemProps = {
   icon: Pick<IconProps, "set" | "name">;
@@ -69,157 +63,26 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
 };
 
 // ─────────────────────────────────────────────
-// ItemDropdown（ドロップダウン付きアイテム）
-// Figma「Item」width=default/short × open/closed パターン
-// ─────────────────────────────────────────────
-type DropdownItem = { label: string; active?: boolean };
-
-type ItemDropdownProps = {
-  icon: Pick<IconProps, "set" | "name">;
-  label: string;
-  href?: string;
-  collapsed?: boolean;
-  items: DropdownItem[];
-  active?: boolean;
-};
-
-const ItemDropdown: FC<ItemDropdownProps> = ({
-  icon,
-  label,
-  href,
-  collapsed = false,
-  items,
-  active = false,
-}) => {
-  const [open, setOpen] = useState(false);
-
-  // Figma _ItemDropdown Open=on → トリガーは Status=Active。セクション表示中 or ドロップダウン展開時
-  const isActive = active || open;
-  const status = resolveItemStatus(isActive);
-  const width = collapsed ? "short" : "default";
-
-  // サイドバー縮小時はドロップダウンを閉じる
-  useEffect(() => {
-    if (collapsed) setOpen(false);
-  }, [collapsed]);
-
-  /* ── short（縮小）モード Width=short ───────── */
-  if (collapsed) {
-    const collapsedClass = [
-      "group relative",
-      getItemClasses(status, width),
-      "overflow-hidden transition-colors",
-    ].join(" ");
-    const collapsedContent = (
-      <>
-        <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" style={{ minWidth: 20, minHeight: 20 }} aria-hidden />
-        {/* ツールチップ（hover時・閉じているとき） */}
-        {!open && (
-          <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-1 flex -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <div className="h-0 w-0 shrink-0" style={{ borderTop: "7px solid transparent", borderBottom: "7px solid transparent", borderRight: "7px solid #9e9e9e" }} />
-            <div className="rounded-[4px] bg-[#212121] px-3 py-[10px] text-[14px] leading-5 text-white/80 whitespace-nowrap shadow-[0_0_0_1px_#9e9e9e]">
-              {label}
-            </div>
-          </div>
-        )}
-      </>
-    );
-    return (
-      <div className="relative">
-        {href ? (
-          <a href={href} className={collapsedClass} onClick={() => setOpen((v) => !v)}>
-            {collapsedContent}
-          </a>
-        ) : (
-          <button type="button" onClick={() => setOpen((v) => !v)} className={collapsedClass}>
-            {collapsedContent}
-          </button>
-        )}
-
-        {/* フローティングドロップダウン（クリック時） */}
-        {open && (
-          <div className="absolute left-full top-0 z-50 ml-2 flex flex-col gap-1 rounded-[8px] border border-[#424242] bg-[#212121] p-2">
-            {items.map((item, i) => (
-              <button
-                key={i}
-                type="button"
-                className={[
-                  "w-[172px]",
-                  SUB_ITEM_BASE,
-                  item.active ? ITEM_STATUS_CLASSES.Active : ITEM_STATUS_CLASSES.defalut + " " + ITEM_STATUS_CLASSES.hover,
-                ].join(" ")}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  /* ── default（展開）モード Width=default ──── */
-  const triggerClass = [getItemClasses(status, width), "transition-colors"].join(" ");
-  const triggerContent = (
-    <>
-      <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" style={{ minWidth: 20, minHeight: 20 }} aria-hidden />
-      <span className="flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap">{label}</span>
-      <Icon set="Arrows" name={open ? "up" : "down"} className="h-4 w-4 shrink-0" aria-hidden />
-    </>
-  );
-
-  return (
-    <div className="flex flex-col items-end">
-      {href ? (
-        <a href={href} className={triggerClass} onClick={() => setOpen((v) => !v)}>
-          {triggerContent}
-        </a>
-      ) : (
-        <button type="button" onClick={() => setOpen((v) => !v)} className={triggerClass}>
-          {triggerContent}
-        </button>
-      )}
-
-      {/* インラインサブリスト */}
-      <div
-        className={[
-          "flex flex-col gap-1 w-[172px] overflow-hidden transition-all duration-300",
-          open ? "max-h-[200px] opacity-100 mt-1" : "max-h-0 opacity-0 pointer-events-none",
-        ].join(" ")}
-      >
-        {items.map((item, i) => (
-          <button
-            key={i}
-            type="button"
-            className={[
-              SUB_ITEM_BASE,
-              item.active ? ITEM_STATUS_CLASSES.Active : ITEM_STATUS_CLASSES.defalut + " " + ITEM_STATUS_CLASSES.hover,
-            ].join(" ")}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────
 // SideMenuBar
 // ─────────────────────────────────────────────
-const PROJECTS_ITEMS: DropdownItem[] = [
-  { label: "label" },
-  { label: "label" },
-  { label: "label" },
-  { label: "label" },
-];
-
 type SideMenuBarProps = {
   activeSection?: SideMenuSectionId;
+  /** サイドバー折りたたみ状態（省略時は内部で管理） */
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 };
 
-export const SideMenuBar: FC<SideMenuBarProps> = ({ activeSection }) => {
-  const [collapsed, setCollapsed] = useState(false);
+export const SideMenuBar: FC<SideMenuBarProps> = ({
+  activeSection,
+  collapsed: controlledCollapsed,
+  onCollapsedChange,
+}) => {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const collapsed = controlledCollapsed ?? internalCollapsed;
+  const setCollapsed = onCollapsedChange
+    ? (v: boolean | ((prev: boolean) => boolean)) =>
+        onCollapsedChange(typeof v === "function" ? v(collapsed) : v)
+    : setInternalCollapsed;
 
   return (
     <aside
@@ -288,14 +151,12 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({ activeSection }) => {
           collapsed={collapsed}
         />
 
-        {/* Projects ドロップダウン */}
-        <ItemDropdown
+        <SideMenuItem
           icon={{ set: "Charts", name: "ranking" }}
           label="Projects"
           href="#projects"
-          collapsed={collapsed}
           active={activeSection === "projects"}
-          items={PROJECTS_ITEMS}
+          collapsed={collapsed}
         />
 
         <SideMenuItem
@@ -321,19 +182,15 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({ activeSection }) => {
         />
       </nav>
 
-      {/* Collapse / Expand button */}
-      <button
-        type="button"
-        onClick={() => setCollapsed((v) => !v)}
-        className="absolute right-[-15px] top-[34px] flex items-center rounded-[8px] border border-[#424242] bg-[#212121] p-[6px]"
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <Icon
-          set="Arrows"
-          name={collapsed ? "right" : "left"}
-          className="h-[14px] w-[8px]"
+      {/* Collapse / Expand button (Figma Button/Function) */}
+      <div className="absolute right-[-15px] top-[34px]">
+        <ButtonFunction
+          direction={collapsed ? "right" : "left"}
+          border="on"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         />
-      </button>
+      </div>
 
       {/* Contact */}
       <SideMenuItem

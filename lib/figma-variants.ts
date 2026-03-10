@@ -3,7 +3,6 @@
  * https://www.figma.com/design/KpNwkdFy1usaO1sBR0dycv/Library?node-id=55-296
  *
  * _Item: Size (default|small), Status (defalut|hover|Active), Width (default|short)
- * _ItemDropdown: Open (on|off), Width (default|short)
  */
 
 export type ItemStatus = "defalut" | "hover" | "Active";
@@ -25,7 +24,7 @@ export const ITEM_WIDTH_CLASSES: Record<ItemWidth, string> = {
 
 /** _Item 共通ベース */
 export const ITEM_BASE =
-  "flex items-center rounded-[8px] shrink-0 transition-all duration-300 overflow-hidden gap-3 px-3 py-[10px]";
+  "flex cursor-pointer items-center rounded-[8px] shrink-0 transition-all duration-300 overflow-hidden gap-3 px-3 py-[10px]";
 
 /** フォーカス時のアクセシビリティ */
 export const ITEM_FOCUS =
@@ -33,7 +32,7 @@ export const ITEM_FOCUS =
 
 /**
  * _Item の Status を動作から解決
- * - アクティブ（セクション表示中 or ドロップダウン展開中）→ Active
+ * - アクティブ（セクション表示中）→ Active
  * - それ以外 → defalut（hover は CSS :hover で適用）
  */
 export function resolveItemStatus(active: boolean): ItemStatus {

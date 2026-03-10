@@ -33,7 +33,7 @@ const TabBar: FC<TabBarProps> = ({ tabs, defaultActiveId, onChange }) => {
             type="button"
             onClick={() => handleClick(tab.id)}
             className={[
-              "flex h-[40px] items-center justify-center gap-3 rounded-[8px] px-6 text-[14px] tracking-[0.7px] transition-colors whitespace-nowrap",
+              "flex h-[40px] cursor-pointer items-center justify-center gap-3 rounded-[8px] px-6 text-[14px] tracking-[0.7px] transition-colors whitespace-nowrap",
               isActive
                 ? "border border-[#424242] bg-[rgba(255,255,255,0.05)] font-semibold text-white"
                 : "text-[#9e9e9e]",

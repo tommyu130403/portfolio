@@ -17,7 +17,7 @@ const ProjectCard: FC<ProjectCardProps> = ({ category, title, tags, image, onCli
       className={[
         "flex h-[363.5px] w-[280px] flex-col overflow-hidden rounded-[14px] border border-[#424242] bg-[#212121]",
         "shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)] shrink-0",
-        onClick ? "hover:border-[#616161] transition-colors cursor-pointer" : "",
+        onClick ? "hover:border-[#9e9e9e] hover:bg-[rgba(255,255,255,0.05)] transition-colors cursor-pointer" : "",
       ].join(" ")}
     >
       <div className="relative aspect-[339/190.6875] w-full shrink-0">
@@ -30,7 +30,7 @@ const ProjectCard: FC<ProjectCardProps> = ({ category, title, tags, image, onCli
       <div className="flex flex-1 flex-col justify-between p-6 min-h-0">
         <div className="flex flex-col gap-1">
           <div className="flex h-5 items-center justify-between">
-            <p className="flex-1 text-[12px] leading-[1.5] tracking-[0.6px] text-[#b3ffe7] min-w-0">
+            <p className="flex-1 text-[12px] leading-[1.5] tracking-[0.36px] text-[#b3ffe7] min-w-0">
               {category}
             </p>
             {onClick ? (
@@ -39,7 +39,7 @@ const ProjectCard: FC<ProjectCardProps> = ({ category, title, tags, image, onCli
               <Icon set="Base" name="more" className="h-4 w-4 shrink-0" />
             )}
           </div>
-          <p className="text-[17px] leading-[1.5] tracking-[0.85px] text-white">{title}</p>
+          <p className="text-[17px] leading-[1.5] tracking-[0.51px] text-white">{title}</p>
         </div>
         <div className="flex flex-wrap gap-2 mt-3">
           {tags.map((tag) => (

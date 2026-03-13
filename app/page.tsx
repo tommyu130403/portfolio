@@ -7,15 +7,15 @@ import HistoryItem from "@/components/HistoryItem";
 import { ProjectsList } from "@/src/components/ProjectsList";
 import TabBar from "@/components/TabBar";
 import SkillsRadarChart from "@/src/components/SkillsRadarChart";
+import SkillsCardGrid from "@/src/components/SkillsCardGrid";
 import { ButtonAction } from "@/components/ButtonAction";
 import { PasswordGate } from "@/components/PasswordGate";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
 const SKILL_TABS = [
-  { id: "people", label: "People Management", icon: { set: "Peoples" as const, name: "every-user" } },
-  { id: "product-design", label: "Product Design", icon: { set: "Edit" as const, name: "writing-fluently" } },
-  { id: "product-management", label: "Product Management", icon: { set: "Abstract" as const, name: "coordinate-system" } },
+  { id: "experience-chart", label: "Experience Chart", icon: { set: "Charts" as const, name: "chart-histogram-one" } },
+  { id: "level-chart", label: "Level Chart", icon: { set: "Charts" as const, name: "radar-chart" } },
 ];
 
 const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "projects", "skills"];
@@ -29,6 +29,7 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [career, setCareer] = useState<CareerItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [skillsTabId, setSkillsTabId] = useState("experience-chart");
 
   // iPad Pro 以下の幅ではサイドバーを初期折りたたみ
   useEffect(() => {
@@ -108,8 +109,8 @@ export default function Home() {
               </p>
               <ButtonAction
                 label="View more"
-                type="primary"
-                iconRight={{ set: "Arrows", name: "right" }}
+                type="ghost"
+                iconRight={{ set: "Arrows", name: "down-small" }}
               />
             </div>
             <div className="relative aspect-square w-[200px] lg:w-[300px] xl:w-[400px] shrink-0 overflow-hidden rounded-[32px]">
@@ -140,7 +141,7 @@ export default function Home() {
           {/* Career */}
           <section id="career" className="w-full max-w-[916px]">
             <Headline label="Career" title="経歴" />
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col">
               {loading ? (
                 <>
                   <span className="inline-block h-24 w-full animate-pulse rounded bg-[#424242]" />
@@ -164,8 +165,16 @@ export default function Home() {
           <section id="skills" className="mb-10 w-full max-w-[916px]">
             <Headline label="Skills" title="スキル" />
             <div className="flex flex-col items-center gap-10">
-              <TabBar tabs={SKILL_TABS} defaultActiveId="product-design" />
-              <SkillsRadarChart />
+              <TabBar
+                tabs={SKILL_TABS}
+                defaultActiveId="experience-chart"
+                onChange={setSkillsTabId}
+              />
+              {skillsTabId === "level-chart" ? (
+                <SkillsRadarChart />
+              ) : (
+                <SkillsCardGrid />
+              )}
             </div>
           </section>
         </div>

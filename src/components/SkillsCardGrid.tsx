@@ -106,8 +106,8 @@ const SKILL_CARDS: SkillCardConfig[] = [
   },
 ];
 
-const CARDS_PER_PAGE = 2;
-const TOTAL_PAGES = Math.ceil(SKILL_CARDS.length / CARDS_PER_PAGE);
+const CARDS_PER_VIEW = 2;
+const MAX_INDEX = SKILL_CARDS.length - CARDS_PER_VIEW; // 0 〜 4 の5ポジション
 
 // ──────────────────────────────────────────────
 // _SkillExperienceBar
@@ -237,57 +237,68 @@ const SkillCard = ({ icon, title, titleJP, skills, tools }: SkillCardConfig) => 
 // SkillsCardGrid — horizontal carousel
 // ──────────────────────────────────────────────
 export default function SkillsCardGrid() {
-  const [page, setPage] = useState(0);
-
-  const pages = Array.from({ length: TOTAL_PAGES }, (_, i) =>
-    SKILL_CARDS.slice(i * CARDS_PER_PAGE, (i + 1) * CARDS_PER_PAGE)
-  );
+  const [index, setIndex] = useState(0);
+  // どちらのカードが新しく入ってくるかをトラッキング（フェードインの対象）
+  const [enteringSide, setEnteringSide] = useState<"left" | "right" | null>(null);
 
   const goTo = (next: number) => {
-    if (next < 0 || next >= TOTAL_PAGES) return;
-    setPage(next);
+    if (next < 0 || next > MAX_INDEX || next === index) return;
+    setEnteringSide(next > index ? "right" : "left");
+    setIndex(next);
   };
+
+  const leftCard  = SKILL_CARDS[index];
+  const rightCard = SKILL_CARDS[index + 1];
 
   return (
     <div className="w-full flex flex-col">
       {/* カルーセルエリア（ボタン込み）— px-[52px] でボタン分のスペースを確保 */}
       <div className="relative w-full px-[52px]">
         {/* 前へボタン */}
-        {page > 0 && (
+        {index > 0 && (
           <button
             type="button"
-            onClick={() => goTo(page - 1)}
+            onClick={() => goTo(index - 1)}
             className="absolute left-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
           >
             <Icon set="Arrows" name="left" className="h-6 w-6" />
           </button>
         )}
 
-        {/* カルーセルトラック */}
-        <div className="overflow-hidden w-full">
+        {/* 2カード表示エリア（スライドなし・フェードイン） */}
+        <div className="flex gap-6 w-full">
+          {/* 左カード — index が下がったとき（← 移動）にフェードイン */}
           <div
-            className="flex w-full transition-transform duration-300 ease-in-out"
-            style={{ transform: `translateX(-${page * 100}%)` }}
+            key={`left-${index}`}
+            className={[
+              "flex-1 min-w-0",
+              enteringSide === "left"
+                ? "animate-[card-fade-in_0.3s_ease-in-out]"
+                : "",
+            ].join(" ")}
           >
-            {pages.map((pair, i) => (
-              <div key={i} className="flex gap-6 w-full shrink-0">
-                {pair.map((card) => (
-                  <div key={card.title} className="flex-1 min-w-0">
-                    <SkillCard {...card} />
-                  </div>
-                ))}
-                {/* 奇数枚の場合のスペーサー */}
-                {pair.length < CARDS_PER_PAGE && <div className="flex-1 min-w-0" />}
-              </div>
-            ))}
+            <SkillCard {...leftCard} />
+          </div>
+
+          {/* 右カード — index が上がったとき（→ 移動）にフェードイン */}
+          <div
+            key={`right-${index + 1}`}
+            className={[
+              "flex-1 min-w-0",
+              enteringSide === "right"
+                ? "animate-[card-fade-in_0.3s_ease-in-out]"
+                : "",
+            ].join(" ")}
+          >
+            <SkillCard {...rightCard} />
           </div>
         </div>
 
         {/* 次へボタン */}
-        {page < TOTAL_PAGES - 1 && (
+        {index < MAX_INDEX && (
           <button
             type="button"
-            onClick={() => goTo(page + 1)}
+            onClick={() => goTo(index + 1)}
             className="absolute right-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
           >
             <Icon set="Arrows" name="right" className="h-6 w-6" />
@@ -295,16 +306,16 @@ export default function SkillsCardGrid() {
         )}
       </div>
 
-      {/* ページドット */}
+      {/* ページドット（5ポジション） */}
       <div className="flex gap-2 justify-center mt-6">
-        {Array.from({ length: TOTAL_PAGES }).map((_, i) => (
+        {Array.from({ length: MAX_INDEX + 1 }).map((_, i) => (
           <button
             key={i}
             type="button"
             onClick={() => goTo(i)}
             className={[
               "size-[6px] rounded-full transition-colors",
-              i === page ? "bg-[#48f4be]" : "bg-[#424242]",
+              i === index ? "bg-[#48f4be]" : "bg-[#424242]",
             ].join(" ")}
           />
         ))}

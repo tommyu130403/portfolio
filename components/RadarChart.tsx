@@ -133,7 +133,15 @@ const RadarChartComponent: FC<RadarChartProps> = ({
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         className="overflow-visible"
       >
-        {/* グリッド（同心多角形） */}
+        {/* 目標ポリゴン fill（背面） */}
+        {targetPath && (
+          <path d={targetPath} fill="rgba(255,255,255,0.04)" />
+        )}
+
+        {/* 現在スキルポリゴン fill */}
+        <path d={currentPath} fill={fillColor} opacity={0.85} />
+
+        {/* グリッド（同心多角形）＋軸線 — フィルの上・ボーダーの下 */}
         {Array.from({ length: numGridLevels }).map((_, level) => {
           const levelRadius = (radius * (level + 1)) / numGridLevels;
           const isDotted = level % 2 === 1;
@@ -159,7 +167,7 @@ const RadarChartComponent: FC<RadarChartProps> = ({
           );
         })}
 
-        {/* 軸線 */}
+        {/* 軸線（フィルの上・ボーダーの下） */}
         {Array.from({ length: numAxes }).map((_, i) => {
           const angle = i * angleStep - Math.PI / 2;
           return (
@@ -169,30 +177,26 @@ const RadarChartComponent: FC<RadarChartProps> = ({
               y1={centerY}
               x2={centerX + radius * Math.cos(angle)}
               y2={centerY + radius * Math.sin(angle)}
-              stroke="#424242"
+              stroke="#616161"
               strokeWidth={1}
-              opacity={0.4}
+              opacity={0.5}
             />
           );
         })}
 
-        {/* 目標ポリゴン（背面） */}
+        {/* 目標ポリゴン border */}
         {targetPath && (
-          <>
-            <path d={targetPath} fill="rgba(97,97,97,0.15)" />
-            <path
-              d={targetPath}
-              fill="none"
-              stroke={targetBorderColor}
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
-              opacity={0.8}
-            />
-          </>
+          <path
+            d={targetPath}
+            fill="none"
+            stroke={targetBorderColor}
+            strokeWidth={1.5}
+            strokeDasharray="4 3"
+            opacity={0.8}
+          />
         )}
 
-        {/* 現在スキルポリゴン（前面） */}
-        <path d={currentPath} fill={fillColor} opacity={0.85} />
+        {/* 現在スキルポリゴン border（前面） */}
         <path d={currentPath} fill="none" stroke={borderColor} strokeWidth={2} />
 
         {/* ラベル */}

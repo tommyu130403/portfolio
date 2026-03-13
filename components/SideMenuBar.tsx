@@ -103,7 +103,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
       className={[
         "relative flex h-screen flex-col border-r border-[#424242] bg-[#212121] rounded-[12px]",
         "transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-[88px]" : "w-[256px]",
+        collapsed ? "w-[96px]" : "w-[256px]",
       ].join(" ")}
     >
       {/* Collapse / Expand button — absolute inside aside (no overflow on aside = not clipped) */}
@@ -121,7 +121,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         {/* Title */}
         <p
           className={[
-            "font-normal leading-8 tracking-[0.07px] text-[#48F4BE] whitespace-nowrap transition-all duration-300",
+            "font-guide font-normal leading-8 tracking-[0.07px] text-[#48F4BE] whitespace-nowrap transition-all duration-300",
             collapsed ? "text-[12px]" : "text-[24px]",
           ].join(" ")}
         >
@@ -154,7 +154,9 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         <div className="h-px w-full rounded-[2px] bg-[#424242] shrink-0" />
 
         {/* Navigation */}
-        <nav className="flex flex-1 flex-col gap-2 w-full items-start">
+        {/* pl-[2px]: アイコン中心が collapsed 時の aside 幅 96px の中央に揃う
+            計算: p-6(24) + pl(2) + item px-3(12) = 38px → icon center = 48px = 96/2 */}
+        <nav className="flex flex-1 flex-col gap-2 w-full items-start pl-[2px]">
           {/* Profile section */}
           <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
             Profile

@@ -376,9 +376,9 @@ export default function SkillsCardGrid() {
 
   return (
     <div className="w-full flex flex-col">
-      {/* カルーセルエリア — ボタンをオーバーレイで配置 */}
-      <div ref={containerRef} className="relative overflow-hidden w-full" style={{ height: `${CARD_H}px` }}>
-        {/* 前へボタン — カード上に z-10 でオーバーレイ */}
+      {/* カルーセルエリア — ボタンは overflow-hidden の外側に配置 */}
+      <div className="relative w-full" style={{ height: `${CARD_H}px` }}>
+        {/* 前へボタン — overflow-hidden の外、サイドバーと重ならない位置 */}
         <button
           type="button"
           onClick={goPrev}
@@ -387,27 +387,32 @@ export default function SkillsCardGrid() {
           <Icon set="Arrows" name="left" className="h-6 w-6" />
         </button>
 
-        {/* トラック */}
+        {/* トラッククリップエリア — ボタン幅分 px-[52px] を確保 */}
         <div
-          ref={trackRef}
-          className="flex gap-6"
-          style={{
-            transform:  containerWidth > 0 ? `translateX(${idleTranslateX}px)` : undefined,
-            opacity:    containerWidth > 0 ? 1 : 0,
-          }}
+          ref={containerRef}
+          className="absolute inset-0 overflow-hidden mx-[52px]"
         >
-          {trackCards.map(({ card, fadeIn }, i) => (
-            <div
-              key={`${phase}-${i}-${card.title}`}
-              style={cardStyle}
-              className={fadeIn ? "animate-[card-fade-in_0.35s_ease-in-out]" : ""}
-            >
-              <SkillCard {...card} />
-            </div>
-          ))}
+          <div
+            ref={trackRef}
+            className="flex gap-6 h-full"
+            style={{
+              transform: containerWidth > 0 ? `translateX(${idleTranslateX}px)` : undefined,
+              opacity:   containerWidth > 0 ? 1 : 0,
+            }}
+          >
+            {trackCards.map(({ card, fadeIn }, i) => (
+              <div
+                key={`${phase}-${i}-${card.title}`}
+                style={cardStyle}
+                className={fadeIn ? "animate-[card-fade-in_0.35s_ease-in-out]" : ""}
+              >
+                <SkillCard {...card} />
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* 次へボタン — カード上に z-10 でオーバーレイ */}
+        {/* 次へボタン — overflow-hidden の外 */}
         <button
           type="button"
           onClick={goNext}

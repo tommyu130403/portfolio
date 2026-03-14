@@ -77,7 +77,7 @@ export default function Home() {
     <PasswordGate>
       <div className="flex min-h-screen items-start bg-[#212121] text-white">
         {/* Side Menu */}
-        <div className="sticky top-0 shrink-0 z-[2] pr-6">
+        <div className="sticky top-0 shrink-0 z-[2] w-[96px] pr-0">
           <SideMenuBar
             activeSection={activeSection}
             collapsed={sidebarCollapsed}
@@ -176,9 +176,7 @@ export default function Home() {
               {skillsTabId === "level-chart" ? (
                 <SkillsRadarChart />
               ) : (
-                <div className="self-start -mx-6 w-[calc(100%+3rem)] lg:-mx-8 lg:w-[calc(100%+4rem)] xl:-mx-10 xl:w-[calc(100%+5rem)]">
-                  <SkillsCardGrid />
-                </div>
+                <SkillsCardGrid />
               )}
             </div>
           </section>

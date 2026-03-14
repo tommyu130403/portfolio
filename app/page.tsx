@@ -166,8 +166,8 @@ export default function Home() {
 
           {/* Skills */}
           <section id="skills" className="mb-10 w-full">
-            {/* 見出しは他セクションに揃えて max-w-[916px] 内に収める */}
-            <div className="w-full max-w-[916px]">
+            {/* 見出し+タブ: 他セクションと同じ最大幅・中央寄せ */}
+            <div className="mx-auto w-full max-w-[916px]">
               <Headline label="Skills" title="スキル" />
             </div>
             <div className="flex flex-col items-center gap-10 w-full">
@@ -179,7 +179,9 @@ export default function Home() {
               {skillsTabId === "level-chart" ? (
                 <SkillsRadarChart />
               ) : (
-                <SkillsCardGrid />
+                <div className="self-start -ml-6 lg:-ml-8 xl:-ml-10 w-[calc(100%+48px)] lg:w-[calc(100%+64px)] xl:w-[calc(100%+80px)]">
+                  <SkillsCardGrid />
+                </div>
               )}
             </div>
           </section>

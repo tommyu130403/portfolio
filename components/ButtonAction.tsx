@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC, ReactNode } from "react";
-import Icon from "./Icon";
+import Icon, { type IconProps } from "./Icon";
 import { BUTTON_ACTION, type ButtonActionType } from "@/lib/figma-button-variants";
 
 type ButtonActionProps = {
@@ -9,7 +9,7 @@ type ButtonActionProps = {
   type?: ButtonActionType;
   href?: string;
   onClick?: () => void;
-  iconRight?: { set: "Arrows"; name: "right" };
+  iconRight?: { set: NonNullable<IconProps["set"]>; name: string };
   children?: ReactNode;
 };
 

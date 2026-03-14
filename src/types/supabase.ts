@@ -200,6 +200,104 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_cards: {
+        Row: {
+          id: string
+          title: string
+          title_jp: string
+          icon_set: string
+          icon_name: string
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          title_jp: string
+          icon_set?: string
+          icon_name?: string
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          title_jp?: string
+          icon_set?: string
+          icon_name?: string
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      skill_bars: {
+        Row: {
+          id: string
+          card_id: string
+          label: string
+          segments: number
+          level: string
+          description: string | null
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          card_id: string
+          label: string
+          segments: number
+          level: string
+          description?: string | null
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          card_id?: string
+          label?: string
+          segments?: number
+          level?: string
+          description?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_bars_card_id_fkey"
+            columns: ["card_id"]
+            referencedRelation: "skill_cards"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      skill_tools: {
+        Row: {
+          id: string
+          card_id: string
+          name: string
+          years: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          card_id: string
+          name: string
+          years: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          card_id?: string
+          name?: string
+          years?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_tools_card_id_fkey"
+            columns: ["card_id"]
+            referencedRelation: "skill_cards"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

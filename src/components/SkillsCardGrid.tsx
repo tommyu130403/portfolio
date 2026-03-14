@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, type CSSProperties } from "react";
 import Icon from "@/components/Icon";
 import type { IconProps } from "@/components/Icon";
+import { supabase } from "@/src/lib/supabase";
+import type { Tables } from "@/src/types/supabase";
 
 // ──────────────────────────────────────────────
 // Data types
@@ -20,6 +22,7 @@ type ToolTagConfig = {
 };
 
 type SkillCardConfig = {
+  id: string;
   icon: { set: NonNullable<IconProps["set"]>; name: string };
   title: string;
   titleJP: string;
@@ -27,90 +30,49 @@ type SkillCardConfig = {
   tools: ToolTagConfig[];
 };
 
-// ──────────────────────────────────────────────
-// Static card data (portfolio content)
-// ──────────────────────────────────────────────
-const SKILL_CARDS: SkillCardConfig[] = [
-  {
-    icon: { set: "Edit", name: "writing-fluently" },
-    title: "Execution",
-    titleJP: "制作・実行",
-    skills: [
-      { label: "UIデザイン (SaaS・Application) デザイン", segments: 8, level: "Lv.4 Lead" },
-      { label: "WEB (オウンドメディア・サービスサイト) デザイン", segments: 6, level: "Lv.3 Senior" },
-      { label: "LP デザイン", segments: 4, level: "Lv.2 Mid" },
-    ],
-    tools: [
-      { name: "Figma", years: "5年" },
-      { name: "Illustrator", years: "10年~" },
-      { name: "Photoshop", years: "10年~" },
-      { name: "STUDIO", years: "3年" },
-    ],
-  },
-  {
-    icon: { set: "Edit", name: "writing-fluently" },
-    title: "Technology",
-    titleJP: "開発・AI共創",
-    skills: [
-      {
-        label: "プロジェクトマネジメント (アジャイル開発・スクラム開発)",
-        segments: 7,
-        level: "Lv.4 Lead",
-      },
-      {
-        label: "フロントエンド開発",
-        segments: 5,
-        level: "Lv.3 Senior",
-        description:
-          "Next.jsの環境にてReact・Typescriptなどを用いたプロダクトの実装、デザインシステム構築過程におけるコンポーネント実装など。",
-      },
-    ],
-    tools: [{ name: "Github", years: "10年以上" }],
-  },
-  {
-    icon: { set: "Abstract", name: "coordinate-system" },
-    title: "Business",
-    titleJP: "事業貢献",
-    skills: [{ label: "プロダクトマネジメント", segments: 5, level: "Lv.3 Senior" }],
-    tools: [],
-  },
-  {
-    icon: { set: "Peoples", name: "every-user" },
-    title: "People",
-    titleJP: "育成・採用・コミュニケーション",
-    skills: [],
-    tools: [],
-  },
-  {
-    icon: { set: "Peoples", name: "every-user" },
-    title: "Organization",
-    titleJP: "組織開発",
-    skills: [],
-    tools: [],
-  },
-  {
-    icon: { set: "Abstract", name: "coordinate-system" },
-    title: "Strategy",
-    titleJP: "課題定義・リサーチ",
-    skills: [
-      { label: "UXリサーチ", segments: 5, level: "Lv.3 Senior" },
-      { label: "UX設計 (UXメトリクス定義)", segments: 5, level: "Lv.3 Senior" },
-      { label: "CVR改善・施策立案 (CRO・EFO・ASO)", segments: 7, level: "Lv.4 Lead" },
-    ],
-    tools: [
-      { name: "Google Analytics", years: "7年" },
-      { name: "Google Optimize", years: "7年" },
-      { name: "Looker Studio", years: "3年" },
-      { name: "Gemini", years: "1年未満" },
-    ],
-  },
-];
+// DB rows
+type SkillCardRow = Tables<"skill_cards">;
+type SkillBarRow  = Tables<"skill_bars">;
+type SkillToolRow = Tables<"skill_tools">;
 
-const N        = SKILL_CARDS.length; // 6
-const GAP      = 24;                 // px (gap-6)
-const DURATION = 350;                // ms
-const CARD_H   = 520;                // px — 固定カード高さ
-const CARD_W   = 446;                // px — Figma 仕様の最大カード幅
+// ──────────────────────────────────────────────
+// Supabase fetch helper
+// ──────────────────────────────────────────────
+async function fetchSkillCards(): Promise<SkillCardConfig[]> {
+  const [{ data: cards }, { data: bars }, { data: tools }] = await Promise.all([
+    supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
+    supabase.from("skill_bars").select("*").order("sort_order",  { ascending: true }),
+    supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
+  ]);
+
+  if (!cards) return [];
+
+  return (cards as SkillCardRow[]).map((card) => ({
+    id:      card.id,
+    icon:    { set: card.icon_set as NonNullable<IconProps["set"]>, name: card.icon_name },
+    title:   card.title,
+    titleJP: card.title_jp,
+    skills: (bars as SkillBarRow[] ?? [])
+      .filter((b) => b.card_id === card.id)
+      .map((b) => ({
+        label:       b.label,
+        segments:    b.segments,
+        level:       b.level,
+        description: b.description ?? undefined,
+      })),
+    tools: (tools as SkillToolRow[] ?? [])
+      .filter((t) => t.card_id === card.id)
+      .map((t) => ({ name: t.name, years: t.years })),
+  }));
+}
+
+// ──────────────────────────────────────────────
+// Constants
+// ──────────────────────────────────────────────
+const GAP      = 24;   // px (gap-6)
+const DURATION = 350;  // ms
+const CARD_H   = 510;  // px — Strategy(4スキル+4ツール)が最大
+const CARD_W   = 400;  // px — Figma 仕様の最大カード幅
 
 // ──────────────────────────────────────────────
 // _SkillExperienceBar
@@ -200,7 +162,7 @@ const SkillTag = ({ name, years }: ToolTagConfig) => (
 // _SkillCard
 // ──────────────────────────────────────────────
 const SkillCard = ({ icon, title, titleJP, skills, tools }: SkillCardConfig) => (
-  <div className="bg-[rgba(0,0,0,0.25)] rounded-[14px] overflow-hidden w-full h-full">
+  <div className="bg-[#1a1a1a] rounded-[14px] overflow-hidden w-full h-full">
     <div className="flex flex-col gap-10 px-6 py-10 h-full">
       {/* ヘッダー: アイコン + EN タイトル + JP サブタイトル */}
       <div className="flex gap-2 items-center shrink-0">
@@ -241,7 +203,8 @@ const SkillCard = ({ icon, title, titleJP, skills, tools }: SkillCardConfig) => 
 // アクティブカード(446px)を中央表示し、左右に隣接カードをチラ見せ
 // ──────────────────────────────────────────────
 export default function SkillsCardGrid() {
-  // activeIdx: 中央に表示するカードのインデックス（0〜N-1）
+  const [cards, setCards]         = useState<SkillCardConfig[]>([]);
+  const [loading, setLoading]     = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
   const [phase, setPhase]         = useState<"idle" | "next" | "prev">("idle");
   const [containerWidth, setContainerWidth] = useState(0);
@@ -250,6 +213,14 @@ export default function SkillsCardGrid() {
   const trackRef      = useRef<HTMLDivElement>(null);
   const animatingRef  = useRef(false);
   const pendingIdxRef = useRef(0);
+
+  // DB からカードデータを取得
+  useEffect(() => {
+    fetchSkillCards().then((data) => {
+      setCards(data);
+      setLoading(false);
+    });
+  }, []);
 
   // コンテナ幅を ResizeObserver で計測
   useEffect(() => {
@@ -261,6 +232,8 @@ export default function SkillsCardGrid() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  const N = cards.length;
 
   // カード幅: Figma 最大 446px、コンテナが狭い場合は縮小（最小 peek 80px×2 + gap を確保）
   const cardWidth = Math.min(CARD_W, Math.max(0, containerWidth - 160 - GAP));
@@ -287,16 +260,12 @@ export default function SkillsCardGrid() {
     const amt = cardWidth + GAP;
 
     if (phase === "next") {
-      // 4-card track: [prev, active, next, newNext]
-      // card[1](active) → card[2](next) へスライド
       track.style.transition = "none";
       track.style.transform  = `translateX(${centerOffset - amt}px)`;
-      void track.offsetWidth; // force reflow
+      void track.offsetWidth;
       track.style.transition = `transform ${DURATION}ms ease-in-out`;
       track.style.transform  = `translateX(${centerOffset - 2 * amt}px)`;
     } else {
-      // 4-card track: [newPrev, prev, active, next]
-      // card[2](active) → card[1](prev) へスライド
       track.style.transition = "none";
       track.style.transform  = `translateX(${centerOffset - 2 * amt}px)`;
       void track.offsetWidth;
@@ -318,7 +287,7 @@ export default function SkillsCardGrid() {
   }, [phase, containerWidth, centerOffset, cardWidth]);
 
   const navigate = (newActiveIdx: number, dir: "next" | "prev") => {
-    if (animatingRef.current || containerWidth === 0) return;
+    if (animatingRef.current || containerWidth === 0 || N === 0) return;
     animatingRef.current  = true;
     pendingIdxRef.current = newActiveIdx;
     setPhase(dir);
@@ -332,25 +301,23 @@ export default function SkillsCardGrid() {
   };
 
   // トラックに並べるカードを構築
-  // idle:  [prev, active, next]          3枚
-  // next:  [prev, active, next, newNext] 4枚 — newNext がフェードイン
-  // prev:  [newPrev, prev, active, next] 4枚 — newPrev がフェードイン
   const buildTrack = () => {
-    const prev   = SKILL_CARDS[(activeIdx - 1 + N) % N];
-    const active = SKILL_CARDS[activeIdx];
-    const next   = SKILL_CARDS[(activeIdx + 1) % N];
+    if (N === 0) return [];
+    const prev   = cards[(activeIdx - 1 + N) % N];
+    const active = cards[activeIdx];
+    const next   = cards[(activeIdx + 1) % N];
 
     if (phase === "next") {
-      const newNext = SKILL_CARDS[(activeIdx + 2) % N];
+      const newNext = cards[(activeIdx + 2) % N];
       return [
-        { card: prev,   fadeIn: false },
-        { card: active, fadeIn: false },
-        { card: next,   fadeIn: false },
+        { card: prev,    fadeIn: false },
+        { card: active,  fadeIn: false },
+        { card: next,    fadeIn: false },
         { card: newNext, fadeIn: true  },
       ];
     }
     if (phase === "prev") {
-      const newPrev = SKILL_CARDS[(activeIdx - 2 + N) % N];
+      const newPrev = cards[(activeIdx - 2 + N) % N];
       return [
         { card: newPrev, fadeIn: true  },
         { card: prev,    fadeIn: false },
@@ -358,7 +325,6 @@ export default function SkillsCardGrid() {
         { card: next,    fadeIn: false },
       ];
     }
-    // idle
     return [
       { card: prev,   fadeIn: false },
       { card: active, fadeIn: false },
@@ -376,66 +342,74 @@ export default function SkillsCardGrid() {
 
   return (
     <div className="w-full flex flex-col">
-      {/* カルーセルエリア — ボタンは overflow-hidden の外側に配置 */}
-      <div className="relative w-full" style={{ height: `${CARD_H}px` }}>
-        {/* 前へボタン — overflow-hidden の外、サイドバーと重ならない位置 */}
-        <button
-          type="button"
-          onClick={goPrev}
-          className="absolute left-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
-        >
-          <Icon set="Arrows" name="left" className="h-6 w-6" />
-        </button>
+      {/* カルーセルエリア — containerRef は常に DOM に存在させる（ResizeObserver のため） */}
+      <div
+        ref={containerRef}
+        className="relative w-full overflow-hidden"
+        style={{ height: `${CARD_H}px` }}
+      >
+        {/* ローディング中はスケルトン表示 */}
+        {loading ? (
+          <div className="absolute inset-0 animate-pulse rounded-[14px] bg-[#1a1a1a]" />
+        ) : (
+          <>
+            {/* トラック */}
+            <div
+              ref={trackRef}
+              className="flex gap-6 h-full"
+              style={{
+                transform: containerWidth > 0 ? `translateX(${idleTranslateX}px)` : undefined,
+                opacity:   containerWidth > 0 ? 1 : 0,
+              }}
+            >
+              {trackCards.map(({ card, fadeIn }, i) => (
+                <div
+                  key={`${phase}-${i}-${card.title}`}
+                  style={cardStyle}
+                  className={fadeIn ? "animate-[card-fade-in_0.35s_ease-in-out]" : ""}
+                >
+                  <SkillCard {...card} />
+                </div>
+              ))}
+            </div>
 
-        {/* トラッククリップエリア — ボタン幅分 px-[52px] を確保 */}
-        <div
-          ref={containerRef}
-          className="absolute inset-0 overflow-hidden mx-[52px]"
-        >
-          <div
-            ref={trackRef}
-            className="flex gap-6 h-full"
-            style={{
-              transform: containerWidth > 0 ? `translateX(${idleTranslateX}px)` : undefined,
-              opacity:   containerWidth > 0 ? 1 : 0,
-            }}
-          >
-            {trackCards.map(({ card, fadeIn }, i) => (
-              <div
-                key={`${phase}-${i}-${card.title}`}
-                style={cardStyle}
-                className={fadeIn ? "animate-[card-fade-in_0.35s_ease-in-out]" : ""}
-              >
-                <SkillCard {...card} />
-              </div>
-            ))}
-          </div>
-        </div>
+            {/* 前へボタン — カード上に重ねる */}
+            <button
+              type="button"
+              onClick={goPrev}
+              className="absolute left-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
+            >
+              <Icon set="Arrows" name="left" className="h-6 w-6" />
+            </button>
 
-        {/* 次へボタン — overflow-hidden の外 */}
-        <button
-          type="button"
-          onClick={goNext}
-          className="absolute right-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
-        >
-          <Icon set="Arrows" name="right" className="h-6 w-6" />
-        </button>
+            {/* 次へボタン — カード上に重ねる */}
+            <button
+              type="button"
+              onClick={goNext}
+              className="absolute right-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
+            >
+              <Icon set="Arrows" name="right" className="h-6 w-6" />
+            </button>
+          </>
+        )}
       </div>
 
       {/* ページドット */}
-      <div className="flex gap-2 justify-center mt-6">
-        {Array.from({ length: N }).map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => goTo(i)}
-            className={[
-              "size-[6px] rounded-full transition-colors",
-              i === activeIdx ? "bg-[#48f4be]" : "bg-[#424242]",
-            ].join(" ")}
-          />
-        ))}
-      </div>
+      {!loading && (
+        <div className="flex gap-2 justify-center mt-6">
+          {Array.from({ length: N }).map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => goTo(i)}
+              className={[
+                "size-[6px] rounded-full transition-colors",
+                i === activeIdx ? "bg-[#48f4be]" : "bg-[#424242]",
+              ].join(" ")}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

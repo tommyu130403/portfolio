@@ -32,6 +32,9 @@ async function runProofread(
 type Profile    = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
 type Project    = Tables<"projects">;
+type SkillCard  = Tables<"skill_cards">;
+type SkillBar   = Tables<"skill_bars">;
+type SkillTool  = Tables<"skill_tools">;
 
 type SkillKey =
   | "prototype" | "visual" | "implementation" | "interaction"
@@ -56,10 +59,11 @@ const SKILL_KEYS = Object.keys(SKILL_LABELS) as SkillKey[];
 
 // ─── ナビゲーション ────────────────────────────────────
 const NAV_SECTIONS = [
-  { id: "profile",  label: "Profile",  labelJa: "プロフィール・自己紹介" },
-  { id: "career",   label: "Career",   labelJa: "経歴" },
-  { id: "projects", label: "Projects", labelJa: "プロジェクト" },
-  { id: "skills",   label: "Skills",   labelJa: "スキル" },
+  { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
+  { id: "career",           label: "Career",           labelJa: "経歴" },
+  { id: "projects",         label: "Projects",         labelJa: "プロジェクト" },
+  { id: "skills",           label: "Skills",           labelJa: "スキル" },
+  { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
 ] as const;
 
 // ─── 共通 UI ──────────────────────────────────────────
@@ -958,6 +962,382 @@ function SkillsSection() {
   );
 }
 
+// ─── SkillsExperience セクション ───────────────────────
+
+type CardWithRelations = SkillCard & {
+  bars:  SkillBar[];
+  tools: SkillTool[];
+};
+
+function SkillsExperienceSection() {
+  const [cards, setCards]         = useState<CardWithRelations[]>([]);
+  const [fetching, setFetching]   = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [savingId, setSavingId]   = useState<string | null>(null);
+  const [savedId, setSavedId]     = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState("");
+
+  const fetchAll = useCallback(async () => {
+    const [{ data: cardRows }, { data: barRows }, { data: toolRows }] = await Promise.all([
+      supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
+      supabase.from("skill_bars").select("*").order("sort_order",  { ascending: true }),
+      supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
+    ]);
+    if (!cardRows) { setFetching(false); return; }
+    const merged = cardRows.map((c) => ({
+      ...c,
+      bars:  (barRows  ?? []).filter((b) => b.card_id === c.id),
+      tools: (toolRows ?? []).filter((t) => t.card_id === c.id),
+    }));
+    setCards(merged);
+    setFetching(false);
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // ── カード操作 ──────────────────────────────────────
+  const updateCard = (id: string, key: keyof SkillCard, val: string | number) =>
+    setCards((prev) => prev.map((c) => c.id === id ? { ...c, [key]: val } : c));
+
+  const handleSaveCard = async (card: CardWithRelations) => {
+    setSavingId(card.id); setGlobalError("");
+    const { error } = await supabase.from("skill_cards").upsert({
+      id: card.id, title: card.title, title_jp: card.title_jp,
+      icon_set: card.icon_set, icon_name: card.icon_name, sort_order: card.sort_order,
+    });
+    setSavingId(null);
+    if (error) { setGlobalError(error.message); return; }
+    setSavedId(card.id);
+    setTimeout(() => setSavedId(null), 2000);
+  };
+
+  const handleDeleteCard = async (id: string) => {
+    setDeletingId(id);
+    await supabase.from("skill_cards").delete().eq("id", id);
+    setDeletingId(null);
+    setCards((prev) => prev.filter((c) => c.id !== id));
+    if (expandedId === id) setExpandedId(null);
+  };
+
+  const handleAddCard = async () => {
+    const { data } = await supabase.from("skill_cards").insert({
+      title: "New Card", title_jp: "新しいカード",
+      icon_set: "Edit", icon_name: "writing-fluently",
+      sort_order: cards.length,
+    }).select().single();
+    if (data) {
+      setCards((prev) => [...prev, { ...data, bars: [], tools: [] }]);
+      setExpandedId(data.id);
+    }
+  };
+
+  const handleMoveCard = async (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= cards.length) return;
+    const next = [...cards];
+    [next[index], next[target]] = [next[target], next[index]];
+    const updated = next.map((c, i) => ({ ...c, sort_order: i }));
+    setCards(updated);
+    await Promise.all(
+      updated.map(({ id, sort_order }) =>
+        supabase.from("skill_cards").update({ sort_order }).eq("id", id)
+      )
+    );
+  };
+
+  // ── スキルバー操作 ────────────────────────────────────
+  const updateBar = (cardId: string, barId: string, key: keyof SkillBar, val: string | number | null) =>
+    setCards((prev) => prev.map((c) =>
+      c.id !== cardId ? c : {
+        ...c,
+        bars: c.bars.map((b) => b.id === barId ? { ...b, [key]: val } : b),
+      }
+    ));
+
+  const handleSaveBar = async (cardId: string, bar: SkillBar) => {
+    const { error } = await supabase.from("skill_bars").upsert({
+      id: bar.id, card_id: cardId, label: bar.label,
+      segments: bar.segments, level: bar.level,
+      description: bar.description, sort_order: bar.sort_order,
+    });
+    if (error) setGlobalError(error.message);
+  };
+
+  const handleDeleteBar = async (cardId: string, barId: string) => {
+    await supabase.from("skill_bars").delete().eq("id", barId);
+    setCards((prev) => prev.map((c) =>
+      c.id !== cardId ? c : { ...c, bars: c.bars.filter((b) => b.id !== barId) }
+    ));
+  };
+
+  const handleAddBar = async (cardId: string) => {
+    const card = cards.find((c) => c.id === cardId);
+    if (!card) return;
+    const { data } = await supabase.from("skill_bars").insert({
+      card_id: cardId, label: "", segments: 5, level: "Lv.3 Senior",
+      sort_order: card.bars.length,
+    }).select().single();
+    if (data) {
+      setCards((prev) => prev.map((c) =>
+        c.id !== cardId ? c : { ...c, bars: [...c.bars, data] }
+      ));
+    }
+  };
+
+  // ── ツール操作 ────────────────────────────────────────
+  const updateTool = (cardId: string, toolId: string, key: keyof SkillTool, val: string | number) =>
+    setCards((prev) => prev.map((c) =>
+      c.id !== cardId ? c : {
+        ...c,
+        tools: c.tools.map((t) => t.id === toolId ? { ...t, [key]: val } : t),
+      }
+    ));
+
+  const handleSaveTool = async (cardId: string, tool: SkillTool) => {
+    const { error } = await supabase.from("skill_tools").upsert({
+      id: tool.id, card_id: cardId, name: tool.name,
+      years: tool.years, sort_order: tool.sort_order,
+    });
+    if (error) setGlobalError(error.message);
+  };
+
+  const handleDeleteTool = async (cardId: string, toolId: string) => {
+    await supabase.from("skill_tools").delete().eq("id", toolId);
+    setCards((prev) => prev.map((c) =>
+      c.id !== cardId ? c : { ...c, tools: c.tools.filter((t) => t.id !== toolId) }
+    ));
+  };
+
+  const handleAddTool = async (cardId: string) => {
+    const card = cards.find((c) => c.id === cardId);
+    if (!card) return;
+    const { data } = await supabase.from("skill_tools").insert({
+      card_id: cardId, name: "", years: "",
+      sort_order: card.tools.length,
+    }).select().single();
+    if (data) {
+      setCards((prev) => prev.map((c) =>
+        c.id !== cardId ? c : { ...c, tools: [...c.tools, data] }
+      ));
+    }
+  };
+
+  if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
+
+  return (
+    <section id="skills-experience" className="scroll-mt-8">
+      <SectionTitle label="Skills Experience" title="スキルカルーセル" />
+      {globalError && <p className="mb-4 text-[13px] text-[#f4487e]">{globalError}</p>}
+
+      <div className="mb-6 flex flex-col gap-4">
+        {cards.map((card, idx) => {
+          const isOpen = expandedId === card.id;
+          return (
+            <div key={card.id} className="rounded-[12px] border border-[#424242] bg-[#212121]">
+              {/* ヘッダー行 */}
+              <div
+                className="flex cursor-pointer items-center justify-between px-5 py-4"
+                onClick={() => setExpandedId(isOpen ? null : card.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] text-[#616161]">#{idx + 1}</span>
+                  <span className="text-[14px] font-medium text-[#48f4be]">{card.title}</span>
+                  <span className="text-[12px] text-[#9e9e9e]">{card.title_jp}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, -1); }}
+                    disabled={idx === 0}
+                    className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                  >↑</button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, 1); }}
+                    disabled={idx === cards.length - 1}
+                    className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                  >↓</button>
+                  <span className="text-[12px] text-[#616161]">{isOpen ? "▲" : "▼"}</span>
+                </div>
+              </div>
+
+              {/* 編集フォーム（展開時） */}
+              {isOpen && (
+                <div className="border-t border-[#424242] p-5">
+
+                  {/* カード基本情報 */}
+                  <div className="mb-6 grid grid-cols-2 gap-4">
+                    <div>
+                      <FieldLabel>タイトル（EN）</FieldLabel>
+                      <Input value={card.title} onChange={(v) => updateCard(card.id, "title", v)} placeholder="Execution" />
+                    </div>
+                    <div>
+                      <FieldLabel>タイトル（JP）</FieldLabel>
+                      <Input value={card.title_jp} onChange={(v) => updateCard(card.id, "title_jp", v)} placeholder="制作・実行" />
+                    </div>
+                    <div>
+                      <FieldLabel>アイコンセット</FieldLabel>
+                      <Input value={card.icon_set} onChange={(v) => updateCard(card.id, "icon_set", v)} placeholder="Edit" />
+                    </div>
+                    <div>
+                      <FieldLabel>アイコン名</FieldLabel>
+                      <Input value={card.icon_name} onChange={(v) => updateCard(card.id, "icon_name", v)} placeholder="writing-fluently" />
+                    </div>
+                  </div>
+
+                  <div className="mb-6 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCard(card)}
+                      disabled={savingId === card.id}
+                      className="rounded-[8px] bg-[#48f4be] px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
+                    >
+                      {savingId === card.id ? "保存中…" : "カード情報を保存"}
+                    </button>
+                    {savedId === card.id && <span className="text-[12px] text-[#48f4be]">✓ 保存しました</span>}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCard(card.id)}
+                      disabled={deletingId === card.id}
+                      className="ml-auto rounded-[8px] px-3 py-1.5 text-[13px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
+                    >
+                      {deletingId === card.id ? "削除中…" : "カードを削除"}
+                    </button>
+                  </div>
+
+                  {/* スキルバー */}
+                  <div className="mb-6">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-[12px] font-semibold tracking-[0.6px] text-[#9e9e9e]">スキルバー</p>
+                      <button
+                        type="button"
+                        onClick={() => handleAddBar(card.id)}
+                        className="rounded-[6px] border border-[#424242] px-3 py-1 text-[12px] text-[#9e9e9e] hover:border-[#48f4be] hover:text-white"
+                      >
+                        ＋ 追加
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {card.bars.map((bar) => (
+                        <div key={bar.id} className="rounded-[8px] border border-[#363636] bg-[#1a1a1a] p-4">
+                          <div className="grid grid-cols-[1fr_80px_120px] gap-3 mb-3">
+                            <div>
+                              <FieldLabel>ラベル</FieldLabel>
+                              <Input value={bar.label} onChange={(v) => updateBar(card.id, bar.id, "label", v)} placeholder="UIデザイン" />
+                            </div>
+                            <div>
+                              <FieldLabel>セグメント (1-10)</FieldLabel>
+                              <input
+                                type="number"
+                                min={1}
+                                max={10}
+                                value={bar.segments}
+                                onChange={(e) => updateBar(card.id, bar.id, "segments", Number(e.target.value))}
+                                className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none focus:border-[#48f4be]"
+                              />
+                            </div>
+                            <div>
+                              <FieldLabel>レベル</FieldLabel>
+                              <Input value={bar.level} onChange={(v) => updateBar(card.id, bar.id, "level", v)} placeholder="Lv.3 Senior" />
+                            </div>
+                          </div>
+                          <div className="mb-3">
+                            <FieldLabel>説明（任意）</FieldLabel>
+                            <Textarea
+                              value={bar.description ?? ""}
+                              onChange={(v) => updateBar(card.id, bar.id, "description", v || null)}
+                              rows={2}
+                              placeholder="スキルの詳細説明（展開時に表示）"
+                            />
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveBar(card.id, bar)}
+                              className="rounded-[6px] bg-[#48f4be] px-3 py-1 text-[12px] font-semibold text-[#0a0a0a] hover:opacity-80"
+                            >
+                              保存
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBar(card.id, bar.id)}
+                              className="rounded-[6px] px-2 py-1 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ツールタグ */}
+                  <div>
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-[12px] font-semibold tracking-[0.6px] text-[#9e9e9e]">ツールタグ</p>
+                      <button
+                        type="button"
+                        onClick={() => handleAddTool(card.id)}
+                        className="rounded-[6px] border border-[#424242] px-3 py-1 text-[12px] text-[#9e9e9e] hover:border-[#48f4be] hover:text-white"
+                      >
+                        ＋ 追加
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {card.tools.map((tool) => (
+                        <div key={tool.id} className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <Input
+                              value={tool.name}
+                              onChange={(v) => updateTool(card.id, tool.id, "name", v)}
+                              placeholder="Figma"
+                            />
+                          </div>
+                          <div className="w-[120px]">
+                            <Input
+                              value={tool.years}
+                              onChange={(v) => updateTool(card.id, tool.id, "years", v)}
+                              placeholder="5年"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveTool(card.id, tool)}
+                            className="shrink-0 rounded-[6px] bg-[#48f4be] px-3 py-2 text-[12px] font-semibold text-[#0a0a0a] hover:opacity-80"
+                          >
+                            保存
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTool(card.id, tool.id)}
+                            className="shrink-0 rounded-[6px] px-2 py-2 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+                          >
+                            削除
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        onClick={handleAddCard}
+        className="w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
+      >
+        ＋ カードを追加
+      </button>
+    </section>
+  );
+}
+
 // ─── メインレイアウト ───────────────────────────────────
 
 export function AdminLayout() {
@@ -1046,6 +1426,7 @@ export function AdminLayout() {
             <CareerSection />
             <ProjectsSection />
             <SkillsSection />
+            <SkillsExperienceSection />
           </div>
 
           <div className="mt-24 border-t border-[#2a2a2a] pt-8">

@@ -162,9 +162,12 @@ export default function Home() {
           </section>
 
           {/* Skills */}
-          <section id="skills" className="mb-10 w-full max-w-[916px]">
-            <Headline label="Skills" title="スキル" />
-            <div className="flex flex-col items-center gap-10">
+          <section id="skills" className="mb-10 w-full">
+            {/* 見出しは他セクションに揃えて max-w-[916px] 内に収める */}
+            <div className="w-full max-w-[916px]">
+              <Headline label="Skills" title="スキル" />
+            </div>
+            <div className="flex flex-col items-center gap-10 w-full">
               <TabBar
                 tabs={SKILL_TABS}
                 defaultActiveId="experience-chart"

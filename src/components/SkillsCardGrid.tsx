@@ -326,8 +326,8 @@ export default function SkillsCardGrid() {
 
   return (
     <div className="w-full flex flex-col">
-      {/* カルーセルエリア — px-[52px] でボタン用スペースを確保 */}
-      <div className="relative w-full px-[52px]">
+      {/* カルーセルエリア — 1020px 中央配置（446px×2 + gap + navボタン52px×2）*/}
+      <div className="relative w-full max-w-[1020px] mx-auto px-[52px]">
         {/* 前へボタン（ループのため常に表示） */}
         <button
           type="button"

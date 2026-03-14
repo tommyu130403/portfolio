@@ -110,6 +110,7 @@ const N        = SKILL_CARDS.length; // 6
 const GAP      = 24;                 // px (gap-6)
 const DURATION = 350;                // ms
 const CARD_H   = 520;                // px — 固定カード高さ
+const CARD_W   = 446;                // px — Figma 仕様の最大カード幅
 
 // ──────────────────────────────────────────────
 // _SkillExperienceBar
@@ -236,99 +237,148 @@ const SkillCard = ({ icon, title, titleJP, skills, tools }: SkillCardConfig) => 
 );
 
 // ──────────────────────────────────────────────
-// SkillsCardGrid — スライド＋フェードイン カルーセル（ループ対応）
+// SkillsCardGrid — 中央寄せ peek カルーセル（ループ対応）
+// アクティブカード(446px)を中央表示し、左右に隣接カードをチラ見せ
 // ──────────────────────────────────────────────
 export default function SkillsCardGrid() {
-  // leftIdx: 左カードの SKILL_CARDS インデックス（0 〜 N-1、ループ）
-  const [leftIdx, setLeftIdx]   = useState(0);
-  const [phase, setPhase]       = useState<"idle" | "next" | "prev">("idle");
-  const [newIdx, setNewIdx]     = useState<number | null>(null);
+  // activeIdx: 中央に表示するカードのインデックス（0〜N-1）
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [phase, setPhase]         = useState<"idle" | "next" | "prev">("idle");
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const containerRef  = useRef<HTMLDivElement>(null);
   const trackRef      = useRef<HTMLDivElement>(null);
   const animatingRef  = useRef(false);
-  const pendingIdxRef = useRef(0); // アニメーション後に設定する leftIdx
+  const pendingIdxRef = useRef(0);
 
-  // カード幅をコンテナ幅から算出（ResizeObserver で追跡）
-  const [cardWidth, setCardWidth] = useState(0);
+  // コンテナ幅を ResizeObserver で計測
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const update = () => setCardWidth((el.offsetWidth - GAP) / 2);
+    const update = () => setContainerWidth(el.offsetWidth);
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  // phase が変わったらトラックのスライドアニメーションを開始
+  // カード幅: Figma 最大 446px、コンテナが狭い場合は縮小（最小 peek 80px×2 + gap を確保）
+  const cardWidth = Math.min(CARD_W, Math.max(0, containerWidth - 160 - GAP));
+
+  // アクティブカードを中央に配置するためのオフセット
+  // card[1] を中央にする: translateX = centerOffset - (cardWidth + GAP)
+  const centerOffset   = containerWidth > 0 ? (containerWidth - cardWidth) / 2 : 0;
+  const idleTranslateX = centerOffset - (cardWidth + GAP);
+
+  // containerWidth が変わったらトラックを即座に中央位置へスナップ
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || containerWidth === 0 || phase !== "idle") return;
+    track.style.transition = "none";
+    track.style.transform  = `translateX(${idleTranslateX}px)`;
+  }, [containerWidth, idleTranslateX, phase]);
+
+  // phase が変わったらスライドアニメーションを開始
   useEffect(() => {
     if (phase === "idle") return;
     const track = trackRef.current;
-    if (!track || cardWidth === 0) return;
+    if (!track || containerWidth === 0 || cardWidth === 0) return;
 
     const amt = cardWidth + GAP;
 
     if (phase === "next") {
-      // Track: [curLeft, curRight, newRight] → translateX: 0 → -amt
+      // 4-card track: [prev, active, next, newNext]
+      // card[1](active) → card[2](next) へスライド
       track.style.transition = "none";
-      track.style.transform  = "translateX(0)";
+      track.style.transform  = `translateX(${centerOffset - amt}px)`;
       void track.offsetWidth; // force reflow
       track.style.transition = `transform ${DURATION}ms ease-in-out`;
-      track.style.transform  = `translateX(-${amt}px)`;
+      track.style.transform  = `translateX(${centerOffset - 2 * amt}px)`;
     } else {
-      // Track: [newLeft, curLeft, curRight] → translateX: -amt → 0
+      // 4-card track: [newPrev, prev, active, next]
+      // card[2](active) → card[1](prev) へスライド
       track.style.transition = "none";
-      track.style.transform  = `translateX(-${amt}px)`;
+      track.style.transform  = `translateX(${centerOffset - 2 * amt}px)`;
       void track.offsetWidth;
       track.style.transition = `transform ${DURATION}ms ease-in-out`;
-      track.style.transform  = "translateX(0)";
+      track.style.transform  = `translateX(${centerOffset - amt}px)`;
     }
 
     const timer = setTimeout(() => {
-      setLeftIdx(pendingIdxRef.current);
-      setNewIdx(null);
+      setActiveIdx(pendingIdxRef.current);
       setPhase("idle");
       if (track) {
         track.style.transition = "none";
-        track.style.transform  = "translateX(0)";
+        track.style.transform  = `translateX(${centerOffset - amt}px)`;
       }
       animatingRef.current = false;
     }, DURATION);
 
     return () => clearTimeout(timer);
-  }, [phase, cardWidth]);
+  }, [phase, containerWidth, centerOffset, cardWidth]);
 
-  const navigate = (newLeftIdx: number, dir: "next" | "prev") => {
-    if (animatingRef.current || cardWidth === 0) return;
-    animatingRef.current    = true;
-    pendingIdxRef.current   = newLeftIdx;
-    setNewIdx(dir === "next" ? (newLeftIdx + 1) % N : newLeftIdx);
+  const navigate = (newActiveIdx: number, dir: "next" | "prev") => {
+    if (animatingRef.current || containerWidth === 0) return;
+    animatingRef.current  = true;
+    pendingIdxRef.current = newActiveIdx;
     setPhase(dir);
   };
 
-  const goNext = () => navigate((leftIdx + 1) % N, "next");
-  const goPrev = () => navigate((leftIdx - 1 + N) % N, "prev");
+  const goNext = () => navigate((activeIdx + 1) % N, "next");
+  const goPrev = () => navigate((activeIdx - 1 + N) % N, "prev");
   const goTo   = (i: number) => {
-    if (i === leftIdx) return;
-    navigate(i, i > leftIdx ? "next" : "prev");
+    if (i === activeIdx) return;
+    navigate(i, i > activeIdx ? "next" : "prev");
   };
 
-  const leftCard = SKILL_CARDS[leftIdx];
-  const rightCard = SKILL_CARDS[(leftIdx + 1) % N];
-  const newCard   = newIdx !== null ? SKILL_CARDS[newIdx] : null;
+  // トラックに並べるカードを構築
+  // idle:  [prev, active, next]          3枚
+  // next:  [prev, active, next, newNext] 4枚 — newNext がフェードイン
+  // prev:  [newPrev, prev, active, next] 4枚 — newPrev がフェードイン
+  const buildTrack = () => {
+    const prev   = SKILL_CARDS[(activeIdx - 1 + N) % N];
+    const active = SKILL_CARDS[activeIdx];
+    const next   = SKILL_CARDS[(activeIdx + 1) % N];
+
+    if (phase === "next") {
+      const newNext = SKILL_CARDS[(activeIdx + 2) % N];
+      return [
+        { card: prev,   fadeIn: false },
+        { card: active, fadeIn: false },
+        { card: next,   fadeIn: false },
+        { card: newNext, fadeIn: true  },
+      ];
+    }
+    if (phase === "prev") {
+      const newPrev = SKILL_CARDS[(activeIdx - 2 + N) % N];
+      return [
+        { card: newPrev, fadeIn: true  },
+        { card: prev,    fadeIn: false },
+        { card: active,  fadeIn: false },
+        { card: next,    fadeIn: false },
+      ];
+    }
+    // idle
+    return [
+      { card: prev,   fadeIn: false },
+      { card: active, fadeIn: false },
+      { card: next,   fadeIn: false },
+    ];
+  };
+
+  const trackCards = buildTrack();
 
   const cardStyle: CSSProperties = {
-    width:     cardWidth > 0 ? `${cardWidth}px` : "calc(50% - 12px)",
+    width:     cardWidth > 0 ? `${cardWidth}px` : `${CARD_W}px`,
     flexShrink: 0,
     height:    `${CARD_H}px`,
   };
 
   return (
     <div className="w-full flex flex-col">
-      {/* カルーセルエリア — 全幅、navボタン用に px-[52px] を確保 */}
-      <div className="relative w-full px-[52px]">
-        {/* 前へボタン（ループのため常に表示） */}
+      {/* カルーセルエリア — ボタンをオーバーレイで配置 */}
+      <div ref={containerRef} className="relative overflow-hidden w-full" style={{ height: `${CARD_H}px` }}>
+        {/* 前へボタン — カード上に z-10 でオーバーレイ */}
         <button
           type="button"
           onClick={goPrev}
@@ -337,46 +387,27 @@ export default function SkillsCardGrid() {
           <Icon set="Arrows" name="left" className="h-6 w-6" />
         </button>
 
-        {/* カルーセルトラック（overflow-hidden でクリッピング） */}
+        {/* トラック */}
         <div
-          ref={containerRef}
-          className="overflow-hidden w-full"
-          style={{ height: `${CARD_H}px` }}
+          ref={trackRef}
+          className="flex gap-6"
+          style={{
+            transform:  containerWidth > 0 ? `translateX(${idleTranslateX}px)` : undefined,
+            opacity:    containerWidth > 0 ? 1 : 0,
+          }}
         >
-          <div ref={trackRef} className="flex gap-6">
-            {/* [prev時] 新しく入ってくる左カード */}
-            {phase === "prev" && newCard && (
-              <div
-                style={cardStyle}
-                className="animate-[card-fade-in_0.35s_ease-in-out]"
-              >
-                <SkillCard {...newCard} />
-              </div>
-            )}
-
-            {/* 現在の左カード */}
-            <div style={cardStyle}>
-              <SkillCard {...leftCard} />
+          {trackCards.map(({ card, fadeIn }, i) => (
+            <div
+              key={`${phase}-${i}-${card.title}`}
+              style={cardStyle}
+              className={fadeIn ? "animate-[card-fade-in_0.35s_ease-in-out]" : ""}
+            >
+              <SkillCard {...card} />
             </div>
-
-            {/* 現在の右カード */}
-            <div style={cardStyle}>
-              <SkillCard {...rightCard} />
-            </div>
-
-            {/* [next時] 新しく入ってくる右カード */}
-            {phase === "next" && newCard && (
-              <div
-                style={cardStyle}
-                className="animate-[card-fade-in_0.35s_ease-in-out]"
-              >
-                <SkillCard {...newCard} />
-              </div>
-            )}
-          </div>
+          ))}
         </div>
 
-        {/* 次へボタン（ループのため常に表示） */}
+        {/* 次へボタン — カード上に z-10 でオーバーレイ */}
         <button
           type="button"
           onClick={goNext}
@@ -386,7 +417,7 @@ export default function SkillsCardGrid() {
         </button>
       </div>
 
-      {/* ページドット（N=6 ポジション、ループ対応） */}
+      {/* ページドット */}
       <div className="flex gap-2 justify-center mt-6">
         {Array.from({ length: N }).map((_, i) => (
           <button
@@ -395,7 +426,7 @@ export default function SkillsCardGrid() {
             onClick={() => goTo(i)}
             className={[
               "size-[6px] rounded-full transition-colors",
-              i === leftIdx ? "bg-[#48f4be]" : "bg-[#424242]",
+              i === activeIdx ? "bg-[#48f4be]" : "bg-[#424242]",
             ].join(" ")}
           />
         ))}

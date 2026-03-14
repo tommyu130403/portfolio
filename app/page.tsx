@@ -77,7 +77,10 @@ export default function Home() {
     <PasswordGate>
       <div className="flex min-h-screen items-start bg-[#212121] text-white">
         {/* Side Menu */}
-        <div className="sticky top-0 shrink-0 z-[2] pr-6">
+        <div
+          className="sticky top-0 shrink-0 z-[2]"
+          style={{ width: sidebarCollapsed ? 96 : 256, transition: "width 300ms ease-in-out" }}
+        >
           <SideMenuBar
             activeSection={activeSection}
             collapsed={sidebarCollapsed}
@@ -87,7 +90,7 @@ export default function Home() {
 
       {/* Main content */}
       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">
-        <div className="flex w-full flex-col items-center gap-[120px] overflow-clip px-6 lg:px-8 xl:px-10 py-20">
+        <div className="flex w-full flex-col items-center gap-[120px] px-6 lg:px-8 xl:px-10 py-20">
           {/* Hero */}
           <section className="flex w-full max-w-[916px] items-center gap-6 lg:gap-12 xl:gap-20">
             <div className="flex flex-1 flex-col gap-6">
@@ -162,9 +165,12 @@ export default function Home() {
           </section>
 
           {/* Skills */}
-          <section id="skills" className="mb-10 w-full max-w-[916px]">
-            <Headline label="Skills" title="スキル" />
-            <div className="flex flex-col items-center gap-10">
+          <section id="skills" className="mb-10 w-full">
+            {/* 見出し+タブ: 他セクションと同じ最大幅・中央寄せ */}
+            <div className="mx-auto w-full max-w-[916px]">
+              <Headline label="Skills" title="スキル" />
+            </div>
+            <div className="flex flex-col items-center gap-10 w-full">
               <TabBar
                 tabs={SKILL_TABS}
                 defaultActiveId="experience-chart"
@@ -173,7 +179,9 @@ export default function Home() {
               {skillsTabId === "level-chart" ? (
                 <SkillsRadarChart />
               ) : (
-                <SkillsCardGrid />
+                <div className="self-start -ml-6 lg:-ml-8 xl:-ml-10 w-[calc(100%+48px)] lg:w-[calc(100%+64px)] xl:w-[calc(100%+80px)]">
+                  <SkillsCardGrid />
+                </div>
               )}
             </div>
           </section>

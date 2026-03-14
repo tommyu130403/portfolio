@@ -301,6 +301,7 @@ function TokensSection() {
             { label: "Tablet / Sidebar Width",    token: "container.tablet.width.side",     value: container.tablet.width.side },
             { label: "Mobile / Screen Width",     token: "container.mobile.width.screen",   value: container.mobile.width.screen },
             { label: "Mobile / Screen Height",    token: "container.mobile.height.screen",  value: container.mobile.height.screen },
+            { label: "Mobile / Sidebar Width",    token: "container.mobile.width.side",     value: container.mobile.width.side },
           ] as const
         ).map(({ label, token, value }) => (
           <div
@@ -438,9 +439,10 @@ function ComponentsSection() {
           <div className="w-full"><Headline label="Projects" title="プロジェクト" /></div>
         </ComponentPreview>
 
-        <ComponentPreview title="ButtonAction" description="CTA ボタン。Primary / Secondary の 2 バリアント">
+        <ComponentPreview title="ButtonAction" description="CTA ボタン。Primary / Secondary / Ghost の 3 バリアント">
           <ButtonAction label="Primary Button" type="primary" />
           <ButtonAction label="Secondary Button" type="secondary" />
+          <ButtonAction label="Ghost Button" type="ghost" />
           <ButtonAction label="With Icon" type="primary" iconRight={{ set: "Arrows", name: "right" }} />
         </ComponentPreview>
 

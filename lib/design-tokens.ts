@@ -142,7 +142,7 @@ export const container = {
       screen:  1024,
       mainMax:  704,  // 1024 - sidebar(256) - padding(64)
       mainMin:  480,
-      side:      88,  // collapsed sidebar
+      side:      96,
     },
     height: {
       screen: 1366,   // iPad Pro 12.9" landscape
@@ -151,6 +151,7 @@ export const container = {
   mobile: {
     width: {
       screen: 390,
+      side:    96,
     },
     height: {
       screen: 844,

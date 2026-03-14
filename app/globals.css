@@ -12,9 +12,12 @@ html {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans:  var(--font-afacad);       /* 英字:         Afacad     (typo.guide.en) */
-  --font-mplus: var(--font-mplus-1p);     /* 日本語見出し: M PLUS 1p  (typo.guide.jp) */
-  --font-noto:  var(--font-noto-sans-jp); /* 日本語本文:   Noto Sans JP(typo.body.jp) */
+  /* Special フォント: 指定箇所のみ使用 (typo.guide) */
+  --font-guide: var(--font-afacad), var(--font-mplus-1p); /* EN: Afacad / JP: M PLUS 1p */
+  --font-sans:  var(--font-afacad);       /* Special 英字のみ: Afacad     (typo.guide.en) */
+  --font-mplus: var(--font-mplus-1p);     /* Special 日本語のみ: M PLUS 1p (typo.guide.jp) */
+  /* Body フォント: 全要素のデフォルト (typo.body) */
+  --font-noto:  var(--font-noto-sans-jp); /* Body 日本語: Noto Sans JP (typo.body.jp) */
   --font-mono:  var(--font-geist-mono);
 }
 
@@ -88,6 +91,8 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  /* 英字: Afacad → 日本語: Noto Sans JP → system */
-  font-family: var(--font-afacad), var(--font-noto-sans-jp), sans-serif;
+  /* Body: 英字 Avenir → 日本語 Noto Sans JP → system (typo.body) */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  /* Body JP 文字間: 0.03em (3%) */
+  letter-spacing: 0.03em;
 }

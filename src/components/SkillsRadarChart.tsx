@@ -45,7 +45,7 @@ const mapRowToRadarData = (row: UserSkillRow): RadarChartData[] =>
 
 const LEGENDS: RadarLegendItem[] = [
   { label: "現在のスキルレベル", color: "#48f4be" },
-  { label: "目指すスキルレベル", color: "#616161" },
+  { label: "目指すスキルレベル", color: "#9e9e9e" },
 ];
 
 export default function SkillsRadarChart() {
@@ -118,7 +118,7 @@ export default function SkillsRadarChart() {
           borderColor="#48F4BE"
           highlightColor="#48F4BE"
           labelColor="#9E9E9E"
-          targetBorderColor="#616161"
+          targetBorderColor="#9e9e9e"
         />
       </div>
       <div className="flex items-center gap-6">

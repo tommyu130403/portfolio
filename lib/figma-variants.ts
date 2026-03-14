@@ -18,7 +18,7 @@ export const ITEM_STATUS_CLASSES: Record<ItemStatus, string> = {
 
 /** _Item Width に応じたスタイル */
 export const ITEM_WIDTH_CLASSES: Record<ItemWidth, string> = {
-  default: "w-[208px]",
+  default: "w-full",
   short: "w-10",
 };
 

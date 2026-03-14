@@ -176,7 +176,7 @@ export default function Home() {
               {skillsTabId === "level-chart" ? (
                 <SkillsRadarChart />
               ) : (
-                <div className="-mx-6 w-[calc(100%+3rem)] lg:-mx-8 lg:w-[calc(100%+4rem)] xl:-mx-10 xl:w-[calc(100%+5rem)]">
+                <div className="self-start -mx-6 w-[calc(100%+3rem)] lg:-mx-8 lg:w-[calc(100%+4rem)] xl:-mx-10 xl:w-[calc(100%+5rem)]">
                   <SkillsCardGrid />
                 </div>
               )}

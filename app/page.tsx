@@ -77,7 +77,10 @@ export default function Home() {
     <PasswordGate>
       <div className="flex min-h-screen items-start bg-[#212121] text-white">
         {/* Side Menu */}
-        <div className="sticky top-0 shrink-0 z-[2] w-[96px] pr-0">
+        <div
+          className="sticky top-0 shrink-0 z-[2]"
+          style={{ width: sidebarCollapsed ? 96 : 256, transition: "width 300ms ease-in-out" }}
+        >
           <SideMenuBar
             activeSection={activeSection}
             collapsed={sidebarCollapsed}

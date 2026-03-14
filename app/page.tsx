@@ -87,7 +87,7 @@ export default function Home() {
 
       {/* Main content */}
       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">
-        <div className="flex w-full flex-col items-center gap-[120px] overflow-clip px-6 lg:px-8 xl:px-10 py-20">
+        <div className="flex w-full flex-col items-center gap-[120px] px-6 lg:px-8 xl:px-10 py-20">
           {/* Hero */}
           <section className="flex w-full max-w-[916px] items-center gap-6 lg:gap-12 xl:gap-20">
             <div className="flex flex-1 flex-col gap-6">
@@ -176,7 +176,9 @@ export default function Home() {
               {skillsTabId === "level-chart" ? (
                 <SkillsRadarChart />
               ) : (
-                <SkillsCardGrid />
+                <div className="-mx-6 w-[calc(100%+3rem)] lg:-mx-8 lg:w-[calc(100%+4rem)] xl:-mx-10 xl:w-[calc(100%+5rem)]">
+                  <SkillsCardGrid />
+                </div>
               )}
             </div>
           </section>

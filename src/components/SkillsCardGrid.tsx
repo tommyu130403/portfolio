@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, type CSSProperties } from "react";
 import Icon from "@/components/Icon";
 import type { IconProps } from "@/components/Icon";
 
@@ -106,8 +106,10 @@ const SKILL_CARDS: SkillCardConfig[] = [
   },
 ];
 
-const CARDS_PER_VIEW = 2;
-const MAX_INDEX = SKILL_CARDS.length - CARDS_PER_VIEW; // 0 〜 4 の5ポジション
+const N        = SKILL_CARDS.length; // 6
+const GAP      = 24;                 // px (gap-6)
+const DURATION = 350;                // ms
+const CARD_H   = 520;                // px — 固定カード高さ
 
 // ──────────────────────────────────────────────
 // _SkillExperienceBar
@@ -234,88 +236,166 @@ const SkillCard = ({ icon, title, titleJP, skills, tools }: SkillCardConfig) => 
 );
 
 // ──────────────────────────────────────────────
-// SkillsCardGrid — horizontal carousel
+// SkillsCardGrid — スライド＋フェードイン カルーセル（ループ対応）
 // ──────────────────────────────────────────────
 export default function SkillsCardGrid() {
-  const [index, setIndex] = useState(0);
-  // どちらのカードが新しく入ってくるかをトラッキング（フェードインの対象）
-  const [enteringSide, setEnteringSide] = useState<"left" | "right" | null>(null);
+  // leftIdx: 左カードの SKILL_CARDS インデックス（0 〜 N-1、ループ）
+  const [leftIdx, setLeftIdx]   = useState(0);
+  const [phase, setPhase]       = useState<"idle" | "next" | "prev">("idle");
+  const [newIdx, setNewIdx]     = useState<number | null>(null);
 
-  const goTo = (next: number) => {
-    if (next < 0 || next > MAX_INDEX || next === index) return;
-    setEnteringSide(next > index ? "right" : "left");
-    setIndex(next);
+  const containerRef  = useRef<HTMLDivElement>(null);
+  const trackRef      = useRef<HTMLDivElement>(null);
+  const animatingRef  = useRef(false);
+  const pendingIdxRef = useRef(0); // アニメーション後に設定する leftIdx
+
+  // カード幅をコンテナ幅から算出（ResizeObserver で追跡）
+  const [cardWidth, setCardWidth] = useState(0);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setCardWidth((el.offsetWidth - GAP) / 2);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // phase が変わったらトラックのスライドアニメーションを開始
+  useEffect(() => {
+    if (phase === "idle") return;
+    const track = trackRef.current;
+    if (!track || cardWidth === 0) return;
+
+    const amt = cardWidth + GAP;
+
+    if (phase === "next") {
+      // Track: [curLeft, curRight, newRight] → translateX: 0 → -amt
+      track.style.transition = "none";
+      track.style.transform  = "translateX(0)";
+      void track.offsetWidth; // force reflow
+      track.style.transition = `transform ${DURATION}ms ease-in-out`;
+      track.style.transform  = `translateX(-${amt}px)`;
+    } else {
+      // Track: [newLeft, curLeft, curRight] → translateX: -amt → 0
+      track.style.transition = "none";
+      track.style.transform  = `translateX(-${amt}px)`;
+      void track.offsetWidth;
+      track.style.transition = `transform ${DURATION}ms ease-in-out`;
+      track.style.transform  = "translateX(0)";
+    }
+
+    const timer = setTimeout(() => {
+      setLeftIdx(pendingIdxRef.current);
+      setNewIdx(null);
+      setPhase("idle");
+      if (track) {
+        track.style.transition = "none";
+        track.style.transform  = "translateX(0)";
+      }
+      animatingRef.current = false;
+    }, DURATION);
+
+    return () => clearTimeout(timer);
+  }, [phase, cardWidth]);
+
+  const navigate = (newLeftIdx: number, dir: "next" | "prev") => {
+    if (animatingRef.current || cardWidth === 0) return;
+    animatingRef.current    = true;
+    pendingIdxRef.current   = newLeftIdx;
+    setNewIdx(dir === "next" ? (newLeftIdx + 1) % N : newLeftIdx);
+    setPhase(dir);
   };
 
-  const leftCard  = SKILL_CARDS[index];
-  const rightCard = SKILL_CARDS[index + 1];
+  const goNext = () => navigate((leftIdx + 1) % N, "next");
+  const goPrev = () => navigate((leftIdx - 1 + N) % N, "prev");
+  const goTo   = (i: number) => {
+    if (i === leftIdx) return;
+    navigate(i, i > leftIdx ? "next" : "prev");
+  };
+
+  const leftCard = SKILL_CARDS[leftIdx];
+  const rightCard = SKILL_CARDS[(leftIdx + 1) % N];
+  const newCard   = newIdx !== null ? SKILL_CARDS[newIdx] : null;
+
+  const cardStyle: CSSProperties = {
+    width:     cardWidth > 0 ? `${cardWidth}px` : "calc(50% - 12px)",
+    flexShrink: 0,
+    height:    `${CARD_H}px`,
+  };
 
   return (
     <div className="w-full flex flex-col">
-      {/* カルーセルエリア（ボタン込み）— px-[52px] でボタン分のスペースを確保 */}
+      {/* カルーセルエリア — px-[52px] でボタン用スペースを確保 */}
       <div className="relative w-full px-[52px]">
-        {/* 前へボタン */}
-        {index > 0 && (
-          <button
-            type="button"
-            onClick={() => goTo(index - 1)}
-            className="absolute left-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
-          >
-            <Icon set="Arrows" name="left" className="h-6 w-6" />
-          </button>
-        )}
+        {/* 前へボタン（ループのため常に表示） */}
+        <button
+          type="button"
+          onClick={goPrev}
+          className="absolute left-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
+        >
+          <Icon set="Arrows" name="left" className="h-6 w-6" />
+        </button>
 
-        {/* 2カード表示エリア（スライドなし・フェードイン） */}
-        <div className="flex gap-6 w-full">
-          {/* 左カード — index が下がったとき（← 移動）にフェードイン */}
-          <div
-            key={`left-${index}`}
-            className={[
-              "flex-1 min-w-0",
-              enteringSide === "left"
-                ? "animate-[card-fade-in_0.3s_ease-in-out]"
-                : "",
-            ].join(" ")}
-          >
-            <SkillCard {...leftCard} />
-          </div>
+        {/* カルーセルトラック（overflow-hidden でクリッピング） */}
+        <div
+          ref={containerRef}
+          className="overflow-hidden w-full"
+          style={{ height: `${CARD_H}px` }}
+        >
+          <div ref={trackRef} className="flex gap-6">
+            {/* [prev時] 新しく入ってくる左カード */}
+            {phase === "prev" && newCard && (
+              <div
+                style={cardStyle}
+                className="animate-[card-fade-in_0.35s_ease-in-out]"
+              >
+                <SkillCard {...newCard} />
+              </div>
+            )}
 
-          {/* 右カード — index が上がったとき（→ 移動）にフェードイン */}
-          <div
-            key={`right-${index + 1}`}
-            className={[
-              "flex-1 min-w-0",
-              enteringSide === "right"
-                ? "animate-[card-fade-in_0.3s_ease-in-out]"
-                : "",
-            ].join(" ")}
-          >
-            <SkillCard {...rightCard} />
+            {/* 現在の左カード */}
+            <div style={cardStyle}>
+              <SkillCard {...leftCard} />
+            </div>
+
+            {/* 現在の右カード */}
+            <div style={cardStyle}>
+              <SkillCard {...rightCard} />
+            </div>
+
+            {/* [next時] 新しく入ってくる右カード */}
+            {phase === "next" && newCard && (
+              <div
+                style={cardStyle}
+                className="animate-[card-fade-in_0.35s_ease-in-out]"
+              >
+                <SkillCard {...newCard} />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 次へボタン */}
-        {index < MAX_INDEX && (
-          <button
-            type="button"
-            onClick={() => goTo(index + 1)}
-            className="absolute right-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
-          >
-            <Icon set="Arrows" name="right" className="h-6 w-6" />
-          </button>
-        )}
+        {/* 次へボタン（ループのため常に表示） */}
+        <button
+          type="button"
+          onClick={goNext}
+          className="absolute right-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
+        >
+          <Icon set="Arrows" name="right" className="h-6 w-6" />
+        </button>
       </div>
 
-      {/* ページドット（5ポジション） */}
+      {/* ページドット（N=6 ポジション、ループ対応） */}
       <div className="flex gap-2 justify-center mt-6">
-        {Array.from({ length: MAX_INDEX + 1 }).map((_, i) => (
+        {Array.from({ length: N }).map((_, i) => (
           <button
             key={i}
             type="button"
             onClick={() => goTo(i)}
             className={[
               "size-[6px] rounded-full transition-colors",
-              i === index ? "bg-[#48f4be]" : "bg-[#424242]",
+              i === leftIdx ? "bg-[#48f4be]" : "bg-[#424242]",
             ].join(" ")}
           />
         ))}

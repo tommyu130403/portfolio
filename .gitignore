@@ -25,6 +25,9 @@
 # misc
 .DS_Store
 .claude/
+# .claudecode/config.md はブランチ・PR 等の開発ルールのため追跡する（チーム共有）
+# Cursor: .cursor/rules/ は共有のため追跡。.cursor/projects/ のみ無視
+.cursor/projects/
 *.pem
 
 # debug

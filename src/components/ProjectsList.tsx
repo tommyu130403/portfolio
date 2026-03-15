@@ -141,7 +141,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
 
   if (loading) {
     return (
-      <div className="flex flex-wrap gap-8 text-[17px] text-white/50">
+      <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
         プロジェクトを読み込み中…
       </div>
     );
@@ -157,7 +157,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
 
   if (projects.length === 0) {
     return (
-      <div className="flex flex-wrap gap-8 text-[17px] text-white/50">
+      <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
         プロジェクトがありません。
       </div>
     );
@@ -168,7 +168,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
 
   return (
     <>
-      <div className="flex flex-wrap gap-8">
+      <div className="flex flex-wrap gap-[32px]">
         {projects.map((project, i) => (
           <ProjectCard
             key={project.id}

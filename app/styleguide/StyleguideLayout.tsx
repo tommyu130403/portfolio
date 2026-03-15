@@ -429,10 +429,16 @@ function ComponentsSection() {
     <section id="components" className="scroll-mt-8">
       <SectionTitle label="Components" title="コンポーネント" />
       <div className="flex flex-col gap-12">
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ">
-          <Tag label="UI Design" />
-          <Tag label="UX Research" />
-          <Tag label="Project Management" />
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small（Figma Tag/Small: プロジェクトカード用）">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Tag label="UI Design" />
+            <Tag label="UX Research" />
+            <Tag label="Project Management" />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            <Tag label="UI Design" variant="small" />
+            <Tag label="UX Research" variant="small" />
+          </div>
         </ComponentPreview>
 
         <ComponentPreview title="Headline" description="セクション見出し。英語ラベル + 日本語タイトル + アクセントライン">

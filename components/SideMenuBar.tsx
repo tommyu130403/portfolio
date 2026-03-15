@@ -38,7 +38,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
 
   const content = (
     <>
-      <Icon set={icon.set} name={icon.name} className="h-5 w-5 shrink-0" style={{ minWidth: 20, minHeight: 20 }} aria-hidden />
+      <Icon set={icon.set} name={icon.name} className="h-[18px] w-[18px] shrink-0" aria-hidden />
       <span
         className={[
           "flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap overflow-hidden transition-all duration-300",
@@ -184,7 +184,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             collapsed={collapsed}
           />
           <SideMenuItem
-            icon={{ set: "Charts", name: "radar-chart" }}
+            icon={{ set: "Charts", name: "viencharts" }}
             label="Skills"
             href="#skills"
             active={activeSection === "skills"}

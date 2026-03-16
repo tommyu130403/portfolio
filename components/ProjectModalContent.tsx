@@ -28,9 +28,11 @@ const InfoChip: FC<{
 
 type ProjectModalContentProps = {
   project: Project;
+  skills?: string[];
+  tools?: string[];
 };
 
-const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
+const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [], tools = [] }) => {
   const sections = (project.sections ?? []) as Section[];
 
   return (
@@ -90,7 +92,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
           </InfoChip>
         )}
 
-        {project.skills && project.skills.length > 0 && (
+        {skills.length > 0 && (
           <InfoChip
             icon={
               <Icon
@@ -101,13 +103,13 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
             }
             label="スキル"
           >
-            {project.skills.map((skill) => (
+            {skills.map((skill) => (
               <Tag key={skill} label={skill} />
             ))}
           </InfoChip>
         )}
 
-        {project.tools && project.tools.length > 0 && (
+        {tools.length > 0 && (
           <InfoChip
             icon={
               <Icon set="Build" name="tool" className="h-4 w-6 shrink-0" />
@@ -115,7 +117,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
             label="ツール"
           >
             <div className="flex gap-2 items-center flex-wrap">
-              {project.tools.map((tool) => (
+              {tools.map((tool) => (
                 <span
                   key={tool}
                   className="text-[12px] tracking-[0.6px] text-white whitespace-nowrap"

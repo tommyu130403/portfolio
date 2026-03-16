@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
+import ServiceLogo from "@/components/ServiceLogo";
 import Tag from "@/components/Tag";
 import Headline from "@/components/Headline";
 import ButtonAction from "@/components/ButtonAction";
@@ -14,6 +15,7 @@ import { color, radius, size, container, typo, breakpoint } from "@/lib/design-t
 
 // ─── 型 ───────────────────────────────────────────────
 export type IconSetData = { name: string; icons: string[] };
+export type LogoData = { name: string; label: string };
 
 // ─── ナビゲーション ────────────────────────────────────
 const NAV_SECTIONS = [
@@ -21,6 +23,7 @@ const NAV_SECTIONS = [
   { id: "typography", label: "Typography",  labelJa: "タイポグラフィ" },
   { id: "tokens",     label: "Tokens",      labelJa: "その他のトークン" },
   { id: "icons",      label: "Icons",       labelJa: "アイコン" },
+  { id: "logos",      label: "Logos",       labelJa: "サービスロゴ" },
   { id: "components", label: "Components",  labelJa: "コンポーネント" },
 ] as const;
 
@@ -404,6 +407,47 @@ function IconsSection({ iconSets }: { iconSets: IconSetData[] }) {
   );
 }
 
+// ─── セクション: Service Logos ─────────────────────────
+
+function ServiceLogosSection({ logos }: { logos: LogoData[] }) {
+  const [copiedName, setCopiedName] = useState<string | null>(null);
+
+  const copy = (name: string) => {
+    navigator.clipboard.writeText(name).then(() => {
+      setCopiedName(name);
+      setTimeout(() => setCopiedName(null), 1200);
+    });
+  };
+
+  return (
+    <section id="logos" className="scroll-mt-8">
+      <SectionTitle label="Logos" title="サービスロゴ" />
+      <p className="mb-6 text-[13px] text-[#616161]">
+        <code className="rounded bg-[#1a1a1a] px-1.5 py-0.5 font-mono text-[10px] text-[#9e9e9e]">
+          {"<ServiceLogo name=\"figma\" className=\"h-8 w-8\" />"}
+        </code>
+        　　クリックで name をコピー
+      </p>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+        {logos.map(({ name, label }) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => copy(name)}
+            title={name}
+            className="group flex flex-col items-center gap-3 rounded-[8px] border border-transparent p-4 text-center transition-colors hover:border-[#424242] hover:bg-[#212121]"
+          >
+            <ServiceLogo name={name} className="h-8 w-8 shrink-0" />
+            <p className="w-full truncate text-[11px] text-[#9e9e9e] group-hover:text-white">
+              {copiedName === name ? "✓" : label}
+            </p>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ─── セクション: Components ────────────────────────────
 
 function ComponentPreview({ title, description, children }: {
@@ -508,7 +552,7 @@ function ComponentsSection() {
 
 // ─── メインレイアウト ───────────────────────────────────
 
-export function StyleguideLayout({ iconSets }: { iconSets: IconSetData[] }) {
+export function StyleguideLayout({ iconSets, logos }: { iconSets: IconSetData[]; logos: LogoData[] }) {
   const [activeId, setActiveId] = useState<string>("colors");
   const mainRef = useRef<HTMLDivElement>(null);
 
@@ -585,6 +629,7 @@ export function StyleguideLayout({ iconSets }: { iconSets: IconSetData[] }) {
             <TypographySection />
             <TokensSection />
             <IconsSection iconSets={iconSets} />
+            <ServiceLogosSection logos={logos} />
             <ComponentsSection />
           </div>
 

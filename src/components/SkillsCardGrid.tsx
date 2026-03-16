@@ -47,7 +47,21 @@ async function fetchSkillCards(): Promise<SkillCardConfig[]> {
 
   if (!cards) return [];
 
-  return (cards as SkillCardRow[]).map((card) => ({
+  // 表示用カードからは「辞書用カード（Skill Vocab / Tool Vocab）」を除外する。
+  // これらは admin ページ上でのボキャブラリ追加のためのコンテナであり、
+  // ポートフォリオ公開ページの Skills セクションには不要なため。
+  const visibleCards = (cards as SkillCardRow[]).filter((card) => {
+    const t  = card.title?.trim() ?? "";
+    const tj = card.title_jp?.trim() ?? "";
+    const isVocab =
+      t === "Skill Vocab" ||
+      t === "Tool Vocab" ||
+      tj === "スキル辞書" ||
+      tj === "ツール辞書";
+    return !isVocab;
+  });
+
+  return visibleCards.map((card) => ({
     id:      card.id,
     icon:    { set: card.icon_set as NonNullable<IconProps["set"]>, name: card.icon_name },
     title:   card.title,

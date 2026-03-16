@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
-import { saveProject, deleteProject } from "@/app/admin/actions";
+import {
+  saveProject,
+  deleteProject,
+  addSkillLabelFromProjects,
+  addToolNameFromProjects,
+} from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
 import type { Json } from "@/src/types/supabase";
 
@@ -84,14 +89,21 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 function Input({
-  value, onChange, placeholder, className = "",
-}: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
+  value, onChange, placeholder, className = "", list,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+  list?: string;
+}) {
   return (
     <input
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
+      list={list}
       className={`w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white placeholder-[#616161] outline-none transition-colors focus:border-[#48f4be] ${className}`}
     />
   );
@@ -533,18 +545,59 @@ function SectionsEditor({
     sectionsToMarkdown((value ?? []) as SectionItem[])
   );
   const prevValue = useRef(value);
+   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // 外部からの初期ロード時に同期（展開直後の初期値セット）
   useEffect(() => {
-    if (prevValue.current !== value) {
-      prevValue.current = value;
-      setMarkdown(sectionsToMarkdown((value ?? []) as SectionItem[]));
-    }
-  }, [value]);
+    if (prevValue.current === value) return;
+    prevValue.current = value;
+
+    // すでにユーザーが入力している場合は同期しない（入力内容を消さないため）
+    if (markdown.trim().length > 0) return;
+
+    setMarkdown(sectionsToMarkdown((value ?? []) as SectionItem[]));
+  }, [value]); // markdown は依存に含めない（初期同期専用）
 
   const handleChange = (md: string) => {
     setMarkdown(md);
     onChange(markdownToSections(md) as unknown as Json);
+  };
+
+  const handleInsertImage = () => {
+    const url = window.prompt("挿入する画像の URL を入力してください");
+    if (!url) return;
+    const alt =
+      window.prompt("代替テキスト（任意）を入力してください") ?? "";
+
+    const syntax = `![${alt.trim()}](${url.trim()})`;
+    const el = textareaRef.current;
+
+    // テキストエリアがまだマウントされていない場合は末尾に追加
+    if (!el) {
+      handleChange(markdown + `\n\n${syntax}\n`);
+      return;
+    }
+
+    const { selectionStart, selectionEnd } = el;
+    const before = markdown.slice(0, selectionStart);
+    const after = markdown.slice(selectionEnd);
+
+    const needsLeadingNewline =
+      before.length > 0 && !before.endsWith("\n\n");
+    const insert =
+      (needsLeadingNewline ? "\n\n" : "") + syntax + "\n";
+
+    const next = before + insert + after;
+    handleChange(next);
+
+    // 挿入位置の直後にキャレットを移動
+    const caretPos = before.length + insert.length;
+    requestAnimationFrame(() => {
+      const el2 = textareaRef.current;
+      if (!el2) return;
+      el2.focus();
+      el2.selectionStart = el2.selectionEnd = caretPos;
+    });
   };
 
   const preview = markdownToSections(markdown);
@@ -575,13 +628,25 @@ function SectionsEditor({
 
       {/* 編集エリア */}
       {tab === "edit" && (
-        <textarea
-          value={markdown}
-          onChange={(e) => handleChange(e.target.value)}
-          rows={12}
-          placeholder={`## プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 課題・背景\n\n2つ目のセクションの本文。`}
-          className="w-full resize-y bg-[#1a1a1a] px-4 py-3 font-mono text-[13px] leading-relaxed text-white placeholder-[#3a3a3a] outline-none"
-        />
+        <>
+          <div className="flex items-center justify-end px-4 pt-3 pb-1">
+            <button
+              type="button"
+              onClick={handleInsertImage}
+              className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+            >
+              画像を挿入（Markdown）
+            </button>
+          </div>
+          <textarea
+            ref={textareaRef}
+            value={markdown}
+            onChange={(e) => handleChange(e.target.value)}
+            rows={12}
+            placeholder={`## プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 課題・背景\n\n2つ目のセクションの本文。`}
+            className="w-full resize-y bg-[#1a1a1a] px-4 py-3 font-mono text-[13px] leading-relaxed text-white placeholder-[#3a3a3a] outline-none"
+          />
+        </>
       )}
 
       {/* プレビューエリア（ProjectModalContent のスタイルに合わせる） */}
@@ -620,6 +685,12 @@ function ProjectsSection() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [skillLabelOptions, setSkillLabelOptions] = useState<string[]>([]);
+  const [toolNameOptions, setToolNameOptions] = useState<string[]>([]);
+  const [newSkillLabel, setNewSkillLabel] = useState("");
+  const [newToolName, setNewToolName] = useState("");
+  const [openSkillSelectorProjectId, setOpenSkillSelectorProjectId] = useState<string | null>(null);
+  const [openToolSelectorProjectId, setOpenToolSelectorProjectId] = useState<string | null>(null);
   // 文章チェック（プロジェクトごと）
   const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
   const [proofResultsMap, setProofResultsMap] = useState<
@@ -646,9 +717,83 @@ function ProjectsSection() {
   };
 
   const fetchProjects = useCallback(async () => {
-    const { data } = await supabase
-      .from("projects").select("*").order("sort_order", { ascending: true });
-    if (data) setProjects(data);
+    setFetching(true);
+    const [{ data: projectRows }, { data: barRows }, { data: toolRows }] =
+      await Promise.all([
+        supabase
+          .from("projects")
+          .select("*")
+          .order("sort_order", { ascending: true }),
+        supabase.from("skill_bars").select("label"),
+        supabase.from("skill_tools").select("name"),
+      ]);
+
+    if (projectRows) setProjects(projectRows);
+
+    // スキル: skill_bars.label + projects.skills（小文字大文字を区別しない一意化）
+    {
+      const seen = new Set<string>();
+      const labels: string[] = [];
+
+      if (barRows) {
+        for (const row of barRows as { label: string }[]) {
+          const n = row.label?.trim();
+          if (!n) continue;
+          const key = n.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          labels.push(n);
+        }
+      }
+
+      if (projectRows) {
+        for (const p of projectRows as Project[]) {
+          for (const s of p.skills ?? []) {
+            const n = s.trim();
+            if (!n) continue;
+            const key = n.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            labels.push(n);
+          }
+        }
+      }
+
+      setSkillLabelOptions(labels);
+    }
+
+    // ツール: skill_tools.name + projects.tools（小文字大文字を区別しない一意化）
+    {
+      const seen = new Set<string>();
+      const names: string[] = [];
+
+      if (toolRows) {
+        for (const row of toolRows as { name: string }[]) {
+          const n = row.name?.trim();
+          if (!n) continue;
+          const key = n.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          names.push(n);
+        }
+      }
+
+      if (projectRows) {
+        for (const p of projectRows as Project[]) {
+          for (const t of p.tools ?? []) {
+            const n = t.trim();
+            if (!n) continue;
+            const key = n.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            names.push(n);
+          }
+        }
+      }
+
+      setToolNameOptions(names);
+    }
+
     setFetching(false);
   }, []);
 
@@ -787,27 +932,255 @@ function ProjectsSection() {
                         />
                       )}
                     </div>
-                    <div>
-                      <FieldLabel>スキル（カンマ区切り）</FieldLabel>
-                      <Input
-                        value={(project.skills ?? []).join(", ")}
-                        onChange={(v) =>
-                          updateProject(project.id, "skills",
-                            v ? v.split(",").map((s) => s.trim()).filter(Boolean) : null)
-                        }
-                        placeholder="UI Design, UX Research"
-                      />
+                    <div className="col-span-2">
+                      <FieldLabel>スキル</FieldLabel>
+                      <div className="flex flex-col gap-2">
+                        {/* 選択済みスキルの表示（常時） */}
+                        <div className="flex flex-wrap gap-2">
+                          {(project.skills ?? []).map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => {
+                                // ピルをクリックしたら選択解除
+                                const current = new Set(project.skills ?? []);
+                                for (const v of Array.from(current)) {
+                                  if (v.toLowerCase() === s.toLowerCase()) {
+                                    current.delete(v);
+                                  }
+                                }
+                                updateProject(
+                                  project.id,
+                                  "skills",
+                                  Array.from(current)
+                                );
+                              }}
+                              className="rounded-[999px] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white hover:bg-[#2a2a2a]"
+                              title="クリックで削除"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                          {(project.skills ?? []).length === 0 && (
+                            <span className="text-[12px] text-[#616161]">
+                              未選択
+                            </span>
+                          )}
+                        </div>
+                        {/* 選択中のみ開くセレクタ */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenSkillSelectorProjectId(
+                              openSkillSelectorProjectId === project.id ? null : project.id
+                            )
+                          }
+                          className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+                        >
+                          スキルを選択
+                        </button>
+                        {openSkillSelectorProjectId === project.id && (
+                          <div className="mt-2 flex flex-col gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              {skillLabelOptions.map((label) => {
+                                const selected = (project.skills ?? []).some(
+                                  (s) => s.toLowerCase() === label.toLowerCase()
+                                );
+                                return (
+                                  <label
+                                    key={label}
+                                    className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="h-3 w-3 accent-[#48f4be]"
+                                      checked={selected}
+                                      onChange={(e) => {
+                                        const current = new Set(project.skills ?? []);
+                                        if (e.target.checked) {
+                                          current.add(label);
+                                        } else {
+                                          for (const s of Array.from(current)) {
+                                            if (s.toLowerCase() === label.toLowerCase()) {
+                                              current.delete(s);
+                                            }
+                                          }
+                                        }
+                                        updateProject(
+                                          project.id,
+                                          "skills",
+                                          Array.from(current)
+                                        );
+                                      }}
+                                    />
+                                    <span>{label}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={newSkillLabel}
+                                onChange={setNewSkillLabel}
+                                placeholder="新しいスキル名を追加"
+                                className="text-[12px] py-1"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const name = newSkillLabel.trim();
+                                  if (!name) return;
+                                  setSkillLabelOptions((prev) => {
+                                    const lower = name.toLowerCase();
+                                    if (prev.some((p) => p.toLowerCase() === lower)) {
+                                      return prev;
+                                    }
+                                    return [...prev, name];
+                                  });
+                                  const current = new Set(project.skills ?? []);
+                                  current.add(name);
+                                  updateProject(
+                                    project.id,
+                                    "skills",
+                                    Array.from(current)
+                                  );
+                                  // ボキャブラリとして skill_bars にも登録（設定されていれば）
+                                  void addSkillLabelFromProjects(name);
+                                  setNewSkillLabel("");
+                                }}
+                                className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+                              >
+                                追加
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <FieldLabel>ツール（カンマ区切り）</FieldLabel>
-                      <Input
-                        value={(project.tools ?? []).join(", ")}
-                        onChange={(v) =>
-                          updateProject(project.id, "tools",
-                            v ? v.split(",").map((s) => s.trim()).filter(Boolean) : null)
-                        }
-                        placeholder="Figma, Notion"
-                      />
+                    <div className="col-span-2">
+                      <FieldLabel>ツール</FieldLabel>
+                      <div className="flex flex-col gap-2">
+                        {/* 選択済みツールの表示（常時） */}
+                        <div className="flex flex-wrap gap-2">
+                          {(project.tools ?? []).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => {
+                                // ピルをクリックしたら選択解除
+                                const current = new Set(project.tools ?? []);
+                                for (const v of Array.from(current)) {
+                                  if (v.toLowerCase() === t.toLowerCase()) {
+                                    current.delete(v);
+                                  }
+                                }
+                                updateProject(
+                                  project.id,
+                                  "tools",
+                                  Array.from(current)
+                                );
+                              }}
+                              className="rounded-[999px] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white hover:bg-[#2a2a2a]"
+                              title="クリックで削除"
+                            >
+                              {t}
+                            </button>
+                          ))}
+                          {(project.tools ?? []).length === 0 && (
+                            <span className="text-[12px] text-[#616161]">
+                              未選択
+                            </span>
+                          )}
+                        </div>
+                        {/* 選択中のみ開くセレクタ */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenToolSelectorProjectId(
+                              openToolSelectorProjectId === project.id ? null : project.id
+                            )
+                          }
+                          className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+                        >
+                          ツールを選択
+                        </button>
+                        {openToolSelectorProjectId === project.id && (
+                          <div className="mt-2 flex flex-col gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              {toolNameOptions.map((name) => {
+                                const selected = (project.tools ?? []).some(
+                                  (t) => t.toLowerCase() === name.toLowerCase()
+                                );
+                                return (
+                                  <label
+                                    key={name}
+                                    className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="h-3 w-3 accent-[#48f4be]"
+                                      checked={selected}
+                                      onChange={(e) => {
+                                        const current = new Set(project.tools ?? []);
+                                        if (e.target.checked) {
+                                          current.add(name);
+                                        } else {
+                                          for (const t of Array.from(current)) {
+                                            if (t.toLowerCase() === name.toLowerCase()) {
+                                              current.delete(t);
+                                            }
+                                          }
+                                        }
+                                        updateProject(
+                                          project.id,
+                                          "tools",
+                                          Array.from(current)
+                                        );
+                                      }}
+                                    />
+                                    <span>{name}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={newToolName}
+                                onChange={setNewToolName}
+                                placeholder="新しいツール名を追加"
+                                className="text-[12px] py-1"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const name = newToolName.trim();
+                                  if (!name) return;
+                                  setToolNameOptions((prev) => {
+                                    const lower = name.toLowerCase();
+                                    if (prev.some((p) => p.toLowerCase() === lower)) {
+                                      return prev;
+                                    }
+                                    return [...prev, name];
+                                  });
+                                  const current = new Set(project.tools ?? []);
+                                  current.add(name);
+                                  updateProject(
+                                    project.id,
+                                    "tools",
+                                    Array.from(current)
+                                  );
+                                  // ボキャブラリとして skill_tools にも登録（設定されていれば）
+                                  void addToolNameFromProjects(name);
+                                  setNewToolName("");
+                                }}
+                                className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+                              >
+                                追加
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="col-span-2">
                       <FieldLabel>セクション</FieldLabel>

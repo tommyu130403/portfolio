@@ -51,3 +51,63 @@ export async function deleteProject(id: string): Promise<{ error: string | null 
     return { error: msg };
   }
 }
+
+/**
+ * Skills/Tools 用のボキャブラリ行を追加（Projects からの新規追加分）
+ *
+ * 前提:
+ * - SKILL_VOCAB_CARD_ID: skill_bars.card_id に使うスキルカード ID
+ * - TOOL_VOCAB_CARD_ID:  skill_tools.card_id に使うスキルカード ID
+ *
+ * これらは Supabase 側で任意の「辞書用」カードを 1 つ作成し、その id を .env.local に設定してください。
+ */
+
+export async function addSkillLabelFromProjects(label: string): Promise<{ error: string | null }> {
+  const cardId = process.env.SKILL_VOCAB_CARD_ID;
+  if (!cardId) {
+    // 設定されていない場合は DB には書かず、そのまま UI 側だけで使う
+    return { error: null };
+  }
+  try {
+    const admin = getSupabaseAdmin();
+    const trimmed = label.trim();
+    if (!trimmed) return { error: null };
+
+    const { error } = await admin.from("skill_bars").insert({
+      card_id: cardId,
+      label: trimmed,
+      segments: 5,
+      level: "",
+      description: null,
+    });
+    if (error) return { error: error.message || error.code || String(error) };
+    return { error: null };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg };
+  }
+}
+
+export async function addToolNameFromProjects(name: string): Promise<{ error: string | null }> {
+  const cardId = process.env.TOOL_VOCAB_CARD_ID;
+  if (!cardId) {
+    // 設定されていない場合は DB には書かず、そのまま UI 側だけで使う
+    return { error: null };
+  }
+  try {
+    const admin = getSupabaseAdmin();
+    const trimmed = name.trim();
+    if (!trimmed) return { error: null };
+
+    const { error } = await admin.from("skill_tools").insert({
+      card_id: cardId,
+      name: trimmed,
+      years: "",
+    });
+    if (error) return { error: error.message || error.code || String(error) };
+    return { error: null };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg };
+  }
+}

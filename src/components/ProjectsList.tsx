@@ -74,13 +74,20 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
   const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
+  const [projectSkillsMap, setProjectSkillsMap] = useState<Record<string, string[]>>({});
+  const [projectToolsMap, setProjectToolsMap] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true);
       setError(null);
 
-      const [{ data, error: fetchError }, { data: skillExperience }] = await Promise.all([
+      const [
+        { data, error: fetchError },
+        { data: skillExperience },
+        { data: projectSkillsRows },
+        { data: projectToolsRows },
+      ] = await Promise.all([
         supabase
           .from("projects")
           .select("*")
@@ -89,7 +96,34 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
           .from("skill_experience")
           .select("*")
           .order("sort_order", { ascending: true }),
+        supabase
+          .from("project_skills")
+          .select("project_id, sort_order, skills_vocab(label)")
+          .order("sort_order"),
+        supabase
+          .from("project_tools")
+          .select("project_id, sort_order, tools_vocab(name)")
+          .order("sort_order"),
       ]);
+
+      // Build per-project maps
+      const skillsMap: Record<string, string[]> = {};
+      for (const row of projectSkillsRows ?? []) {
+        const label = (row.skills_vocab as { label: string } | null)?.label;
+        if (label) {
+          skillsMap[row.project_id] = [...(skillsMap[row.project_id] ?? []), label];
+        }
+      }
+      setProjectSkillsMap(skillsMap);
+
+      const toolsMap: Record<string, string[]> = {};
+      for (const row of projectToolsRows ?? []) {
+        const name = (row.tools_vocab as { name: string } | null)?.name;
+        if (name) {
+          toolsMap[row.project_id] = [...(toolsMap[row.project_id] ?? []), name];
+        }
+      }
+      setProjectToolsMap(toolsMap);
 
       if (fetchError) {
         console.error("Failed to fetch projects:", fetchError);
@@ -191,7 +225,11 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
           currentIndex={selectedIndex ?? 0}
           total={projects.length}
         >
-          <ProjectModalContent project={selectedProject} />
+          <ProjectModalContent
+            project={selectedProject}
+            skills={projectSkillsMap[selectedProject.id] ?? []}
+            tools={projectToolsMap[selectedProject.id] ?? []}
+          />
         </Modal>
       )}
     </>

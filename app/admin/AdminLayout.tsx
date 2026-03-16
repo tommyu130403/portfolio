@@ -8,6 +8,7 @@ import {
   addSkillLabelFromProjects,
   addToolNameFromProjects,
 } from "@/app/admin/actions";
+import type { SkillVocab, ToolVocab } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
 import type { Json } from "@/src/types/supabase";
 
@@ -191,8 +192,11 @@ function ProofreadPanel({
 
 // ─── Profile セクション ────────────────────────────────
 
+// profile.introduction は jsonb カラムだが実体は string[] なのでローカル型で上書き
+type ProfileForm = Omit<Profile, "updated_at" | "introduction"> & { introduction: string[] };
+
 function ProfileSection() {
-  const [form, setForm] = useState<Omit<Profile, "updated_at">>({
+  const [form, setForm] = useState<ProfileForm>({
     id: 1, name_jp: "", name_en: "", title: "", bio: "", hero_image_url: "", introduction: [],
   });
   const [loading, setLoading] = useState(false);
@@ -205,7 +209,7 @@ function ProfileSection() {
   const [proofError, setProofError]       = useState("");
 
   const handleProofread = async () => {
-    const text = [form.bio, ...form.introduction].filter(Boolean).join("\n\n");
+    const text = [form.bio, ...(form.introduction as string[])].filter(Boolean).join("\n\n");
     setProofChecking(true); setProofIssues(null); setProofError("");
     try {
       const { issues } = await runProofread(text);
@@ -219,7 +223,7 @@ function ProfileSection() {
 
   useEffect(() => {
     supabase.from("profile").select("*").eq("id", 1).single().then(({ data }) => {
-      if (data) setForm(data);
+      if (data) setForm(data as ProfileForm);
       setFetching(false);
     });
   }, []);
@@ -685,8 +689,8 @@ function ProjectsSection() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [skillLabelOptions, setSkillLabelOptions] = useState<string[]>([]);
-  const [toolNameOptions, setToolNameOptions] = useState<string[]>([]);
+  const [skillVocabOptions, setSkillVocabOptions] = useState<SkillVocab[]>([]);
+  const [toolVocabOptions, setToolVocabOptions] = useState<ToolVocab[]>([]);
   const [newSkillLabel, setNewSkillLabel] = useState("");
   const [newToolName, setNewToolName] = useState("");
   const [openSkillSelectorProjectId, setOpenSkillSelectorProjectId] = useState<string | null>(null);
@@ -718,82 +722,20 @@ function ProjectsSection() {
 
   const fetchProjects = useCallback(async () => {
     setFetching(true);
-    const [{ data: projectRows }, { data: barRows }, { data: toolRows }] =
+    const [{ data: projectRows }, { data: skillVocabRows }, { data: toolVocabRows }] =
       await Promise.all([
         supabase
           .from("projects")
           .select("*")
           .order("sort_order", { ascending: true }),
-        supabase.from("skill_bars").select("label"),
-        supabase.from("skill_tools").select("name"),
+        // 語彙マスタから取得（skills_vocab / tools_vocab）
+        supabase.from("skills_vocab").select("id, label").order("label"),
+        supabase.from("tools_vocab").select("id, name").order("name"),
       ]);
 
     if (projectRows) setProjects(projectRows);
-
-    // スキル: skill_bars.label + projects.skills（小文字大文字を区別しない一意化）
-    {
-      const seen = new Set<string>();
-      const labels: string[] = [];
-
-      if (barRows) {
-        for (const row of barRows as { label: string }[]) {
-          const n = row.label?.trim();
-          if (!n) continue;
-          const key = n.toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-          labels.push(n);
-        }
-      }
-
-      if (projectRows) {
-        for (const p of projectRows as Project[]) {
-          for (const s of p.skills ?? []) {
-            const n = s.trim();
-            if (!n) continue;
-            const key = n.toLowerCase();
-            if (seen.has(key)) continue;
-            seen.add(key);
-            labels.push(n);
-          }
-        }
-      }
-
-      setSkillLabelOptions(labels);
-    }
-
-    // ツール: skill_tools.name + projects.tools（小文字大文字を区別しない一意化）
-    {
-      const seen = new Set<string>();
-      const names: string[] = [];
-
-      if (toolRows) {
-        for (const row of toolRows as { name: string }[]) {
-          const n = row.name?.trim();
-          if (!n) continue;
-          const key = n.toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-          names.push(n);
-        }
-      }
-
-      if (projectRows) {
-        for (const p of projectRows as Project[]) {
-          for (const t of p.tools ?? []) {
-            const n = t.trim();
-            if (!n) continue;
-            const key = n.toLowerCase();
-            if (seen.has(key)) continue;
-            seen.add(key);
-            names.push(n);
-          }
-        }
-      }
-
-      setToolNameOptions(names);
-    }
-
+    setSkillVocabOptions((skillVocabRows ?? []) as SkillVocab[]);
+    setToolVocabOptions((toolVocabRows ?? []) as ToolVocab[]);
     setFetching(false);
   }, []);
 
@@ -805,7 +747,21 @@ function ProjectsSection() {
   const handleSave = async (project: Project) => {
     setSaveError(null);
     setSavingId(project.id);
-    const { error } = await saveProject(project);
+
+    // project.skills / project.tools のラベル/名前から vocab ID に変換
+    const skillIds = (project.skills ?? [])
+      .map((label) =>
+        skillVocabOptions.find((v) => v.label.toLowerCase() === label.toLowerCase())?.id
+      )
+      .filter((id): id is string => !!id);
+
+    const toolIds = (project.tools ?? [])
+      .map((name) =>
+        toolVocabOptions.find((v) => v.name.toLowerCase() === name.toLowerCase())?.id
+      )
+      .filter((id): id is string => !!id);
+
+    const { error } = await saveProject(project, { skillIds, toolIds });
     setSavingId(null);
     if (error) {
       setSaveError(error);
@@ -982,13 +938,13 @@ function ProjectsSection() {
                         {openSkillSelectorProjectId === project.id && (
                           <div className="mt-2 flex flex-col gap-2">
                             <div className="flex flex-wrap gap-2">
-                              {skillLabelOptions.map((label) => {
+                              {skillVocabOptions.map((vocab) => {
                                 const selected = (project.skills ?? []).some(
-                                  (s) => s.toLowerCase() === label.toLowerCase()
+                                  (s) => s.toLowerCase() === vocab.label.toLowerCase()
                                 );
                                 return (
                                   <label
-                                    key={label}
+                                    key={vocab.id}
                                     className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
                                   >
                                     <input
@@ -998,10 +954,10 @@ function ProjectsSection() {
                                       onChange={(e) => {
                                         const current = new Set(project.skills ?? []);
                                         if (e.target.checked) {
-                                          current.add(label);
+                                          current.add(vocab.label);
                                         } else {
                                           for (const s of Array.from(current)) {
-                                            if (s.toLowerCase() === label.toLowerCase()) {
+                                            if (s.toLowerCase() === vocab.label.toLowerCase()) {
                                               current.delete(s);
                                             }
                                           }
@@ -1013,7 +969,7 @@ function ProjectsSection() {
                                         );
                                       }}
                                     />
-                                    <span>{label}</span>
+                                    <span>{vocab.label}</span>
                                   </label>
                                 );
                               })}
@@ -1027,16 +983,17 @@ function ProjectsSection() {
                               />
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   const name = newSkillLabel.trim();
                                   if (!name) return;
-                                  setSkillLabelOptions((prev) => {
-                                    const lower = name.toLowerCase();
-                                    if (prev.some((p) => p.toLowerCase() === lower)) {
-                                      return prev;
-                                    }
-                                    return [...prev, name];
-                                  });
+                                  // skills_vocab に登録して ID を取得
+                                  const result = await addSkillLabelFromProjects(name);
+                                  if (result.id) {
+                                    setSkillVocabOptions((prev) => {
+                                      if (prev.some((v) => v.label.toLowerCase() === name.toLowerCase())) return prev;
+                                      return [...prev, { id: result.id!, label: name }];
+                                    });
+                                  }
                                   const current = new Set(project.skills ?? []);
                                   current.add(name);
                                   updateProject(
@@ -1044,8 +1001,6 @@ function ProjectsSection() {
                                     "skills",
                                     Array.from(current)
                                   );
-                                  // ボキャブラリとして skill_bars にも登録（設定されていれば）
-                                  void addSkillLabelFromProjects(name);
                                   setNewSkillLabel("");
                                 }}
                                 className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
@@ -1107,13 +1062,13 @@ function ProjectsSection() {
                         {openToolSelectorProjectId === project.id && (
                           <div className="mt-2 flex flex-col gap-2">
                             <div className="flex flex-wrap gap-2">
-                              {toolNameOptions.map((name) => {
+                              {toolVocabOptions.map((vocab) => {
                                 const selected = (project.tools ?? []).some(
-                                  (t) => t.toLowerCase() === name.toLowerCase()
+                                  (t) => t.toLowerCase() === vocab.name.toLowerCase()
                                 );
                                 return (
                                   <label
-                                    key={name}
+                                    key={vocab.id}
                                     className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
                                   >
                                     <input
@@ -1123,10 +1078,10 @@ function ProjectsSection() {
                                       onChange={(e) => {
                                         const current = new Set(project.tools ?? []);
                                         if (e.target.checked) {
-                                          current.add(name);
+                                          current.add(vocab.name);
                                         } else {
                                           for (const t of Array.from(current)) {
-                                            if (t.toLowerCase() === name.toLowerCase()) {
+                                            if (t.toLowerCase() === vocab.name.toLowerCase()) {
                                               current.delete(t);
                                             }
                                           }
@@ -1138,7 +1093,7 @@ function ProjectsSection() {
                                         );
                                       }}
                                     />
-                                    <span>{name}</span>
+                                    <span>{vocab.name}</span>
                                   </label>
                                 );
                               })}
@@ -1152,16 +1107,17 @@ function ProjectsSection() {
                               />
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                   const name = newToolName.trim();
                                   if (!name) return;
-                                  setToolNameOptions((prev) => {
-                                    const lower = name.toLowerCase();
-                                    if (prev.some((p) => p.toLowerCase() === lower)) {
-                                      return prev;
-                                    }
-                                    return [...prev, name];
-                                  });
+                                  // tools_vocab に登録して ID を取得
+                                  const result = await addToolNameFromProjects(name);
+                                  if (result.id) {
+                                    setToolVocabOptions((prev) => {
+                                      if (prev.some((v) => v.name.toLowerCase() === name.toLowerCase())) return prev;
+                                      return [...prev, { id: result.id!, name }];
+                                    });
+                                  }
                                   const current = new Set(project.tools ?? []);
                                   current.add(name);
                                   updateProject(
@@ -1169,8 +1125,6 @@ function ProjectsSection() {
                                     "tools",
                                     Array.from(current)
                                   );
-                                  // ボキャブラリとして skill_tools にも登録（設定されていれば）
-                                  void addToolNameFromProjects(name);
                                   setNewToolName("");
                                 }}
                                 className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"

@@ -14,108 +14,298 @@ export type Database = {
   }
   public: {
     Tables: {
-      profile: {
+      career_items: {
         Row: {
-          id: number
-          name_jp: string
-          name_en: string
-          title: string
-          bio: string
-          hero_image_url: string
-          introduction: string[]
-          updated_at: string
+          company: string
+          created_at: string | null
+          description: string
+          id: string
+          period: string
+          role: string
+          sort_order: number
         }
         Insert: {
-          id?: number
-          name_jp: string
-          name_en: string
-          title: string
-          bio: string
-          hero_image_url: string
-          introduction?: string[]
-          updated_at?: string
+          company?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          period?: string
+          role?: string
+          sort_order?: number
         }
         Update: {
-          id?: number
-          name_jp?: string
-          name_en?: string
-          title?: string
-          bio?: string
-          hero_image_url?: string
-          introduction?: string[]
-          updated_at?: string
+          company?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          period?: string
+          role?: string
+          sort_order?: number
         }
         Relationships: []
       }
-      career_items: {
+      profile: {
         Row: {
-          id: string
-          role: string
-          company: string
-          period: string
-          description: string
-          sort_order: number
-          created_at: string
+          bio: string
+          hero_image_url: string
+          id: number
+          introduction: Json
+          name_en: string
+          name_jp: string
+          title: string
+          updated_at: string | null
         }
         Insert: {
-          id?: string
-          role: string
-          company: string
-          period: string
-          description: string
-          sort_order?: number
-          created_at?: string
+          bio?: string
+          hero_image_url?: string
+          id?: number
+          introduction?: Json
+          name_en?: string
+          name_jp?: string
+          title?: string
+          updated_at?: string | null
         }
         Update: {
-          id?: string
-          role?: string
-          company?: string
-          period?: string
-          description?: string
-          sort_order?: number
-          created_at?: string
+          bio?: string
+          hero_image_url?: string
+          id?: number
+          introduction?: Json
+          name_en?: string
+          name_jp?: string
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
+      }
+      project_skills: {
+        Row: {
+          project_id: string
+          skill_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          project_id: string
+          skill_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          project_id?: string
+          skill_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_skills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills_vocab"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tools: {
+        Row: {
+          project_id: string
+          sort_order: number | null
+          tool_id: string
+        }
+        Insert: {
+          project_id: string
+          sort_order?: number | null
+          tool_id: string
+        }
+        Update: {
+          project_id?: string
+          sort_order?: number | null
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tools_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools_vocab"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
-          id: string
-          title: string
           category: string | null
-          thumbnail_url: string | null
-          role: string | null
+          created_at: string | null
+          id: string
           period: string | null
-          skills: string[] | null
-          tools: string[] | null
+          role: string | null
           sections: Json | null
-          sort_order: number
-          created_at: string
+          skills: string[] | null
+          sort_order: number | null
+          thumbnail_url: string | null
+          title: string
+          tools: string[] | null
         }
         Insert: {
-          id?: string
-          title: string
           category?: string | null
-          thumbnail_url?: string | null
-          role?: string | null
+          created_at?: string | null
+          id?: string
           period?: string | null
-          skills?: string[] | null
-          tools?: string[] | null
+          role?: string | null
           sections?: Json | null
-          sort_order?: number
-          created_at?: string
+          skills?: string[] | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title: string
+          tools?: string[] | null
         }
         Update: {
-          id?: string
-          title?: string
           category?: string | null
-          thumbnail_url?: string | null
-          role?: string | null
+          created_at?: string | null
+          id?: string
           period?: string | null
-          skills?: string[] | null
-          tools?: string[] | null
+          role?: string | null
           sections?: Json | null
+          skills?: string[] | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title?: string
+          tools?: string[] | null
+        }
+        Relationships: []
+      }
+      skill_bars: {
+        Row: {
+          card_id: string
+          description: string | null
+          id: string
+          label: string
+          level: string
+          segments: number
+          sort_order: number
+        }
+        Insert: {
+          card_id: string
+          description?: string | null
+          id?: string
+          label: string
+          level: string
+          segments: number
           sort_order?: number
+        }
+        Update: {
+          card_id?: string
+          description?: string | null
+          id?: string
+          label?: string
+          level?: string
+          segments?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_bars_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "skill_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_cards: {
+        Row: {
+          created_at: string | null
+          icon_name: string
+          icon_set: string
+          id: string
+          sort_order: number
+          title: string
+          title_jp: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon_name?: string
+          icon_set?: string
+          id?: string
+          sort_order?: number
+          title: string
+          title_jp: string
+        }
+        Update: {
+          created_at?: string | null
+          icon_name?: string
+          icon_set?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          title_jp?: string
+        }
+        Relationships: []
+      }
+      skill_tools: {
+        Row: {
+          card_id: string
+          id: string
+          name: string
+          sort_order: number
+          years: string
+        }
+        Insert: {
+          card_id: string
+          id?: string
+          name: string
+          sort_order?: number
+          years: string
+        }
+        Update: {
+          card_id?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          years?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_tools_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "skill_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills_vocab: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          label: string
+          slug: string | null
+        }
+        Insert: {
+          category?: string | null
           created_at?: string
+          id?: string
+          label: string
+          slug?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          label?: string
+          slug?: string | null
         }
         Relationships: []
       }
@@ -140,6 +330,27 @@ export type Database = {
           id?: number
           start_date?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      tools_vocab: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string | null
         }
         Relationships: []
       }
@@ -199,104 +410,6 @@ export type Database = {
           writing?: number | null
         }
         Relationships: []
-      }
-      skill_cards: {
-        Row: {
-          id: string
-          title: string
-          title_jp: string
-          icon_set: string
-          icon_name: string
-          sort_order: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          title_jp: string
-          icon_set?: string
-          icon_name?: string
-          sort_order?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          title_jp?: string
-          icon_set?: string
-          icon_name?: string
-          sort_order?: number
-          created_at?: string
-        }
-        Relationships: []
-      }
-      skill_bars: {
-        Row: {
-          id: string
-          card_id: string
-          label: string
-          segments: number
-          level: string
-          description: string | null
-          sort_order: number
-        }
-        Insert: {
-          id?: string
-          card_id: string
-          label: string
-          segments: number
-          level: string
-          description?: string | null
-          sort_order?: number
-        }
-        Update: {
-          id?: string
-          card_id?: string
-          label?: string
-          segments?: number
-          level?: string
-          description?: string | null
-          sort_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "skill_bars_card_id_fkey"
-            columns: ["card_id"]
-            referencedRelation: "skill_cards"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      skill_tools: {
-        Row: {
-          id: string
-          card_id: string
-          name: string
-          years: string
-          sort_order: number
-        }
-        Insert: {
-          id?: string
-          card_id: string
-          name: string
-          years: string
-          sort_order?: number
-        }
-        Update: {
-          id?: string
-          card_id?: string
-          name?: string
-          years?: string
-          sort_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "skill_tools_card_id_fkey"
-            columns: ["card_id"]
-            referencedRelation: "skill_cards"
-            referencedColumns: ["id"]
-          }
-        ]
       }
     }
     Views: {

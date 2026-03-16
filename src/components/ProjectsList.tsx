@@ -3,72 +3,56 @@
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
-import type { Tables, TablesInsert } from "@/src/types/supabase";
+import type { Tables } from "@/src/types/supabase";
 import ProjectCard from "@/components/ProjectCard";
 import Modal from "@/components/Modal";
 import ProjectModalContent from "@/components/ProjectModalContent";
 
-type Project = Tables<"projects">;
+type ProjectRow = Tables<"projects">;
+
+// project_skills / project_tools の JOIN 結果を含むローカル型
+type ProjectWithSkills = ProjectRow & {
+  skillLabels: string[];
+  toolLabels: string[];
+};
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
 
 /** ダミーデータ（Supabase にデータがない場合にシード） */
-const SEED_PROJECTS: TablesInsert<"projects">[] = [
+const SEED_PROJECTS: Tables<"projects">[] = [
   {
+    id: crypto.randomUUID(),
     title: "キャリアチケットスカウトサービスの立ち上げ（ベータ版リリース）",
     category: "プラットフォーム開発",
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "Project Management"],
-    tools: null,
     sections: null,
     sort_order: 0,
+    created_at: null,
   },
   {
+    id: crypto.randomUUID(),
     title: "キャリアチケットスカウト正規版",
     category: "プラットフォーム開発",
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "UX Research"],
-    tools: null,
     sections: null,
     sort_order: 1,
+    created_at: null,
   },
   {
+    id: crypto.randomUUID(),
     title: "ECサイトリニューアル",
     category: "組織開発",
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "Product Design"],
-    tools: null,
     sections: null,
     sort_order: 2,
-  },
-  {
-    title: "ECサイトリニューアル",
-    category: "Webデザイン",
-    thumbnail_url: DEFAULT_IMAGE,
-    role: null,
-    period: null,
-    skills: ["UI Design", "Webデザイン"],
-    tools: null,
-    sections: null,
-    sort_order: 3,
-  },
-  {
-    title: "ECサイトリニューアル",
-    category: "Webデザイン",
-    thumbnail_url: DEFAULT_IMAGE,
-    role: null,
-    period: null,
-    skills: ["UI Design", "Webデザイン", "UX Research"],
-    tools: null,
-    sections: null,
-    sort_order: 4,
+    created_at: null,
   },
 ];
 
@@ -77,8 +61,27 @@ export type ProjectsListProps = {
   sidebarCollapsed?: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toProjectWithSkills(row: any): ProjectWithSkills {
+  const skillLabels: string[] = (row.project_skills ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((ps: any) => ps.skills_vocab?.label ?? "")
+    .filter(Boolean);
+
+  const toolLabels: string[] = (row.project_tools ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((pt: any) => pt.tools_vocab?.name ?? "")
+    .filter(Boolean);
+
+  return { ...row, skillLabels, toolLabels };
+}
+
 export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }) => {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectWithSkills[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -90,7 +93,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
 
       const { data, error: fetchError } = await supabase
         .from("projects")
-        .select("*")
+        .select("*, project_skills(skill_id, sort_order, skills_vocab(label)), project_tools(tool_id, sort_order, tools_vocab(name))")
         .order("sort_order", { ascending: true });
 
       if (fetchError) {
@@ -111,12 +114,14 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
         } else {
           const { data: refetched } = await supabase
             .from("projects")
-            .select("*")
+            .select("*, project_skills(skill_id, sort_order, skills_vocab(label)), project_tools(tool_id, sort_order, tools_vocab(name))")
             .order("sort_order", { ascending: true });
-          setProjects(refetched ?? []);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          setProjects((refetched ?? []).map((r: any) => toProjectWithSkills(r)));
         }
       } else {
-        setProjects(data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setProjects(data.map((r: any) => toProjectWithSkills(r)));
       }
 
       setLoading(false);
@@ -174,7 +179,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
             key={project.id}
             category={project.category ?? "カテゴリなし"}
             title={project.title}
-            tags={project.skills ?? []}
+            tags={project.skillLabels}
             image={project.thumbnail_url ?? DEFAULT_IMAGE}
             onClick={() => setSelectedIndex(i)}
           />
@@ -191,7 +196,11 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
           currentIndex={selectedIndex ?? 0}
           total={projects.length}
         >
-          <ProjectModalContent project={selectedProject} />
+          <ProjectModalContent
+            project={selectedProject}
+            skills={selectedProject.skillLabels}
+            tools={selectedProject.toolLabels}
+          />
         </Modal>
       )}
     </>

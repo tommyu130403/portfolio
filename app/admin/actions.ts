@@ -18,8 +18,6 @@ type ProjectRow = Tables<"projects">;
 
 /**
  * プロジェクトを 1 件 upsert し、project_skills / project_tools も同期する。
- * skillIds / toolIds が渡された場合は新テーブルで保存。
- * 旧カラム projects.skills / projects.tools は後方互換のため同時に更新する（将来削除予定）。
  */
 export async function saveProject(
   payload: ProjectRow,
@@ -37,8 +35,6 @@ export async function saveProject(
           thumbnail_url: payload.thumbnail_url ?? null,
           role: payload.role ?? null,
           period: payload.period ?? null,
-          skills: payload.skills ?? null,
-          tools: payload.tools ?? null,
           sections: payload.sections ?? null,
           sort_order: payload.sort_order,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
@@ -47,7 +43,6 @@ export async function saveProject(
       );
     if (error) return { error: error.message || error.code || String(error) };
 
-    // 新テーブルへの保存（skillIds / toolIds が渡された場合）
     if (opts?.skillIds !== undefined) {
       await setProjectSkills(payload.id, opts.skillIds);
     }
@@ -79,7 +74,6 @@ export async function deleteProject(id: string): Promise<{ error: string | null 
 
 /**
  * スキルラベルを skills_vocab に追加（Projects から新規入力された場合）
- * 旧: skill_bars への書き込みから移行済み。
  */
 export async function addSkillLabelFromProjects(
   label: string
@@ -95,7 +89,6 @@ export async function addSkillLabelFromProjects(
 
 /**
  * ツール名を tools_vocab に追加（Projects から新規入力された場合）
- * 旧: skill_tools への書き込みから移行済み。
  */
 export async function addToolNameFromProjects(
   name: string

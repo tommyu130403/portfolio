@@ -1,14 +1,30 @@
 "use server";
 
 import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
+import {
+  upsertSkillVocab,
+  upsertToolVocab,
+  setProjectSkills,
+  setProjectTools,
+  listSkillVocab,
+  listToolVocab,
+} from "@/src/lib/skills-tools";
 import type { Tables } from "@/src/types/supabase";
+
+export type { SkillVocab, ToolVocab } from "@/src/lib/skills-tools";
+export { listSkillVocab, listToolVocab };
 
 type ProjectRow = Tables<"projects">;
 
 /**
- * プロジェクトを 1 件 upsert（サーバー・サービスロールで実行）
+ * プロジェクトを 1 件 upsert し、project_skills / project_tools も同期する。
+ * skillIds / toolIds が渡された場合は新テーブルで保存。
+ * 旧カラム projects.skills / projects.tools は後方互換のため同時に更新する（将来削除予定）。
  */
-export async function saveProject(payload: ProjectRow): Promise<{ error: string | null }> {
+export async function saveProject(
+  payload: ProjectRow,
+  opts?: { skillIds?: string[]; toolIds?: string[] }
+): Promise<{ error: string | null }> {
   try {
     const admin = getSupabaseAdmin();
     const { error } = await admin
@@ -30,6 +46,15 @@ export async function saveProject(payload: ProjectRow): Promise<{ error: string 
         { onConflict: "id" }
       );
     if (error) return { error: error.message || error.code || String(error) };
+
+    // 新テーブルへの保存（skillIds / toolIds が渡された場合）
+    if (opts?.skillIds !== undefined) {
+      await setProjectSkills(payload.id, opts.skillIds);
+    }
+    if (opts?.toolIds !== undefined) {
+      await setProjectTools(payload.id, opts.toolIds);
+    }
+
     return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -53,59 +78,31 @@ export async function deleteProject(id: string): Promise<{ error: string | null 
 }
 
 /**
- * Skills/Tools 用のボキャブラリ行を追加（Projects からの新規追加分）
- *
- * 前提:
- * - SKILL_VOCAB_CARD_ID: skill_bars.card_id に使うスキルカード ID
- * - TOOL_VOCAB_CARD_ID:  skill_tools.card_id に使うスキルカード ID
- *
- * これらは Supabase 側で任意の「辞書用」カードを 1 つ作成し、その id を .env.local に設定してください。
+ * スキルラベルを skills_vocab に追加（Projects から新規入力された場合）
+ * 旧: skill_bars への書き込みから移行済み。
  */
-
-export async function addSkillLabelFromProjects(label: string): Promise<{ error: string | null }> {
-  const cardId = process.env.SKILL_VOCAB_CARD_ID;
-  if (!cardId) {
-    // 設定されていない場合は DB には書かず、そのまま UI 側だけで使う
-    return { error: null };
-  }
+export async function addSkillLabelFromProjects(
+  label: string
+): Promise<{ error: string | null; id?: string }> {
   try {
-    const admin = getSupabaseAdmin();
-    const trimmed = label.trim();
-    if (!trimmed) return { error: null };
-
-    const { error } = await admin.from("skill_bars").insert({
-      card_id: cardId,
-      label: trimmed,
-      segments: 5,
-      level: "",
-      description: null,
-    });
-    if (error) return { error: error.message || error.code || String(error) };
-    return { error: null };
+    const vocab = await upsertSkillVocab(label);
+    return { error: null, id: vocab.id };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { error: msg };
   }
 }
 
-export async function addToolNameFromProjects(name: string): Promise<{ error: string | null }> {
-  const cardId = process.env.TOOL_VOCAB_CARD_ID;
-  if (!cardId) {
-    // 設定されていない場合は DB には書かず、そのまま UI 側だけで使う
-    return { error: null };
-  }
+/**
+ * ツール名を tools_vocab に追加（Projects から新規入力された場合）
+ * 旧: skill_tools への書き込みから移行済み。
+ */
+export async function addToolNameFromProjects(
+  name: string
+): Promise<{ error: string | null; id?: string }> {
   try {
-    const admin = getSupabaseAdmin();
-    const trimmed = name.trim();
-    if (!trimmed) return { error: null };
-
-    const { error } = await admin.from("skill_tools").insert({
-      card_id: cardId,
-      name: trimmed,
-      years: "",
-    });
-    if (error) return { error: error.message || error.code || String(error) };
-    return { error: null };
+    const vocab = await upsertToolVocab(name);
+    return { error: null, id: vocab.id };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { error: msg };

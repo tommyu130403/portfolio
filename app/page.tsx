@@ -136,7 +136,7 @@ export default function Home() {
                   <span className="inline-block h-16 w-full animate-pulse rounded bg-[#424242]" />
                 </>
               ) : (
-                (profile?.introduction ?? []).map((para, i) => <p key={i}>{para}</p>)
+                ((profile?.introduction ?? []) as string[]).map((para, i) => <p key={i}>{para}</p>)
               )}
             </div>
           </section>

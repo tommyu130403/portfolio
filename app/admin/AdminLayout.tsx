@@ -7,6 +7,20 @@ import {
   deleteProject,
   addSkillLabelFromProjects,
   addToolNameFromProjects,
+  saveSkillCard,
+  deleteSkillCard,
+  addSkillCard,
+  moveSkillCards,
+  saveSkillBar,
+  deleteSkillBar,
+  addSkillBar,
+  saveSkillTool,
+  deleteSkillTool,
+  addSkillTool,
+  listAllProjectSkillLabels,
+  listAllProjectToolNames,
+  saveProjectSkillsByLabels,
+  saveProjectToolsByNames,
 } from "@/app/admin/actions";
 import type { SkillVocab, ToolVocab } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
@@ -39,9 +53,13 @@ async function runProofread(
 type Profile    = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
 type Project    = Tables<"projects">;
-type SkillCard  = Tables<"skill_cards">;
-type SkillBar   = Tables<"skill_bars">;
-type SkillTool  = Tables<"skill_tools">;
+type SkillCard       = Tables<"skill_cards">;
+type SkillExperience = Tables<"skill_experience">;
+type SkillTool       = Tables<"skill_tools">;
+
+// project_skills / project_tools はDB正規化テーブルで管理するため、
+// ローカル状態では skills/tools をフロントエンド専用フィールドとして保持する
+type ProjectLocal = Tables<"projects"> & { skills: string[]; tools: string[] };
 
 type SkillKey =
   | "prototype" | "visual" | "implementation" | "interaction"
@@ -682,7 +700,7 @@ function SectionsEditor({
 // ─── Projects セクション ───────────────────────────────
 
 function ProjectsSection() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectLocal[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -695,13 +713,14 @@ function ProjectsSection() {
   const [newToolName, setNewToolName] = useState("");
   const [openSkillSelectorProjectId, setOpenSkillSelectorProjectId] = useState<string | null>(null);
   const [openToolSelectorProjectId, setOpenToolSelectorProjectId] = useState<string | null>(null);
+  const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
   // 文章チェック（プロジェクトごと）
   const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
   const [proofResultsMap, setProofResultsMap] = useState<
     Record<string, { issues: ProofreadIssue[] | null; error: string }>
   >({});
 
-  const handleProofread = async (project: Project) => {
+  const handleProofread = async (project: ProjectLocal) => {
     // sections の本文テキストをすべて連結してチェック
     const sections = (project.sections ?? []) as { heading: string; body: string }[];
     const text = sections.map((s) => `${s.heading}\n${s.body}`).join("\n\n");
@@ -722,49 +741,66 @@ function ProjectsSection() {
 
   const fetchProjects = useCallback(async () => {
     setFetching(true);
-    const [{ data: projectRows }, { data: skillVocabRows }, { data: toolVocabRows }] =
-      await Promise.all([
-        supabase
-          .from("projects")
-          .select("*")
-          .order("sort_order", { ascending: true }),
-        // 語彙マスタから取得（skills_vocab / tools_vocab）
-        supabase.from("skills_vocab").select("id, label").order("label"),
-        supabase.from("tools_vocab").select("id, name").order("name"),
-      ]);
+    const [
+      { data: projectRows },
+      { data: skillVocabRows },
+      { data: toolVocabRows },
+      { data: skillExperience },
+      skillLabelsMap,
+      toolNamesMap,
+    ] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("*")
+        .order("sort_order", { ascending: true }),
+      // 語彙マスタから取得（skills_vocab / tools_vocab）
+      supabase.from("skills_vocab").select("id, label").order("label"),
+      supabase.from("tools_vocab").select("id, name").order("name"),
+      // スキル経験（タグ表示用）
+      supabase
+        .from("skill_experience")
+        .select("*")
+        .order("sort_order", { ascending: true }),
+      // project_skills / project_tools の一括取得
+      listAllProjectSkillLabels(),
+      listAllProjectToolNames(),
+    ]);
 
-    if (projectRows) setProjects(projectRows);
+    if (projectRows) {
+      setProjects(
+        projectRows.map((p) => ({
+          ...p,
+          skills: skillLabelsMap[p.id] ?? [],
+          tools: toolNamesMap[p.id] ?? [],
+        }))
+      );
+    }
     setSkillVocabOptions((skillVocabRows ?? []) as SkillVocab[]);
     setToolVocabOptions((toolVocabRows ?? []) as ToolVocab[]);
+    setSkillExperienceRows((skillExperience ?? []) as SkillExperience[]);
     setFetching(false);
   }, []);
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
-  const updateProject = (id: string, key: keyof Project, val: unknown) =>
+  const updateProject = (id: string, key: keyof ProjectLocal, val: unknown) =>
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
 
-  const handleSave = async (project: Project) => {
+  const handleSave = async (project: ProjectLocal) => {
     setSaveError(null);
     setSavingId(project.id);
 
-    // project.skills / project.tools のラベル/名前から vocab ID に変換
-    const skillIds = (project.skills ?? [])
-      .map((label) =>
-        skillVocabOptions.find((v) => v.label.toLowerCase() === label.toLowerCase())?.id
-      )
-      .filter((id): id is string => !!id);
-
-    const toolIds = (project.tools ?? [])
-      .map((name) =>
-        toolVocabOptions.find((v) => v.name.toLowerCase() === name.toLowerCase())?.id
-      )
-      .filter((id): id is string => !!id);
-
-    const { error } = await saveProject(project, { skillIds, toolIds });
+    // ProjectLocal の skills/tools フィールドは DB カラムではないため除いて渡す
+    const { skills, tools, ...projectRow } = project;
+    const [{ error }, skillsResult, toolsResult] = await Promise.all([
+      saveProject(projectRow, {}),
+      saveProjectSkillsByLabels(project.id, skills),
+      saveProjectToolsByNames(project.id, tools),
+    ]);
     setSavingId(null);
-    if (error) {
-      setSaveError(error);
+    const saveErr = error ?? skillsResult.error ?? toolsResult.error ?? null;
+    if (saveErr) {
+      setSaveError(saveErr);
       return;
     }
     setSavedId(project.id);
@@ -788,7 +824,7 @@ function ProjectsSection() {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    const newProject: Project = {
+    const newProject: ProjectLocal = {
       id,
       title: "新しいプロジェクト",
       category: null,
@@ -938,13 +974,14 @@ function ProjectsSection() {
                         {openSkillSelectorProjectId === project.id && (
                           <div className="mt-2 flex flex-col gap-2">
                             <div className="flex flex-wrap gap-2">
-                              {skillVocabOptions.map((vocab) => {
+                              {skillExperienceRows.map((row) => {
+                                const label = row.label_short || row.label;
                                 const selected = (project.skills ?? []).some(
-                                  (s) => s.toLowerCase() === vocab.label.toLowerCase()
+                                  (s) => s.toLowerCase() === label.toLowerCase()
                                 );
                                 return (
                                   <label
-                                    key={vocab.id}
+                                    key={row.id}
                                     className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
                                   >
                                     <input
@@ -952,12 +989,12 @@ function ProjectsSection() {
                                       className="h-3 w-3 accent-[#48f4be]"
                                       checked={selected}
                                       onChange={(e) => {
-                                        const current = new Set(project.skills ?? []);
+                                        const current = new Set(project.skills);
                                         if (e.target.checked) {
-                                          current.add(vocab.label);
+                                          current.add(label);
                                         } else {
                                           for (const s of Array.from(current)) {
-                                            if (s.toLowerCase() === vocab.label.toLowerCase()) {
+                                            if (s.toLowerCase() === label.toLowerCase()) {
                                               current.delete(s);
                                             }
                                           }
@@ -969,7 +1006,7 @@ function ProjectsSection() {
                                         );
                                       }}
                                     />
-                                    <span>{vocab.label}</span>
+                                    <span>{label}</span>
                                   </label>
                                 );
                               })}
@@ -1303,7 +1340,7 @@ function SkillsSection() {
 // ─── SkillsExperience セクション ───────────────────────
 
 type CardWithRelations = SkillCard & {
-  bars:  SkillBar[];
+  bars:  SkillExperience[];
   tools: SkillTool[];
 };
 
@@ -1319,7 +1356,7 @@ function SkillsExperienceSection() {
   const fetchAll = useCallback(async () => {
     const [{ data: cardRows }, { data: barRows }, { data: toolRows }] = await Promise.all([
       supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
-      supabase.from("skill_bars").select("*").order("sort_order",  { ascending: true }),
+      supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
       supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
     ]);
     if (!cardRows) { setFetching(false); return; }
@@ -1340,30 +1377,26 @@ function SkillsExperienceSection() {
 
   const handleSaveCard = async (card: CardWithRelations) => {
     setSavingId(card.id); setGlobalError("");
-    const { error } = await supabase.from("skill_cards").upsert({
+    const { error } = await saveSkillCard({
       id: card.id, title: card.title, title_jp: card.title_jp,
       icon_set: card.icon_set, icon_name: card.icon_name, sort_order: card.sort_order,
     });
     setSavingId(null);
-    if (error) { setGlobalError(error.message); return; }
+    if (error) { setGlobalError(error); return; }
     setSavedId(card.id);
     setTimeout(() => setSavedId(null), 2000);
   };
 
   const handleDeleteCard = async (id: string) => {
     setDeletingId(id);
-    await supabase.from("skill_cards").delete().eq("id", id);
+    await deleteSkillCard(id);
     setDeletingId(null);
     setCards((prev) => prev.filter((c) => c.id !== id));
     if (expandedId === id) setExpandedId(null);
   };
 
   const handleAddCard = async () => {
-    const { data } = await supabase.from("skill_cards").insert({
-      title: "New Card", title_jp: "新しいカード",
-      icon_set: "Edit", icon_name: "writing-fluently",
-      sort_order: cards.length,
-    }).select().single();
+    const { data } = await addSkillCard(cards.length);
     if (data) {
       setCards((prev) => [...prev, { ...data, bars: [], tools: [] }]);
       setExpandedId(data.id);
@@ -1377,15 +1410,16 @@ function SkillsExperienceSection() {
     [next[index], next[target]] = [next[target], next[index]];
     const updated = next.map((c, i) => ({ ...c, sort_order: i }));
     setCards(updated);
-    await Promise.all(
-      updated.map(({ id, sort_order }) =>
-        supabase.from("skill_cards").update({ sort_order }).eq("id", id)
-      )
-    );
+    await moveSkillCards(updated.map(({ id, sort_order }) => ({ id, sort_order })));
   };
 
   // ── スキルバー操作 ────────────────────────────────────
-  const updateBar = (cardId: string, barId: string, key: keyof SkillBar, val: string | number | null) =>
+  const updateBar = (
+    cardId: string,
+    barId: string,
+    key: keyof SkillExperience,
+    val: string | number | null,
+  ) =>
     setCards((prev) => prev.map((c) =>
       c.id !== cardId ? c : {
         ...c,
@@ -1393,17 +1427,17 @@ function SkillsExperienceSection() {
       }
     ));
 
-  const handleSaveBar = async (cardId: string, bar: SkillBar) => {
-    const { error } = await supabase.from("skill_bars").upsert({
-      id: bar.id, card_id: cardId, label: bar.label,
+  const handleSaveBar = async (cardId: string, bar: SkillExperience) => {
+    const { error } = await saveSkillBar({
+      id: bar.id, card_id: cardId, label: bar.label, label_short: bar.label_short,
       segments: bar.segments, level: bar.level,
       description: bar.description, sort_order: bar.sort_order,
     });
-    if (error) setGlobalError(error.message);
+    if (error) setGlobalError(error);
   };
 
   const handleDeleteBar = async (cardId: string, barId: string) => {
-    await supabase.from("skill_bars").delete().eq("id", barId);
+    await deleteSkillBar(barId);
     setCards((prev) => prev.map((c) =>
       c.id !== cardId ? c : { ...c, bars: c.bars.filter((b) => b.id !== barId) }
     ));
@@ -1412,10 +1446,7 @@ function SkillsExperienceSection() {
   const handleAddBar = async (cardId: string) => {
     const card = cards.find((c) => c.id === cardId);
     if (!card) return;
-    const { data } = await supabase.from("skill_bars").insert({
-      card_id: cardId, label: "", segments: 5, level: "Lv.3 Senior",
-      sort_order: card.bars.length,
-    }).select().single();
+    const { data } = await addSkillBar(cardId, card.bars.length);
     if (data) {
       setCards((prev) => prev.map((c) =>
         c.id !== cardId ? c : { ...c, bars: [...c.bars, data] }
@@ -1433,15 +1464,15 @@ function SkillsExperienceSection() {
     ));
 
   const handleSaveTool = async (cardId: string, tool: SkillTool) => {
-    const { error } = await supabase.from("skill_tools").upsert({
+    const { error } = await saveSkillTool({
       id: tool.id, card_id: cardId, name: tool.name,
       years: tool.years, sort_order: tool.sort_order,
     });
-    if (error) setGlobalError(error.message);
+    if (error) setGlobalError(error);
   };
 
   const handleDeleteTool = async (cardId: string, toolId: string) => {
-    await supabase.from("skill_tools").delete().eq("id", toolId);
+    await deleteSkillTool(toolId);
     setCards((prev) => prev.map((c) =>
       c.id !== cardId ? c : { ...c, tools: c.tools.filter((t) => t.id !== toolId) }
     ));
@@ -1450,10 +1481,7 @@ function SkillsExperienceSection() {
   const handleAddTool = async (cardId: string) => {
     const card = cards.find((c) => c.id === cardId);
     if (!card) return;
-    const { data } = await supabase.from("skill_tools").insert({
-      card_id: cardId, name: "", years: "",
-      sort_order: card.tools.length,
-    }).select().single();
+    const { data } = await addSkillTool(cardId, card.tools.length);
     if (data) {
       setCards((prev) => prev.map((c) =>
         c.id !== cardId ? c : { ...c, tools: [...c.tools, data] }

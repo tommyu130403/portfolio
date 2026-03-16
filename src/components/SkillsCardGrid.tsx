@@ -31,9 +31,9 @@ type SkillCardConfig = {
 };
 
 // DB rows
-type SkillCardRow = Tables<"skill_cards">;
-type SkillBarRow  = Tables<"skill_bars">;
-type SkillToolRow = Tables<"skill_tools">;
+type SkillCardRow       = Tables<"skill_cards">;
+type SkillExperienceRow = Tables<"skill_experience">;
+type SkillToolRow       = Tables<"skill_tools">;
 
 // ──────────────────────────────────────────────
 // Supabase fetch helper
@@ -41,7 +41,7 @@ type SkillToolRow = Tables<"skill_tools">;
 async function fetchSkillCards(): Promise<SkillCardConfig[]> {
   const [{ data: cards }, { data: bars }, { data: tools }] = await Promise.all([
     supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
-    supabase.from("skill_bars").select("*").order("sort_order",  { ascending: true }),
+    supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
     supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
   ]);
 
@@ -66,10 +66,10 @@ async function fetchSkillCards(): Promise<SkillCardConfig[]> {
     icon:    { set: card.icon_set as NonNullable<IconProps["set"]>, name: card.icon_name },
     title:   card.title,
     titleJP: card.title_jp,
-    skills: (bars as SkillBarRow[] ?? [])
+    skills: (bars as SkillExperienceRow[] ?? [])
       .filter((b) => b.card_id === card.id)
       .map((b) => ({
-        label:       b.label,
+        label:       b.label_short ?? b.label,
         segments:    b.segments,
         level:       b.level,
         description: b.description ?? undefined,

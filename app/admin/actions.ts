@@ -37,8 +37,6 @@ export async function saveProject(
           thumbnail_url: payload.thumbnail_url ?? null,
           role: payload.role ?? null,
           period: payload.period ?? null,
-          skills: payload.skills ?? null,
-          tools: payload.tools ?? null,
           sections: payload.sections ?? null,
           sort_order: payload.sort_order,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
@@ -107,4 +105,230 @@ export async function addToolNameFromProjects(
     const msg = e instanceof Error ? e.message : String(e);
     return { error: msg };
   }
+}
+
+// ─── skill_cards CRUD ─────────────────────────────────────────────────────────
+
+export async function saveSkillCard(card: {
+  id: string; title: string; title_jp: string;
+  icon_set: string; icon_name: string; sort_order: number;
+}): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from("skill_cards").upsert(card);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function deleteSkillCard(id: string): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from("skill_cards").delete().eq("id", id);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function addSkillCard(sortOrder: number): Promise<{
+  data: import("@/src/types/supabase").Tables<"skill_cards"> | null;
+  error: string | null;
+}> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin.from("skill_cards").insert({
+      title: "New Card", title_jp: "新しいカード",
+      icon_set: "Edit", icon_name: "writing-fluently",
+      sort_order: sortOrder,
+    }).select().single();
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function moveSkillCards(
+  updates: { id: string; sort_order: number }[]
+): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    await Promise.all(
+      updates.map(({ id, sort_order }) =>
+        admin.from("skill_cards").update({ sort_order }).eq("id", id)
+      )
+    );
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// ─── skill_experience CRUD ────────────────────────────────────────────────────
+
+export async function saveSkillBar(bar: {
+  id: string; card_id: string; label: string; label_short: string | null;
+  segments: number; level: string; description: string | null; sort_order: number;
+}): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from("skill_experience").upsert(bar);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function deleteSkillBar(barId: string): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from("skill_experience").delete().eq("id", barId);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function addSkillBar(cardId: string, sortOrder: number): Promise<{
+  data: import("@/src/types/supabase").Tables<"skill_experience"> | null;
+  error: string | null;
+}> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin.from("skill_experience").insert({
+      card_id: cardId, label: "", label_short: null,
+      segments: 5, level: "Lv.3 Senior", sort_order: sortOrder,
+    }).select().single();
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// ─── skill_tools CRUD ─────────────────────────────────────────────────────────
+
+export async function saveSkillTool(tool: {
+  id: string; card_id: string; name: string; years: string; sort_order: number;
+}): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from("skill_tools").upsert(tool);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function deleteSkillTool(toolId: string): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from("skill_tools").delete().eq("id", toolId);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function addSkillTool(cardId: string, sortOrder: number): Promise<{
+  data: import("@/src/types/supabase").Tables<"skill_tools"> | null;
+  error: string | null;
+}> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin.from("skill_tools").insert({
+      card_id: cardId, name: "", years: "", sort_order: sortOrder,
+    }).select().single();
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// ─── project_skills / project_tools 一括取得 ──────────────────────────────────
+
+/**
+ * スキルラベル配列からそのまま project_skills を更新する。
+ * labels にないラベルは skills_vocab に自動登録してから保存する。
+ */
+export async function saveProjectSkillsByLabels(
+  projectId: string,
+  labels: string[]
+): Promise<{ error: string | null }> {
+  try {
+    const skillIds = await Promise.all(
+      labels.map(async (label) => {
+        const vocab = await upsertSkillVocab(label);
+        return vocab.id;
+      })
+    );
+    await setProjectSkills(projectId, skillIds);
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
+ * ツール名配列からそのまま project_tools を更新する。
+ */
+export async function saveProjectToolsByNames(
+  projectId: string,
+  names: string[]
+): Promise<{ error: string | null }> {
+  try {
+    const toolIds = await Promise.all(
+      names.map(async (name) => {
+        const vocab = await upsertToolVocab(name);
+        return vocab.id;
+      })
+    );
+    await setProjectTools(projectId, toolIds);
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** 全プロジェクトのスキルラベルを一括取得 { projectId → label[] } */
+export async function listAllProjectSkillLabels(): Promise<Record<string, string[]>> {
+  const admin = getSupabaseAdmin();
+  const { data } = await admin
+    .from("project_skills")
+    .select("project_id, sort_order, skills_vocab(label)")
+    .order("sort_order");
+  const result: Record<string, string[]> = {};
+  for (const row of data ?? []) {
+    const label = (row.skills_vocab as { label: string } | null)?.label;
+    if (!label) continue;
+    if (!result[row.project_id]) result[row.project_id] = [];
+    result[row.project_id].push(label);
+  }
+  return result;
+}
+
+/** 全プロジェクトのツール名を一括取得 { projectId → name[] } */
+export async function listAllProjectToolNames(): Promise<Record<string, string[]>> {
+  const admin = getSupabaseAdmin();
+  const { data } = await admin
+    .from("project_tools")
+    .select("project_id, sort_order, tools_vocab(name)")
+    .order("sort_order");
+  const result: Record<string, string[]> = {};
+  for (const row of data ?? []) {
+    const name = (row.tools_vocab as { name: string } | null)?.name;
+    if (!name) continue;
+    if (!result[row.project_id]) result[row.project_id] = [];
+    result[row.project_id].push(name);
+  }
+  return result;
 }

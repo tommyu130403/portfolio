@@ -151,11 +151,9 @@ export type Database = {
           period: string | null
           role: string | null
           sections: Json | null
-          skills: string[] | null
           sort_order: number | null
           thumbnail_url: string | null
           title: string
-          tools: string[] | null
         }
         Insert: {
           category?: string | null
@@ -164,11 +162,9 @@ export type Database = {
           period?: string | null
           role?: string | null
           sections?: Json | null
-          skills?: string[] | null
           sort_order?: number | null
           thumbnail_url?: string | null
           title: string
-          tools?: string[] | null
         }
         Update: {
           category?: string | null
@@ -177,20 +173,19 @@ export type Database = {
           period?: string | null
           role?: string | null
           sections?: Json | null
-          skills?: string[] | null
           sort_order?: number | null
           thumbnail_url?: string | null
           title?: string
-          tools?: string[] | null
         }
         Relationships: []
       }
-      skill_bars: {
+      skill_experience: {
         Row: {
           card_id: string
           description: string | null
           id: string
           label: string
+          label_short: string | null
           level: string
           segments: number
           sort_order: number
@@ -200,6 +195,7 @@ export type Database = {
           description?: string | null
           id?: string
           label: string
+          label_short?: string | null
           level: string
           segments: number
           sort_order?: number
@@ -209,13 +205,14 @@ export type Database = {
           description?: string | null
           id?: string
           label?: string
+          label_short?: string | null
           level?: string
           segments?: number
           sort_order?: number
         }
         Relationships: [
           {
-            foreignKeyName: "skill_bars_card_id_fkey"
+            foreignKeyName: "skill_experience_card_id_fkey"
             columns: ["card_id"]
             isOneToOne: false
             referencedRelation: "skill_cards"
@@ -291,21 +288,21 @@ export type Database = {
           created_at: string
           id: string
           label: string
-          slug: string | null
+          label_short: string | null
         }
         Insert: {
           category?: string | null
           created_at?: string
           id?: string
           label: string
-          slug?: string | null
+          label_short?: string | null
         }
         Update: {
           category?: string | null
           created_at?: string
           id?: string
           label?: string
-          slug?: string | null
+          label_short?: string | null
         }
         Relationships: []
       }

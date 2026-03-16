@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
+import { saveProject, deleteProject } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
 import type { Json } from "@/src/types/supabase";
 
@@ -618,6 +619,7 @@ function ProjectsSection() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   // 文章チェック（プロジェクトごと）
   const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
   const [proofResultsMap, setProofResultsMap] = useState<
@@ -656,47 +658,51 @@ function ProjectsSection() {
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
 
   const handleSave = async (project: Project) => {
+    setSaveError(null);
     setSavingId(project.id);
-    const { error } = await supabase.from("projects").upsert({
-      id: project.id,
-      title: project.title,
-      category: project.category,
-      thumbnail_url: project.thumbnail_url,
-      role: project.role,
-      period: project.period,
-      skills: project.skills,
-      tools: project.tools,
-      sections: project.sections,
-      sort_order: project.sort_order,
-    });
+    const { error } = await saveProject(project);
     setSavingId(null);
-    if (!error) {
-      setSavedId(project.id);
-      setTimeout(() => setSavedId(null), 2000);
+    if (error) {
+      setSaveError(error);
+      return;
     }
+    setSavedId(project.id);
+    setTimeout(() => setSavedId(null), 2000);
+    await fetchProjects();
   };
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
-    await supabase.from("projects").delete().eq("id", id);
+    const { error } = await deleteProject(id);
     setDeletingId(null);
+    if (error) {
+      console.error("Failed to delete project:", error);
+      return;
+    }
     setProjects((prev) => prev.filter((p) => p.id !== id));
     if (expandedId === id) setExpandedId(null);
   };
 
-  const handleAdd = async () => {
-    const { data } = await supabase
-      .from("projects")
-      .insert({
-        title: "新しいプロジェクト",
-        sort_order: projects.length,
-      })
-      .select()
-      .single();
-    if (data) {
-      setProjects((prev) => [...prev, data]);
-      setExpandedId(data.id);
-    }
+  const handleAdd = () => {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const newProject: Project = {
+      id,
+      title: "新しいプロジェクト",
+      category: null,
+      thumbnail_url: null,
+      role: null,
+      period: null,
+      skills: [],
+      tools: [],
+      sections: [],
+      sort_order: projects.length,
+      created_at: now,
+    };
+
+    setProjects((prev) => [...prev, newProject]);
+    setExpandedId(id);
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
@@ -824,6 +830,11 @@ function ProjectsSection() {
                       </button>
                       {savedId === project.id && (
                         <span className="text-[12px] text-[#48f4be]">✓ 保存しました</span>
+                      )}
+                      {saveError && expandedId === project.id && (
+                        <span className="text-[12px] text-[#f4487e]" title={saveError}>
+                          保存に失敗しました
+                        </span>
                       )}
                       <button
                         type="button"

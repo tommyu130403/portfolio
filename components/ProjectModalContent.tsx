@@ -6,8 +6,13 @@ import type { Tables } from "@/src/types/supabase";
 type Project = Tables<"projects">;
 type Section = { heading: string; body: string };
 
-const DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
+export type ProjectModalContentProps = {
+  project: Project;
+  /** project_skills / project_tools JOIN から取得したラベル一覧 */
+  skills?: string[];
+  tools?: string[];
+};
+
 
 const InfoChip: FC<{
   icon: ReactNode;
@@ -26,11 +31,7 @@ const InfoChip: FC<{
   </div>
 );
 
-type ProjectModalContentProps = {
-  project: Project;
-};
-
-const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
+const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [], tools = [] }) => {
   const sections = (project.sections ?? []) as Section[];
 
   return (
@@ -90,7 +91,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
           </InfoChip>
         )}
 
-        {project.skills && project.skills.length > 0 && (
+        {skills.length > 0 && (
           <InfoChip
             icon={
               <Icon
@@ -101,13 +102,13 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
             }
             label="スキル"
           >
-            {project.skills.map((skill) => (
+            {skills.map((skill) => (
               <Tag key={skill} label={skill} />
             ))}
           </InfoChip>
         )}
 
-        {project.tools && project.tools.length > 0 && (
+        {tools.length > 0 && (
           <InfoChip
             icon={
               <Icon set="Build" name="tool" className="h-4 w-6 shrink-0" />
@@ -115,7 +116,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project }) => {
             label="ツール"
           >
             <div className="flex gap-2 items-center flex-wrap">
-              {project.tools.map((tool) => (
+              {tools.map((tool) => (
                 <span
                   key={tool}
                   className="text-[12px] tracking-[0.6px] text-white whitespace-nowrap"

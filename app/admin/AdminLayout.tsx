@@ -38,7 +38,11 @@ async function runProofread(
 // ─── 型 ───────────────────────────────────────────────
 type Profile    = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
-type Project    = Tables<"projects">;
+// project_skills / project_tools の JOIN 結果を含むローカル型
+type Project = Tables<"projects"> & {
+  skillLabels: string[];
+  toolLabels: string[];
+};
 type SkillCard  = Tables<"skill_cards">;
 type SkillBar   = Tables<"skill_bars">;
 type SkillTool  = Tables<"skill_tools">;
@@ -726,14 +730,31 @@ function ProjectsSection() {
       await Promise.all([
         supabase
           .from("projects")
-          .select("*")
+          .select("*, project_skills(skill_id, sort_order, skills_vocab(id, label)), project_tools(tool_id, sort_order, tools_vocab(id, name))")
           .order("sort_order", { ascending: true }),
-        // 語彙マスタから取得（skills_vocab / tools_vocab）
         supabase.from("skills_vocab").select("id, label").order("label"),
         supabase.from("tools_vocab").select("id, name").order("name"),
       ]);
 
-    if (projectRows) setProjects(projectRows);
+    if (projectRows) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const projects: Project[] = (projectRows as any[]).map((p: any) => {
+        const skillLabels: string[] = (p.project_skills ?? [])
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((ps: any) => ps.skills_vocab?.label ?? "")
+          .filter(Boolean);
+        const toolLabels: string[] = (p.project_tools ?? [])
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((pt: any) => pt.tools_vocab?.name ?? "")
+          .filter(Boolean);
+        return { ...p, skillLabels, toolLabels };
+      });
+      setProjects(projects);
+    }
     setSkillVocabOptions((skillVocabRows ?? []) as SkillVocab[]);
     setToolVocabOptions((toolVocabRows ?? []) as ToolVocab[]);
     setFetching(false);
@@ -748,14 +769,14 @@ function ProjectsSection() {
     setSaveError(null);
     setSavingId(project.id);
 
-    // project.skills / project.tools のラベル/名前から vocab ID に変換
-    const skillIds = (project.skills ?? [])
+    // skillLabels / toolLabels から vocab ID に変換
+    const skillIds = project.skillLabels
       .map((label) =>
         skillVocabOptions.find((v) => v.label.toLowerCase() === label.toLowerCase())?.id
       )
       .filter((id): id is string => !!id);
 
-    const toolIds = (project.tools ?? [])
+    const toolIds = project.toolLabels
       .map((name) =>
         toolVocabOptions.find((v) => v.name.toLowerCase() === name.toLowerCase())?.id
       )
@@ -795,11 +816,11 @@ function ProjectsSection() {
       thumbnail_url: null,
       role: null,
       period: null,
-      skills: [],
-      tools: [],
       sections: [],
       sort_order: projects.length,
       created_at: now,
+      skillLabels: [],
+      toolLabels: [],
     };
 
     setProjects((prev) => [...prev, newProject]);
@@ -893,13 +914,13 @@ function ProjectsSection() {
                       <div className="flex flex-col gap-2">
                         {/* 選択済みスキルの表示（常時） */}
                         <div className="flex flex-wrap gap-2">
-                          {(project.skills ?? []).map((s) => (
+                          {project.skillLabels.map((s) => (
                             <button
                               key={s}
                               type="button"
                               onClick={() => {
                                 // ピルをクリックしたら選択解除
-                                const current = new Set(project.skills ?? []);
+                                const current = new Set(project.skillLabels);
                                 for (const v of Array.from(current)) {
                                   if (v.toLowerCase() === s.toLowerCase()) {
                                     current.delete(v);
@@ -907,7 +928,7 @@ function ProjectsSection() {
                                 }
                                 updateProject(
                                   project.id,
-                                  "skills",
+                                  "skillLabels",
                                   Array.from(current)
                                 );
                               }}
@@ -917,7 +938,7 @@ function ProjectsSection() {
                               {s}
                             </button>
                           ))}
-                          {(project.skills ?? []).length === 0 && (
+                          {project.skillLabels.length === 0 && (
                             <span className="text-[12px] text-[#616161]">
                               未選択
                             </span>
@@ -939,7 +960,7 @@ function ProjectsSection() {
                           <div className="mt-2 flex flex-col gap-2">
                             <div className="flex flex-wrap gap-2">
                               {skillVocabOptions.map((vocab) => {
-                                const selected = (project.skills ?? []).some(
+                                const selected = project.skillLabels.some(
                                   (s) => s.toLowerCase() === vocab.label.toLowerCase()
                                 );
                                 return (
@@ -952,7 +973,7 @@ function ProjectsSection() {
                                       className="h-3 w-3 accent-[#48f4be]"
                                       checked={selected}
                                       onChange={(e) => {
-                                        const current = new Set(project.skills ?? []);
+                                        const current = new Set(project.skillLabels);
                                         if (e.target.checked) {
                                           current.add(vocab.label);
                                         } else {
@@ -964,7 +985,7 @@ function ProjectsSection() {
                                         }
                                         updateProject(
                                           project.id,
-                                          "skills",
+                                          "skillLabels",
                                           Array.from(current)
                                         );
                                       }}
@@ -994,11 +1015,11 @@ function ProjectsSection() {
                                       return [...prev, { id: result.id!, label: name }];
                                     });
                                   }
-                                  const current = new Set(project.skills ?? []);
+                                  const current = new Set(project.skillLabels);
                                   current.add(name);
                                   updateProject(
                                     project.id,
-                                    "skills",
+                                    "skillLabels",
                                     Array.from(current)
                                   );
                                   setNewSkillLabel("");
@@ -1017,13 +1038,13 @@ function ProjectsSection() {
                       <div className="flex flex-col gap-2">
                         {/* 選択済みツールの表示（常時） */}
                         <div className="flex flex-wrap gap-2">
-                          {(project.tools ?? []).map((t) => (
+                          {project.toolLabels.map((t) => (
                             <button
                               key={t}
                               type="button"
                               onClick={() => {
                                 // ピルをクリックしたら選択解除
-                                const current = new Set(project.tools ?? []);
+                                const current = new Set(project.toolLabels);
                                 for (const v of Array.from(current)) {
                                   if (v.toLowerCase() === t.toLowerCase()) {
                                     current.delete(v);
@@ -1031,7 +1052,7 @@ function ProjectsSection() {
                                 }
                                 updateProject(
                                   project.id,
-                                  "tools",
+                                  "toolLabels",
                                   Array.from(current)
                                 );
                               }}
@@ -1041,7 +1062,7 @@ function ProjectsSection() {
                               {t}
                             </button>
                           ))}
-                          {(project.tools ?? []).length === 0 && (
+                          {project.toolLabels.length === 0 && (
                             <span className="text-[12px] text-[#616161]">
                               未選択
                             </span>
@@ -1063,7 +1084,7 @@ function ProjectsSection() {
                           <div className="mt-2 flex flex-col gap-2">
                             <div className="flex flex-wrap gap-2">
                               {toolVocabOptions.map((vocab) => {
-                                const selected = (project.tools ?? []).some(
+                                const selected = project.toolLabels.some(
                                   (t) => t.toLowerCase() === vocab.name.toLowerCase()
                                 );
                                 return (
@@ -1076,7 +1097,7 @@ function ProjectsSection() {
                                       className="h-3 w-3 accent-[#48f4be]"
                                       checked={selected}
                                       onChange={(e) => {
-                                        const current = new Set(project.tools ?? []);
+                                        const current = new Set(project.toolLabels);
                                         if (e.target.checked) {
                                           current.add(vocab.name);
                                         } else {
@@ -1088,7 +1109,7 @@ function ProjectsSection() {
                                         }
                                         updateProject(
                                           project.id,
-                                          "tools",
+                                          "toolLabels",
                                           Array.from(current)
                                         );
                                       }}
@@ -1118,11 +1139,11 @@ function ProjectsSection() {
                                       return [...prev, { id: result.id!, name }];
                                     });
                                   }
-                                  const current = new Set(project.tools ?? []);
+                                  const current = new Set(project.toolLabels);
                                   current.add(name);
                                   updateProject(
                                     project.id,
-                                    "tools",
+                                    "toolLabels",
                                     Array.from(current)
                                   );
                                   setNewToolName("");

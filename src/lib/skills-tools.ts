@@ -3,7 +3,6 @@ import { getSupabaseAdmin } from "@/src/lib/supabase-admin";
 export type SkillVocab = {
   id: string;
   label: string;
-  slug?: string | null;
   category?: string | null;
 };
 
@@ -19,7 +18,7 @@ export async function listSkillVocab(): Promise<SkillVocab[]> {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("skills_vocab")
-    .select("id, label, slug, category")
+    .select("id, label, category")
     .order("label");
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -42,7 +41,7 @@ export async function suggestSkillVocab(
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("skills_vocab")
-    .select("id, label, slug, category")
+    .select("id, label, category")
     .ilike("label", `${query}%`)
     .order("label")
     .limit(opts?.limit ?? 20);
@@ -74,7 +73,7 @@ export async function upsertSkillVocab(label: string): Promise<SkillVocab> {
   // 既存検索（大文字小文字を区別しない）
   const { data: existing } = await admin
     .from("skills_vocab")
-    .select("id, label, slug, category")
+    .select("id, label, category")
     .ilike("label", trimmed)
     .maybeSingle();
   if (existing) return existing;
@@ -82,7 +81,7 @@ export async function upsertSkillVocab(label: string): Promise<SkillVocab> {
   const { data, error } = await admin
     .from("skills_vocab")
     .insert({ label: trimmed })
-    .select("id, label, slug, category")
+    .select("id, label, category")
     .single();
   if (error) throw new Error(error.message);
   return data;
@@ -114,7 +113,7 @@ export async function getProjectSkills(projectId: string): Promise<SkillVocab[]>
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("project_skills")
-    .select("sort_order, skills_vocab(id, label, slug, category)")
+    .select("sort_order, skills_vocab(id, label, category)")
     .eq("project_id", projectId)
     .order("sort_order");
   if (error) throw new Error(error.message);

@@ -8,7 +8,8 @@ import ProjectCard from "@/components/ProjectCard";
 import Modal from "@/components/Modal";
 import ProjectModalContent from "@/components/ProjectModalContent";
 
-type Project = Tables<"projects">;
+type Project          = Tables<"projects">;
+type SkillExperience  = Tables<"skill_experience">;
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
@@ -21,8 +22,6 @@ const SEED_PROJECTS: TablesInsert<"projects">[] = [
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "Project Management"],
-    tools: null,
     sections: null,
     sort_order: 0,
   },
@@ -32,8 +31,6 @@ const SEED_PROJECTS: TablesInsert<"projects">[] = [
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "UX Research"],
-    tools: null,
     sections: null,
     sort_order: 1,
   },
@@ -43,8 +40,6 @@ const SEED_PROJECTS: TablesInsert<"projects">[] = [
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "Product Design"],
-    tools: null,
     sections: null,
     sort_order: 2,
   },
@@ -54,8 +49,6 @@ const SEED_PROJECTS: TablesInsert<"projects">[] = [
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "Webデザイン"],
-    tools: null,
     sections: null,
     sort_order: 3,
   },
@@ -65,8 +58,6 @@ const SEED_PROJECTS: TablesInsert<"projects">[] = [
     thumbnail_url: DEFAULT_IMAGE,
     role: null,
     period: null,
-    skills: ["UI Design", "Webデザイン", "UX Research"],
-    tools: null,
     sections: null,
     sort_order: 4,
   },
@@ -82,16 +73,23 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from("projects")
-        .select("*")
-        .order("sort_order", { ascending: true });
+      const [{ data, error: fetchError }, { data: skillExperience }] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("*")
+          .order("sort_order", { ascending: true }),
+        supabase
+          .from("skill_experience")
+          .select("*")
+          .order("sort_order", { ascending: true }),
+      ]);
 
       if (fetchError) {
         console.error("Failed to fetch projects:", fetchError);
@@ -118,6 +116,8 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
       } else {
         setProjects(data);
       }
+
+      setSkillExperienceRows((skillExperience ?? []) as SkillExperience[]);
 
       setLoading(false);
     };
@@ -174,7 +174,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
             key={project.id}
             category={project.category ?? "カテゴリなし"}
             title={project.title}
-            tags={project.skills ?? []}
+            tags={skillExperienceRows.map((row) => row.label_short || row.label)}
             image={project.thumbnail_url ?? DEFAULT_IMAGE}
             onClick={() => setSelectedIndex(i)}
           />

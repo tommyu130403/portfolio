@@ -25,20 +25,16 @@ type CareerItem = Tables<"career_items">;
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    typeof window !== "undefined" && window.innerWidth < 1024,
+  );
   const [profile, setProfile] = useState<Profile | null>(null);
   const [career, setCareer] = useState<CareerItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [skillsTabId, setSkillsTabId] = useState("experience-chart");
 
-  // iPad Pro 以下の幅ではサイドバーを初期折りたたみ
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setSidebarCollapsed(true);
-    }
-  }, []);
-
   // Supabase からプロフィール・経歴を取得
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const fetchData = async () => {
       const [profileRes, careerRes] = await Promise.all([

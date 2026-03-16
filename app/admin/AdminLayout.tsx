@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import {
@@ -568,17 +569,6 @@ function SectionsEditor({
   );
   const prevValue = useRef(value);
    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-
-  // 外部からの初期ロード時に同期（展開直後の初期値セット）
-  useEffect(() => {
-    if (prevValue.current === value) return;
-    prevValue.current = value;
-
-    // すでにユーザーが入力している場合は同期しない（入力内容を消さないため）
-    if (markdown.trim().length > 0) return;
-
-    setMarkdown(sectionsToMarkdown((value ?? []) as SectionItem[]));
-  }, [value]); // markdown は依存に含めない（初期同期専用）
 
   const handleChange = (md: string) => {
     setMarkdown(md);
@@ -1176,6 +1166,7 @@ function ProjectsSection() {
                     <div className="col-span-2">
                       <FieldLabel>セクション</FieldLabel>
                       <SectionsEditor
+                        key={project.id}
                         value={project.sections}
                         onChange={(v) => updateProject(project.id, "sections", v)}
                       />
@@ -1353,23 +1344,25 @@ function SkillsExperienceSection() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState("");
 
-  const fetchAll = useCallback(async () => {
-    const [{ data: cardRows }, { data: barRows }, { data: toolRows }] = await Promise.all([
-      supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
-      supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
-      supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
-    ]);
-    if (!cardRows) { setFetching(false); return; }
-    const merged = cardRows.map((c) => ({
-      ...c,
-      bars:  (barRows  ?? []).filter((b) => b.card_id === c.id),
-      tools: (toolRows ?? []).filter((t) => t.card_id === c.id),
-    }));
-    setCards(merged);
-    setFetching(false);
-  }, []);
+  useEffect(() => {
+    const fetchAll = async () => {
+      const [{ data: cardRows }, { data: barRows }, { data: toolRows }] = await Promise.all([
+        supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
+        supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
+        supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
+      ]);
+      if (!cardRows) { setFetching(false); return; }
+      const merged = cardRows.map((c) => ({
+        ...c,
+        bars:  (barRows  ?? []).filter((b) => b.card_id === c.id),
+        tools: (toolRows ?? []).filter((t) => t.card_id === c.id),
+      }));
+      setCards(merged);
+      setFetching(false);
+    };
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+    void fetchAll();
+  }, []);
 
   // ── カード操作 ──────────────────────────────────────
   const updateCard = (id: string, key: keyof SkillCard, val: string | number) =>
@@ -1734,9 +1727,9 @@ export function AdminLayout() {
       {/* サイドバー */}
       <aside className="sticky top-0 flex h-screen w-[220px] shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0a0a0a] px-4 py-8">
         <div className="mb-8 px-2">
-          <a href="/" className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline">
+          <Link href="/" className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline">
             ← Portfolio
-          </a>
+          </Link>
           <p className="text-[20px] font-semibold text-white">Admin</p>
           <p className="text-[11px] text-[#616161]">コンテンツ管理</p>
         </div>
@@ -1767,12 +1760,12 @@ export function AdminLayout() {
 
         {/* Style Guide リンク */}
         <div className="mt-auto">
-          <a
+          <Link
             href="/styleguide"
             className="block rounded-[8px] px-3 py-2 text-[12px] text-[#616161] hover:bg-[#1a1a1a] hover:text-[#9e9e9e]"
           >
             Style Guide →
-          </a>
+          </Link>
         </div>
       </aside>
 

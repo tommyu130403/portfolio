@@ -88,10 +88,10 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
     : setInternalCollapsed;
 
   // 本番環境プレビュートグル（開発環境のみ）
-  const [isProdPreview, setIsProdPreview] = useState(false);
-  useEffect(() => {
-    setIsProdPreview(localStorage.getItem(PROD_PREVIEW_KEY) === "true");
-  }, []);
+  const [isProdPreview, setIsProdPreview] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(PROD_PREVIEW_KEY) === "true";
+  });
   const toggleProdPreview = () => {
     const next = !isProdPreview;
     setIsProdPreview(next);

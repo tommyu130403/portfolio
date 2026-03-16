@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import ServiceLogo from "@/components/ServiceLogo";
@@ -582,9 +583,9 @@ export function StyleguideLayout({ iconSets, logos }: { iconSets: IconSetData[];
       {/* ─── サイドバー ─────────────────────────── */}
       <aside className="sticky top-0 flex h-screen w-[220px] shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0a0a0a] px-4 py-8">
         <div className="mb-8 px-2">
-          <a href="/" className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline">
+          <Link href="/" className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline">
             ← Portfolio
-          </a>
+          </Link>
           <p className="text-[20px] font-semibold text-white">Style Guide</p>
         </div>
         <nav className="flex flex-col gap-1">

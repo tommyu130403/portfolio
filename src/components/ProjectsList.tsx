@@ -208,7 +208,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
             key={project.id}
             category={project.category ?? "カテゴリなし"}
             title={project.title}
-            tags={skillExperienceRows.map((row) => row.label_short || row.label)}
+            tags={projectSkillsMap[project.id] ?? []}
             image={project.thumbnail_url ?? DEFAULT_IMAGE}
             onClick={() => setSelectedIndex(i)}
           />

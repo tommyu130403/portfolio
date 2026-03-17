@@ -214,7 +214,7 @@ function ProofreadPanel({
 // profile.introduction は jsonb カラムだが実体は string[] なのでローカル型で上書き
 type ProfileForm = Omit<Profile, "updated_at" | "introduction"> & { introduction: string[] };
 
-function ProfileSection() {
+function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [form, setForm] = useState<ProfileForm>({
     id: 1, name_jp: "", name_en: "", title: "", bio: "", hero_image_url: "", introduction: [],
   });
@@ -226,6 +226,7 @@ function ProfileSection() {
   const [proofChecking, setProofChecking] = useState(false);
   const [proofIssues, setProofIssues]     = useState<ProofreadIssue[] | null>(null);
   const [proofError, setProofError]       = useState("");
+  const [dirty, setDirty] = useState(false);
 
   const handleProofread = async () => {
     const text = [form.bio, ...(form.introduction as string[])].filter(Boolean).join("\n\n");
@@ -247,8 +248,22 @@ function ProfileSection() {
     });
   }, []);
 
-  const set = <K extends keyof typeof form>(key: K, val: typeof form[K]) =>
+  const markDirty = () => {
+    if (!dirty) {
+      setDirty(true);
+      onDirtyChange(true);
+    }
+  };
+
+  const markSaved = () => {
+    setDirty(false);
+    onDirtyChange(false);
+  };
+
+  const set = <K extends keyof typeof form>(key: K, val: typeof form[K]) => {
+    markDirty();
     setForm((f) => ({ ...f, [key]: val }));
+  };
 
   const handleSave = async () => {
     setLoading(true); setError(""); setSaved(false);
@@ -259,6 +274,7 @@ function ProfileSection() {
     if (err) { setError(err.message); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    markSaved();
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
@@ -266,6 +282,11 @@ function ProfileSection() {
   return (
     <section id="profile" className="scroll-mt-8">
       <SectionTitle label="Profile" title="プロフィール・自己紹介" />
+      {dirty && (
+        <p className="mb-3 text-[11px] text-[#f4c248]">
+          未保存の変更があります
+        </p>
+      )}
 
       {/* 基本情報 */}
       <div className="mb-8 grid grid-cols-2 gap-4">
@@ -352,8 +373,9 @@ function ProfileSection() {
 
 // ─── Career セクション ─────────────────────────────────
 
-function CareerSection() {
+function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [items, setItems] = useState<CareerItem[]>([]);
+  const [originalItems, setOriginalItems] = useState<CareerItem[]>([]);
   const [fetching, setFetching] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
@@ -364,6 +386,24 @@ function CareerSection() {
   const [proofResultsMap, setProofResultsMap] = useState<
     Record<string, { issues: ProofreadIssue[] | null; error: string }>
   >({});
+
+  const [dirty, setDirty] = useState(false);
+
+  const recomputeDirty = (nextItems: CareerItem[], nextOriginal: CareerItem[]) => {
+    const hasDiff = nextItems.some((it) => {
+      const base = nextOriginal.find((o) => o.id === it.id);
+      if (!base) return true;
+      return (
+        base.role !== it.role ||
+        base.company !== it.company ||
+        base.period !== it.period ||
+        base.description !== it.description ||
+        base.sort_order !== it.sort_order
+      );
+    });
+    setDirty(hasDiff);
+    onDirtyChange(hasDiff);
+  };
 
   const handleProofread = async (item: CareerItem) => {
     const text = item.description;
@@ -382,14 +422,24 @@ function CareerSection() {
   const fetch = useCallback(async () => {
     const { data } = await supabase
       .from("career_items").select("*").order("sort_order", { ascending: true });
-    if (data) setItems(data);
+    if (data) {
+      setItems(data);
+      setOriginalItems(data);
+      setDirty(false);
+      onDirtyChange(false);
+    }
     setFetching(false);
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const updateItem = (id: string, key: keyof CareerItem, val: string | number) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, [key]: val } : it)));
+  const updateItem = (id: string, key: keyof CareerItem, val: string | number) => {
+    setItems((prev) => {
+      const next = prev.map((it) => (it.id === id ? { ...it, [key]: val } : it));
+      recomputeDirty(next, originalItems);
+      return next;
+    });
+  };
 
   const handleSave = async (item: CareerItem) => {
     setSavingId(item.id); setGlobalError("");
@@ -401,9 +451,25 @@ function CareerSection() {
     if (error) { setGlobalError(error.message); return; }
     setSavedId(item.id);
     setTimeout(() => setSavedId(null), 2000);
+    setOriginalItems((prev) => {
+      const nextOriginal = (() => {
+        const existing = prev.find((o) => o.id === item.id);
+        if (!existing) return [...prev, item];
+        return prev.map((o) => (o.id === item.id ? item : o));
+      })();
+      recomputeDirty(items, nextOriginal);
+      return nextOriginal;
+    });
   };
 
   const handleDelete = async (id: string) => {
+    if (
+      !window.confirm(
+        "この経歴を削除します。よろしいですか？\nこの操作は取り消せません。"
+      )
+    ) {
+      return;
+    }
     setDeletingId(id);
     await supabase.from("career_items").delete().eq("id", id);
     setDeletingId(null);
@@ -416,7 +482,67 @@ function CareerSection() {
       sort_order: items.length,
     };
     const { data } = await supabase.from("career_items").insert(newItem).select().single();
-    if (data) setItems((prev) => [...prev, data]);
+    if (data) {
+      setItems((prev) => {
+        const next = [...prev, data];
+        // 追加直後は DB の値と一致しているので dirty にはしない
+        setOriginalItems((base) => {
+          const nextOriginal = [...base, data];
+          recomputeDirty(next, nextOriginal);
+          return nextOriginal;
+        });
+        return next;
+      });
+    }
+  };
+
+  const parsePeriod = (period: string | null) => {
+    const text = period ?? "";
+    const m = text.match(
+      /^(\d{4})年(\d{1,2})月\s*-\s*(現在|(\d{4})年(\d{1,2})月)?$/,
+    );
+    if (!m) {
+      return {
+        startYear: "",
+        startMonth: "",
+        endYear: "",
+        endMonth: "",
+        isCurrent: false,
+      };
+    }
+    const startYear = m[1] ?? "";
+    const startMonth = m[2] ?? "";
+    const isCurrent = m[3] === "現在";
+    const endYear = m[4] ?? "";
+    const endMonth = m[5] ?? "";
+    return {
+      startYear,
+      startMonth,
+      endYear,
+      endMonth,
+      isCurrent,
+    };
+  };
+
+  const formatPeriod = (opts: {
+    startYear: string;
+    startMonth: string;
+    endYear: string;
+    endMonth: string;
+    isCurrent: boolean;
+  }) => {
+    const sy = opts.startYear.trim();
+    const sm = opts.startMonth.trim();
+    const ey = opts.endYear.trim();
+    const em = opts.endMonth.trim();
+    if (!sy || !sm) return "";
+    const start = `${sy}年${sm}月`;
+    const end = opts.isCurrent
+      ? "現在"
+      : ey && em
+        ? `${ey}年${em}月`
+        : "";
+    return end ? `${start} - ${end}` : `${start} - `;
   };
 
   const handleMove = async (index: number, dir: -1 | 1) => {
@@ -431,6 +557,8 @@ function CareerSection() {
         supabase.from("career_items").update({ sort_order }).eq("id", id)
       )
     );
+    setOriginalItems(updated);
+    recomputeDirty(updated, updated);
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
@@ -443,49 +571,202 @@ function CareerSection() {
       <div className="mb-6 flex flex-col gap-4">
         {items.map((item, idx) => (
           <div key={item.id} className="rounded-[12px] border border-[#424242] bg-[#212121] p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-[12px] text-[#616161]">#{idx + 1}</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleMove(idx, -1)}
-                  disabled={idx === 0}
-                  className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
-                >↑</button>
-                <button
-                  type="button"
-                  onClick={() => handleMove(idx, 1)}
-                  disabled={idx === items.length - 1}
-                  className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
-                >↓</button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(item.id)}
-                  disabled={deletingId === item.id}
-                  className="rounded px-2 py-1 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
-                >
-                  {deletingId === item.id ? "…" : "削除"}
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <FieldLabel>役職</FieldLabel>
-                <Input value={item.role} onChange={(v) => updateItem(item.id, "role", v)} />
-              </div>
-              <div>
-                <FieldLabel>会社名</FieldLabel>
-                <Input value={item.company} onChange={(v) => updateItem(item.id, "company", v)} />
-              </div>
-              <div className="col-span-2">
-                <FieldLabel>期間</FieldLabel>
-                <Input value={item.period} onChange={(v) => updateItem(item.id, "period", v)} placeholder="2022年4月 - 現在" />
-              </div>
-              <div className="col-span-2">
-                <FieldLabel>説明</FieldLabel>
-                <Textarea value={item.description} onChange={(v) => updateItem(item.id, "description", v)} rows={3} />
-              </div>
-            </div>
+            {(() => {
+              const base = originalItems.find((o) => o.id === item.id);
+              const dirtyRole = base && base.role !== item.role;
+              const dirtyCompany = base && base.company !== item.company;
+              const dirtyPeriod = base && base.period !== item.period;
+              const dirtyDescription = base && base.description !== item.description;
+              return (
+                <>
+                  {/* ヘッダー行は既存のまま */}
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="text-[12px] text-[#616161]">#{idx + 1}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleMove(idx, -1)}
+                        disabled={idx === 0}
+                        className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                      >↑</button>
+                      <button
+                        type="button"
+                        onClick={() => handleMove(idx, 1)}
+                        disabled={idx === items.length - 1}
+                        className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                      >↓</button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                        className="rounded px-2 py-1 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
+                      >
+                        {deletingId === item.id ? "…" : "削除"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <FieldLabel>役職</FieldLabel>
+                      <Input
+                        value={item.role}
+                        onChange={(v) => updateItem(item.id, "role", v)}
+                      />
+                      {dirtyRole && (
+                        <p className="mt-1 text-[11px] text-[#f4c248]">
+                          未保存の変更があります
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <FieldLabel>会社名</FieldLabel>
+                      <Input
+                        value={item.company}
+                        onChange={(v) => updateItem(item.id, "company", v)}
+                      />
+                      {dirtyCompany && (
+                        <p className="mt-1 text-[11px] text-[#f4c248]">
+                          未保存の変更があります
+                        </p>
+                      )}
+                    </div>
+                    <div className="col-span-2">
+                      <FieldLabel>期間</FieldLabel>
+                      {(() => {
+                        const { startYear, startMonth, endYear, endMonth, isCurrent } =
+                          parsePeriod(item.period);
+                        const handleChange = (next: {
+                          startYear?: string;
+                          startMonth?: string;
+                          endYear?: string;
+                          endMonth?: string;
+                          isCurrent?: boolean;
+                        }) => {
+                          const formatted = formatPeriod({
+                            startYear: next.startYear ?? startYear,
+                            startMonth: next.startMonth ?? startMonth,
+                            endYear: next.endYear ?? endYear,
+                            endMonth: next.endMonth ?? endMonth,
+                            isCurrent: next.isCurrent ?? isCurrent,
+                          });
+                          updateItem(item.id, "period", formatted);
+                        };
+                        return (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="mb-1 text-[11px] text-[#9e9e9e]">
+                                  期間開始
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min={1900}
+                                    max={2100}
+                                    value={startYear}
+                                    onChange={(e) =>
+                                      handleChange({ startYear: e.target.value })
+                                    }
+                                    placeholder="2022"
+                                    className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
+                                  />
+                                  <span className="text-[12px] text-[#9e9e9e]">
+                                    年
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={12}
+                                    value={startMonth}
+                                    onChange={(e) =>
+                                      handleChange({ startMonth: e.target.value })
+                                    }
+                                    placeholder="4"
+                                    className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
+                                  />
+                                  <span className="text-[12px] text-[#9e9e9e]">
+                                    月
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="mb-1 text-[11px] text-[#9e9e9e]">
+                                  期間終了
+                                </p>
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      min={1900}
+                                      max={2100}
+                                      value={isCurrent ? "" : endYear}
+                                      onChange={(e) =>
+                                        handleChange({ endYear: e.target.value })
+                                      }
+                                      placeholder="2024"
+                                      disabled={isCurrent}
+                                      className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
+                                    />
+                                    <span className="text-[12px] text-[#9e9e9e]">
+                                      年
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={12}
+                                      value={isCurrent ? "" : endMonth}
+                                      onChange={(e) =>
+                                        handleChange({ endMonth: e.target.value })
+                                      }
+                                      placeholder="3"
+                                      disabled={isCurrent}
+                                      className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
+                                    />
+                                    <span className="text-[12px] text-[#9e9e9e]">
+                                      月
+                                    </span>
+                                  </div>
+                                  <label className="inline-flex items-center gap-2 text-[12px] text-[#9e9e9e]">
+                                    <input
+                                      type="checkbox"
+                                      className="h-3 w-3 accent-[#48f4be]"
+                                      checked={isCurrent}
+                                      onChange={(e) =>
+                                        handleChange({ isCurrent: e.target.checked })
+                                      }
+                                    />
+                                    <span>現在</span>
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                            {dirtyPeriod && (
+                              <p className="mt-1 text-[11px] text-[#f4c248]">
+                                未保存の変更があります
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div className="col-span-2">
+                      <FieldLabel>説明</FieldLabel>
+                      <Textarea
+                        value={item.description}
+                        onChange={(v) => updateItem(item.id, "description", v)}
+                        rows={3}
+                      />
+                      {dirtyDescription && (
+                        <p className="mt-1 text-[11px] text-[#f4c248]">
+                          未保存の変更があります
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -689,7 +970,7 @@ function SectionsEditor({
 
 // ─── Projects セクション ───────────────────────────────
 
-function ProjectsSection() {
+function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [projects, setProjects] = useState<ProjectLocal[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
@@ -709,6 +990,81 @@ function ProjectsSection() {
   const [proofResultsMap, setProofResultsMap] = useState<
     Record<string, { issues: ProofreadIssue[] | null; error: string }>
   >({});
+
+  const [dirty, setDirty] = useState(false);
+  const [projectPeriodInputs, setProjectPeriodInputs] = useState<
+    Record<
+      string,
+      {
+        startYear: string;
+        startMonth: string;
+        endYear: string;
+        endMonth: string;
+        isCurrent: boolean;
+      }
+    >
+  >({});
+
+  const markDirty = () => {
+    if (!dirty) {
+      setDirty(true);
+      onDirtyChange(true);
+    }
+  };
+
+  const markSaved = () => {
+    setDirty(false);
+    onDirtyChange(false);
+  };
+
+  const parseProjectPeriod = (period: string | null) => {
+    const text = period ?? "";
+    const m = text.match(
+      /^(\d{4})年(\d{1,2})月\s*-\s*(現在|(\d{4})年(\d{1,2})月)?$/,
+    );
+    if (!m) {
+      return {
+        startYear: "",
+        startMonth: "",
+        endYear: "",
+        endMonth: "",
+        isCurrent: false,
+      };
+    }
+    const startYear = m[1] ?? "";
+    const startMonth = m[2] ?? "";
+    const isCurrent = m[3] === "現在";
+    const endYear = m[4] ?? "";
+    const endMonth = m[5] ?? "";
+    return {
+      startYear,
+      startMonth,
+      endYear,
+      endMonth,
+      isCurrent,
+    };
+  };
+
+  const formatProjectPeriod = (opts: {
+    startYear: string;
+    startMonth: string;
+    endYear: string;
+    endMonth: string;
+    isCurrent: boolean;
+  }) => {
+    const sy = opts.startYear.trim();
+    const sm = opts.startMonth.trim();
+    const ey = opts.endYear.trim();
+    const em = opts.endMonth.trim();
+    if (!sy || !sm) return null;
+    const start = `${sy}年${sm}月`;
+    const end = opts.isCurrent
+      ? "現在"
+      : ey && em
+        ? `${ey}年${em}月`
+        : "";
+    return end ? `${start} - ${end}` : `${start} - `;
+  };
 
   const handleProofread = async (project: ProjectLocal) => {
     // sections の本文テキストをすべて連結してチェック
@@ -757,13 +1113,18 @@ function ProjectsSection() {
     ]);
 
     if (projectRows) {
-      setProjects(
-        projectRows.map((p) => ({
-          ...p,
-          skills: skillLabelsMap[p.id] ?? [],
-          tools: toolNamesMap[p.id] ?? [],
-        }))
-      );
+      const withLocal: ProjectLocal[] = projectRows.map((p) => ({
+        ...p,
+        skills: skillLabelsMap[p.id] ?? [],
+        tools: toolNamesMap[p.id] ?? [],
+      }));
+      setProjects(withLocal);
+      // 期間入力用のローカル状態を初期化
+      const periodState: typeof projectPeriodInputs = {};
+      for (const p of withLocal) {
+        periodState[p.id] = parseProjectPeriod(p.period ?? null);
+      }
+      setProjectPeriodInputs(periodState);
     }
     setSkillVocabOptions((skillVocabRows ?? []) as SkillVocab[]);
     setToolVocabOptions((toolVocabRows ?? []) as ToolVocab[]);
@@ -773,15 +1134,24 @@ function ProjectsSection() {
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
-  const updateProject = (id: string, key: keyof ProjectLocal, val: unknown) =>
+  const updateProject = (id: string, key: keyof ProjectLocal, val: unknown) => {
+    markDirty();
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
+  };
 
   const handleSave = async (project: ProjectLocal) => {
     setSaveError(null);
     setSavingId(project.id);
 
     // ProjectLocal の skills/tools フィールドは DB カラムではないため除いて渡す
-    const { skills, tools, ...projectRow } = project;
+    const { skills, tools, ...rest } = project;
+    const periodInputs =
+      projectPeriodInputs[project.id] ?? parseProjectPeriod(project.period);
+    const formattedPeriod = formatProjectPeriod(periodInputs);
+    const projectRow = {
+      ...rest,
+      period: formattedPeriod,
+    };
     const [{ error }, skillsResult, toolsResult] = await Promise.all([
       saveProject(projectRow, {}),
       saveProjectSkillsByLabels(project.id, skills),
@@ -795,10 +1165,18 @@ function ProjectsSection() {
     }
     setSavedId(project.id);
     setTimeout(() => setSavedId(null), 2000);
+    markSaved();
     await fetchProjects();
   };
 
   const handleDelete = async (id: string) => {
+    if (
+      !window.confirm(
+        "このプロジェクトを削除します。よろしいですか？\nこの操作は取り消せません。"
+      )
+    ) {
+      return;
+    }
     setDeletingId(id);
     const { error } = await deleteProject(id);
     setDeletingId(null);
@@ -837,6 +1215,11 @@ function ProjectsSection() {
   return (
     <section id="projects" className="scroll-mt-8">
       <SectionTitle label="Projects" title="プロジェクト" />
+      {dirty && (
+        <p className="mb-3 text-[11px] text-[#f4c248]">
+          未保存の変更があります
+        </p>
+      )}
 
       <div className="mb-6 flex flex-col gap-3">
         {projects.map((project) => {
@@ -883,7 +1266,7 @@ function ProjectsSection() {
                         onChange={(v) => updateProject(project.id, "sort_order", Number(v) || 0)}
                       />
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <FieldLabel>担当役割</FieldLabel>
                       <Input
                         value={project.role ?? ""}
@@ -891,13 +1274,126 @@ function ProjectsSection() {
                         placeholder="UI/UX Designer"
                       />
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <FieldLabel>期間</FieldLabel>
-                      <Input
-                        value={project.period ?? ""}
-                        onChange={(v) => updateProject(project.id, "period", v || null)}
-                        placeholder="2023.04 - 2024.03"
-                      />
+                      {(() => {
+                        const {
+                          startYear,
+                          startMonth,
+                          endYear,
+                          endMonth,
+                          isCurrent,
+                        } = projectPeriodInputs[project.id] ??
+                          parseProjectPeriod(project.period);
+                        const handleChange = (next: {
+                          startYear?: string;
+                          startMonth?: string;
+                          endYear?: string;
+                          endMonth?: string;
+                          isCurrent?: boolean;
+                        }) => {
+                          const current = projectPeriodInputs[project.id] ??
+                            parseProjectPeriod(project.period);
+                          const updated = {
+                            ...current,
+                            ...next,
+                          };
+                          setProjectPeriodInputs((prev) => ({
+                            ...prev,
+                            [project.id]: updated,
+                          }));
+                          markDirty();
+                        };
+                        return (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="mb-1 text-[11px] text-[#9e9e9e]">
+                                期間開始
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min={1900}
+                                  max={2100}
+                                  value={startYear}
+                                  onChange={(e) =>
+                                    handleChange({ startYear: e.target.value })
+                                  }
+                                  placeholder="2023"
+                                  className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
+                                />
+                                <span className="text-[12px] text-[#9e9e9e]">
+                                  年
+                                </span>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={12}
+                                  value={startMonth}
+                                  onChange={(e) =>
+                                    handleChange({ startMonth: e.target.value })
+                                  }
+                                  placeholder="4"
+                                  className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
+                                />
+                                <span className="text-[12px] text-[#9e9e9e]">
+                                  月
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="mb-1 text-[11px] text-[#9e9e9e]">
+                                期間終了
+                              </p>
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min={1900}
+                                    max={2100}
+                                    value={isCurrent ? "" : endYear}
+                                    onChange={(e) =>
+                                      handleChange({ endYear: e.target.value })
+                                    }
+                                    placeholder="2024"
+                                    disabled={isCurrent}
+                                    className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
+                                  />
+                                  <span className="text-[12px] text-[#9e9e9e]">
+                                    年
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={12}
+                                    value={isCurrent ? "" : endMonth}
+                                    onChange={(e) =>
+                                      handleChange({ endMonth: e.target.value })
+                                    }
+                                    placeholder="3"
+                                    disabled={isCurrent}
+                                    className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
+                                  />
+                                  <span className="text-[12px] text-[#9e9e9e]">
+                                    月
+                                  </span>
+                                </div>
+                                <label className="inline-flex items-center gap-2 text-[12px] text-[#9e9e9e]">
+                                  <input
+                                    type="checkbox"
+                                    className="h-3 w-3 accent-[#48f4be]"
+                                    checked={isCurrent}
+                                    onChange={(e) =>
+                                      handleChange({ isCurrent: e.target.checked })
+                                    }
+                                  />
+                                  <span>現在</span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="col-span-2">
                       <FieldLabel>サムネイル URL</FieldLabel>
@@ -1240,13 +1736,27 @@ type SkillRow = {
   is_target: boolean;
 } & Record<SkillKey, number>;
 
-function SkillsSection() {
+function SkillsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [current, setCurrent] = useState<SkillRow | null>(null);
   const [target, setTarget] = useState<SkillRow | null>(null);
   const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  const [dirty, setDirty] = useState(false);
+
+  const markDirty = () => {
+    if (!dirty) {
+      setDirty(true);
+      onDirtyChange(true);
+    }
+  };
+
+  const markSaved = () => {
+    setDirty(false);
+    onDirtyChange(false);
+  };
 
   useEffect(() => {
     supabase.from("user_skills").select("*").then(({ data }) => {
@@ -1261,8 +1771,9 @@ function SkillsSection() {
   }, []);
 
   const updateSkill = (type: "current" | "target", key: SkillKey, val: number) => {
-    if (type === "current") setCurrent((r) => r ? { ...r, [key]: val } : r);
-    else setTarget((r) => r ? { ...r, [key]: val } : r);
+    markDirty();
+    if (type === "current") setCurrent((r) => (r ? { ...r, [key]: val } : r));
+    else setTarget((r) => (r ? { ...r, [key]: val } : r));
   };
 
   const handleSave = async () => {
@@ -1278,6 +1789,7 @@ function SkillsSection() {
     if (err) { setError(err.message); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    markSaved();
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
@@ -1286,6 +1798,11 @@ function SkillsSection() {
   return (
     <section id="skills" className="scroll-mt-8">
       <SectionTitle label="Skills" title="スキル" />
+      {dirty && (
+        <p className="mb-3 text-[11px] text-[#f4c248]">
+          未保存の変更があります
+        </p>
+      )}
       <div className="mb-2 grid grid-cols-2 gap-2 text-center">
         <p className="text-[12px] font-semibold tracking-[0.6px] text-[#9e9e9e]">CURRENT</p>
         <p className="text-[12px] font-semibold tracking-[0.6px] text-[#48f4be]">TARGET</p>
@@ -1335,7 +1852,7 @@ type CardWithRelations = SkillCard & {
   tools: SkillTool[];
 };
 
-function SkillsExperienceSection() {
+function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [cards, setCards]         = useState<CardWithRelations[]>([]);
   const [fetching, setFetching]   = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -1343,6 +1860,20 @@ function SkillsExperienceSection() {
   const [savedId, setSavedId]     = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState("");
+
+  const [dirty, setDirty] = useState(false);
+
+  const markDirty = () => {
+    if (!dirty) {
+      setDirty(true);
+      onDirtyChange(true);
+    }
+  };
+
+  const markSaved = () => {
+    setDirty(false);
+    onDirtyChange(false);
+  };
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -1352,7 +1883,21 @@ function SkillsExperienceSection() {
         supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
       ]);
       if (!cardRows) { setFetching(false); return; }
-      const merged = cardRows.map((c) => ({
+
+      // 公開ページ同様、「辞書用カード（Skill Vocab / Tool Vocab）」は
+      // Admin の UI でも非表示にする。
+      const visibleCardRows = cardRows.filter((c) => {
+        const t  = (c as SkillCard).title?.trim() ?? "";
+        const tj = (c as SkillCard).title_jp?.trim() ?? "";
+        const isVocab =
+          t === "Skill Vocab" ||
+          t === "Tool Vocab" ||
+          tj === "スキル辞書" ||
+          tj === "ツール辞書";
+        return !isVocab;
+      });
+
+      const merged = visibleCardRows.map((c) => ({
         ...c,
         bars:  (barRows  ?? []).filter((b) => b.card_id === c.id),
         tools: (toolRows ?? []).filter((t) => t.card_id === c.id),
@@ -1365,8 +1910,10 @@ function SkillsExperienceSection() {
   }, []);
 
   // ── カード操作 ──────────────────────────────────────
-  const updateCard = (id: string, key: keyof SkillCard, val: string | number) =>
-    setCards((prev) => prev.map((c) => c.id === id ? { ...c, [key]: val } : c));
+  const updateCard = (id: string, key: keyof SkillCard, val: string | number) => {
+    markDirty();
+    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: val } : c)));
+  };
 
   const handleSaveCard = async (card: CardWithRelations) => {
     setSavingId(card.id); setGlobalError("");
@@ -1378,9 +1925,17 @@ function SkillsExperienceSection() {
     if (error) { setGlobalError(error); return; }
     setSavedId(card.id);
     setTimeout(() => setSavedId(null), 2000);
+    markSaved();
   };
 
   const handleDeleteCard = async (id: string) => {
+    if (
+      !window.confirm(
+        "このスキルカードを削除します。よろしいですか？\nこの操作は取り消せません。"
+      )
+    ) {
+      return;
+    }
     setDeletingId(id);
     await deleteSkillCard(id);
     setDeletingId(null);
@@ -1393,6 +1948,7 @@ function SkillsExperienceSection() {
     if (data) {
       setCards((prev) => [...prev, { ...data, bars: [], tools: [] }]);
       setExpandedId(data.id);
+      markDirty();
     }
   };
 
@@ -1412,13 +1968,19 @@ function SkillsExperienceSection() {
     barId: string,
     key: keyof SkillExperience,
     val: string | number | null,
-  ) =>
-    setCards((prev) => prev.map((c) =>
-      c.id !== cardId ? c : {
-        ...c,
-        bars: c.bars.map((b) => b.id === barId ? { ...b, [key]: val } : b),
-      }
-    ));
+  ) => {
+    markDirty();
+    setCards((prev) =>
+      prev.map((c) =>
+        c.id !== cardId
+          ? c
+          : {
+              ...c,
+              bars: c.bars.map((b) => (b.id === barId ? { ...b, [key]: val } : b)),
+            },
+      ),
+    );
+  };
 
   const handleSaveBar = async (cardId: string, bar: SkillExperience) => {
     const { error } = await saveSkillBar({
@@ -1430,6 +1992,13 @@ function SkillsExperienceSection() {
   };
 
   const handleDeleteBar = async (cardId: string, barId: string) => {
+    if (
+      !window.confirm(
+        "このスキルバーを削除します。よろしいですか？\nこの操作は取り消せません。"
+      )
+    ) {
+      return;
+    }
     await deleteSkillBar(barId);
     setCards((prev) => prev.map((c) =>
       c.id !== cardId ? c : { ...c, bars: c.bars.filter((b) => b.id !== barId) }
@@ -1441,20 +2010,34 @@ function SkillsExperienceSection() {
     if (!card) return;
     const { data } = await addSkillBar(cardId, card.bars.length);
     if (data) {
-      setCards((prev) => prev.map((c) =>
-        c.id !== cardId ? c : { ...c, bars: [...c.bars, data] }
-      ));
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id !== cardId ? c : { ...c, bars: [...c.bars, data] },
+        ),
+      );
+      markDirty();
     }
   };
 
   // ── ツール操作 ────────────────────────────────────────
-  const updateTool = (cardId: string, toolId: string, key: keyof SkillTool, val: string | number) =>
-    setCards((prev) => prev.map((c) =>
-      c.id !== cardId ? c : {
-        ...c,
-        tools: c.tools.map((t) => t.id === toolId ? { ...t, [key]: val } : t),
-      }
-    ));
+  const updateTool = (
+    cardId: string,
+    toolId: string,
+    key: keyof SkillTool,
+    val: string | number,
+  ) => {
+    markDirty();
+    setCards((prev) =>
+      prev.map((c) =>
+        c.id !== cardId
+          ? c
+          : {
+              ...c,
+              tools: c.tools.map((t) => (t.id === toolId ? { ...t, [key]: val } : t)),
+            },
+      ),
+    );
+  };
 
   const handleSaveTool = async (cardId: string, tool: SkillTool) => {
     const { error } = await saveSkillTool({
@@ -1465,6 +2048,13 @@ function SkillsExperienceSection() {
   };
 
   const handleDeleteTool = async (cardId: string, toolId: string) => {
+    if (
+      !window.confirm(
+        "このツールタグを削除します。よろしいですか？\nこの操作は取り消せません。"
+      )
+    ) {
+      return;
+    }
     await deleteSkillTool(toolId);
     setCards((prev) => prev.map((c) =>
       c.id !== cardId ? c : { ...c, tools: c.tools.filter((t) => t.id !== toolId) }
@@ -1476,9 +2066,12 @@ function SkillsExperienceSection() {
     if (!card) return;
     const { data } = await addSkillTool(cardId, card.tools.length);
     if (data) {
-      setCards((prev) => prev.map((c) =>
-        c.id !== cardId ? c : { ...c, tools: [...c.tools, data] }
-      ));
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id !== cardId ? c : { ...c, tools: [...c.tools, data] },
+        ),
+      );
+      markDirty();
     }
   };
 
@@ -1488,6 +2081,11 @@ function SkillsExperienceSection() {
     <section id="skills-experience" className="scroll-mt-8">
       <SectionTitle label="Skills Experience" title="スキルカルーセル" />
       {globalError && <p className="mb-4 text-[13px] text-[#f4487e]">{globalError}</p>}
+      {dirty && (
+        <p className="mb-3 text-[11px] text-[#f4c248]">
+          未保存の変更があります
+        </p>
+      )}
 
       <div className="mb-6 flex flex-col gap-4">
         {cards.map((card, idx) => {
@@ -1702,6 +2300,16 @@ function SkillsExperienceSection() {
 export function AdminLayout() {
   const [activeId, setActiveId] = useState<string>("profile");
   const mainRef = useRef<HTMLDivElement>(null);
+  const [dirtySections, setDirtySections] = useState<Record<string, boolean>>({});
+
+  const hasUnsavedChanges = Object.values(dirtySections).some(Boolean);
+
+  const setSectionDirty = (sectionId: string, dirty: boolean) => {
+    setDirtySections((prev) => ({
+      ...prev,
+      [sectionId]: dirty,
+    }));
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -1719,6 +2327,16 @@ export function AdminLayout() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const scrollTo = (id: string) =>
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -1727,7 +2345,18 @@ export function AdminLayout() {
       {/* サイドバー */}
       <aside className="sticky top-0 flex h-screen w-[220px] shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0a0a0a] px-4 py-8">
         <div className="mb-8 px-2">
-          <Link href="/" className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline">
+          <Link
+            href="/"
+            className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline"
+            onClick={(e) => {
+              if (
+                hasUnsavedChanges &&
+                !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
+              ) {
+                e.preventDefault();
+              }
+            }}
+          >
             ← Portfolio
           </Link>
           <p className="text-[20px] font-semibold text-white">Admin</p>
@@ -1763,6 +2392,14 @@ export function AdminLayout() {
           <Link
             href="/styleguide"
             className="block rounded-[8px] px-3 py-2 text-[12px] text-[#616161] hover:bg-[#1a1a1a] hover:text-[#9e9e9e]"
+            onClick={(e) => {
+              if (
+                hasUnsavedChanges &&
+                !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
+              ) {
+                e.preventDefault();
+              }
+            }}
           >
             Style Guide →
           </Link>
@@ -1781,11 +2418,13 @@ export function AdminLayout() {
           </div>
 
           <div className="flex flex-col gap-24">
-            <ProfileSection />
-            <CareerSection />
-            <ProjectsSection />
-            <SkillsSection />
-            <SkillsExperienceSection />
+            <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
+            <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
+            <ProjectsSection onDirtyChange={(dirty) => setSectionDirty("projects", dirty)} />
+            <SkillsSection onDirtyChange={(dirty) => setSectionDirty("skills", dirty)} />
+            <SkillsExperienceSection
+              onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
+            />
           </div>
 
           <div className="mt-24 border-t border-[#2a2a2a] pt-8">

@@ -140,7 +140,7 @@ export default function Home() {
           {/* Career */}
           <section id="career" className="w-full max-w-[916px]">
             <Headline label="Career" title="経歴" />
-            <div className="flex flex-col gap-10">
+            <div className="flex flex-col gap-0">
               {loading ? (
                 <>
                   <span className="inline-block h-24 w-full animate-pulse rounded bg-[#424242]" />

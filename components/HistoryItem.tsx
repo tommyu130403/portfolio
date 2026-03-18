@@ -46,7 +46,7 @@ const HistoryItem: FC<HistoryItemProps> = ({
         <div className="flex flex-col gap-3 p-6">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <Icon set="Time" name="calendar-three" className="h-4 w-4 shrink-0" />
+              <Icon set="Time" name="calendar-three-mint" className="h-4 w-4 shrink-0" />
               <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-[#b3ffe7] whitespace-nowrap">
                 {period}
               </p>

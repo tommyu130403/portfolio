@@ -202,7 +202,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
 
   return (
     <>
-      <div className="flex flex-wrap gap-[32px]">
+      <div className="flex flex-wrap gap-[16px]">
         {projects.map((project, i) => (
           <ProjectCard
             key={project.id}

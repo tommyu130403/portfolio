@@ -31,13 +31,31 @@ type SkillCardConfig = {
 };
 
 // DB rows
-type SkillCardRow       = Tables<"skill_cards">;
-type SkillExperienceRow = Tables<"skill_experience">;
-type SkillToolRow       = Tables<"skill_tools">;
+type SkillCardRow        = Tables<"skill_cards">;
+type SkillExperienceRow  = Tables<"skill_experience">;
+type SkillToolRow        = Tables<"skill_tools">;
+type SkillLevelTokenRow  = Tables<"skill_level_tokens">;
 
 // ──────────────────────────────────────────────
 // Supabase fetch helper
 // ──────────────────────────────────────────────
+type SkillLevelTokenMap = Record<string, { value: string; description: string }>;
+
+async function fetchLevelTokenMap(): Promise<SkillLevelTokenMap> {
+  const { data } = await supabase
+    .from("skill_level_tokens")
+    .select("key,value,description")
+    .like("key", "Level.%");
+
+  const rows = (data as Pick<SkillLevelTokenRow, "key" | "value" | "description">[] | null) ?? [];
+  return Object.fromEntries(
+    rows.map((r) => [
+      r.key,
+      { value: r.value, description: r.description },
+    ]),
+  );
+}
+
 async function fetchSkillCards(): Promise<SkillCardConfig[]> {
   const [{ data: cards }, { data: bars }, { data: tools }] = await Promise.all([
     supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
@@ -91,11 +109,23 @@ const CARD_W   = 400;  // px — Figma 仕様の最大カード幅
 // ──────────────────────────────────────────────
 // _SkillExperienceBar
 // ──────────────────────────────────────────────
-const SkillExperienceBar = ({ label, segments, level, description }: SkillBarConfig) => {
+const SkillExperienceBar = ({
+  label,
+  segments,
+  level,
+  description,
+  levelTokenMap,
+}: SkillBarConfig & { levelTokenMap?: SkillLevelTokenMap }) => {
   const [expanded, setExpanded] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const levelKeyMatch = String(level ?? "").match(/^Lv\.(\d+)\b/);
+  const levelKey = levelKeyMatch ? `Level.${levelKeyMatch[1]}` : undefined;
+  const levelToken = levelKey ? levelTokenMap?.[levelKey] : undefined;
+  const levelLabel = levelToken?.value ?? level;
+  const levelTooltip = levelToken?.description;
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full relative">
       {/* メイン行: ラベル + バー + トグル */}
       <div className="flex items-center justify-between w-full gap-3">
         {/* 左: ラベル・バー・レベルバッジ */}
@@ -120,8 +150,36 @@ const SkillExperienceBar = ({ label, segments, level, description }: SkillBarCon
               })}
             </div>
             {/* レベルバッジ */}
-            <div className="bg-[rgba(0,0,0,0.25)] flex items-center justify-center px-2 py-1 rounded-full shrink-0">
-              <span className="text-[10px] leading-4 text-[#9e9e9e] whitespace-nowrap">{level}</span>
+            <div
+              className="bg-[rgba(0,0,0,0.25)] flex items-center justify-center px-2 py-1 rounded-full shrink-0 relative"
+              onMouseEnter={() => setTooltipOpen(true)}
+              onMouseLeave={() => setTooltipOpen(false)}
+              onFocus={() => setTooltipOpen(true)}
+              onBlur={() => setTooltipOpen(false)}
+              tabIndex={0}
+            >
+              <span className="text-[10px] leading-4 text-[#9e9e9e] whitespace-nowrap">{levelLabel}</span>
+              {levelTooltip && (
+                <div
+                  className={[
+                    "absolute bottom-full left-1/2 -translate-x-1/2 mb-2",
+                    tooltipOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+                    "transition-opacity duration-150",
+                    "z-50",
+                    "bg-[#212121] border border-[#424242] rounded-[14px] overflow-hidden",
+                    "shadow-[1px_1px_16px_2px_rgba(0,0,0,0.25)]",
+                    "px-4 py-3",
+                    "w-[360px] max-w-[calc(100vw-32px)]",
+                  ].join(" ")}
+                  role="tooltip"
+                  onMouseEnter={() => setTooltipOpen(true)}
+                  onMouseLeave={() => setTooltipOpen(false)}
+                >
+                  <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-[#9e9e9e]">
+                    {levelTooltip}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -148,7 +206,14 @@ const SkillExperienceBar = ({ label, segments, level, description }: SkillBarCon
       </div>
       {/* 展開時の説明 */}
       {expanded && description && (
-        <div className="mt-3 bg-[#212121] border border-[#424242] rounded-[14px] overflow-hidden">
+        <div
+          className={[
+            "absolute left-0 right-0 top-full mt-3",
+            "bg-[#212121] border border-[#424242] rounded-[14px] overflow-hidden",
+            "shadow-[1px_1px_16px_2px_rgba(0,0,0,0.25)]",
+            "z-20",
+          ].join(" ")}
+        >
           <div className="p-4">
             <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-[#9e9e9e]">{description}</p>
           </div>
@@ -175,7 +240,14 @@ const SkillTag = ({ name, years }: ToolTagConfig) => (
 // ──────────────────────────────────────────────
 // _SkillCard
 // ──────────────────────────────────────────────
-const SkillCard = ({ icon, title, titleJP, skills, tools }: SkillCardConfig) => (
+const SkillCard = ({
+  icon,
+  title,
+  titleJP,
+  skills,
+  tools,
+  levelTokenMap,
+}: SkillCardConfig & { levelTokenMap?: SkillLevelTokenMap }) => (
   <div className="bg-[#1a1a1a] rounded-[14px] overflow-hidden w-full h-full">
     <div className="flex flex-col gap-10 px-6 py-10 h-full">
       {/* ヘッダー: アイコン + EN タイトル + JP サブタイトル */}
@@ -195,7 +267,7 @@ const SkillCard = ({ icon, title, titleJP, skills, tools }: SkillCardConfig) => 
       {skills.length > 0 && (
         <div className="flex flex-col gap-6">
           {skills.map((skill, i) => (
-            <SkillExperienceBar key={i} {...skill} />
+            <SkillExperienceBar key={i} {...skill} levelTokenMap={levelTokenMap} />
           ))}
         </div>
       )}
@@ -222,6 +294,7 @@ export default function SkillsCardGrid() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [phase, setPhase]         = useState<"idle" | "next" | "prev">("idle");
   const [containerWidth, setContainerWidth] = useState(0);
+  const [levelTokenMap, setLevelTokenMap] = useState<SkillLevelTokenMap>({});
 
   const containerRef  = useRef<HTMLDivElement>(null);
   const trackRef      = useRef<HTMLDivElement>(null);
@@ -230,8 +303,9 @@ export default function SkillsCardGrid() {
 
   // DB からカードデータを取得
   useEffect(() => {
-    fetchSkillCards().then((data) => {
+    Promise.all([fetchSkillCards(), fetchLevelTokenMap()]).then(([data, map]) => {
       setCards(data);
+      setLevelTokenMap(map);
       setLoading(false);
     });
   }, []);
@@ -382,7 +456,7 @@ export default function SkillsCardGrid() {
                   style={cardStyle}
                   className={fadeIn ? "animate-[card-fade-in_0.35s_ease-in-out]" : ""}
                 >
-                  <SkillCard {...card} />
+                  <SkillCard {...card} levelTokenMap={levelTokenMap} />
                 </div>
               ))}
             </div>

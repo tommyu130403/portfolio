@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_level_tokens: {
+        Row: {
+          figma_type: string | null
+          figma_variable_id: string | null
+          is_override: boolean | null
+          key: string
+          mode: string
+          scopes: string[] | null
+          description: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          figma_type?: string | null
+          figma_variable_id?: string | null
+          is_override?: boolean | null
+          key: string
+          mode?: string
+          scopes?: string[] | null
+          description: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          figma_type?: string | null
+          figma_variable_id?: string | null
+          is_override?: boolean | null
+          key?: string
+          mode?: string
+          scopes?: string[] | null
+          description?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       profile: {
         Row: {
           bio: string

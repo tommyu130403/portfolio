@@ -140,15 +140,21 @@ export default function Home() {
           {/* Career */}
           <section id="career" className="w-full max-w-[916px]">
             <Headline label="Career" title="経歴" />
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-0">
               {loading ? (
                 <>
                   <span className="inline-block h-24 w-full animate-pulse rounded bg-[#424242]" />
                   <span className="inline-block h-24 w-full animate-pulse rounded bg-[#424242]" />
                 </>
               ) : (
-                career.map((item) => (
-                  <HistoryItem key={item.id} {...item} />
+                career.map((item, idx) => (
+                  <HistoryItem
+                    key={item.id}
+                    {...item}
+                    timeline={
+                      idx === 0 ? "end" : idx === career.length - 1 ? "start" : "middle"
+                    }
+                  />
                 ))
               )}
             </div>

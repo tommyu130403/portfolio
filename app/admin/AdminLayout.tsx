@@ -535,7 +535,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
       .from("profile")
       .upsert({ ...form, updated_at: new Date().toISOString() });
     setLoading(false);
-    if (err) { setError(err); return; }
+    if (err) { setError(err.message); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     markSaved();

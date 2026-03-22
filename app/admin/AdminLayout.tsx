@@ -535,7 +535,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
       .from("profile")
       .upsert({ ...form, updated_at: new Date().toISOString() });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(err); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     markSaved();
@@ -2100,7 +2100,7 @@ function SkillsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     }));
     const { error: err } = await saveUserSkills(rows);
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(err); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     markSaved();

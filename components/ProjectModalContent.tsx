@@ -1,10 +1,76 @@
 import type { FC, ReactNode } from "react";
+import React from "react";
 import Icon from "./Icon";
 import Tag from "./Tag";
 import type { Tables } from "@/src/types/supabase";
 
 type Project = Tables<"projects">;
 type Section = { heading: string; body: string };
+
+/** Markdown の `![alt](url)` と段落区切り（空行）をレンダリングするコンポーネント */
+const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
+  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
+
+  const paragraphs = body.split(/\n{2,}/);
+
+  return (
+    <>
+      {paragraphs.map((para, pi) => {
+        const parts: ReactNode[] = [];
+        let last = 0;
+        let m: RegExpExecArray | null;
+        IMG_RE.lastIndex = 0;
+        while ((m = IMG_RE.exec(para)) !== null) {
+          const before = para.slice(last, m.index);
+          if (before) {
+            parts.push(
+              <React.Fragment key={`t-${pi}-${last}`}>
+                {before.split("\n").map((line, li, arr) => (
+                  <React.Fragment key={li}>
+                    {line}
+                    {li < arr.length - 1 && <br />}
+                  </React.Fragment>
+                ))}
+              </React.Fragment>
+            );
+          }
+          parts.push(
+            <img
+              key={`img-${pi}-${m.index}`}
+              src={m[2]}
+              alt={m[1]}
+              className="my-4 max-w-full rounded-[12px] block"
+            />
+          );
+          last = m.index + m[0].length;
+        }
+        const tail = para.slice(last);
+        if (tail) {
+          parts.push(
+            <React.Fragment key={`t-${pi}-tail`}>
+              {tail.split("\n").map((line, li, arr) => (
+                <React.Fragment key={li}>
+                  {line}
+                  {li < arr.length - 1 && <br />}
+                </React.Fragment>
+              ))}
+            </React.Fragment>
+          );
+        }
+        const hasOnlyImages = parts.every(
+          (p) => React.isValidElement(p) && p.type === "img"
+        );
+        return hasOnlyImages ? (
+          <div key={pi}>{parts}</div>
+        ) : (
+          <p key={pi} className="text-[17px] leading-[1.5] tracking-[0.85px] text-white">
+            {parts}
+          </p>
+        );
+      })}
+    </>
+  );
+};
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
@@ -136,9 +202,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
           <p className="text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white pb-2">
             {section.heading}
           </p>
-          <p className="text-[17px] leading-[1.5] tracking-[0.85px] text-white">
-            {section.body}
-          </p>
+          <SectionBodyRenderer body={section.body} />
         </div>
       ))}
     </div>

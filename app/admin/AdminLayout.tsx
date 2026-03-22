@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
@@ -22,8 +23,11 @@ import {
   listAllProjectToolNames,
   saveProjectSkillsByLabels,
   saveProjectToolsByNames,
+  saveUserSkills,
+  listStorageImages,
+  uploadStorageImage,
 } from "@/app/admin/actions";
-import type { SkillVocab, ToolVocab } from "@/app/admin/actions";
+import type { SkillVocab, ToolVocab, StorageImage } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
 import type { Json } from "@/src/types/supabase";
 
@@ -103,6 +107,266 @@ function SectionTitle({ label, title }: { label: string; title: string }) {
     </div>
   );
 }
+
+// ─── 画像ピッカー モーダル ────────────────────────────────────────────────────
+
+function ImagePickerModal({
+  open,
+  onClose,
+  onSelect,
+  folder,
+  showAlt = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (url: string, alt?: string) => void;
+  folder: string;
+  showAlt?: boolean;
+}) {
+  const [images, setImages] = useState<StorageImage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<StorageImage | null>(null);
+  const [alt, setAlt] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    setSelected(null);
+    setQuery("");
+    setAlt("");
+    setUploadError("");
+    listStorageImages().then(({ data }) => {
+      setImages(data);
+      setLoading(false);
+    });
+  }, [open]);
+
+  if (!open) return null;
+
+  const filtered = images.filter(
+    (img) =>
+      img.name.toLowerCase().includes(query.toLowerCase()) ||
+      img.path.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    setUploadError("");
+    const fd = new FormData();
+    fd.append("file", file);
+    const { url, path, error } = await uploadStorageImage(fd, folder);
+    setUploading(false);
+    if (error || !url || !path) { setUploadError(error ?? "アップロード失敗"); return; }
+    const img: StorageImage = { name: file.name, path, url };
+    setImages((prev) => [img, ...prev]);
+    setSelected(img);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleUpload(file);
+  };
+
+  const handleConfirm = () => {
+    if (!selected) return;
+    onSelect(selected.url, showAlt ? alt : undefined);
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[82vh] w-[660px] flex-col overflow-hidden rounded-[12px] border border-[#424242] bg-[#1a1a1a]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between border-b border-[#2a2a2a] px-5 py-4">
+          <p className="text-[14px] font-semibold text-white">🖼 画像を選択</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[18px] text-[#616161] hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* アップロードゾーン */}
+        <div className="px-5 pt-4">
+          <div
+            className={`cursor-pointer rounded-[8px] border-2 border-dashed p-4 text-center transition-colors ${
+              dragging
+                ? "border-[#48f4be] bg-[#48f4be]/10"
+                : "border-[#424242] hover:border-[#616161]"
+            }`}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
+            />
+            {uploading ? (
+              <p className="text-[12px] text-[#9e9e9e]">アップロード中…</p>
+            ) : (
+              <p className="text-[12px] text-[#9e9e9e]">
+                クリック / ドラッグ&amp;ドロップでアップロード
+                <span className="ml-2 text-[#616161]">→ {folder}/</span>
+              </p>
+            )}
+            {uploadError && (
+              <p className="mt-1 text-[11px] text-[#f4487e]">{uploadError}</p>
+            )}
+          </div>
+        </div>
+
+        {/* 検索 */}
+        <div className="px-5 pt-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ファイル名 / パスで検索…"
+            className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-[#616161] outline-none focus:border-[#48f4be]"
+          />
+        </div>
+
+        {/* 画像グリッド */}
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+          {loading ? (
+            <p className="py-8 text-center text-[12px] text-[#616161]">読み込み中…</p>
+          ) : filtered.length === 0 ? (
+            <p className="py-8 text-center text-[12px] text-[#616161]">
+              {query ? "一致する画像がありません" : "画像がありません。上からアップロードしてください。"}
+            </p>
+          ) : (
+            <div className="grid grid-cols-4 gap-2">
+              {filtered.map((img) => (
+                <button
+                  key={img.path}
+                  type="button"
+                  onClick={() => setSelected(img)}
+                  className={`group overflow-hidden rounded-[6px] border transition-colors ${
+                    selected?.path === img.path
+                      ? "border-[#48f4be]"
+                      : "border-[#424242] hover:border-[#616161]"
+                  }`}
+                >
+                  <img src={img.url} alt={img.name} className="h-20 w-full object-cover" />
+                  <p className="truncate bg-[#121212] px-1 py-1 text-left text-[9px] text-[#9e9e9e]">
+                    {img.path}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* alt テキスト（SectionsEditor 用） */}
+        {showAlt && selected && (
+          <div className="border-t border-[#2a2a2a] px-5 py-3">
+            <p className="mb-1 text-[11px] text-[#9e9e9e]">代替テキスト（alt）</p>
+            <input
+              type="text"
+              value={alt}
+              onChange={(e) => setAlt(e.target.value)}
+              placeholder="画像の説明（任意）"
+              className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-[#616161] outline-none focus:border-[#48f4be]"
+            />
+          </div>
+        )}
+
+        {/* フッター */}
+        <div className="flex items-center justify-between border-t border-[#2a2a2a] px-5 py-3">
+          <p className="text-[11px] text-[#616161]">
+            {selected ? `選択中: ${selected.path}` : "画像をクリックして選択"}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-[8px] border border-[#424242] px-4 py-2 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#616161] hover:text-white"
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={!selected}
+              className="rounded-[8px] bg-[#48f4be] px-4 py-2 text-[13px] font-semibold text-black transition-opacity disabled:opacity-40"
+            >
+              {showAlt ? "挿入" : "選択"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 画像ピッカー フィールド（URL入力欄の置き換え）────────────────────────────
+
+function ImagePickerField({
+  value,
+  onChange,
+  folder,
+  previewClassName = "mt-2 h-20 w-20 rounded-[8px] object-cover",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  folder: string;
+  previewClassName?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="https://…"
+          className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white placeholder-[#616161] outline-none transition-colors focus:border-[#48f4be]"
+        />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="shrink-0 rounded-[8px] border border-[#424242] px-3 py-2 text-[12px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+          title="Supabase Storageから選択"
+        >
+          🖼 選択
+        </button>
+      </div>
+      {value && (
+        <img src={value} alt="preview" className={previewClassName} />
+      )}
+      <ImagePickerModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onSelect={(url) => { onChange(url); setOpen(false); }}
+        folder={folder}
+        showAlt={false}
+      />
+    </>
+  );
+}
+
+// ─── 汎用UIパーツ ─────────────────────────────────────────────────────────────
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-[#9e9e9e]">{children}</p>;
@@ -307,15 +571,13 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
           <Textarea value={form.bio} onChange={(v) => set("bio", v)} rows={3} />
         </div>
         <div className="col-span-2">
-          <FieldLabel>プロフィール画像 URL</FieldLabel>
-          <Input value={form.hero_image_url} onChange={(v) => set("hero_image_url", v)} placeholder="https://..." />
-          {form.hero_image_url && (
-            <img
-              src={form.hero_image_url}
-              alt="preview"
-              className="mt-2 h-20 w-20 rounded-[8px] object-cover"
-            />
-          )}
+          <FieldLabel>プロフィール画像</FieldLabel>
+          <ImagePickerField
+            value={form.hero_image_url}
+            onChange={(v) => set("hero_image_url", v)}
+            folder="profile"
+            previewClassName="mt-2 h-20 w-20 rounded-[8px] object-cover"
+          />
         </div>
       </div>
 
@@ -810,6 +1072,57 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
 // sections JSON ↔ Markdown 変換ユーティリティ
 type SectionItem = { heading: string; body: string };
 
+/** Markdown の body テキストを画像・段落・改行に変換して表示するコンポーネント */
+function SectionBodyRenderer({ body }: { body: string }) {
+  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
+
+  /** 1行を解析し、インライン画像をノードに変換 */
+  const renderLine = (line: string, lineKey: number) => {
+    const nodes: React.ReactNode[] = [];
+    let last = 0;
+    let m: RegExpExecArray | null;
+    IMG_RE.lastIndex = 0;
+    while ((m = IMG_RE.exec(line)) !== null) {
+      if (m.index > last) nodes.push(line.slice(last, m.index));
+      nodes.push(
+        <img
+          key={`img-${lineKey}-${m.index}`}
+          src={m[2]}
+          alt={m[1]}
+          className="my-2 max-w-full rounded-[8px] block"
+        />,
+      );
+      last = IMG_RE.lastIndex;
+    }
+    if (last < line.length) nodes.push(line.slice(last));
+    return nodes;
+  };
+
+  // \n\n（またはそれ以上の空行）でパラグラフ分割
+  const paragraphs = body.split(/\n{2,}/);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {paragraphs.map((para, pi) => {
+        const lines = para.split("\n");
+        return (
+          <p
+            key={pi}
+            className="text-[17px] leading-[1.5] tracking-[0.85px] text-white/80"
+          >
+            {lines.map((line, li) => (
+              <React.Fragment key={li}>
+                {li > 0 && <br />}
+                {renderLine(line, li)}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function sectionsToMarkdown(sections: SectionItem[]): string {
   return sections.map((s) => `## ${s.heading}\n\n${s.body}`).join("\n\n");
 }
@@ -849,41 +1162,31 @@ function SectionsEditor({
     sectionsToMarkdown((value ?? []) as SectionItem[])
   );
   const prevValue = useRef(value);
-   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [imgModalOpen, setImgModalOpen] = useState(false);
+  // カーソル位置を保存してモーダルを開く前に退避する
+  const savedCaret = useRef<{ start: number; end: number } | null>(null);
 
   const handleChange = (md: string) => {
     setMarkdown(md);
     onChange(markdownToSections(md) as unknown as Json);
   };
 
-  const handleInsertImage = () => {
-    const url = window.prompt("挿入する画像の URL を入力してください");
-    if (!url) return;
-    const alt =
-      window.prompt("代替テキスト（任意）を入力してください") ?? "";
-
+  const insertImageSyntax = (url: string, alt = "") => {
     const syntax = `![${alt.trim()}](${url.trim()})`;
     const el = textareaRef.current;
+    const caret = savedCaret.current;
 
-    // テキストエリアがまだマウントされていない場合は末尾に追加
-    if (!el) {
+    if (!el || !caret) {
       handleChange(markdown + `\n\n${syntax}\n`);
       return;
     }
+    const before = markdown.slice(0, caret.start);
+    const after = markdown.slice(caret.end);
+    const needsNewline = before.length > 0 && !before.endsWith("\n\n");
+    const insert = (needsNewline ? "\n\n" : "") + syntax + "\n";
+    handleChange(before + insert + after);
 
-    const { selectionStart, selectionEnd } = el;
-    const before = markdown.slice(0, selectionStart);
-    const after = markdown.slice(selectionEnd);
-
-    const needsLeadingNewline =
-      before.length > 0 && !before.endsWith("\n\n");
-    const insert =
-      (needsLeadingNewline ? "\n\n" : "") + syntax + "\n";
-
-    const next = before + insert + after;
-    handleChange(next);
-
-    // 挿入位置の直後にキャレットを移動
     const caretPos = before.length + insert.length;
     requestAnimationFrame(() => {
       const el2 = textareaRef.current;
@@ -893,9 +1196,26 @@ function SectionsEditor({
     });
   };
 
+  const openImgModal = () => {
+    // モーダルを開く前にカーソル位置を保存
+    const el = textareaRef.current;
+    savedCaret.current = el
+      ? { start: el.selectionStart, end: el.selectionEnd }
+      : null;
+    setImgModalOpen(true);
+  };
+
   const preview = markdownToSections(markdown);
 
   return (
+    <>
+      <ImagePickerModal
+        open={imgModalOpen}
+        onClose={() => setImgModalOpen(false)}
+        onSelect={(url, alt) => { insertImageSyntax(url, alt); setImgModalOpen(false); }}
+        folder="projects/sections"
+        showAlt
+      />
     <div className="overflow-hidden rounded-[8px] border border-[#424242]">
       {/* タブヘッダー */}
       <div className="flex items-center border-b border-[#424242] bg-[#141414]">
@@ -922,13 +1242,15 @@ function SectionsEditor({
       {/* 編集エリア */}
       {tab === "edit" && (
         <>
-          <div className="flex items-center justify-end px-4 pt-3 pb-1">
+          <div className="flex items-center justify-between px-4 pt-3 pb-1">
+            <p className="text-[11px] text-[#3a3a3a]">カーソル位置に挿入されます</p>
             <button
               type="button"
-              onClick={handleInsertImage}
-              className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+              onClick={openImgModal}
+              className="flex items-center gap-1.5 rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
             >
-              画像を挿入（Markdown）
+              <span>🖼</span>
+              <span>画像を挿入</span>
             </button>
           </div>
           <textarea
@@ -951,13 +1273,10 @@ function SectionsEditor({
             <div className="flex flex-col gap-8">
               {preview.map((sec, i) => (
                 <div key={i} className="flex flex-col gap-4">
-                  {/* ProjectModalContent の section heading スタイルに準拠 */}
                   <p className="font-mplus text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
                     {sec.heading}
                   </p>
-                  <p className="text-[17px] leading-[1.5] tracking-[0.85px] text-white/80">
-                    {sec.body}
-                  </p>
+                  <SectionBodyRenderer body={sec.body} />
                 </div>
               ))}
             </div>
@@ -965,6 +1284,7 @@ function SectionsEditor({
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -1396,19 +1716,13 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
                       })()}
                     </div>
                     <div className="col-span-2">
-                      <FieldLabel>サムネイル URL</FieldLabel>
-                      <Input
+                      <FieldLabel>サムネイル</FieldLabel>
+                      <ImagePickerField
                         value={project.thumbnail_url ?? ""}
                         onChange={(v) => updateProject(project.id, "thumbnail_url", v || null)}
-                        placeholder="https://..."
+                        folder="projects/thumbnails"
+                        previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
                       />
-                      {project.thumbnail_url && (
-                        <img
-                          src={project.thumbnail_url}
-                          alt="preview"
-                          className="mt-2 h-16 w-28 rounded-[6px] object-cover"
-                        />
-                      )}
                     </div>
                     <div className="col-span-2">
                       <FieldLabel>スキル</FieldLabel>
@@ -1784,7 +2098,7 @@ function SkillsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       updated_at: new Date().toISOString(),
       ...Object.fromEntries(SKILL_KEYS.map((k) => [k, r[k]])),
     }));
-    const { error: err } = await supabase.from("user_skills").upsert(rows);
+    const { error: err } = await saveUserSkills(rows);
     setLoading(false);
     if (err) { setError(err.message); return; }
     setSaved(true);

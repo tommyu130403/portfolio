@@ -14,6 +14,72 @@ import type { Tables } from "@/src/types/supabase";
 export type { SkillVocab, ToolVocab } from "@/src/lib/skills-tools";
 export { listSkillVocab, listToolVocab };
 
+// ─── Storage ──────────────────────────────────────────────────────────────────
+
+export type StorageImage = { name: string; path: string; url: string };
+
+async function listFolderRecursive(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  prefix: string,
+): Promise<StorageImage[]> {
+  const { data, error } = await admin.storage
+    .from("Portfolio")
+    .list(prefix, { limit: 1000 });
+  if (error || !data) return [];
+  const results: StorageImage[] = [];
+  for (const item of data) {
+    const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+    if (item.metadata) {
+      const { data: urlData } = admin.storage
+        .from("Portfolio")
+        .getPublicUrl(fullPath);
+      results.push({ name: item.name, path: fullPath, url: urlData.publicUrl });
+    } else {
+      results.push(...(await listFolderRecursive(admin, fullPath)));
+    }
+  }
+  return results;
+}
+
+export async function listStorageImages(): Promise<{
+  data: StorageImage[];
+  error: string | null;
+}> {
+  try {
+    const admin = getSupabaseAdmin();
+    const images = await listFolderRecursive(admin, "");
+    return { data: images, error: null };
+  } catch (e) {
+    return { data: [], error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function uploadStorageImage(
+  formData: FormData,
+  folder: string,
+): Promise<{ url: string | null; path: string | null; error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const file = formData.get("file") as File;
+    if (!file) return { url: null, path: null, error: "ファイルが見つかりません" };
+    const ext = file.name.split(".").pop() ?? "bin";
+    const base = file.name
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const filename = `${base}_${Date.now()}.${ext}`;
+    const path = folder ? `${folder}/${filename}` : filename;
+    const arrayBuffer = await file.arrayBuffer();
+    const { error } = await admin.storage
+      .from("Portfolio")
+      .upload(path, arrayBuffer, { contentType: file.type, upsert: false });
+    if (error) return { url: null, path: null, error: error.message };
+    const { data: urlData } = admin.storage.from("Portfolio").getPublicUrl(path);
+    return { url: urlData.publicUrl, path, error: null };
+  } catch (e) {
+    return { url: null, path: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 type ProjectRow = Tables<"projects">;
 
 /**
@@ -177,6 +243,20 @@ export async function saveSkillBar(bar: {
   try {
     const admin = getSupabaseAdmin();
     const { error } = await admin.from("skill_experience").upsert(bar);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function saveUserSkills(rows: {
+  id: string; user_id: string; is_target: boolean | null; updated_at: string;
+  [key: string]: unknown;
+}[]): Promise<{ error: string | null }> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { error } = await admin.from("user_skills").upsert(rows);
     if (error) return { error: error.message };
     return { error: null };
   } catch (e) {

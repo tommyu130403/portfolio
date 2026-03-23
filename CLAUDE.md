@@ -44,6 +44,15 @@ git pull origin main
 git checkout -b <type>/<yyyymmdd>-<description>
 ```
 
+### Git Operation Rules
+
+**基本運用事項:**
+- すでにPRが作成された作業ブランチで、追跡ファイルがなく差分がない状態で新しい指示や作業を開始しようとした場合、新規ブランチを作成するか必ず確認すること
+
+**原則禁止事項:**
+- mainブランチでの作業（作業指示があった場合は、そのまま続行してよいか必ず確認すること）
+- mainブランチの変更をそのままpushすること
+
 ## Style Guide Auto-Update Rules
 
 When making changes that affect the following files, **always update the style guide** (`app/styleguide/StyleguideLayout.tsx`) in the same task:

@@ -1,6 +1,6 @@
 "use client";
 
-import type { FC, ReactNode } from "react";
+import { type FC, type ReactNode, useEffect } from "react";
 import { ButtonFunction } from "./ButtonFunction";
 
 type ModalProps = {
@@ -28,6 +28,13 @@ const Modal: FC<ModalProps> = ({
   currentIndex = 0,
   total = 1,
 }) => {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   return (
     <div
       className="fixed top-0 right-0 bottom-0 z-50 flex cursor-pointer items-center justify-center transition-[left] duration-300 ease-in-out"

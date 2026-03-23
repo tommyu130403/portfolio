@@ -75,23 +75,6 @@ const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
 
-const InfoChip: FC<{
-  icon: ReactNode;
-  label: string;
-  children: ReactNode;
-}> = ({ icon, label, children }) => (
-  <div className="flex h-10 items-center gap-3 rounded-[8px] bg-black/25 px-4 shrink-0">
-    <div className="flex items-center gap-2 shrink-0">
-      {icon}
-      <p className="text-[12px] tracking-[0.6px] text-[#9e9e9e] whitespace-nowrap">
-        {label}
-      </p>
-    </div>
-    <div className="w-px self-stretch my-[10px] bg-[#424242]" />
-    <div className="flex items-center gap-2">{children}</div>
-  </div>
-);
-
 type ProjectModalContentProps = {
   project: Project;
   skills?: string[];
@@ -100,6 +83,54 @@ type ProjectModalContentProps = {
 
 const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [], tools = [] }) => {
   const sections = (project.sections ?? []) as Section[];
+  const infoRows = [
+    {
+      key: "role",
+      label: "役割",
+      icon: <Icon set="Peoples" name="people" className="w-4 h-4 shrink-0" />,
+      content: project.role ? (
+        <p className="text-[15px] leading-[24px] tracking-[0.3px] text-white">
+          {project.role}
+        </p>
+      ) : null,
+    },
+    {
+      key: "period",
+      label: "期間",
+      icon: <Icon set="Time" name="calendar-three" className="w-4 h-4 shrink-0" />,
+      content: project.period ? (
+        <p className="text-[15px] leading-[24px] tracking-[0.3px] text-white whitespace-nowrap">
+          {project.period}
+        </p>
+      ) : null,
+    },
+    {
+      key: "skills",
+      label: "スキル",
+      icon: <Icon set="Charts" name="viencharts" className="w-4 h-4 shrink-0" />,
+      content:
+        skills.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {skills.map((skill) => (
+              <Tag key={skill} label={skill} variant="small" />
+            ))}
+          </div>
+        ) : null,
+    },
+    {
+      key: "tools",
+      label: "ツール",
+      icon: <Icon set="Base" name="tool" className="w-4 h-4 shrink-0" />,
+      content:
+        tools.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {tools.map((tool) => (
+              <Tag key={tool} label={tool} variant="small" />
+            ))}
+          </div>
+        ) : null,
+    },
+  ].filter((row) => row.content !== null);
 
   return (
     <div className="flex flex-col gap-16">
@@ -126,74 +157,23 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
         </p>
       </div>
 
-      {/* Info chips */}
-      <div className="flex flex-wrap gap-4">
-        {project.role && (
-          <InfoChip
-            icon={
-              <Icon set="Peoples" name="people" className="h-4 w-6 shrink-0" />
-            }
-            label="役割"
-          >
-            <p className="text-[12px] tracking-[0.6px] text-white whitespace-nowrap">
-              {project.role}
-            </p>
-          </InfoChip>
-        )}
-
-        {project.period && (
-          <InfoChip
-            icon={
-              <Icon
-                set="Time"
-                name="calendar-three"
-                className="h-4 w-6 shrink-0"
-              />
-            }
-            label="期間"
-          >
-            <p className="text-[12px] tracking-[0.6px] text-white whitespace-nowrap">
-              {project.period}
-            </p>
-          </InfoChip>
-        )}
-
-        {skills.length > 0 && (
-          <InfoChip
-            icon={
-              <Icon
-                set="Charts"
-                name="radar-chart"
-                className="h-4 w-6 shrink-0"
-              />
-            }
-            label="スキル"
-          >
-            {skills.map((skill) => (
-              <Tag key={skill} label={skill} />
-            ))}
-          </InfoChip>
-        )}
-
-        {tools.length > 0 && (
-          <InfoChip
-            icon={
-              <Icon set="Build" name="tool" className="h-4 w-6 shrink-0" />
-            }
-            label="ツール"
-          >
-            <div className="flex gap-2 items-center flex-wrap">
-              {tools.map((tool) => (
-                <span
-                  key={tool}
-                  className="text-[12px] tracking-[0.6px] text-white whitespace-nowrap"
-                >
-                  {tool}
-                </span>
-              ))}
+      {/* Project summary table */}
+      <div className="flex flex-col gap-[1px] rounded-[8px] overflow-hidden bg-[#212121]">
+        {infoRows.map((row) => (
+          <div key={row.key} className="flex gap-[2px] items-stretch">
+            <div className="w-[104px] min-h-[40px] px-4 py-[10px] bg-[#1a1a1a]">
+              <div className="flex items-center gap-2">
+                {row.icon}
+                <p className="text-[12px] font-bold leading-[18px] tracking-[0.36px] text-[#9e9e9e] whitespace-nowrap">
+                  {row.label}
+                </p>
+              </div>
             </div>
-          </InfoChip>
-        )}
+            <div className="flex-1 min-h-[40px] px-4 py-2 bg-[#1a1a1a] flex items-center">
+              {row.content}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Sections */}

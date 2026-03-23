@@ -2,6 +2,8 @@
 
 # 開発ワークフロー（.claudecode 準拠）
 - ブランチ・コミット・PR の手順は `.cursor/rules/claudecode-workflow.mdc`（≒ `.claudecode/config.md`）に従うこと。main への直接コミット禁止。コミット前はテスト・lint 実行、Draft PR は `gh pr create --draft`。
+- mainブランチで作業指示を受けた場合は、そのまま続行してよいか必ず確認すること。mainへの直接pushも禁止。
+- PR済みブランチで差分・追跡ファイルがない状態で新作業を開始しようとした場合は、新規ブランチ作成が必要か必ず確認すること。
 
 # プロジェクトの基本ルール
 - すべての新規ファイル生成は、このディレクトリ（portfolio/）配下の適切なフォルダ（app, components, lib等）に行うこと。

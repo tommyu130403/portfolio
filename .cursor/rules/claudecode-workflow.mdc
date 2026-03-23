@@ -17,6 +17,8 @@ alwaysApply: true
   git pull origin main
   git checkout -b <type>/<yyyymmdd>-<description>
   ```
+- **mainブランチでの作業禁止**: mainブランチで作業指示を受けた場合、そのまま続行してよいか必ず確認すること。mainの変更を直接pushすることも禁止。
+- **PR済みブランチの再利用禁止**: すでにPRが作成されたブランチで追跡ファイルがなく差分もない状態で新たな作業を開始しようとした場合、新規ブランチを作成するか必ず確認すること。
 
 ## 2. コーディング・テスト
 

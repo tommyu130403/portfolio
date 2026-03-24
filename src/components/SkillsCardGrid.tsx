@@ -195,10 +195,10 @@ const SkillExperienceBar = ({
           >
             <Icon
               set="Arrows"
-              name="down-small"
+              name="left"
               className={[
                 "h-[16px] w-[16px] transition-transform duration-200",
-                expanded ? "rotate-180" : "",
+                expanded ? "rotate-90" : "-rotate-90",
               ].join(" ")}
             />
           </button>

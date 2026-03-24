@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FC } from "react";
+import { createPortal } from "react-dom";
 import Icon, { IconProps } from "./Icon";
 import { ButtonFunction } from "./ButtonFunction";
 import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
@@ -35,6 +36,31 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
   const status = resolveItemStatus(active);
   const width = collapsed ? "short" : "default";
   const className = getItemClasses(status, width);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+
+  const updateTooltipPos = () => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setTooltipPos({
+      top: rect.top + rect.height / 2,
+      left: rect.right + 8,
+    });
+  };
+
+  useEffect(() => {
+    if (!collapsed || !showTooltip) return;
+    updateTooltipPos();
+    const handle = () => updateTooltipPos();
+    window.addEventListener("resize", handle);
+    window.addEventListener("scroll", handle, true);
+    return () => {
+      window.removeEventListener("resize", handle);
+      window.removeEventListener("scroll", handle, true);
+    };
+  }, [collapsed, showTooltip]);
 
   const content = (
     <>
@@ -50,18 +76,57 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
     </>
   );
 
+  const tooltip =
+    collapsed && showTooltip && tooltipPos
+      ? createPortal(
+          <span
+            className={[
+              "pointer-events-none fixed z-[70] -translate-y-1/2",
+              "rounded-[14px] border border-[#424242] bg-[#212121] px-3 py-2",
+              "text-[12px] leading-[1.5] tracking-[0.36px] whitespace-nowrap text-[var(--color-white)]",
+              "shadow-[1px_1px_16px_2px_rgba(0,0,0,0.25)]",
+            ].join(" ")}
+            style={{ top: tooltipPos.top, left: tooltipPos.left }}
+            role="tooltip"
+          >
+            {label}
+          </span>,
+          document.body
+        )
+      : null;
+
   if (href) {
     return (
-      <a href={href} className={className}>
-        {content}
-      </a>
+      <div
+        ref={wrapperRef}
+        className="relative w-full"
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onFocusCapture={() => setShowTooltip(true)}
+        onBlurCapture={() => setShowTooltip(false)}
+      >
+        <a href={href} className={className}>
+          {content}
+        </a>
+        {tooltip}
+      </div>
     );
   }
 
   return (
-    <button type="button" className={className}>
-      {content}
-    </button>
+    <div
+      ref={wrapperRef}
+      className="relative w-full"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+      onFocusCapture={() => setShowTooltip(true)}
+      onBlurCapture={() => setShowTooltip(false)}
+    >
+      <button type="button" className={className}>
+        {content}
+      </button>
+      {tooltip}
+    </div>
   );
 };
 
@@ -88,10 +153,11 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
     : setInternalCollapsed;
 
   // 本番環境プレビュートグル（開発環境のみ）
-  const [isProdPreview, setIsProdPreview] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(PROD_PREVIEW_KEY) === "true";
-  });
+  // SSR との不一致を防ぐため、localStorage の値はハイドレーション後に反映する
+  const [isProdPreview, setIsProdPreview] = useState(false);
+  useEffect(() => {
+    setIsProdPreview(localStorage.getItem(PROD_PREVIEW_KEY) === "true");
+  }, []);
   const toggleProdPreview = () => {
     const next = !isProdPreview;
     setIsProdPreview(next);
@@ -117,7 +183,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
       </div>
 
       {/* Inner scrollable content — overflow-y here doesn't clip the absolute button above */}
-      <div className="flex flex-col gap-6 p-6 items-start overflow-y-auto w-full h-full">
+      <div className="flex flex-col gap-6 p-6 items-start w-full h-full min-h-0 overflow-y-auto">
         {/* Title */}
         <p
           className={[

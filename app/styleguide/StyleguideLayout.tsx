@@ -30,14 +30,20 @@ const NAV_SECTIONS = [
 
 // ─── タイポグラフィスケール ───────────────────────────────
 const TYPOGRAPHY_SCALE = [
-  { size: "40",  weight: "700", tracking: "2px",    sample: "プロジェクトタイトル",    usage: "モーダル大見出し" },
-  { size: "32",  weight: "400", tracking: "1.6px",  sample: "セクションタイトル",      usage: "Headline" },
-  { size: "24",  weight: "700", tracking: "1.2px",  sample: "コンテンツ見出し",        usage: "モーダルセクション" },
-  { size: "20",  weight: "400", tracking: "0px",    sample: "役職名・経歴タイトル",    usage: "HistoryItem 役職" },
-  { size: "17",  weight: "400", tracking: "0.85px", sample: "本文テキスト / Body",     usage: "説明文・本文全般" },
-  { size: "16",  weight: "700", tracking: "0px",    sample: "ボタンラベル / Button",   usage: "ButtonAction" },
-  { size: "14",  weight: "400", tracking: "0.7px",  sample: "サブテキスト / Small",    usage: "会社名・TabBar" },
-  { size: "12",  weight: "400", tracking: "0.6px",  sample: "ラベル / Caption / Tag",  usage: "カテゴリ・タグ" },
+  { size: "34", weight: "800", tracking: "0px",    sample: "Title EN Bold",          usage: "Library Title/EN/Bold" },
+  { size: "34", weight: "400", tracking: "0px",    sample: "Title EN Regular",       usage: "Library Title/EN/Regular" },
+  { size: "32", weight: "700", tracking: "0.96px", sample: "Title JP Bold",          usage: "Library Title/JP/Bold" },
+  { size: "32", weight: "400", tracking: "0.96px", sample: "Title JP Regular",       usage: "Library Title/JP/Regular" },
+  { size: "17", weight: "800", tracking: "0.2px",  sample: "Body-1 EN Bold",         usage: "Library Body-1/EN/Bold" },
+  { size: "17", weight: "400", tracking: "0px",    sample: "Body-1 EN Regular",      usage: "Library Body-1/EN/Regular" },
+  { size: "15", weight: "700", tracking: "0px",    sample: "Body-1 JP Bold",         usage: "Library Body-1/JP/Bold" },
+  { size: "15", weight: "400", tracking: "0px",    sample: "Body-1 JP Regular",      usage: "Library Body-1/JP/Regular" },
+  { size: "13", weight: "800", tracking: "0.2px",  sample: "Body-3 EN Bold",         usage: "Library Body-3/EN/Bold" },
+  { size: "13", weight: "400", tracking: "0px",    sample: "Body-3 EN Regular",      usage: "Library Body-3/EN/Regular" },
+  { size: "11", weight: "700", tracking: "0.33px", sample: "Body-3 JP Bold",         usage: "Library Body-3/JP/Bold" },
+  { size: "11", weight: "400", tracking: "0.33px", sample: "Body-3 JP Regular",      usage: "Library Body-3/JP/Regular" },
+  { size: "10", weight: "700", tracking: "0px",    sample: "Caption JP Bold",        usage: "Library Caption/JP/Bold" },
+  { size: "9",  weight: "400", tracking: "0px",    sample: "Caption JP Regular",     usage: "Library Caption/JP/Regular" },
 ] as const;
 
 // ─── 共通サブコンポーネント ────────────────────────────
@@ -486,8 +492,11 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="Headline" description="セクション見出し。英語ラベル + 日本語タイトル + アクセントライン">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / markdown-h1 / markdown-h2">
           <div className="w-full"><Headline label="Projects" title="プロジェクト" /></div>
+          <div className="w-full"><Headline title="見出し" variant="sub" /></div>
+          <div className="w-full"><Headline title="見出し（# テキスト）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="見出し（## テキスト）" variant="markdown-h2" /></div>
         </ComponentPreview>
 
         <ComponentPreview title="ButtonAction" description="CTA ボタン。Primary / Secondary / Ghost の 3 バリアント">

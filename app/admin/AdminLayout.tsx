@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Headline from "@/components/Headline";
 import { supabase } from "@/src/lib/supabase";
 import {
   saveProject,
@@ -481,6 +482,7 @@ type ProfileForm = Omit<Profile, "updated_at" | "introduction"> & { introduction
 function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [form, setForm] = useState<ProfileForm>({
     id: 1, name_jp: "", name_en: "", title: "", bio: "", hero_image_url: "", introduction: [],
+    career_lead: null,
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -615,6 +617,17 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 経歴リード文 */}
+      <div className="mb-8">
+        <FieldLabel>経歴セクション・リード文</FieldLabel>
+        <Textarea
+          value={form.career_lead ?? ""}
+          onChange={(v) => set("career_lead", v || null)}
+          rows={3}
+          placeholder="こんにちは。UI/UXデザイナーの〇〇です。東京を拠点に…"
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -1072,59 +1085,77 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
 // sections JSON ↔ Markdown 変換ユーティリティ
 type SectionItem = { heading: string; body: string };
 
-/** Markdown の body テキストを画像・段落・改行に変換して表示するコンポーネント */
+/** Markdown の見出し（# / ##）・画像・段落をレンダリングして表示するコンポーネント */
 function SectionBodyRenderer({ body }: { body: string }) {
   const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
-
-  /** 1行を解析し、インライン画像をノードに変換 */
-  const renderLine = (line: string, lineKey: number) => {
-    const nodes: React.ReactNode[] = [];
-    let last = 0;
-    let m: RegExpExecArray | null;
-    IMG_RE.lastIndex = 0;
-    while ((m = IMG_RE.exec(line)) !== null) {
-      if (m.index > last) nodes.push(line.slice(last, m.index));
-      nodes.push(
-        <img
-          key={`img-${lineKey}-${m.index}`}
-          src={m[2]}
-          alt={m[1]}
-          className="my-2 max-w-full rounded-[8px] block"
-        />,
-      );
-      last = IMG_RE.lastIndex;
-    }
-    if (last < line.length) nodes.push(line.slice(last));
-    return nodes;
+  const renderParagraph = (para: string, key: string) => {
+    const lines = para.split("\n");
+    return (
+      <p key={key} className="text-[17px] leading-[1.5] tracking-[0.51px] text-white/80">
+        {lines.map((line, li) => {
+          const nodes: React.ReactNode[] = [];
+          let last = 0;
+          let m: RegExpExecArray | null;
+          IMG_RE.lastIndex = 0;
+          while ((m = IMG_RE.exec(line)) !== null) {
+            if (m.index > last) nodes.push(line.slice(last, m.index));
+            nodes.push(
+              <img
+                key={`img-${key}-${li}-${m.index}`}
+                src={m[2]}
+                alt={m[1]}
+                className="my-2 max-w-full rounded-[8px] block"
+              />,
+            );
+            last = IMG_RE.lastIndex;
+          }
+          if (last < line.length) nodes.push(line.slice(last));
+          return (
+            <React.Fragment key={li}>
+              {li > 0 && <br />}
+              {nodes}
+            </React.Fragment>
+          );
+        })}
+      </p>
+    );
   };
 
-  // \n\n（またはそれ以上の空行）でパラグラフ分割
-  const paragraphs = body.split(/\n{2,}/);
+  const lines = body.split("\n");
+  const blocks: React.ReactNode[] = [];
+  let paragraphLines: string[] = [];
+  const flushParagraph = () => {
+    const paragraph = paragraphLines.join("\n").trim();
+    if (paragraph) blocks.push(renderParagraph(paragraph, `p-${blocks.length}`));
+    paragraphLines = [];
+  };
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (line.startsWith("# ")) {
+      flushParagraph();
+      blocks.push(<Headline key={`h1-${blocks.length}`} title={line.slice(2).trim()} variant="markdown-h1" />);
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      flushParagraph();
+      blocks.push(<Headline key={`h2-${blocks.length}`} title={line.slice(3).trim()} variant="markdown-h2" />);
+      continue;
+    }
+    if (line.trim() === "") {
+      flushParagraph();
+      continue;
+    }
+    paragraphLines.push(line);
+  }
+  flushParagraph();
 
   return (
-    <div className="flex flex-col gap-3">
-      {paragraphs.map((para, pi) => {
-        const lines = para.split("\n");
-        return (
-          <p
-            key={pi}
-            className="text-[17px] leading-[1.5] tracking-[0.85px] text-white/80"
-          >
-            {lines.map((line, li) => (
-              <React.Fragment key={li}>
-                {li > 0 && <br />}
-                {renderLine(line, li)}
-              </React.Fragment>
-            ))}
-          </p>
-        );
-      })}
-    </div>
+    <div className="flex flex-col gap-3">{blocks}</div>
   );
 }
 
 function sectionsToMarkdown(sections: SectionItem[]): string {
-  return sections.map((s) => `## ${s.heading}\n\n${s.body}`).join("\n\n");
+  return sections.map((s) => `# ${s.heading}\n\n${s.body}`).join("\n\n");
 }
 
 function markdownToSections(md: string): SectionItem[] {
@@ -1138,9 +1169,9 @@ function markdownToSections(md: string): SectionItem[] {
     }
   };
   for (const line of md.split("\n")) {
-    if (line.startsWith("## ")) {
+    if (line.startsWith("# ")) {
       flush();
-      heading = line.slice(3).trim();
+      heading = line.slice(2).trim();
       bodyLines.length = 0;
     } else {
       bodyLines.push(line);
@@ -1235,7 +1266,7 @@ function SectionsEditor({
           </button>
         ))}
         <p className="ml-auto px-4 text-[11px] text-[#3a3a3a]">
-          ## 見出し で新しいセクション
+          # 見出し で新しいセクション（本文内の ## 見出し も可）
         </p>
       </div>
 
@@ -1258,7 +1289,7 @@ function SectionsEditor({
             value={markdown}
             onChange={(e) => handleChange(e.target.value)}
             rows={12}
-            placeholder={`## プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 課題・背景\n\n2つ目のセクションの本文。`}
+            placeholder={`# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。\n\n# 課題・背景\n\n2つ目のセクションの本文。`}
             className="w-full resize-y bg-[#1a1a1a] px-4 py-3 font-mono text-[13px] leading-relaxed text-white placeholder-[#3a3a3a] outline-none"
           />
         </>
@@ -1273,9 +1304,7 @@ function SectionsEditor({
             <div className="flex flex-col gap-8">
               {preview.map((sec, i) => (
                 <div key={i} className="flex flex-col gap-4">
-                  <p className="font-mplus text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
-                    {sec.heading}
-                  </p>
+                  <Headline title={sec.heading} variant="markdown-h1" />
                   <SectionBodyRenderer body={sec.body} />
                 </div>
               ))}

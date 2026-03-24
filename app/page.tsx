@@ -19,15 +19,20 @@ const SKILL_TABS = [
 ];
 
 const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "projects", "skills"];
+const DEFAULT_CAREER_LEAD =
+  "こんにちは。UI/UXデザイナーの山田太郎です。 東京を拠点に、Webサイト、モバイルアプリケーション、ブランディングなど、 幅広いデジタルプロダクトのデザインを手がけています。";
 
 type Profile = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    typeof window !== "undefined" && window.innerWidth < 1024,
-  );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // SSR との不一致を防ぐため、ウィンドウ幅による初期値はハイドレーション後に設定する
+  useEffect(() => {
+    setSidebarCollapsed(window.innerWidth < 1024);
+  }, []);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [career, setCareer] = useState<CareerItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +106,7 @@ export default function Home() {
                   {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-[#424242]" /> : profile?.name_en}
                 </p>
               </div>
-              <p className="text-[17px] leading-relaxed tracking-[0.85px] text-white">
+              <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
                 {loading ? (
                   <span className="inline-block h-20 w-full animate-pulse rounded bg-[#424242]" />
                 ) : profile?.bio}
@@ -109,7 +114,11 @@ export default function Home() {
               <ButtonAction
                 label="View more"
                 type="ghost"
-                iconRight={{ set: "Arrows", name: "down-small" }}
+                iconRight={{
+                  set: "Arrows",
+                  name: "down-small",
+                  tintColor: "var(--color-main-100)",
+                }}
               />
             </div>
             <div className="relative aspect-square w-[200px] lg:w-[300px] xl:w-[400px] shrink-0 overflow-hidden rounded-[32px]">
@@ -124,7 +133,7 @@ export default function Home() {
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-[916px]">
             <Headline label="Introduction" title="自己紹介" />
-            <div className="flex flex-col gap-4 text-[17px] leading-relaxed tracking-[0.85px] text-white">
+            <div className="flex flex-col gap-4 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
               {loading ? (
                 <>
                   <span className="inline-block h-16 w-full animate-pulse rounded bg-[#424242]" />
@@ -140,7 +149,15 @@ export default function Home() {
           {/* Career */}
           <section id="career" className="w-full max-w-[916px]">
             <Headline label="Career" title="経歴" />
-            <div className="flex flex-col gap-0">
+            <div className="flex flex-col gap-6">
+              <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
+                {loading ? (
+                  <span className="inline-block h-12 w-full animate-pulse rounded bg-[#424242]" />
+                ) : (
+                  (profile?.career_lead ?? "").trim() || DEFAULT_CAREER_LEAD
+                )}
+              </p>
+              <div className="flex flex-col gap-0">
               {loading ? (
                 <>
                   <span className="inline-block h-24 w-full animate-pulse rounded bg-[#424242]" />
@@ -157,6 +174,7 @@ export default function Home() {
                   />
                 ))
               )}
+              </div>
             </div>
           </section>
 

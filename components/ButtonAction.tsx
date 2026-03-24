@@ -9,7 +9,11 @@ type ButtonActionProps = {
   type?: ButtonActionType;
   href?: string;
   onClick?: () => void;
-  iconRight?: { set: NonNullable<IconProps["set"]>; name: string };
+  iconRight?: {
+    set: NonNullable<IconProps["set"]>;
+    name: string;
+    tintColor?: string;
+  };
   children?: ReactNode;
 };
 
@@ -27,12 +31,24 @@ export const ButtonAction: FC<ButtonActionProps> = ({
     t.default,
     t.hover,
   ].join(" ");
+  const iconTint =
+    type === "ghost" || type === "secondary"
+      ? "var(--color-main-100)"
+      : type === "primary"
+        ? "var(--color-main-600)"
+        : undefined;
 
   const content = (
     <>
       {children ?? label}
       {iconRight && (
-        <Icon set={iconRight.set} name={iconRight.name} className="ml-2 h-5 w-5" aria-hidden />
+        <Icon
+          set={iconRight.set}
+          name={iconRight.name}
+          className="ml-2 h-5 w-5 shrink-0"
+          tintColor={iconRight.tintColor ?? iconTint}
+          aria-hidden
+        />
       )}
     </>
   );

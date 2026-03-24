@@ -47,18 +47,18 @@ const HistoryItem: FC<HistoryItemProps> = ({
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <Icon set="Time" name="calendar-three-mint" className="h-4 w-4 shrink-0" />
-              <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-[#b3ffe7] whitespace-nowrap">
+              <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-[#b3ffe7] whitespace-nowrap">
                 {period}
               </p>
             </div>
-            <p className="text-[17px] leading-[1.5] font-bold tracking-[0.51px] text-[#48f4be]">
+            <p className="text-[17px] font-bold leading-[1.5] tracking-[0.51px] text-[#48f4be]">
               {role}
             </p>
-            <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-[#9e9e9e]">
+            <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-[#9e9e9e]">
               {company}
             </p>
           </div>
-          <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-white">
+          <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-white">
             {description}
           </p>
         </div>

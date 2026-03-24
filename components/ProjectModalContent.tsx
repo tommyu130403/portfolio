@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from "react";
 import React from "react";
+import Headline from "./Headline";
 import Icon from "./Icon";
 import Tag from "./Tag";
 import type { Tables } from "@/src/types/supabase";
@@ -7,68 +8,91 @@ import type { Tables } from "@/src/types/supabase";
 type Project = Tables<"projects">;
 type Section = { heading: string; body: string };
 
-/** Markdown の `![alt](url)` と段落区切り（空行）をレンダリングするコンポーネント */
+/** Markdown の見出し（# / ##）・画像・段落をレンダリングするコンポーネント */
 const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
   const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  const renderParagraph = (para: string, key: string) => {
+    const parts: ReactNode[] = [];
+    let last = 0;
+    let m: RegExpExecArray | null;
+    IMG_RE.lastIndex = 0;
+    while ((m = IMG_RE.exec(para)) !== null) {
+      const before = para.slice(last, m.index);
+      if (before) {
+        parts.push(
+          <React.Fragment key={`${key}-t-${last}`}>
+            {before.split("\n").map((line, li, arr) => (
+              <React.Fragment key={li}>
+                {line}
+                {li < arr.length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </React.Fragment>
+        );
+      }
+      parts.push(
+        <img
+          key={`${key}-img-${m.index}`}
+          src={m[2]}
+          alt={m[1]}
+          className="my-4 max-w-full rounded-[12px] block"
+        />
+      );
+      last = m.index + m[0].length;
+    }
+    const tail = para.slice(last);
+    if (tail) {
+      parts.push(
+        <React.Fragment key={`${key}-tail`}>
+          {tail.split("\n").map((line, li, arr) => (
+            <React.Fragment key={li}>
+              {line}
+              {li < arr.length - 1 && <br />}
+            </React.Fragment>
+          ))}
+        </React.Fragment>
+      );
+    }
+    const hasOnlyImages = parts.every((p) => React.isValidElement(p) && p.type === "img");
+    return hasOnlyImages ? (
+      <div key={key}>{parts}</div>
+    ) : (
+      <p key={key} className="text-[17px] leading-[1.5] tracking-[0.51px] text-white">
+        {parts}
+      </p>
+    );
+  };
 
-  const paragraphs = body.split(/\n{2,}/);
+  const lines = body.split("\n");
+  const blocks: ReactNode[] = [];
+  let paragraphLines: string[] = [];
+  const flushParagraph = () => {
+    const paragraph = paragraphLines.join("\n").trim();
+    if (paragraph) blocks.push(renderParagraph(paragraph, `p-${blocks.length}`));
+    paragraphLines = [];
+  };
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (line.startsWith("# ")) {
+      flushParagraph();
+      blocks.push(<Headline key={`h1-${blocks.length}`} title={line.slice(2).trim()} variant="markdown-h1" />);
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      flushParagraph();
+      blocks.push(<Headline key={`h2-${blocks.length}`} title={line.slice(3).trim()} variant="markdown-h2" />);
+      continue;
+    }
+    if (line.trim() === "") {
+      flushParagraph();
+      continue;
+    }
+    paragraphLines.push(line);
+  }
+  flushParagraph();
 
   return (
-    <>
-      {paragraphs.map((para, pi) => {
-        const parts: ReactNode[] = [];
-        let last = 0;
-        let m: RegExpExecArray | null;
-        IMG_RE.lastIndex = 0;
-        while ((m = IMG_RE.exec(para)) !== null) {
-          const before = para.slice(last, m.index);
-          if (before) {
-            parts.push(
-              <React.Fragment key={`t-${pi}-${last}`}>
-                {before.split("\n").map((line, li, arr) => (
-                  <React.Fragment key={li}>
-                    {line}
-                    {li < arr.length - 1 && <br />}
-                  </React.Fragment>
-                ))}
-              </React.Fragment>
-            );
-          }
-          parts.push(
-            <img
-              key={`img-${pi}-${m.index}`}
-              src={m[2]}
-              alt={m[1]}
-              className="my-4 max-w-full rounded-[12px] block"
-            />
-          );
-          last = m.index + m[0].length;
-        }
-        const tail = para.slice(last);
-        if (tail) {
-          parts.push(
-            <React.Fragment key={`t-${pi}-tail`}>
-              {tail.split("\n").map((line, li, arr) => (
-                <React.Fragment key={li}>
-                  {line}
-                  {li < arr.length - 1 && <br />}
-                </React.Fragment>
-              ))}
-            </React.Fragment>
-          );
-        }
-        const hasOnlyImages = parts.every(
-          (p) => React.isValidElement(p) && p.type === "img"
-        );
-        return hasOnlyImages ? (
-          <div key={pi}>{parts}</div>
-        ) : (
-          <p key={pi} className="text-[17px] leading-[1.5] tracking-[0.85px] text-white">
-            {parts}
-          </p>
-        );
-      })}
-    </>
+    <div className="flex flex-col gap-3">{blocks}</div>
   );
 };
 
@@ -89,7 +113,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
       label: "役割",
       icon: <Icon set="Peoples" name="people" className="w-4 h-4 shrink-0" />,
       content: project.role ? (
-        <p className="text-[15px] leading-[24px] tracking-[0.3px] text-white">
+        <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-white">
           {project.role}
         </p>
       ) : null,
@@ -99,7 +123,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
       label: "期間",
       icon: <Icon set="Time" name="calendar-three" className="w-4 h-4 shrink-0" />,
       content: project.period ? (
-        <p className="text-[15px] leading-[24px] tracking-[0.3px] text-white whitespace-nowrap">
+        <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-white whitespace-nowrap">
           {project.period}
         </p>
       ) : null,
@@ -148,7 +172,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
       {/* Title block */}
       <div className="flex flex-col gap-4">
         {project.category && (
-          <p className="text-[17px] tracking-[0.85px] text-[#b3ffe7]">
+          <p className="text-[15px] tracking-[0.45px] text-[var(--color-main-100)]">
             {project.category}
           </p>
         )}
@@ -179,9 +203,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
       {/* Sections */}
       {sections.map((section, i) => (
         <div key={i} className="flex flex-col gap-4">
-          <p className="text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white pb-2">
-            {section.heading}
-          </p>
+          <Headline title={section.heading} variant="markdown-h1" />
           <SectionBodyRenderer body={section.body} />
         </div>
       ))}

@@ -83,6 +83,7 @@ export type Database = {
       profile: {
         Row: {
           bio: string
+          career_lead: string | null
           hero_image_url: string
           id: number
           introduction: Json
@@ -93,6 +94,7 @@ export type Database = {
         }
         Insert: {
           bio?: string
+          career_lead?: string | null
           hero_image_url?: string
           id?: number
           introduction?: Json
@@ -103,6 +105,7 @@ export type Database = {
         }
         Update: {
           bio?: string
+          career_lead?: string | null
           hero_image_url?: string
           id?: number
           introduction?: Json

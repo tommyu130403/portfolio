@@ -93,56 +93,80 @@ export default function Home() {
       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">
         <div className="flex w-full flex-col items-center gap-[120px] px-6 lg:px-8 xl:px-10 py-20">
           {/* Hero */}
-          <section className="flex w-full max-w-[916px] items-center gap-6 lg:gap-12 xl:gap-20">
-            <div className="flex flex-1 flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <p className="text-[16px] leading-6 text-white">
-                  {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-[#424242]" /> : profile?.title}
-                </p>
-                <p className="font-mplus text-[60px] leading-[60px] tracking-[0.26px] text-[#b3ffe7]">
-                  {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-[#424242]" /> : profile?.name_jp}
-                </p>
-                <p className="text-[20px] leading-7 tracking-[-0.45px] text-white">
-                  {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-[#424242]" /> : profile?.name_en}
-                </p>
-              </div>
-              <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
-                {loading ? (
-                  <span className="inline-block h-20 w-full animate-pulse rounded bg-[#424242]" />
-                ) : profile?.bio}
-              </p>
-              <ButtonAction
-                label="View more"
-                type="ghost"
-                iconRight={{
-                  set: "Arrows",
-                  name: "down-small",
-                  tintColor: "var(--color-main-100)",
-                }}
-              />
-            </div>
-            <div className="relative aspect-square w-[200px] lg:w-[300px] xl:w-[400px] shrink-0 overflow-hidden rounded-[32px]">
+          <section className="flex w-full max-w-[916px] items-center gap-16">
+            <div className="relative aspect-square flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-[#424242]" />
               ) : (
                 <img src={profile?.hero_image_url} alt="Profile" className="h-full w-full object-cover" />
               )}
             </div>
+            <div className="flex flex-1 flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <p className="text-[16px] leading-6 text-[#9e9e9e]">
+                  {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-[#424242]" /> : profile?.title}
+                </p>
+                <div className="flex items-end gap-2 text-[#b3ffe7]">
+                  <p className="font-mplus text-[46px] leading-[60px] tracking-[0.26px]">
+                    {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-[#424242]" /> : profile?.name_jp}
+                  </p>
+                  <p className="text-[20px] leading-7 tracking-[-0.45px]">
+                    {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-[#424242]" /> : profile?.name_en}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
+                {loading ? (
+                  <span className="inline-block h-20 w-full animate-pulse rounded bg-[#424242]" />
+                ) : profile?.bio}
+              </p>
+            </div>
           </section>
 
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-[916px]">
             <Headline label="Introduction" title="自己紹介" />
-            <div className="flex flex-col gap-4 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
-              {loading ? (
-                <>
-                  <span className="inline-block h-16 w-full animate-pulse rounded bg-[#424242]" />
-                  <span className="inline-block h-16 w-full animate-pulse rounded bg-[#424242]" />
-                  <span className="inline-block h-16 w-full animate-pulse rounded bg-[#424242]" />
-                </>
-              ) : (
-                ((profile?.introduction ?? []) as string[]).map((para, i) => <p key={i}>{para}</p>)
-              )}
+            <div className="flex flex-col gap-10 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
+              {/* Opening paragraphs */}
+              <div className="flex flex-col gap-4">
+                <p>こんにちは。プロダクトデザイナーの山田太郎です。 大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
+                <p>デザインは問題解決の手段であると考えており、 常にユーザーの課題とビジネスの目標の両方を意識しながらデザイン制作を行ってきました。 開発チームやセールスチームといったあらゆる専門性との密なコミュニケーションを通じて、「最適解」を徹底的に模索することを心がけています。</p>
+              </div>
+
+              {/* My Philosophy */}
+              <div className="flex flex-col gap-6">
+                <div className="flex items-start gap-2 w-full">
+                  <div className="flex items-center self-stretch py-2">
+                    <div className="w-[3px] h-full rounded-[2px] bg-[#48f4be]" />
+                  </div>
+                  <p className="flex-1 font-bold leading-none tracking-[1.2px] text-white">
+                    <span className="text-[24px] leading-[1.5]">My Philosophy </span>
+                    <span className="font-mplus text-[12px] leading-[1.5] tracking-[0.6px]">大事にしていること</span>
+                  </p>
+                </div>
+                <ul className="list-disc leading-none pl-[22.5px] flex flex-col gap-0">
+                  <li><span className="leading-[1.5]">説明責任を果たす (透明性)</span></li>
+                  <li><span className="leading-[1.5]">あらゆる専門性によって最適解を模索する (異能の掛け算)</span></li>
+                  <li><span className="leading-[1.5]">ビジネスを作る (UXの証明)</span></li>
+                </ul>
+              </div>
+
+              {/* My Aspirations */}
+              <div className="flex flex-col gap-6">
+                <div className="flex items-start gap-2 w-full">
+                  <div className="flex items-center self-stretch py-2">
+                    <div className="w-[3px] h-full rounded-[2px] bg-[#48f4be]" />
+                  </div>
+                  <p className="flex-1 font-bold leading-none tracking-[1.2px] text-white">
+                    <span className="text-[24px] leading-[1.5]">My Aspirations </span>
+                    <span className="font-mplus text-[12px] leading-[1.5] tracking-[0.6px]">挑戦したいこと</span>
+                  </p>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <p>キャリアのほとんどを「キャリアチケット」プロダクトに貢献してきました。立ち上げからグロースに至るまで自ら志願して関わり続けてきたのは、この事業が持つ価値に深く共感し、市場の課題を解決できるプロダクトだと信じることができていたからです。何より、その価値を自分たちで定義し高め合おうとする組織の文化に非常に誇りをもっていました。</p>
+                  <p>どのようなステージやプロダクトであっても、常に「開拓者」であり続け、プロダクトの真の価値を問い続け、関係者全員が同じ方向を向いていけるようなチームを築いていくことが私の使命であると考えています。</p>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -199,7 +223,7 @@ export default function Home() {
               {skillsTabId === "level-chart" ? (
                 <SkillsRadarChart />
               ) : (
-                <div className="self-start -ml-6 lg:-ml-8 xl:-ml-10 w-[calc(100%+48px)] lg:w-[calc(100%+64px)] xl:w-[calc(100%+80px)]">
+                <div className="w-full max-w-[916px]">
                   <SkillsCardGrid />
                 </div>
               )}

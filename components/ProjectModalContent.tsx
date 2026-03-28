@@ -57,30 +57,31 @@ const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
     return hasOnlyImages ? (
       <div key={key}>{parts}</div>
     ) : (
-      <p key={key} className="text-[17px] leading-[1.5] tracking-[0.51px] text-white">
+      <p key={key} className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
         {parts}
       </p>
     );
   };
 
+  type RawBlock = { t: "para"; node: ReactNode } | { t: "h2"; text: string };
   const lines = body.split("\n");
-  const blocks: ReactNode[] = [];
+  const rawBlocks: RawBlock[] = [];
   let paragraphLines: string[] = [];
   const flushParagraph = () => {
     const paragraph = paragraphLines.join("\n").trim();
-    if (paragraph) blocks.push(renderParagraph(paragraph, `p-${blocks.length}`));
+    if (paragraph) rawBlocks.push({ t: "para", node: renderParagraph(paragraph, `p-${rawBlocks.length}`) });
     paragraphLines = [];
   };
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
     if (line.startsWith("# ")) {
       flushParagraph();
-      blocks.push(<Headline key={`h1-${blocks.length}`} title={line.slice(2).trim()} variant="markdown-h1" />);
+      paragraphLines.push(line.slice(2).trim());
       continue;
     }
     if (line.startsWith("## ")) {
       flushParagraph();
-      blocks.push(<Headline key={`h2-${blocks.length}`} title={line.slice(3).trim()} variant="markdown-h2" />);
+      rawBlocks.push({ t: "h2", text: line.slice(3).trim() });
       continue;
     }
     if (line.trim() === "") {
@@ -91,8 +92,39 @@ const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
   }
   flushParagraph();
 
+  // Group into top-level paras and Section02 sub-sections (gap-2 = 8px)
+  type Segment =
+    | { type: "paras"; nodes: ReactNode[] }
+    | { type: "section02"; h2: string; nodes: ReactNode[] };
+  const segments: Segment[] = [];
+  let topParas: ReactNode[] = [];
+  for (const block of rawBlocks) {
+    if (block.t === "h2") {
+      if (topParas.length > 0) { segments.push({ type: "paras", nodes: topParas }); topParas = []; }
+      segments.push({ type: "section02", h2: block.text, nodes: [] });
+    } else {
+      const last = segments[segments.length - 1];
+      if (last?.type === "section02") last.nodes.push(block.node);
+      else topParas.push(block.node);
+    }
+  }
+  if (topParas.length > 0) segments.push({ type: "paras", nodes: topParas });
+
   return (
-    <div className="flex flex-col gap-3">{blocks}</div>
+    <div className="flex flex-col gap-6">
+      {segments.map((seg, i) =>
+        seg.type === "paras" ? (
+          <React.Fragment key={i}>{seg.nodes}</React.Fragment>
+        ) : (
+          <div key={i} className="flex flex-col gap-2">
+            <p className="text-[20px] font-bold leading-[1.5] tracking-[1px] text-white w-full">
+              {seg.h2}
+            </p>
+            <div className="flex flex-col gap-4">{seg.nodes}</div>
+          </div>
+        )
+      )}
+    </div>
   );
 };
 
@@ -113,7 +145,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
       label: "役割",
       icon: <Icon set="Peoples" name="people" className="w-4 h-4 shrink-0" />,
       content: project.role ? (
-        <p className="text-[12px] leading-[1.5] tracking-[0.36px] text-white">
+        <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-white">
           {project.role}
         </p>
       ) : null,
@@ -131,7 +163,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
     {
       key: "skills",
       label: "スキル",
-      icon: <Icon set="Charts" name="viencharts" className="w-4 h-4 shrink-0" />,
+      icon: <Icon set="Charts" name="radar-chart" className="w-4 h-4 shrink-0" />,
       content:
         skills.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -144,7 +176,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
     {
       key: "tools",
       label: "ツール",
-      icon: <Icon set="Base" name="tool" className="w-4 h-4 shrink-0" />,
+      icon: <Icon set="Industry" name="spanner" className="w-4 h-4 shrink-0" />,
       content:
         tools.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -157,7 +189,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
   ].filter((row) => row.content !== null);
 
   return (
-    <div className="flex flex-col gap-16">
+    <div className="flex flex-col gap-16 p-10">
       {/* Hero image */}
       {project.thumbnail_url && (
         <div className="w-full rounded-[32px] overflow-hidden">
@@ -176,7 +208,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
             {project.category}
           </p>
         )}
-        <p className="text-[40px] font-bold leading-[48px] tracking-[2px] text-white">
+        <p className="text-[32px] font-bold leading-normal tracking-[0.96px] text-white">
           {project.title}
         </p>
       </div>
@@ -188,7 +220,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
             <div className="w-[104px] min-h-[40px] px-4 py-[10px] bg-[#1a1a1a]">
               <div className="flex items-center gap-2">
                 {row.icon}
-                <p className="text-[12px] font-bold leading-[18px] tracking-[0.36px] text-[#9e9e9e] whitespace-nowrap">
+                <p className="text-[11px] font-bold leading-[1.5] tracking-[0.33px] text-[#9e9e9e] whitespace-nowrap">
                   {row.label}
                 </p>
               </div>
@@ -202,7 +234,7 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
 
       {/* Sections */}
       {sections.map((section, i) => (
-        <div key={i} className="flex flex-col gap-4">
+        <div key={i} className="flex flex-col gap-6">
           <Headline title={section.heading} variant="markdown-h1" />
           <SectionBodyRenderer body={section.body} />
         </div>

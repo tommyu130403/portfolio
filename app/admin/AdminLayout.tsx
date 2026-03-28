@@ -1091,7 +1091,7 @@ function SectionBodyRenderer({ body }: { body: string }) {
   const renderParagraph = (para: string, key: string) => {
     const lines = para.split("\n");
     return (
-      <p key={key} className="text-[17px] leading-[1.5] tracking-[0.51px] text-white/80">
+      <p key={key} className="text-[15px] leading-[1.5] tracking-[0.45px] text-white/80">
         {lines.map((line, li) => {
           const nodes: React.ReactNode[] = [];
           let last = 0;
@@ -1121,24 +1121,25 @@ function SectionBodyRenderer({ body }: { body: string }) {
     );
   };
 
+  type RawBlock = { t: "para"; node: React.ReactNode } | { t: "h2"; text: string };
   const lines = body.split("\n");
-  const blocks: React.ReactNode[] = [];
+  const rawBlocks: RawBlock[] = [];
   let paragraphLines: string[] = [];
   const flushParagraph = () => {
     const paragraph = paragraphLines.join("\n").trim();
-    if (paragraph) blocks.push(renderParagraph(paragraph, `p-${blocks.length}`));
+    if (paragraph) rawBlocks.push({ t: "para", node: renderParagraph(paragraph, `p-${rawBlocks.length}`) });
     paragraphLines = [];
   };
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
     if (line.startsWith("# ")) {
       flushParagraph();
-      blocks.push(<Headline key={`h1-${blocks.length}`} title={line.slice(2).trim()} variant="markdown-h1" />);
+      paragraphLines.push(line.slice(2).trim());
       continue;
     }
     if (line.startsWith("## ")) {
       flushParagraph();
-      blocks.push(<Headline key={`h2-${blocks.length}`} title={line.slice(3).trim()} variant="markdown-h2" />);
+      rawBlocks.push({ t: "h2", text: line.slice(3).trim() });
       continue;
     }
     if (line.trim() === "") {
@@ -1149,8 +1150,38 @@ function SectionBodyRenderer({ body }: { body: string }) {
   }
   flushParagraph();
 
+  type Segment =
+    | { type: "paras"; nodes: React.ReactNode[] }
+    | { type: "section02"; h2: string; nodes: React.ReactNode[] };
+  const segments: Segment[] = [];
+  let topParas: React.ReactNode[] = [];
+  for (const block of rawBlocks) {
+    if (block.t === "h2") {
+      if (topParas.length > 0) { segments.push({ type: "paras", nodes: topParas }); topParas = []; }
+      segments.push({ type: "section02", h2: block.text, nodes: [] });
+    } else {
+      const last = segments[segments.length - 1];
+      if (last?.type === "section02") last.nodes.push(block.node);
+      else topParas.push(block.node);
+    }
+  }
+  if (topParas.length > 0) segments.push({ type: "paras", nodes: topParas });
+
   return (
-    <div className="flex flex-col gap-3">{blocks}</div>
+    <div className="flex flex-col gap-6">
+      {segments.map((seg, i) =>
+        seg.type === "paras" ? (
+          <React.Fragment key={i}>{seg.nodes}</React.Fragment>
+        ) : (
+          <div key={i} className="flex flex-col gap-2">
+            <p className="text-[20px] font-bold leading-[1.5] tracking-[1px] text-white w-full">
+              {seg.h2}
+            </p>
+            <div className="flex flex-col gap-4">{seg.nodes}</div>
+          </div>
+        )
+      )}
+    </div>
   );
 }
 
@@ -1303,7 +1334,7 @@ function SectionsEditor({
           ) : (
             <div className="flex flex-col gap-8">
               {preview.map((sec, i) => (
-                <div key={i} className="flex flex-col gap-4">
+                <div key={i} className="flex flex-col gap-6">
                   <Headline title={sec.heading} variant="markdown-h1" />
                   <SectionBodyRenderer body={sec.body} />
                 </div>

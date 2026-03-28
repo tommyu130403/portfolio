@@ -37,7 +37,7 @@ const Modal: FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed top-0 right-0 bottom-0 z-50 flex cursor-pointer items-center justify-center transition-[left] duration-300 ease-in-out"
+      className="fixed top-0 right-0 bottom-0 z-50 flex cursor-pointer items-center justify-center px-20 py-10 transition-[left] duration-300 ease-in-out"
       style={{
         left: sidebarOffset,
         backgroundColor: "rgba(0,0,0,0.25)",
@@ -45,7 +45,7 @@ const Modal: FC<ModalProps> = ({
       }}
       onClick={onClose}
     >
-      <div className="relative flex flex-col items-center gap-4">
+      <div className="relative flex w-full flex-col items-center gap-4">
         {/* Prev arrow */}
         {carousel && onPrev && (
           <div className="absolute left-[-53px] top-1/2 -translate-y-1/2">
@@ -77,12 +77,14 @@ const Modal: FC<ModalProps> = ({
         )}
 
         {/* Modal container + Close button wrapper (overflow-visible でボタンが切れないように) */}
-        <div className="relative w-[728px]">
+        <div className="relative w-full max-w-[916px]">
           <div
-            className="relative max-h-[90vh] overflow-y-auto rounded-[14px] border border-[#424242] bg-[#212121] px-10 py-10"
+            className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-[14px] border border-[#424242] bg-[#212121]"
             onClick={(e) => e.stopPropagation()}
           >
-            {children}
+            <div className="flex-1 overflow-y-auto">
+              {children}
+            </div>
           </div>
           {/* Close button（Figma node 120-332: top 0, 右端から16px外側） */}
           <div className="absolute top-0 -right-[52px]">
@@ -118,10 +120,10 @@ const Modal: FC<ModalProps> = ({
               <div
                 key={i}
                 className={[
-                  "h-1.5 rounded-full transition-all",
+                  "h-1 w-10 rounded-sm transition-colors",
                   i === currentIndex
-                    ? "w-4 bg-[#b3ffe7]"
-                    : "w-1.5 bg-white/20",
+                    ? "bg-[#48f4be]"
+                    : "bg-white/5",
                 ].join(" ")}
               />
             ))}

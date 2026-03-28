@@ -107,32 +107,34 @@ export default function SkillsRadarChart() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div style={{ width: 645, height: 500 }}>
-        <RadarChart
-          data={currentData}
-          targetData={targetData ?? undefined}
-          width={645}
-          height={500}
-          fillColor="#16352F"
-          borderColor="#48F4BE"
-          highlightColor="#48F4BE"
-          labelColor="#9E9E9E"
-          targetBorderColor="#9e9e9e"
-        />
-      </div>
-      <div className="flex items-center gap-6">
-        {LEGENDS.map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span
-              className="inline-block h-3 w-3 rounded-[2px]"
-              style={{ backgroundColor: item.color }}
-            />
-            <span className="text-xs tracking-[0.6px]" style={{ color: item.color }}>
-              {item.label}
-            </span>
-          </div>
-        ))}
+    <div className="flex flex-col items-center w-full max-w-[916px] bg-[#1a1a1a] rounded-[14px] overflow-hidden py-10">
+      <div className="flex flex-col items-center gap-6">
+        <div style={{ width: 645, height: 500 }}>
+          <RadarChart
+            data={currentData}
+            targetData={targetData ?? undefined}
+            width={645}
+            height={500}
+            fillColor="#16352F"
+            borderColor="#48F4BE"
+            highlightColor="#48F4BE"
+            labelColor="#9E9E9E"
+            targetBorderColor="#9e9e9e"
+          />
+        </div>
+        <div className="flex items-center gap-6">
+          {LEGENDS.map((item) => (
+            <div key={item.label} className="flex items-center gap-2">
+              <span
+                className="inline-block h-3 w-3 rounded-[2px]"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="text-xs tracking-[0.6px]" style={{ color: item.color }}>
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

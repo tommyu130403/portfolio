@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, type CSSProperties } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/Icon";
 import type { IconProps } from "@/components/Icon";
 import { supabase } from "@/src/lib/supabase";
@@ -97,14 +97,6 @@ async function fetchSkillCards(): Promise<SkillCardConfig[]> {
       .map((t) => ({ name: t.name, years: t.years })),
   }));
 }
-
-// ──────────────────────────────────────────────
-// Constants
-// ──────────────────────────────────────────────
-const GAP      = 24;   // px (gap-6)
-const DURATION = 350;  // ms
-const CARD_H   = 510;  // px — Strategy(4スキル+4ツール)が最大
-const CARD_W   = 400;  // px — Figma 仕様の最大カード幅
 
 // ──────────────────────────────────────────────
 // _SkillExperienceBar
@@ -285,23 +277,13 @@ const SkillCard = ({
 );
 
 // ──────────────────────────────────────────────
-// SkillsCardGrid — 中央寄せ peek カルーセル（ループ対応）
-// アクティブカード(446px)を中央表示し、左右に隣接カードをチラ見せ
+// SkillsCardGrid — 2カラムグリッド
 // ──────────────────────────────────────────────
 export default function SkillsCardGrid() {
   const [cards, setCards]         = useState<SkillCardConfig[]>([]);
   const [loading, setLoading]     = useState(true);
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [phase, setPhase]         = useState<"idle" | "next" | "prev">("idle");
-  const [containerWidth, setContainerWidth] = useState(0);
   const [levelTokenMap, setLevelTokenMap] = useState<SkillLevelTokenMap>({});
 
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const trackRef      = useRef<HTMLDivElement>(null);
-  const animatingRef  = useRef(false);
-  const pendingIdxRef = useRef(0);
-
-  // DB からカードデータを取得
   useEffect(() => {
     Promise.all([fetchSkillCards(), fetchLevelTokenMap()]).then(([data, map]) => {
       setCards(data);
@@ -310,194 +292,21 @@ export default function SkillsCardGrid() {
     });
   }, []);
 
-  // コンテナ幅を ResizeObserver で計測
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const update = () => setContainerWidth(el.offsetWidth);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const N = cards.length;
-
-  // カード幅: Figma 最大 446px、コンテナが狭い場合は縮小（最小 peek 80px×2 + gap を確保）
-  const cardWidth = Math.min(CARD_W, Math.max(0, containerWidth - 160 - GAP));
-
-  // アクティブカードを中央に配置するためのオフセット
-  // card[1] を中央にする: translateX = centerOffset - (cardWidth + GAP)
-  const centerOffset   = containerWidth > 0 ? (containerWidth - cardWidth) / 2 : 0;
-  const idleTranslateX = centerOffset - (cardWidth + GAP);
-
-  // containerWidth が変わったらトラックを即座に中央位置へスナップ
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track || containerWidth === 0 || phase !== "idle") return;
-    track.style.transition = "none";
-    track.style.transform  = `translateX(${idleTranslateX}px)`;
-  }, [containerWidth, idleTranslateX, phase]);
-
-  // phase が変わったらスライドアニメーションを開始
-  useEffect(() => {
-    if (phase === "idle") return;
-    const track = trackRef.current;
-    if (!track || containerWidth === 0 || cardWidth === 0) return;
-
-    const amt = cardWidth + GAP;
-
-    if (phase === "next") {
-      track.style.transition = "none";
-      track.style.transform  = `translateX(${centerOffset - amt}px)`;
-      void track.offsetWidth;
-      track.style.transition = `transform ${DURATION}ms ease-in-out`;
-      track.style.transform  = `translateX(${centerOffset - 2 * amt}px)`;
-    } else {
-      track.style.transition = "none";
-      track.style.transform  = `translateX(${centerOffset - 2 * amt}px)`;
-      void track.offsetWidth;
-      track.style.transition = `transform ${DURATION}ms ease-in-out`;
-      track.style.transform  = `translateX(${centerOffset - amt}px)`;
-    }
-
-    const timer = setTimeout(() => {
-      setActiveIdx(pendingIdxRef.current);
-      setPhase("idle");
-      if (track) {
-        track.style.transition = "none";
-        track.style.transform  = `translateX(${centerOffset - amt}px)`;
-      }
-      animatingRef.current = false;
-    }, DURATION);
-
-    return () => clearTimeout(timer);
-  }, [phase, containerWidth, centerOffset, cardWidth]);
-
-  const navigate = (newActiveIdx: number, dir: "next" | "prev") => {
-    if (animatingRef.current || containerWidth === 0 || N === 0) return;
-    animatingRef.current  = true;
-    pendingIdxRef.current = newActiveIdx;
-    setPhase(dir);
-  };
-
-  const goNext = () => navigate((activeIdx + 1) % N, "next");
-  const goPrev = () => navigate((activeIdx - 1 + N) % N, "prev");
-  const goTo   = (i: number) => {
-    if (i === activeIdx) return;
-    navigate(i, i > activeIdx ? "next" : "prev");
-  };
-
-  // トラックに並べるカードを構築
-  const buildTrack = () => {
-    if (N === 0) return [];
-    const prev   = cards[(activeIdx - 1 + N) % N];
-    const active = cards[activeIdx];
-    const next   = cards[(activeIdx + 1) % N];
-
-    if (phase === "next") {
-      const newNext = cards[(activeIdx + 2) % N];
-      return [
-        { card: prev,    fadeIn: false },
-        { card: active,  fadeIn: false },
-        { card: next,    fadeIn: false },
-        { card: newNext, fadeIn: true  },
-      ];
-    }
-    if (phase === "prev") {
-      const newPrev = cards[(activeIdx - 2 + N) % N];
-      return [
-        { card: newPrev, fadeIn: true  },
-        { card: prev,    fadeIn: false },
-        { card: active,  fadeIn: false },
-        { card: next,    fadeIn: false },
-      ];
-    }
-    return [
-      { card: prev,   fadeIn: false },
-      { card: active, fadeIn: false },
-      { card: next,   fadeIn: false },
-    ];
-  };
-
-  const trackCards = buildTrack();
-
-  const cardStyle: CSSProperties = {
-    width:     cardWidth > 0 ? `${cardWidth}px` : `${CARD_W}px`,
-    flexShrink: 0,
-    height:    `${CARD_H}px`,
-  };
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-6 w-full">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="animate-pulse rounded-[14px] bg-[#1a1a1a] h-[300px]" />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full flex flex-col">
-      {/* カルーセルエリア — containerRef は常に DOM に存在させる（ResizeObserver のため） */}
-      <div
-        ref={containerRef}
-        className="relative w-full overflow-hidden"
-        style={{ height: `${CARD_H}px` }}
-      >
-        {/* ローディング中はスケルトン表示 */}
-        {loading ? (
-          <div className="absolute inset-0 animate-pulse rounded-[14px] bg-[#1a1a1a]" />
-        ) : (
-          <>
-            {/* トラック */}
-            <div
-              ref={trackRef}
-              className="flex gap-6 h-full"
-              style={{
-                transform: containerWidth > 0 ? `translateX(${idleTranslateX}px)` : undefined,
-                opacity:   containerWidth > 0 ? 1 : 0,
-              }}
-            >
-              {trackCards.map(({ card, fadeIn }, i) => (
-                <div
-                  key={`${phase}-${i}-${card.title}`}
-                  style={cardStyle}
-                  className={fadeIn ? "animate-[card-fade-in_0.35s_ease-in-out]" : ""}
-                >
-                  <SkillCard {...card} levelTokenMap={levelTokenMap} />
-                </div>
-              ))}
-            </div>
-
-            {/* 前へボタン — カード上に重ねる */}
-            <button
-              type="button"
-              onClick={goPrev}
-              className="absolute left-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
-            >
-              <Icon set="Arrows" name="left" className="h-6 w-6" />
-            </button>
-
-            {/* 次へボタン — カード上に重ねる */}
-            <button
-              type="button"
-              onClick={goNext}
-              className="absolute right-[8px] top-1/2 -translate-y-1/2 z-10 flex items-center justify-center size-[36px] rounded-[8px] bg-[#212121] border border-[#424242] p-[6px]"
-            >
-              <Icon set="Arrows" name="right" className="h-6 w-6" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* ページドット */}
-      {!loading && (
-        <div className="flex gap-2 justify-center mt-6">
-          {Array.from({ length: N }).map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => goTo(i)}
-              className={[
-                "size-[6px] rounded-full transition-colors",
-                i === activeIdx ? "bg-[#48f4be]" : "bg-[#424242]",
-              ].join(" ")}
-            />
-          ))}
-        </div>
-      )}
+    <div className="grid grid-cols-2 gap-6 w-full">
+      {cards.map((card) => (
+        <SkillCard key={card.id} {...card} levelTokenMap={levelTokenMap} />
+      ))}
     </div>
   );
 }

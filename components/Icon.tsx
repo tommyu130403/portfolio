@@ -12,6 +12,7 @@ type IconSet =
   | "Edit"
   | "Emoji"
   | "Graphics"
+  | "Industry"
   | "Makeups"
   | "Office"
   | "Peoples"

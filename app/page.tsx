@@ -5,18 +5,11 @@ import SideMenuBar, { type SideMenuSectionId } from "@/components/SideMenuBar";
 import Headline from "@/components/Headline";
 import HistoryItem from "@/components/HistoryItem";
 import { ProjectsList } from "@/src/components/ProjectsList";
-import TabBar from "@/components/TabBar";
-import SkillsRadarChart from "@/src/components/SkillsRadarChart";
 import SkillsCardGrid from "@/src/components/SkillsCardGrid";
 import { ButtonAction } from "@/components/ButtonAction";
 import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
-
-const SKILL_TABS = [
-  { id: "experience-chart", label: "Experience Chart", icon: { set: "Charts" as const, name: "chart-histogram-one" } },
-  { id: "level-chart", label: "Level Chart", icon: { set: "Charts" as const, name: "radar-chart" } },
-];
 
 const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "projects", "skills"];
 const DEFAULT_CAREER_LEAD =
@@ -36,8 +29,6 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [career, setCareer] = useState<CareerItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [skillsTabId, setSkillsTabId] = useState("experience-chart");
-
   // Supabase からプロフィール・経歴を取得
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
@@ -214,19 +205,8 @@ export default function Home() {
             <div className="mx-auto w-full max-w-[916px]">
               <Headline label="Skills" title="スキル" />
             </div>
-            <div className="flex flex-col items-center gap-10 w-full">
-              <TabBar
-                tabs={SKILL_TABS}
-                defaultActiveId="experience-chart"
-                onChange={setSkillsTabId}
-              />
-              {skillsTabId === "level-chart" ? (
-                <SkillsRadarChart />
-              ) : (
-                <div className="w-full max-w-[916px]">
-                  <SkillsCardGrid />
-                </div>
-              )}
+            <div className="w-full max-w-[916px] mx-auto">
+              <SkillsCardGrid />
             </div>
           </section>
         </div>

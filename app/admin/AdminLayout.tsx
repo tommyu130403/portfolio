@@ -32,29 +32,7 @@ import {
 import type { SkillVocab, ToolVocab, StorageImage } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
 import type { Json } from "@/src/types/supabase";
-
-// ─── 文章チェック ─────────────────────────────────────
-type ProofreadIssue = {
-  line: number;
-  column: number;
-  message: string;
-  ruleId: string;
-  severity: "error" | "warning";
-};
-
-async function runProofread(
-  text: string,
-): Promise<{ issues: ProofreadIssue[]; error?: string }> {
-  const trimmed = text.trim();
-  if (!trimmed) return { issues: [] };
-  const res = await fetch("/api/proofread", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: trimmed }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 
 // ─── 型 ───────────────────────────────────────────────
 type Profile    = Tables<"profile">;
@@ -510,7 +488,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
 
   useEffect(() => {
     supabase.from("profile").select("*").eq("id", 1).single().then(({ data }) => {
-      if (data) setForm(data as ProfileForm);
+      if (data) setForm({ ...data, introduction: Array.isArray(data.introduction) ? data.introduction as string[] : [] });
       setFetching(false);
     });
   }, []);

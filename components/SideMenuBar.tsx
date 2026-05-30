@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FC } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import Icon, { IconProps } from "./Icon";
 import { ButtonFunction } from "./ButtonFunction";
 import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
@@ -103,9 +104,9 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
         onFocusCapture={() => setShowTooltip(true)}
         onBlurCapture={() => setShowTooltip(false)}
       >
-        <a href={href} className={className}>
+        <Link href={href} className={className}>
           {content}
-        </a>
+        </Link>
         {tooltip}
       </div>
     );

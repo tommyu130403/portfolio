@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Afacad, Geist_Mono, Noto_Sans_JP, M_PLUS_1p } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth";
 
 // 英字フォント: Afacad (variable font, 400–700)
 const afacad = Afacad({
@@ -45,7 +46,9 @@ export default function RootLayout({
       <body
         className={`${afacad.variable} ${mplusOnep.variable} ${notoSansJP.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

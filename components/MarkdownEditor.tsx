@@ -25,13 +25,22 @@ import Icon from "./Icon";
  * で `projects.sections`(jsonb) に変換する。
  */
 
-/** tiptap-markdown は Editor['storage'] を型拡張しないため、安全にアクセスするヘルパー */
+/**
+ * tiptap-markdown は Editor['storage'] を型拡張しないため、安全にアクセスするヘルパー。
+ *
+ * `breaks: true` 設定により、段落内の改行（HardBreak）は CommonMark の
+ * バックスラッシュ改行 `\\\n` として直列化される。公開側 `SectionBodyRenderer` は
+ * 行を `<br>` 区切りで描画する独自フォーマットのため、この `\` を取り除いて
+ * 既存データと同じ「シングル改行」に正規化し、往復変換の互換を保つ。
+ */
 function getMarkdownFromEditor(editor: Editor | null): string {
   if (!editor) return "";
   const storage = editor.storage as {
     markdown?: { getMarkdown: () => string };
   };
-  return storage.markdown?.getMarkdown() ?? "";
+  const md = storage.markdown?.getMarkdown() ?? "";
+  // HardBreak のバックスラッシュ改行 → シングル改行に正規化
+  return md.replace(/\\\n/g, "\n");
 }
 
 export type MarkdownEditorHandle = {
@@ -92,20 +101,20 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
         StarterKit.configure({
           // 互換対象のみ有効化（heading は level 1,2 のみ）
           heading: { levels: [1, 2] },
-          // 公開側 SectionBodyRenderer が解釈できない記法は無効化
+          // 公開側 SectionBodyRenderer が解釈できない装飾マークは無効化
           bold: false,
           italic: false,
           strike: false,
           code: false,
           codeBlock: false,
           blockquote: false,
-          bulletList: false,
-          orderedList: false,
-          listItem: false,
           horizontalRule: false,
-          // v3 StarterKit に含まれる装飾系も無効化
           link: false,
           underline: false,
+          // リストは既存データ（"- " / "1." 記法）の往復互換のため有効のまま。
+          // SectionBodyRenderer はリストをリテラルテキストとして描画するため
+          // 公開表示は不変。ツールバーには敢えてボタンを出さない（仕様準拠）。
+          // bulletList / orderedList / listItem はデフォルト有効。
         }),
         Image.configure({ inline: false, allowBase64: false }),
         Placeholder.configure({
@@ -116,7 +125,9 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
         Markdown.configure({
           html: false,
           tightLists: true,
-          breaks: false,
+          breaks: true,
+          // bullet マーカーを "-" に固定（既存データと一致させ往復差分を防ぐ）
+          bulletListMarker: "-",
           transformPastedText: true,
           transformCopiedText: true,
         }),
@@ -227,6 +238,18 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
             color: rgba(255, 255, 255, 0.8);
             margin: 0.5em 0;
           }
+          .markdown-editor-prose.ProseMirror ul,
+          .markdown-editor-prose.ProseMirror ol {
+            padding-left: 1.4em;
+            margin: 0.5em 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 15px;
+            line-height: 1.6;
+          }
+          .markdown-editor-prose.ProseMirror ul { list-style: disc; }
+          .markdown-editor-prose.ProseMirror ol { list-style: decimal; }
+          .markdown-editor-prose.ProseMirror li { margin: 0.15em 0; }
+          .markdown-editor-prose.ProseMirror li > p { margin: 0; }
           .markdown-editor-prose.ProseMirror img {
             max-width: 100%;
             border-radius: 8px;

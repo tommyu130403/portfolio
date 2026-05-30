@@ -6,9 +6,7 @@ import { createPortal } from "react-dom";
 import Icon, { IconProps } from "./Icon";
 import { ButtonFunction } from "./ButtonFunction";
 import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
-
-const IS_DEV = process.env.NODE_ENV === "development";
-const PROD_PREVIEW_KEY = "portfolio_prod_preview";
+import { useAuth } from "@/lib/auth";
 
 export type SideMenuSectionId = "introduction" | "career" | "projects" | "skills";
 
@@ -152,17 +150,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         onCollapsedChange(typeof v === "function" ? v(collapsed) : v)
     : setInternalCollapsed;
 
-  // 本番環境プレビュートグル（開発環境のみ）
-  // SSR との不一致を防ぐため、localStorage の値はハイドレーション後に反映する
-  const [isProdPreview, setIsProdPreview] = useState(false);
-  useEffect(() => {
-    setIsProdPreview(localStorage.getItem(PROD_PREVIEW_KEY) === "true");
-  }, []);
-  const toggleProdPreview = () => {
-    const next = !isProdPreview;
-    setIsProdPreview(next);
-    localStorage.setItem(PROD_PREVIEW_KEY, String(next));
-  };
+  const { role, logout } = useAuth();
 
   return (
     <aside
@@ -270,8 +258,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             collapsed={collapsed}
           />
 
-          {/* Developer section - local only */}
-          {IS_DEV && !isProdPreview && (
+          {role === "owner" && (
             <>
               <div className="my-2 h-px w-full rounded-[2px] bg-[#424242] shrink-0" />
               <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
@@ -300,35 +287,21 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           collapsed={collapsed}
         />
 
-        {/* Production preview toggle - local dev only */}
-        {IS_DEV && (
+        {process.env.NODE_ENV !== "development" && role !== null && (
           <button
             type="button"
-            onClick={toggleProdPreview}
-            title={isProdPreview ? "本番プレビュー中（クリックで開発表示に戻す）" : "本番プレビューを有効化"}
+            onClick={logout}
             className="flex items-center gap-2 w-full transition-colors duration-200"
+            title="ログアウト"
           >
-            <div
-              className={[
-                "relative h-4 w-7 shrink-0 rounded-full transition-colors duration-200",
-                isProdPreview ? "bg-[#48f4be]" : "bg-[#424242]",
-              ].join(" ")}
-            >
-              <div
-                className={[
-                  "absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform duration-200",
-                  isProdPreview ? "translate-x-3" : "translate-x-0",
-                ].join(" ")}
-              />
-            </div>
+            <Icon set="Arrows" name="logout" className="h-[18px] w-[18px] shrink-0 text-white/30" />
             <span
               className={[
-                "text-[10px] tracking-[0.4px] whitespace-nowrap overflow-hidden transition-all duration-300",
-                isProdPreview ? "text-[#48f4be]" : "text-white/30",
+                "text-[10px] tracking-[0.4px] text-white/30 whitespace-nowrap overflow-hidden transition-all duration-300",
                 collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
               ].join(" ")}
             >
-              {isProdPreview ? "本番プレビュー中" : "本番プレビュー"}
+              ログアウト
             </span>
           </button>
         )}

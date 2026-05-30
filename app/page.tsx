@@ -9,7 +9,7 @@ import TabBar from "@/components/TabBar";
 import SkillsRadarChart from "@/src/components/SkillsRadarChart";
 import SkillsCardGrid from "@/src/components/SkillsCardGrid";
 import { ButtonAction } from "@/components/ButtonAction";
-import { PasswordGate } from "@/components/PasswordGate";
+import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
@@ -75,7 +75,7 @@ export default function Home() {
   }, []);
 
   return (
-    <PasswordGate>
+    <AuthGate>
       <div className="flex min-h-screen items-start bg-[#212121] text-white">
         {/* Side Menu */}
         <div
@@ -232,6 +232,6 @@ export default function Home() {
         </div>
       </main>
     </div>
-    </PasswordGate>
+    </AuthGate>
   );
 }

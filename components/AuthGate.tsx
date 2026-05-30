@@ -1,13 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useAuth } from "@/lib/auth";
 
-// ─── 定数 ──────────────────────────────────────────────
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
-const SESSION_KEY   = "portfolio_auth";
-const SESSION_MS    = 24 * 60 * 60 * 1000; // 24h
-
-// ─── ユーティリティ ────────────────────────────────────
 async function sha256hex(text: string): Promise<string> {
   const buf = await crypto.subtle.digest(
     "SHA-256",
@@ -18,56 +13,30 @@ async function sha256hex(text: string): Promise<string> {
     .join("");
 }
 
-function isSessionValid(): boolean {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return false;
-    const { expires } = JSON.parse(raw) as { expires: number };
-    return Date.now() < expires;
-  } catch {
-    return false;
-  }
+export function AuthGate({ children }: { children: React.ReactNode }) {
+  const { role, login } = useAuth();
+  const ownerHash = process.env.NEXT_PUBLIC_OWNER_PASSWORD_HASH ?? "";
+  const guestHash = process.env.NEXT_PUBLIC_GUEST_PASSWORD_HASH ?? "";
+
+  if (!ownerHash && !guestHash) return <>{children}</>;
+
+  if (role !== null) return <>{children}</>;
+
+  return <LoginForm ownerHash={ownerHash} guestHash={guestHash} login={login} />;
 }
 
-function saveSession(): void {
-  localStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify({ expires: Date.now() + SESSION_MS }),
-  );
-}
-
-// ─── コンポーネント ────────────────────────────────────
-export function PasswordGate({ children }: { children: React.ReactNode }) {
-  const expectedHash = process.env.NEXT_PUBLIC_PASSWORD_HASH ?? "";
-
-  // 本番以外・ハッシュ未設定の場合はパスワードなしで表示
-  if (!IS_PRODUCTION || !expectedHash) return <>{children}</>;
-
-  return <PasswordGateInner expectedHash={expectedHash}>{children}</PasswordGateInner>;
-}
-
-function PasswordGateInner({
-  expectedHash,
-  children,
+function LoginForm({
+  ownerHash,
+  guestHash,
+  login,
 }: {
-  expectedHash: string;
-  children: React.ReactNode;
+  ownerHash: string;
+  guestHash: string;
+  login: (role: "guest" | "owner") => void;
 }) {
-  const [state, setState]     = useState<"loading" | "locked" | "unlocked">("loading");
-  const [input, setInput]     = useState("");
-  const [error, setError]     = useState("");
+  const [input, setInput]       = useState("");
+  const [error, setError]       = useState("");
   const [checking, setChecking] = useState(false);
-
-  useEffect(() => {
-    setState(isSessionValid() ? "unlocked" : "locked");
-  }, []);
-
-  if (state === "loading") {
-    // ちらつき防止のため最小限の背景のみ表示
-    return <div className="min-h-screen bg-[#212121]" />;
-  }
-
-  if (state === "unlocked") return <>{children}</>;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,9 +45,10 @@ function PasswordGateInner({
     setError("");
     try {
       const hash = await sha256hex(input);
-      if (hash === expectedHash) {
-        saveSession();
-        setState("unlocked");
+      if (ownerHash && hash === ownerHash) {
+        login("owner");
+      } else if (guestHash && hash === guestHash) {
+        login("guest");
       } else {
         setError("パスワードが正しくありません");
       }

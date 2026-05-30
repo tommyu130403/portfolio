@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Headline from "@/components/Headline";
+import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
 import { supabase } from "@/src/lib/supabase";
 import {
   saveProject,
@@ -1223,48 +1224,12 @@ function SectionsEditor({
   const [markdown, setMarkdown] = useState(() =>
     sectionsToMarkdown((value ?? []) as SectionItem[])
   );
-  const prevValue = useRef(value);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const editorRef = useRef<MarkdownEditorHandle>(null);
   const [imgModalOpen, setImgModalOpen] = useState(false);
-  // カーソル位置を保存してモーダルを開く前に退避する
-  const savedCaret = useRef<{ start: number; end: number } | null>(null);
 
   const handleChange = (md: string) => {
     setMarkdown(md);
     onChange(markdownToSections(md) as unknown as Json);
-  };
-
-  const insertImageSyntax = (url: string, alt = "") => {
-    const syntax = `![${alt.trim()}](${url.trim()})`;
-    const el = textareaRef.current;
-    const caret = savedCaret.current;
-
-    if (!el || !caret) {
-      handleChange(markdown + `\n\n${syntax}\n`);
-      return;
-    }
-    const before = markdown.slice(0, caret.start);
-    const after = markdown.slice(caret.end);
-    const needsNewline = before.length > 0 && !before.endsWith("\n\n");
-    const insert = (needsNewline ? "\n\n" : "") + syntax + "\n";
-    handleChange(before + insert + after);
-
-    const caretPos = before.length + insert.length;
-    requestAnimationFrame(() => {
-      const el2 = textareaRef.current;
-      if (!el2) return;
-      el2.focus();
-      el2.selectionStart = el2.selectionEnd = caretPos;
-    });
-  };
-
-  const openImgModal = () => {
-    // モーダルを開く前にカーソル位置を保存
-    const el = textareaRef.current;
-    savedCaret.current = el
-      ? { start: el.selectionStart, end: el.selectionEnd }
-      : null;
-    setImgModalOpen(true);
   };
 
   const preview = markdownToSections(markdown);
@@ -1274,7 +1239,7 @@ function SectionsEditor({
       <ImagePickerModal
         open={imgModalOpen}
         onClose={() => setImgModalOpen(false)}
-        onSelect={(url, alt) => { insertImageSyntax(url, alt); setImgModalOpen(false); }}
+        onSelect={(url, alt) => { editorRef.current?.insertImage(url, alt); setImgModalOpen(false); }}
         folder="projects/sections"
         showAlt
       />
@@ -1293,7 +1258,7 @@ function SectionsEditor({
                 : "text-[#616161] hover:text-white",
             ].join(" ")}
           >
-            {t === "edit" ? "Markdown" : "プレビュー"}
+            {t === "edit" ? "エディタ" : "プレビュー"}
           </button>
         ))}
         <p className="ml-auto px-4 text-[11px] text-[#3a3a3a]">
@@ -1301,29 +1266,15 @@ function SectionsEditor({
         </p>
       </div>
 
-      {/* 編集エリア */}
+      {/* 編集エリア（Tiptap WYSIWYG） */}
       {tab === "edit" && (
-        <>
-          <div className="flex items-center justify-between px-4 pt-3 pb-1">
-            <p className="text-[11px] text-[#3a3a3a]">カーソル位置に挿入されます</p>
-            <button
-              type="button"
-              onClick={openImgModal}
-              className="flex items-center gap-1.5 rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-            >
-              <span>🖼</span>
-              <span>画像を挿入</span>
-            </button>
-          </div>
-          <textarea
-            ref={textareaRef}
-            value={markdown}
-            onChange={(e) => handleChange(e.target.value)}
-            rows={12}
-            placeholder={`# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。\n\n# 課題・背景\n\n2つ目のセクションの本文。`}
-            className="w-full resize-y bg-[#1a1a1a] px-4 py-3 font-mono text-[13px] leading-relaxed text-white placeholder-[#3a3a3a] outline-none"
-          />
-        </>
+        <MarkdownEditor
+          ref={editorRef}
+          value={markdown}
+          onChange={handleChange}
+          onRequestImage={() => setImgModalOpen(true)}
+          placeholder={`# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。`}
+        />
       )}
 
       {/* プレビューエリア（ProjectModalContent のスタイルに合わせる） */}

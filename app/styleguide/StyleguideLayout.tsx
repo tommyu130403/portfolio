@@ -12,6 +12,7 @@ import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
 import ProjectCard from "@/components/ProjectCard";
 import SideMenuBar from "@/components/SideMenuBar";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -475,6 +476,17 @@ function ComponentPreview({ title, description, children }: {
   );
 }
 
+function MarkdownEditorDemo() {
+  const [md, setMd] = useState(
+    "# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。",
+  );
+  return (
+    <div className="w-full">
+      <MarkdownEditor value={md} onChange={setMd} />
+    </div>
+  );
+}
+
 function ComponentsSection() {
   return (
     <section id="components" className="scroll-mt-8">
@@ -554,6 +566,13 @@ function ComponentsSection() {
           <div className="overflow-hidden rounded-[12px] border border-[#424242]">
             <SideMenuBar activeSection="projects" collapsed={false} />
           </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="MarkdownEditor"
+          description="プロジェクト本文（projects.sections）編集用の Tiptap WYSIWYG エディタ。ツールバーは H1 / H2 / 段落 / 画像挿入 に限定し、公開側 SectionBodyRenderer と互換"
+        >
+          <MarkdownEditorDemo />
         </ComponentPreview>
       </div>
     </section>

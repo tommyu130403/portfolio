@@ -236,19 +236,6 @@ export async function saveSkillBar(bar: {
   }
 }
 
-export async function saveUserSkills(rows: {
-  id: string; user_id: string; is_target: boolean | null; updated_at: string;
-  [key: string]: unknown;
-}[]): Promise<{ error: string | null }> {
-  try {
-    const { error } = await supabase.from("user_skills").upsert(rows);
-    if (error) return { error: error.message };
-    return { error: null };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
 export async function deleteSkillBar(barId: string): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase.from("skill_experience").delete().eq("id", barId);

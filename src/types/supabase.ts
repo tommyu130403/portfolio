@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -41,42 +41,6 @@ export type Database = {
           period?: string
           role?: string
           sort_order?: number
-        }
-        Relationships: []
-      }
-      skill_level_tokens: {
-        Row: {
-          figma_type: string | null
-          figma_variable_id: string | null
-          is_override: boolean | null
-          key: string
-          mode: string
-          scopes: string[] | null
-          description: string
-          updated_at: string
-          value: string
-        }
-        Insert: {
-          figma_type?: string | null
-          figma_variable_id?: string | null
-          is_override?: boolean | null
-          key: string
-          mode?: string
-          scopes?: string[] | null
-          description: string
-          updated_at?: string
-          value?: string
-        }
-        Update: {
-          figma_type?: string | null
-          figma_variable_id?: string | null
-          is_override?: boolean | null
-          key?: string
-          mode?: string
-          scopes?: string[] | null
-          description?: string
-          updated_at?: string
-          value?: string
         }
         Relationships: []
       }
@@ -218,6 +182,36 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_cards: {
+        Row: {
+          created_at: string | null
+          icon_name: string
+          icon_set: string
+          id: string
+          sort_order: number
+          title: string
+          title_jp: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon_name?: string
+          icon_set?: string
+          id?: string
+          sort_order?: number
+          title: string
+          title_jp: string
+        }
+        Update: {
+          created_at?: string | null
+          icon_name?: string
+          icon_set?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          title_jp?: string
+        }
+        Relationships: []
+      }
       skill_experience: {
         Row: {
           card_id: string
@@ -258,36 +252,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      skill_cards: {
-        Row: {
-          created_at: string | null
-          icon_name: string
-          icon_set: string
-          id: string
-          sort_order: number
-          title: string
-          title_jp: string
-        }
-        Insert: {
-          created_at?: string | null
-          icon_name?: string
-          icon_set?: string
-          id?: string
-          sort_order?: number
-          title: string
-          title_jp: string
-        }
-        Update: {
-          created_at?: string | null
-          icon_name?: string
-          icon_set?: string
-          id?: string
-          sort_order?: number
-          title?: string
-          title_jp?: string
-        }
-        Relationships: []
       }
       skill_tools: {
         Row: {
@@ -345,30 +309,6 @@ export type Database = {
         }
         Relationships: []
       }
-      todos: {
-        Row: {
-          contents: string | null
-          end_date: string | null
-          id: number
-          start_date: string | null
-          title: string
-        }
-        Insert: {
-          contents?: string | null
-          end_date?: string | null
-          id?: number
-          start_date?: string | null
-          title: string
-        }
-        Update: {
-          contents?: string | null
-          end_date?: string | null
-          id?: number
-          start_date?: string | null
-          title?: string
-        }
-        Relationships: []
-      }
       tools_vocab: {
         Row: {
           created_at: string
@@ -387,63 +327,6 @@ export type Database = {
           id?: string
           name?: string
           slug?: string | null
-        }
-        Relationships: []
-      }
-      user_skills: {
-        Row: {
-          accessibility: number | null
-          facilitation: number | null
-          ia: number | null
-          id: string
-          implementation: number | null
-          interaction: number | null
-          is_target: boolean | null
-          presentation: number | null
-          prototype: number | null
-          qualitative_research: number | null
-          quantitative_research: number | null
-          strategy: number | null
-          updated_at: string | null
-          user_id: string
-          visual: number | null
-          writing: number | null
-        }
-        Insert: {
-          accessibility?: number | null
-          facilitation?: number | null
-          ia?: number | null
-          id?: string
-          implementation?: number | null
-          interaction?: number | null
-          is_target?: boolean | null
-          presentation?: number | null
-          prototype?: number | null
-          qualitative_research?: number | null
-          quantitative_research?: number | null
-          strategy?: number | null
-          updated_at?: string | null
-          user_id: string
-          visual?: number | null
-          writing?: number | null
-        }
-        Update: {
-          accessibility?: number | null
-          facilitation?: number | null
-          ia?: number | null
-          id?: string
-          implementation?: number | null
-          interaction?: number | null
-          is_target?: boolean | null
-          presentation?: number | null
-          prototype?: number | null
-          qualitative_research?: number | null
-          quantitative_research?: number | null
-          strategy?: number | null
-          updated_at?: string | null
-          user_id?: string
-          visual?: number | null
-          writing?: number | null
         }
         Relationships: []
       }

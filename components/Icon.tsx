@@ -2,21 +2,40 @@ import type { FC, ImgHTMLAttributes } from "react";
 
 type IconSet =
   | "Abstract"
+  | "Animals"
   | "Arrows"
   | "Base"
+  | "Brand"
   | "Build"
+  | "Character"
   | "Charts"
+  | "Clothes"
+  | "Communicate"
   | "Components"
   | "Connect"
   | "Constellation"
+  | "Datas"
   | "Edit"
   | "Emoji"
+  | "Energy"
   | "Graphics"
+  | "Hands"
+  | "Hardware"
+  | "Health"
   | "Industry"
   | "Makeups"
+  | "Measurement"
+  | "Money"
+  | "Music"
   | "Office"
+  | "Operate"
+  | "Others"
   | "Peoples"
-  | "Time";
+  | "Safe"
+  | "Sports"
+  | "Time"
+  | "Travels"
+  | "Weather";
 
 export type IconProps = ImgHTMLAttributes<HTMLImageElement> & {
   /**

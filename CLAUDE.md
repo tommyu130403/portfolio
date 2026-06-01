@@ -1,106 +1,140 @@
 # Portfolio Project - Claude Guidelines
 
-## Project Overview
-Next.js portfolio site. Components are in `/components/`, pages in `/app/`.
+> このドキュメントは Claude Code がこのリポジトリで作業する際の最上位ルールです。
+> 各章の優先順位は番号順です。**§0（最優先原則）は他のすべてのルールに優先します。**
 
-## Commit Rules
+---
 
-Format: `<type>: <description>`
+## 0. 最優先原則（Safety First）
 
-| Type | Usage |
-|------|-------|
-| `feat` | New feature or component |
-| `fix` | Bug fix |
-| `refactor` | Code restructuring without behavior change |
-| `style` | Styling, CSS changes |
-| `chore` | Build config, dependencies |
-| `docs` | Documentation only |
+**スピードよりも、正確性と安全性の確認を常に優先する。** あなたは本番環境を操作する責任あるエンジニアとして振る舞うこと。
 
-Example: `feat: HistoryItemコンポーネントを追加`
+### 0-1. ツール出力の捏造（ハルシネーション）の禁止
+- ツールの実行結果（JSON・標準出力・エラーメッセージなど）を、推測や模倣で作成（捏造）して出力することを **厳禁** とする。実際に実行して得た結果のみを報告すること。
+- ツール呼び出しのマークアップ／構文エラーが発生した場合、勝手に成功と仮定しない。正しい構文で再実行するか、即座にユーザーにエラーを報告すること。
+- **不可逆な操作の検証義務:** 本番環境（Production）へのマイグレーション（`apply_migration` など）や DB への書き込みなど取り消せない操作を行った場合、実行後に必ず **独立した検証コマンド**（マイグレーション一覧の取得、DB クエリ等）を別途実行し、物理的な適用結果を確認・報告すること。
 
-## Branch Rules
+### 0-2. ファイルの誤削除・環境破壊の防止
+- 以下のファイルを、ユーザーの明示的な許可なく削除・初期化・上書きすることを **厳禁** とする。
+  - `.gitignore` に指定されているファイル
+  - `.claude/` などツール固有の設定ファイル
+  - ローカルの環境変数ファイル（`.env` 等）
+- 既存ファイルを削除・置換する前に、それが「git 管理外の重要なローカル設定ファイル」でないかを必ず確認する。疑わしい場合は操作前に必ずユーザーへ確認プロンプトを出すこと。
 
-Format: `<type>/<yyyymmdd>-<description>`
+### 0-3. 判断に迷ったときの既定動作
+- ルールの適用範囲やリスクの判定に迷う場合、または本ドキュメントに明記がないグレーゾーンの場合は、**必ず安全側（§3 の「要承認」側）に倒し、作業を停止してユーザーに確認する。**
 
-| Type | Usage |
-|------|-------|
-| `feat/` | New features |
-| `fix/` | Bug fixes |
-| `refactor/` | Refactoring |
-| `chore/` | Maintenance |
-| `temp/` | Work content not yet decided |
+---
 
-Examples:
-- `feat/20260310-project-card-component`
-- `fix/20260310-icon-path`
-- `refactor/20260310-extract-page-components`
+## 1. プロジェクト概要 / 構成
 
-Main branch: `main`
-
-When creating a new branch, always update main first:
-```bash
-git checkout main
-git pull origin main
-git checkout -b <type>/<yyyymmdd>-<description>
-```
-
-### Git Operation Rules
-
-**基本運用事項:**
-- すでにPRが作成された作業ブランチで、追跡ファイルがなく差分がない状態で新しい指示や作業を開始しようとした場合、新規ブランチを作成するか必ず確認すること
-- ブランチ作成の指示に作業内容が含まれていない場合は、作業内容を確認せず `temp/<yyyymmdd>-work` の命名でブランチを作成すること
-
-**原則禁止事項:**
-- mainブランチでの作業（作業指示があった場合は、そのまま続行してよいか必ず確認すること）
-- mainブランチの変更をそのままpushすること
-
-## Style Guide Auto-Update Rules
-
-When making changes that affect the following files, **always update the style guide** (`app/styleguide/StyleguideLayout.tsx`) in the same task:
-
-| Trigger | Required action |
-|---------|----------------|
-| New file added to `components/` | Add import + `<ComponentPreview>` entry to `ComponentsSection` |
-| Existing component props / variants changed | Update the corresponding `<ComponentPreview>` example in `ComponentsSection` |
-| `lib/design-tokens.ts` token added / removed | Update the relevant section in `StyleguideLayout.tsx` (Colors / Tokens) |
-| `app/globals.css` `@theme` block changed | Verify the color / radius swatches in the style guide still reflect the values |
-
-No update is needed when:
-- Only internal component logic changes (no prop API or visual change)
-- Changes are inside `app/` pages unrelated to the design system
-
-## 🤖 Execution Guidelines (Automation vs. Manual Approval)
-
-Claude Codeがタスクを実行する際、自動実行（無条件での実行や `-auto-run` フラグの適用）を許可する作業と、必ず開発者の確認および明示的な承認を求める作業を以下のように定義する。
-
-### 🟢 1. 自動実行を許可する作業 (Auto-Run Allowed)
-以下の作業については、毎回開発者の許可を求めず、自律的にコマンド実行やファイルの書き換えを行ってよい。
-
-- **静的解析・型チェックの実行:** `npm run lint` や `tsc --noEmit` などの実行。
-- **ローカルテストの実行:** 既存のテストスイート（Vitest / Jestなど）の実行と結果の確認。
-- **デザイン・スタイルの微調整:** CSS、Tailwind CSSのクラス修正、Storybookなどのコンポーネントの見た目に関する調整。
-- **ドキュメントの更新:** README、インラインコメント、型定義（JSDocなど）の追加・修正。
-- **軽微なバグ修正:** 変数名の誤字脱字の修正や、影響範囲が単一コンポーネント内に閉じており、既存のテストがパスする修正。
-
-### 🔴 2. 必須確認・承認を要する作業 (Manual Approval Required)
-以下の作業を行う、または提案する場合は、**コマンドを実行したりファイルを破壊的に書き換えたりする前に、必ず開発者に確認（プロンプトでの停止や提案内容の提示）**を行うこと。
-
-- **依存関係の変更:** `package.json` への新しいパッケージの追加（`npm install`）、主要なライブラリのアップデート。
-- **非破壊的でないスキーマの変更:** Supabase/SQLなどのマイグレーションファイルの生成や実行、データベース構造の変更。
-- **認証・セキュリティに関わる実装:** Supabase Auth、行レベルセキュリティ（RLS）ポリシーの変更、APIルートの認証ロジックの修正。
-- **環境変数の操作:** `.env` ファイルの変更、新しい環境変数の導入提案（※シークレット情報は入力させないこと）。
-- **ビルド設定・ツールの変更:** Vite、TypeScript、GitHub Actionsなどの設定ファイル（`vite.config.ts`、`tsconfig.json`、`.github/workflows/*`）の変更。
-- **破壊的変更・リファクタリング:** 既存の複数コンポーネントにまたがる共通ロジックの変更や、既存のインターフェース・API仕様を破壊する修正。
-
-### 💡 行動指針
-- 上記の「🟢 自動実行を許可する作業」に該当する場合は、`-auto-run` モードでの効率的な実行を推奨する。
-- 「🔴 必須確認・承認を要する作業」に1つでも該当、または判断に迷う場合は、作業を一時停止し、変更内容のサマリーと理由を開発者に提示して承認を得ること。
-
-## Project Structure
+Next.js 製のポートフォリオサイト。
 
 ```
-app/          - Next.js pages
-components/   - Reusable UI components
-src/components/ - Additional components (SkillsRadarChart)
-public/       - Static assets
+app/            - Next.js ページ
+components/     - 再利用可能な UI コンポーネント
+src/components/ - 追加コンポーネント（SkillsRadarChart など）
+lib/            - 設計トークン等（design-tokens.ts）
+public/         - 静的アセット
 ```
+
+---
+
+## 2. 実行ポリシー（自動実行 vs 要承認）
+
+タスク実行時、開発者の許可を毎回求めず自律的に実行してよい作業と、必ず明示的な承認を要する作業を以下に定義する。
+**いずれに該当するか迷う場合は、§0-3 に従い「要承認」側に倒すこと。**
+
+### 🟢 2-1. 自動実行を許可する作業（Auto-Run Allowed）
+毎回の許可を求めず、自律的にコマンド実行・ファイル書き換えを行ってよい。
+
+- **静的解析・型チェック:** `npm run lint`、`tsc --noEmit` などの実行。
+- **ローカルテスト:** 既存テストスイート（Vitest / Jest など）の実行と結果確認。
+- **スタイルの微調整:** CSS・Tailwind クラスの修正、見た目の調整。
+  - ※ ただし `app/globals.css` の `@theme` ブロックや `lib/design-tokens.ts` を変更する場合は §4 のスタイルガイド更新義務が発生する（自動実行可だが更新を必ずセットで行う）。
+- **ドキュメント更新:** README、インラインコメント、型定義（JSDoc 等）の追加・修正。
+- **軽微なバグ修正:** 誤字脱字の修正、または変更が単一コンポーネント内に閉じ、かつ既存テストがパスする修正。
+  - ※ 複数コンポーネントにまたがる場合は「軽微」ではなく 🔴 2-2 の破壊的変更として扱う。
+
+### 🔴 2-2. 必須確認・承認を要する作業（Manual Approval Required）
+これらを行う／提案する場合は、**コマンド実行や破壊的なファイル書き換えの前に、必ず変更内容のサマリーと理由を提示し承認を得ること。**
+
+- **依存関係の変更:** `package.json` へのパッケージ追加（`npm install`）、ライブラリのアップデート。
+- **スキーマ変更全般:** Supabase / SQL のマイグレーションファイル生成・実行、DB 構造の変更。
+- **認証・セキュリティ実装:** Supabase Auth、行レベルセキュリティ（RLS）ポリシー、API ルートの認証ロジックの変更。
+- **環境変数の操作:** `.env` の変更、新規環境変数の導入提案（※シークレット情報はユーザーに入力させないこと）。
+- **ビルド設定・ツールの変更:** TypeScript、GitHub Actions などの設定ファイル（`tsconfig.json`、`.github/workflows/*` 等）の変更。
+- **破壊的変更・大規模リファクタリング:** 複数コンポーネントにまたがる共通ロジックの変更、既存インターフェース・API 仕様を破壊する修正。
+
+---
+
+## 3. Git 運用ルール
+
+### 3-1. コミット規約
+形式: `<type>: <description>`
+
+| Type | 用途 |
+|------|------|
+| `feat` | 新機能・新コンポーネント |
+| `fix` | バグ修正 |
+| `refactor` | 挙動を変えないコード再構成 |
+| `style` | スタイル・CSS の変更 |
+| `chore` | ビルド設定・依存関係 |
+| `docs` | ドキュメントのみ |
+
+例: `feat: HistoryItemコンポーネントを追加`
+
+### 3-2. ブランチ命名規約
+形式: `<type>/<yyyymmdd>-<description>`
+
+| Prefix | 用途 |
+|--------|------|
+| `feat/` | 新機能 |
+| `fix/` | バグ修正 |
+| `refactor/` | リファクタリング |
+| `chore/` | メンテナンス |
+| `temp/` | 作業内容が未定の場合 |
+
+例: `feat/20260310-project-card-component` / `fix/20260310-icon-path`
+
+- **作業内容が指示に含まれていない場合**は、作業内容を確認せず `temp/<yyyymmdd>-work` の命名でブランチを作成する。
+
+### 3-3. ブランチ作成フロー
+新しい作業指示を受けたとき、以下の分岐で判断する。
+
+```
+新しい作業指示を受けた
+├─ 現在 main ブランチ上にいる
+│    └─ 作業前に「このまま続行してよいか」を必ず確認する（§3-4 参照）
+│
+├─ 現ブランチが PR 済み かつ 差分なし（クリーン）
+│    └─ 「新しいブランチを切るか」を必ずユーザーに確認する
+│         └─ Yes の場合のみ、main を最新化してから新規ブランチを作成:
+│              git checkout main
+│              git pull origin main
+│              git checkout -b <type>/<yyyymmdd>-<description>
+│
+└─ 現ブランチが進行中（同一タスクの続き・差分あり）
+     └─ 勝手に切り直さず、そのまま現ブランチで作業を継続する
+```
+
+### 3-4. 原則禁止事項
+- **main ブランチでの直接作業**（作業指示があった場合は、そのまま続行してよいか必ず確認すること）。
+- **main ブランチの変更をそのまま push すること。**
+
+---
+
+## 4. デザインシステム連動ルール（Style Guide Auto-Update）
+
+以下に影響する変更を行う場合、**同じタスク内で必ずスタイルガイド** (`app/styleguide/StyleguideLayout.tsx`) **も更新する。**
+
+| トリガー | 必須対応 |
+|---------|----------|
+| `components/` に新規ファイル追加 | `ComponentsSection` に import と `<ComponentPreview>` を追加 |
+| 既存コンポーネントの props / variants 変更 | 対応する `<ComponentPreview>` の例を更新 |
+| `lib/design-tokens.ts` のトークン追加 / 削除 | `StyleguideLayout.tsx` の該当セクション（Colors / Tokens）を更新 |
+| `app/globals.css` の `@theme` ブロック変更 | スタイルガイドの色 / radius スウォッチが値を反映しているか確認 |
+
+更新が不要なケース:
+- コンポーネント内部ロジックのみの変更（prop API・見た目に変化がない場合）。
+- デザインシステムと無関係な `app/` 配下ページの変更。

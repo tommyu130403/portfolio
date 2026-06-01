@@ -25,7 +25,6 @@ import {
   listAllProjectToolNames,
   saveProjectSkillsByLabels,
   saveProjectToolsByNames,
-  saveUserSkills,
   listStorageImages,
   uploadStorageImage,
 } from "@/app/admin/actions";
@@ -46,33 +45,13 @@ type SkillTool       = Tables<"skill_tools">;
 // ローカル状態では skills/tools をフロントエンド専用フィールドとして保持する
 type ProjectLocal = Tables<"projects"> & { skills: string[]; tools: string[] };
 
-type SkillKey =
-  | "prototype" | "visual" | "implementation" | "interaction"
-  | "accessibility" | "writing" | "ia" | "qualitative_research"
-  | "quantitative_research" | "strategy" | "facilitation" | "presentation";
 
-const SKILL_LABELS: Record<SkillKey, string> = {
-  prototype: "プロトタイプ",
-  visual: "ビジュアル",
-  implementation: "実装",
-  interaction: "インタラクション",
-  accessibility: "アクセシビリティ",
-  writing: "ライティング",
-  ia: "情報設計 (IA)",
-  qualitative_research: "定性調査",
-  quantitative_research: "定量調査",
-  strategy: "戦略",
-  facilitation: "ファシリテーション",
-  presentation: "プレゼンテーション",
-};
-const SKILL_KEYS = Object.keys(SKILL_LABELS) as SkillKey[];
 
 // ─── ナビゲーション ────────────────────────────────────
 const NAV_SECTIONS = [
   { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
   { id: "career",           label: "Career",           labelJa: "経歴" },
   { id: "projects",         label: "Projects",         labelJa: "プロジェクト" },
-  { id: "skills",           label: "Skills",           labelJa: "スキル" },
   { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
 ] as const;
 
@@ -2031,123 +2010,6 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
   );
 }
 
-// ─── Skills セクション ─────────────────────────────────
-
-type SkillRow = {
-  id: string;
-  user_id: string;
-  is_target: boolean;
-} & Record<SkillKey, number>;
-
-function SkillsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
-  const [current, setCurrent] = useState<SkillRow | null>(null);
-  const [target, setTarget] = useState<SkillRow | null>(null);
-  const [fetching, setFetching] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-
-  const [dirty, setDirty] = useState(false);
-
-  const markDirty = () => {
-    if (!dirty) {
-      setDirty(true);
-      onDirtyChange(true);
-    }
-  };
-
-  const markSaved = () => {
-    setDirty(false);
-    onDirtyChange(false);
-  };
-
-  useEffect(() => {
-    supabase.from("user_skills").select("*").then(({ data }) => {
-      if (data) {
-        const c = data.find((r) => r.is_target === false);
-        const t = data.find((r) => r.is_target === true);
-        if (c) setCurrent(c as unknown as SkillRow);
-        if (t) setTarget(t as unknown as SkillRow);
-      }
-      setFetching(false);
-    });
-  }, []);
-
-  const updateSkill = (type: "current" | "target", key: SkillKey, val: number) => {
-    markDirty();
-    if (type === "current") setCurrent((r) => (r ? { ...r, [key]: val } : r));
-    else setTarget((r) => (r ? { ...r, [key]: val } : r));
-  };
-
-  const handleSave = async () => {
-    if (!current || !target) return;
-    setLoading(true); setError(""); setSaved(false);
-    const rows = [current, target].map((r) => ({
-      id: r.id, user_id: r.user_id, is_target: r.is_target,
-      updated_at: new Date().toISOString(),
-      ...Object.fromEntries(SKILL_KEYS.map((k) => [k, r[k]])),
-    }));
-    const { error: err } = await saveUserSkills(rows);
-    setLoading(false);
-    if (err) { setError(err); return; }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    markSaved();
-  };
-
-  if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
-  if (!current || !target) return <p className="text-[14px] text-[#616161]">スキルデータが見つかりません。</p>;
-
-  return (
-    <section id="skills" className="scroll-mt-8">
-      <SectionTitle label="Skills" title="スキル" />
-      {dirty && (
-        <p className="mb-3 text-[11px] text-[#f4c248]">
-          未保存の変更があります
-        </p>
-      )}
-      <div className="mb-2 grid grid-cols-2 gap-2 text-center">
-        <p className="text-[12px] font-semibold tracking-[0.6px] text-[#9e9e9e]">CURRENT</p>
-        <p className="text-[12px] font-semibold tracking-[0.6px] text-[#48f4be]">TARGET</p>
-      </div>
-      <div className="mb-8 flex flex-col divide-y divide-[#2a2a2a] rounded-[12px] border border-[#424242] bg-[#212121]">
-        {SKILL_KEYS.map((key) => (
-          <div key={key} className="grid grid-cols-[1fr_120px_1fr] items-center gap-4 px-5 py-3">
-            {/* Current */}
-            <div className="flex items-center gap-3">
-              <input
-                type="range" min={0} max={5} step={0.5}
-                value={current[key]}
-                onChange={(e) => updateSkill("current", key, Number(e.target.value))}
-                className="w-full accent-[#9e9e9e]"
-              />
-              <span className="w-8 text-right font-mono text-[13px] text-white">
-                {current[key].toFixed(1)}
-              </span>
-            </div>
-            {/* Label */}
-            <p className="text-center text-[12px] text-[#9e9e9e]">{SKILL_LABELS[key]}</p>
-            {/* Target */}
-            <div className="flex items-center gap-3">
-              <span className="w-8 font-mono text-[13px] text-[#48f4be]">
-                {target[key].toFixed(1)}
-              </span>
-              <input
-                type="range" min={0} max={5} step={0.5}
-                value={target[key]}
-                onChange={(e) => updateSkill("target", key, Number(e.target.value))}
-                className="w-full accent-[#48f4be]"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <SaveButton onClick={handleSave} loading={loading} saved={saved} error={error} />
-    </section>
-  );
-}
-
 // ─── SkillsExperience セクション ───────────────────────
 
 type CardWithRelations = SkillCard & {
@@ -2724,7 +2586,6 @@ export function AdminLayout() {
             <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
             <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
             <ProjectsSection onDirtyChange={(dirty) => setSectionDirty("projects", dirty)} />
-            <SkillsSection onDirtyChange={(dirty) => setSectionDirty("skills", dirty)} />
             <SkillsExperienceSection
               onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
             />

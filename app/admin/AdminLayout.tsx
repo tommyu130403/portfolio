@@ -18,9 +18,7 @@ import {
   saveSkillBar,
   deleteSkillBar,
   addSkillBar,
-  saveSkillTool,
-  deleteSkillTool,
-  addSkillTool,
+  saveExperienceTools,
   listAllProjectSkillLabels,
   listAllProjectToolNames,
   saveProjectSkillsByLabels,
@@ -39,7 +37,6 @@ type CareerItem = Tables<"career_items">;
 type Project    = Tables<"projects">;
 type SkillCard       = Tables<"skill_cards">;
 type SkillExperience = Tables<"skill_experience">;
-type SkillTool       = Tables<"skill_tools">;
 
 // project_skills / project_tools はDB正規化テーブルで管理するため、
 // ローカル状態では skills/tools をフロントエンド専用フィールドとして保持する
@@ -2012,9 +2009,24 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
 
 // ─── SkillsExperience セクション ───────────────────────
 
+// スキル行（skill_experience）に紐づくツール（skill_experience_tools → tools_vocab）。
+// key はローカル編集用の安定キー（既存は tool_id、新規は randomUUID）。
+type BarTool = {
+  key: string;
+  tool_id: string | null;
+  name: string;
+  slug: string;
+  category: string;
+};
+type BarWithTools = SkillExperience & { tools: BarTool[] };
 type CardWithRelations = SkillCard & {
-  bars:  SkillExperience[];
-  tools: SkillTool[];
+  bars: BarWithTools[];
+};
+
+type ExperienceToolLink = {
+  experience_id: string;
+  sort_order: number;
+  tools_vocab: { id: string; name: string; slug: string | null; category: string | null } | null;
 };
 
 function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
@@ -2042,12 +2054,25 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [{ data: cardRows }, { data: barRows }, { data: toolRows }] = await Promise.all([
+      const [{ data: cardRows }, { data: barRows }, { data: linkRows }] = await Promise.all([
         supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
         supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
-        supabase.from("skill_tools").select("*").order("sort_order", { ascending: true }),
+        supabase
+          .from("skill_experience_tools")
+          .select("experience_id, sort_order, tools_vocab(id, name, slug, category)")
+          .order("sort_order", { ascending: true }),
       ]);
       if (!cardRows) { setFetching(false); return; }
+
+      // skill_experience_tools → スキル行 ID ごとのツール配列に整形
+      const toolsByExp = new Map<string, BarTool[]>();
+      for (const link of (linkRows ?? []) as unknown as ExperienceToolLink[]) {
+        const tv = link.tools_vocab;
+        if (!tv) continue;
+        const arr = toolsByExp.get(link.experience_id) ?? [];
+        arr.push({ key: tv.id, tool_id: tv.id, name: tv.name, slug: tv.slug ?? "", category: tv.category ?? "" });
+        toolsByExp.set(link.experience_id, arr);
+      }
 
       // 公開ページ同様、「辞書用カード（Skill Vocab / Tool Vocab）」は
       // Admin の UI でも非表示にする。
@@ -2064,8 +2089,9 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
 
       const merged = visibleCardRows.map((c) => ({
         ...c,
-        bars:  (barRows  ?? []).filter((b) => b.card_id === c.id),
-        tools: (toolRows ?? []).filter((t) => t.card_id === c.id),
+        bars: (barRows ?? [])
+          .filter((b) => b.card_id === c.id)
+          .map((b) => ({ ...b, tools: toolsByExp.get(b.id) ?? [] })),
       }));
       setCards(merged);
       setFetching(false);
@@ -2147,13 +2173,24 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     );
   };
 
-  const handleSaveBar = async (cardId: string, bar: SkillExperience) => {
+  const handleSaveBar = async (cardId: string, bar: BarWithTools) => {
     const { error } = await saveSkillBar({
       id: bar.id, card_id: cardId, label: bar.label, label_short: bar.label_short,
       segments: bar.segments, level: bar.level,
       description: bar.description, sort_order: bar.sort_order,
+      icon_set: bar.icon_set, icon_name: bar.icon_name, label_note: bar.label_note,
     });
-    if (error) setGlobalError(error);
+    if (error) { setGlobalError(error); return; }
+    // スキル行のツール（skill_experience_tools）も同時に保存
+    const toolsRes = await saveExperienceTools(
+      bar.id,
+      bar.tools.map((t) => ({
+        name: t.name,
+        slug: t.slug.trim() || null,
+        category: t.category.trim() || null,
+      })),
+    );
+    if (toolsRes.error) setGlobalError(toolsRes.error);
   };
 
   const handleDeleteBar = async (cardId: string, barId: string) => {
@@ -2177,67 +2214,57 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     if (data) {
       setCards((prev) =>
         prev.map((c) =>
-          c.id !== cardId ? c : { ...c, bars: [...c.bars, data] },
+          c.id !== cardId ? c : { ...c, bars: [...c.bars, { ...data, tools: [] }] },
         ),
       );
       markDirty();
     }
   };
 
-  // ── ツール操作 ────────────────────────────────────────
-  const updateTool = (
+  // ── スキル行ツール操作（skill_experience_tools）─────────
+  const updateBarField = (
     cardId: string,
-    toolId: string,
-    key: keyof SkillTool,
-    val: string | number,
+    barId: string,
+    update: (bar: BarWithTools) => BarWithTools,
   ) => {
     markDirty();
     setCards((prev) =>
       prev.map((c) =>
         c.id !== cardId
           ? c
-          : {
-              ...c,
-              tools: c.tools.map((t) => (t.id === toolId ? { ...t, [key]: val } : t)),
-            },
+          : { ...c, bars: c.bars.map((b) => (b.id === barId ? update(b) : b)) },
       ),
     );
   };
 
-  const handleSaveTool = async (cardId: string, tool: SkillTool) => {
-    const { error } = await saveSkillTool({
-      id: tool.id, card_id: cardId, name: tool.name,
-      years: tool.years, sort_order: tool.sort_order,
-    });
-    if (error) setGlobalError(error);
+  const addBarTool = (cardId: string, barId: string) => {
+    updateBarField(cardId, barId, (b) => ({
+      ...b,
+      tools: [
+        ...b.tools,
+        { key: crypto.randomUUID(), tool_id: null, name: "", slug: "", category: "" },
+      ],
+    }));
   };
 
-  const handleDeleteTool = async (cardId: string, toolId: string) => {
-    if (
-      !window.confirm(
-        "このツールタグを削除します。よろしいですか？\nこの操作は取り消せません。"
-      )
-    ) {
-      return;
-    }
-    await deleteSkillTool(toolId);
-    setCards((prev) => prev.map((c) =>
-      c.id !== cardId ? c : { ...c, tools: c.tools.filter((t) => t.id !== toolId) }
-    ));
+  const updateBarTool = (
+    cardId: string,
+    barId: string,
+    toolKey: string,
+    field: "name" | "slug" | "category",
+    val: string,
+  ) => {
+    updateBarField(cardId, barId, (b) => ({
+      ...b,
+      tools: b.tools.map((t) => (t.key === toolKey ? { ...t, [field]: val } : t)),
+    }));
   };
 
-  const handleAddTool = async (cardId: string) => {
-    const card = cards.find((c) => c.id === cardId);
-    if (!card) return;
-    const { data } = await addSkillTool(cardId, card.tools.length);
-    if (data) {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id !== cardId ? c : { ...c, tools: [...c.tools, data] },
-        ),
-      );
-      markDirty();
-    }
+  const removeBarTool = (cardId: string, barId: string, toolKey: string) => {
+    updateBarField(cardId, barId, (b) => ({
+      ...b,
+      tools: b.tools.filter((t) => t.key !== toolKey),
+    }));
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
@@ -2364,8 +2391,22 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                               <Input value={bar.level} onChange={(v) => updateBar(card.id, bar.id, "level", v)} placeholder="Lv.3 Senior" />
                             </div>
                           </div>
+                          <div className="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                              <FieldLabel>アイコンセット</FieldLabel>
+                              <Input value={bar.icon_set ?? ""} onChange={(v) => updateBar(card.id, bar.id, "icon_set", v || null)} placeholder="Edit" />
+                            </div>
+                            <div>
+                              <FieldLabel>アイコン名</FieldLabel>
+                              <Input value={bar.icon_name ?? ""} onChange={(v) => updateBar(card.id, bar.id, "icon_name", v || null)} placeholder="writing-fluently" />
+                            </div>
+                            <div>
+                              <FieldLabel>ラベルノート（JP短）</FieldLabel>
+                              <Input value={bar.label_note ?? ""} onChange={(v) => updateBar(card.id, bar.id, "label_note", v || null)} placeholder="UIデザイン" />
+                            </div>
+                          </div>
                           <div className="mb-3">
-                            <FieldLabel>説明（任意）</FieldLabel>
+                            <FieldLabel>説明（任意・改行と「・」箇条書き可）</FieldLabel>
                             <Textarea
                               value={bar.description ?? ""}
                               onChange={(v) => updateBar(card.id, bar.id, "description", v || null)}
@@ -2373,6 +2414,44 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                               placeholder="スキルの詳細説明（展開時に表示）"
                             />
                           </div>
+
+                          {/* スキル行ツール（skill_experience_tools） */}
+                          <div className="mb-3 rounded-[8px] border border-[#2e2e2e] bg-[#161616] p-3">
+                            <div className="mb-2 flex items-center justify-between">
+                              <p className="text-[11px] font-semibold tracking-[0.5px] text-[#9e9e9e]">ツール（行単位）</p>
+                              <button
+                                type="button"
+                                onClick={() => addBarTool(card.id, bar.id)}
+                                className="rounded-[6px] border border-[#424242] px-2.5 py-0.5 text-[11px] text-[#9e9e9e] hover:border-[#48f4be] hover:text-white"
+                              >
+                                ＋ ツール
+                              </button>
+                            </div>
+                            {bar.tools.length === 0 && (
+                              <p className="text-[11px] text-[#616161]">ツール未設定</p>
+                            )}
+                            <div className="flex flex-col gap-2">
+                              {bar.tools.map((tool) => (
+                                <div key={tool.key} className="grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-2">
+                                  <Input value={tool.name} onChange={(v) => updateBarTool(card.id, bar.id, tool.key, "name", v)} placeholder="Figma" />
+                                  <Input value={tool.slug} onChange={(v) => updateBarTool(card.id, bar.id, tool.key, "slug", v)} placeholder="slug（例: figma）" />
+                                  <Input value={tool.category} onChange={(v) => updateBarTool(card.id, bar.id, tool.key, "category", v)} placeholder="カテゴリー（フォールバック）" />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeBarTool(card.id, bar.id, tool.key)}
+                                    className="shrink-0 rounded-[6px] px-2 py-2 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+                                    aria-label="ツールを削除"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="mt-2 text-[10px] leading-[1.5] text-[#616161]">
+                              slug が public/logos/&lt;slug&gt;.svg と一致するとロゴ表示。無ければカテゴリーアイコンにフォールバック。保存は下の「保存」ボタンでスキル行とまとめて行われます。
+                            </p>
+                          </div>
+
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
@@ -2389,54 +2468,6 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                               削除
                             </button>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* ツールタグ */}
-                  <div>
-                    <div className="mb-3 flex items-center justify-between">
-                      <p className="text-[12px] font-semibold tracking-[0.6px] text-[#9e9e9e]">ツールタグ</p>
-                      <button
-                        type="button"
-                        onClick={() => handleAddTool(card.id)}
-                        className="rounded-[6px] border border-[#424242] px-3 py-1 text-[12px] text-[#9e9e9e] hover:border-[#48f4be] hover:text-white"
-                      >
-                        ＋ 追加
-                      </button>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {card.tools.map((tool) => (
-                        <div key={tool.id} className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <Input
-                              value={tool.name}
-                              onChange={(v) => updateTool(card.id, tool.id, "name", v)}
-                              placeholder="Figma"
-                            />
-                          </div>
-                          <div className="w-[120px]">
-                            <Input
-                              value={tool.years}
-                              onChange={(v) => updateTool(card.id, tool.id, "years", v)}
-                              placeholder="5年"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleSaveTool(card.id, tool)}
-                            className="shrink-0 rounded-[6px] bg-[#48f4be] px-3 py-2 text-[12px] font-semibold text-[#0a0a0a] hover:opacity-80"
-                          >
-                            保存
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTool(card.id, tool.id)}
-                            className="shrink-0 rounded-[6px] px-2 py-2 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
-                          >
-                            削除
-                          </button>
                         </div>
                       ))}
                     </div>

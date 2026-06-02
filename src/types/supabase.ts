@@ -216,8 +216,11 @@ export type Database = {
         Row: {
           card_id: string
           description: string | null
+          icon_name: string | null
+          icon_set: string | null
           id: string
           label: string
+          label_note: string | null
           label_short: string | null
           level: string
           segments: number
@@ -226,8 +229,11 @@ export type Database = {
         Insert: {
           card_id: string
           description?: string | null
+          icon_name?: string | null
+          icon_set?: string | null
           id?: string
           label: string
+          label_note?: string | null
           label_short?: string | null
           level: string
           segments: number
@@ -236,8 +242,11 @@ export type Database = {
         Update: {
           card_id?: string
           description?: string | null
+          icon_name?: string | null
+          icon_set?: string | null
           id?: string
           label?: string
+          label_note?: string | null
           label_short?: string | null
           level?: string
           segments?: number
@@ -249,6 +258,39 @@ export type Database = {
             columns: ["card_id"]
             isOneToOne: false
             referencedRelation: "skill_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_experience_tools: {
+        Row: {
+          experience_id: string
+          sort_order: number
+          tool_id: string
+        }
+        Insert: {
+          experience_id: string
+          sort_order?: number
+          tool_id: string
+        }
+        Update: {
+          experience_id?: string
+          sort_order?: number
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_experience_tools_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "skill_experience"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_experience_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools_vocab"
             referencedColumns: ["id"]
           },
         ]
@@ -311,18 +353,21 @@ export type Database = {
       }
       tools_vocab: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           name: string
           slug: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           name: string
           slug?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           name?: string

@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useId, useState } from "react";
 import Icon from "@/components/Icon";
 import type { IconProps } from "@/components/Icon";
+import ServiceLogo from "@/components/ServiceLogo";
+import Tag from "@/components/Tag";
 import { supabase } from "@/src/lib/supabase";
-import type { Tables } from "@/src/types/supabase";
 
 // ──────────────────────────────────────────────
-// 4-step proficiency scale (案A)
+// 4-step proficiency scale（バー点灯色は習熟度で段階的に変化＝Figma準拠）
 // ──────────────────────────────────────────────
 const SKILL_LEVELS = [
-  { n: 1, en: "Beginner",     jp: "基礎知識あり / 学習中",             fill: "rgba(72,244,190,0.30)" },
-  { n: 2, en: "Intermediate", jp: "サポートのもと実務遂行可能",          fill: "rgba(72,244,190,0.52)" },
-  { n: 3, en: "Advanced",     jp: "独力で完遂し、他者をサポート可能",    fill: "rgba(72,244,190,0.78)" },
-  { n: 4, en: "Expert",       jp: "プロセスをリードし、組織を牽引可能",  fill: "#48F4BE" },
+  { n: 1, en: "Beginner",     bar: "#11503C" }, // main/500
+  { n: 2, en: "Intermediate", bar: "#1E765A" }, // main/400
+  { n: 3, en: "Advanced",     bar: "#2B9E7A" }, // main/300
+  { n: 4, en: "Expert",       bar: "#48F4BE" }, // main/100
 ];
 
 // Map existing segments scale (1–10) to 4-step proficiency
@@ -21,60 +22,133 @@ function segmentsToLevel(segments: number): number {
   return Math.min(4, Math.max(1, Math.ceil(segments / 2.5)));
 }
 
+type IconRef = { set: NonNullable<IconProps["set"]>; name: string };
+
+// ──────────────────────────────────────────────
+// Tool icon resolution (§3)
+//   1. public/logos/<slug>.svg があれば <ServiceLogo>
+//   2. 無ければツールのカテゴリーに対応する既存アイコンでフォールバック
+// ──────────────────────────────────────────────
+const LOGO_SLUGS = new Set([
+  "airtable", "discord", "figma", "github", "miro",
+  "notion", "sketch", "slack", "webflow", "zapier",
+]);
+
+const TOOL_CATEGORY_ICON: Record<string, IconRef> = {
+  "Frontend Frameworks & UI Libraries": { set: "Components", name: "page" },
+  "Source Control & Developer Platforms": { set: "Connect", name: "pull-requests" },
+  "Design Tools": { set: "Components", name: "platte" },
+  "Analytics & Research": { set: "Charts", name: "chart-line" },
+  "Project Management": { set: "Components", name: "checklist" },
+};
+const FALLBACK_TOOL_ICON: IconRef = { set: "Base", name: "system" };
+
+type ToolRef = {
+  name: string;
+  /** ロゴ解決用。public/logos/<slug>.svg を参照 */
+  slug?: string | null;
+  /** ロゴ未整備時のカテゴリーアイコン・フォールバック用 */
+  category?: string | null;
+};
+
+function ToolTag({ tool }: { tool: ToolRef }) {
+  let prefix;
+  if (tool.slug && LOGO_SLUGS.has(tool.slug)) {
+    prefix = <ServiceLogo name={tool.slug} className="w-4 h-4 shrink-0 object-contain" />;
+  } else {
+    const icon = (tool.category && TOOL_CATEGORY_ICON[tool.category]) || FALLBACK_TOOL_ICON;
+    prefix = (
+      <Icon set={icon.set} name={icon.name} tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />
+    );
+  }
+  return <Tag variant="tool" label={tool.name} prefix={prefix} />;
+}
+
 // ──────────────────────────────────────────────
 // Data types
 // ──────────────────────────────────────────────
-type SkillBarConfig = {
+type SkillRowConfig = {
+  id: string;
+  /** スキル行アイコン（16×16・淡色） */
+  icon: IconRef;
   label: string;
+  /** 展開時の JP 短ラベル */
+  labelNote?: string;
+  /** 展開時の説明文。改行（\n）と「・」箇条書きを含みうる（pre-line で描画） */
+  description?: string;
   segments: number;
+  tools: ToolRef[];
 };
 
 type SkillCardConfig = {
   id: string;
-  icon: { set: NonNullable<IconProps["set"]>; name: string };
+  icon: IconRef;
   title: string;
   titleJP: string;
-  skills: SkillBarConfig[];
+  skills: SkillRowConfig[];
 };
 
-type SkillCardRow       = Tables<"skill_cards">;
-type SkillExperienceRow = Tables<"skill_experience">;
+// ──────────────────────────────────────────────
+// Supabase fetch — skill_cards + skill_experience + tools
+//   行アイコン: icon_set/icon_name、ツール: skill_experience_tools → tools_vocab
+// ──────────────────────────────────────────────
+type ToolVocabLink = {
+  experience_id: string;
+  tools_vocab: { name: string; slug: string | null; category: string | null } | null;
+};
 
-// ──────────────────────────────────────────────
-// Supabase fetch
-// ──────────────────────────────────────────────
 async function fetchSkillCards(): Promise<SkillCardConfig[]> {
-  const [{ data: cards }, { data: bars }] = await Promise.all([
+  const [{ data: cards }, { data: rows }, { data: links }] = await Promise.all([
     supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
     supabase.from("skill_experience").select("*").order("sort_order", { ascending: true }),
+    supabase
+      .from("skill_experience_tools")
+      .select("experience_id, tools_vocab(name, slug, category)")
+      .order("sort_order", { ascending: true }),
   ]);
 
   if (!cards) return [];
 
-  const visibleCards = (cards as SkillCardRow[]).filter((card) => {
-    const t  = card.title?.trim() ?? "";
+  const visibleCards = cards.filter((card) => {
+    const t = card.title?.trim() ?? "";
     const tj = card.title_jp?.trim() ?? "";
-    return (
-      t !== "Skill Vocab" && t !== "Tool Vocab" &&
-      tj !== "スキル辞書" && tj !== "ツール辞書"
-    );
+    return t !== "Skill Vocab" && t !== "Tool Vocab" && tj !== "スキル辞書" && tj !== "ツール辞書";
   });
 
+  // experience_id → tools[]
+  const toolsByExp = new Map<string, ToolRef[]>();
+  for (const link of (links ?? []) as unknown as ToolVocabLink[]) {
+    const tv = link.tools_vocab;
+    if (!tv) continue;
+    const arr = toolsByExp.get(link.experience_id) ?? [];
+    arr.push({ name: tv.name, slug: tv.slug, category: tv.category });
+    toolsByExp.set(link.experience_id, arr);
+  }
+
   return visibleCards.map((card) => ({
-    id:      card.id,
-    icon:    { set: card.icon_set as NonNullable<IconProps["set"]>, name: card.icon_name },
-    title:   card.title,
+    id: card.id,
+    icon: { set: card.icon_set as IconRef["set"], name: card.icon_name },
+    title: card.title,
     titleJP: card.title_jp,
-    skills: (bars as SkillExperienceRow[] ?? [])
-      .filter((b) => b.card_id === card.id)
-      .map((b) => ({ label: b.label_short ?? b.label, segments: b.segments })),
+    skills: (rows ?? [])
+      .filter((r) => r.card_id === card.id)
+      .map((r) => ({
+        id: r.id,
+        icon: { set: (r.icon_set ?? "Base") as IconRef["set"], name: r.icon_name ?? "system" },
+        label: r.label,
+        labelNote: r.label_note ?? undefined,
+        description: r.description ?? undefined,
+        segments: r.segments,
+        tools: toolsByExp.get(r.id) ?? [],
+      })),
   }));
 }
 
 // ──────────────────────────────────────────────
-// SegBar — 4-segment proficiency bar
+// SegBar — 4-segment proficiency bar (18×6)
 // ──────────────────────────────────────────────
-function SegBar({ level, glow }: { level: number; glow: boolean }) {
+function SegBar({ level }: { level: number }) {
+  const litColor = SKILL_LEVELS[level - 1].bar;
   return (
     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
       {[1, 2, 3, 4].map((i) => {
@@ -83,15 +157,13 @@ function SegBar({ level, glow }: { level: number; glow: boolean }) {
           <div
             key={i}
             style={{
-              width: 22,
-              height: 8,
+              width: 18,
+              height: 6,
               borderRadius: 999,
               flexShrink: 0,
-              background: on ? "#48F4BE" : "rgba(0,0,0,0.25)",
-              border: on ? "none" : "1px solid #424242",
+              background: on ? litColor : "rgba(0,0,0,0.25)",
+              border: on ? "none" : "1px solid rgba(255,255,255,0.08)",
               boxSizing: "border-box",
-              boxShadow: on && glow ? "0 0 8px rgba(72,244,190,0.45)" : "none",
-              transition: "background 0.2s, box-shadow 0.2s",
             }}
           />
         );
@@ -101,52 +173,99 @@ function SegBar({ level, glow }: { level: number; glow: boolean }) {
 }
 
 // ──────────────────────────────────────────────
-// SkillRow — one skill inside a card
+// SkillRow — accordion row (3 states: default / hover / active)
 // ──────────────────────────────────────────────
-function SkillRow({ skill }: { skill: SkillBarConfig }) {
-  const [hover, setHover] = useState(false);
+function SkillRow({ skill }: { skill: SkillRowConfig }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
   const level = segmentsToLevel(skill.segments);
   const levelInfo = SKILL_LEVELS[level - 1];
+  const isExpert = level === 4;
 
   return (
     <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        padding: "10px 12px",
-        margin: "0 -12px",
-        borderRadius: 8,
-        background: hover ? "rgba(255,255,255,0.05)" : "transparent",
-        transition: "background 0.18s",
-        cursor: "default",
-      }}
+      className={`group transition-[border-radius] duration-200 ${
+        open ? "rounded-[16px] bg-white/5" : "rounded-[10px] hover:rounded-[16px] hover:bg-white/5"
+      }`}
     >
-      <span
-        className="text-[14px] tracking-[0.3px] overflow-hidden text-ellipsis whitespace-nowrap"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          color: hover ? "#FFFFFF" : "rgba(255,255,255,0.86)",
-          transition: "color 0.18s",
-        }}
+      {/* _SkillVaule — 常時表示。クリックで開閉 */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex w-full items-center justify-between gap-2 p-3 text-left"
       >
-        {skill.label}
-      </span>
-      <SegBar level={level} glow={hover} />
-      <span
-        className="text-[12px] tracking-[0.4px] whitespace-nowrap shrink-0"
-        style={{
-          width: 92,
-          textAlign: "right",
-          color: level === 4 ? "#48F4BE" : "#9E9E9E",
-          fontWeight: level === 4 ? 700 : 500,
-        }}
+        {/* 左: アイコン + ラベル */}
+        <span className="flex flex-1 min-w-0 items-center gap-3 pr-4">
+          <Icon
+            set={skill.icon.set}
+            name={skill.icon.name}
+            tintColor="rgba(255,255,255,0.78)"
+            className="w-4 h-4 shrink-0"
+          />
+          <span className="flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-[1.4] text-white">
+            {skill.label}
+          </span>
+        </span>
+
+        {/* 右: レベル + chevron */}
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="flex items-center gap-2">
+            <SegBar level={level} />
+            <span
+              className="font-guide w-20 text-right text-[12px] whitespace-nowrap"
+              style={{ color: isExpert ? "#48F4BE" : "#9E9E9E", fontWeight: isExpert ? 700 : 400 }}
+            >
+              {levelInfo.en}
+            </span>
+          </span>
+          {/* Button/Function — default では不可視、hover/active で表示 */}
+          <span
+            aria-hidden
+            className={`grid h-4 w-4 place-items-center rounded-lg p-1 transition-opacity duration-150 ${
+              open ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+          >
+            <Icon set="Arrows" name={open ? "up" : "down"} tintColor="#9E9E9E" className="w-3 h-3" />
+          </span>
+        </span>
+      </button>
+
+      {/* 展開パネル — open 時のみ。grid-rows トランジションで高さアニメ */}
+      <div
+        id={panelId}
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
       >
-        {levelInfo.en}
-      </span>
+        <div className="overflow-hidden">
+          <div className="flex flex-col gap-4 border-t border-white/5 px-8 pt-4 pb-3">
+            <div className="flex flex-col gap-1">
+              {skill.labelNote && (
+                <span className="font-noto text-[10px] tracking-[0.3px]" style={{ color: "#757575" }}>
+                  {skill.labelNote}
+                </span>
+              )}
+              {skill.description && (
+                <p
+                  className="font-noto text-[13px] leading-[1.5] tracking-[0.39px] whitespace-pre-line"
+                  style={{ color: "#9E9E9E" }}
+                >
+                  {skill.description}
+                </p>
+              )}
+            </div>
+            {skill.tools.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {skill.tools.map((tool, i) => (
+                  <ToolTag key={i} tool={tool} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -157,41 +276,34 @@ function SkillRow({ skill }: { skill: SkillBarConfig }) {
 function SkillCard({ card }: { card: SkillCardConfig }) {
   return (
     <div
+      className="overflow-clip"
       style={{
         background: "#1A1A1A",
-        border: "1px solid #424242",
         borderRadius: 14,
-        padding: 28,
+        padding: 40,
+        boxShadow: "0 1px 1.5px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.1)",
         display: "flex",
         flexDirection: "column",
-        gap: 20,
       }}
     >
-      {/* Header */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Icon
-            set={card.icon.set}
-            name={card.icon.name}
-            tintColor="#48F4BE"
-            style={{ width: 18, height: 18, flexShrink: 0 }}
-          />
-          <span className="text-[15px] font-bold tracking-[0.3px] whitespace-nowrap text-white">
-            {card.title}
+      {/* CategoryCard — ヘッダー */}
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+        <Icon set={card.icon.set} name={card.icon.name} tintColor="#48F4BE" className="w-6 h-6 shrink-0" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <span className="text-[20px] font-bold leading-[28px] text-white">{card.title}</span>
+          <span
+            className="font-noto text-[13px] leading-[1.5] tracking-[0.39px]"
+            style={{ color: "#757575" }}
+          >
+            {card.titleJP}
           </span>
         </div>
-        <span className="font-noto text-[11px] tracking-[0.33px]" style={{ color: "#616161" }}>
-          {card.titleJP}
-        </span>
       </div>
 
-      {/* Divider */}
-      <div style={{ height: 1, background: "#424242", margin: "0 -28px" }} />
-
-      {/* Skill rows */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {card.skills.map((skill, i) => (
-          <SkillRow key={i} skill={skill} />
+      {/* items 容器 */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 24 }}>
+        {card.skills.map((skill) => (
+          <SkillRow key={skill.id} skill={skill} />
         ))}
       </div>
     </div>
@@ -199,62 +311,7 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
 }
 
 // ──────────────────────────────────────────────
-// ProficiencyLegend — shared legend below grid
-// ──────────────────────────────────────────────
-function ProficiencyLegend() {
-  return (
-    <div
-      style={{
-        background: "#1A1A1A",
-        border: "1px solid #424242",
-        borderRadius: 14,
-        padding: "24px 28px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-      }}
-    >
-      <span className="font-guide text-[10px] tracking-[0.4px] uppercase" style={{ color: "#616161" }}>
-        Proficiency Scale · 習熟度の基準
-      </span>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr 1fr",
-          gap: 20,
-        }}
-      >
-        {SKILL_LEVELS.map((lv) => (
-          <div key={lv.n} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 18,
-                  height: 8,
-                  borderRadius: 999,
-                  flexShrink: 0,
-                  background: lv.fill,
-                  border: lv.n === 1 ? "1px solid #424242" : "none",
-                  boxSizing: "border-box",
-                }}
-              />
-              <span className="text-[12px] font-bold tracking-[0.4px] text-white">
-                {lv.en}
-              </span>
-            </div>
-            <span className="font-noto text-[11px] leading-[1.5] tracking-[0.33px]" style={{ color: "#9E9E9E" }}>
-              {lv.jp}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────
-// SkillsCardGrid — 案A: Refined Cards
+// SkillsCardGrid — アコーディオン式スキルセクション
 // ──────────────────────────────────────────────
 export default function SkillsCardGrid() {
   const [cards, setCards] = useState<SkillCardConfig[]>([]);
@@ -269,22 +326,33 @@ export default function SkillsCardGrid() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-6 w-full">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="animate-pulse rounded-[14px] bg-[#1a1a1a] h-[300px]" />
+      <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start">
+        {[0, 1].map((col) => (
+          <div key={col} className="flex min-w-0 flex-1 flex-col gap-6">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="h-[300px] animate-pulse rounded-[14px] bg-[#1a1a1a]" />
+            ))}
+          </div>
         ))}
       </div>
     );
   }
 
+  // Figma 同様、2 列をそれぞれ独立した縦スタックとして配置する。
+  // こうすることで一方のカードを展開しても、もう一方の列のカード高さに影響しない。
+  // （CSS grid だと同一行のカードが高さを揃えてしまうため不可）
+  const mid = Math.ceil(cards.length / 2);
+  const columns = [cards.slice(0, mid), cards.slice(mid)];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        {cards.map((card) => (
-          <SkillCard key={card.id} card={card} />
-        ))}
-      </div>
-      <ProficiencyLegend />
+    <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start">
+      {columns.map((col, i) => (
+        <div key={i} className="flex min-w-0 flex-1 flex-col gap-6">
+          {col.map((card) => (
+            <SkillCard key={card.id} card={card} />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

@@ -264,9 +264,11 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
         </span>
       </button>
 
-      {/* 展開パネル — open 時のみ。grid-rows トランジションで高さアニメ */}
+      {/* 展開パネル — grid-rows トランジションで高さアニメ。
+          折りたたみ時は aria-hidden でアクセシビリティツリーから除外（高さは0fr） */}
       <div
         id={panelId}
+        aria-hidden={!open}
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}

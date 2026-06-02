@@ -49,14 +49,16 @@ export async function upsertToolVocab(
     .ilike("name", trimmed)
     .maybeSingle();
   if (existing) {
-    // slug / category が渡されたら既存行を更新（ロゴ・フォールバックの編集）
-    if (fields && (fields.slug !== undefined || fields.category !== undefined)) {
+    // tools_vocab は全バー・全プロジェクトで共有されるため、空/null では
+    // 既存の slug / category を上書きしない（非空の値が来たときだけ更新）。
+    // ＝あるバーで slug 未入力のまま保存しても、他で設定済みのロゴを消さない。
+    const update: { slug?: string; category?: string } = {};
+    if (fields?.slug != null && fields.slug !== "") update.slug = fields.slug;
+    if (fields?.category != null && fields.category !== "") update.category = fields.category;
+    if (Object.keys(update).length > 0) {
       const { data: updated, error } = await supabase
         .from("tools_vocab")
-        .update({
-          ...(fields.slug !== undefined ? { slug: fields.slug } : {}),
-          ...(fields.category !== undefined ? { category: fields.category } : {}),
-        })
+        .update(update)
         .eq("id", existing.id)
         .select("id, name, slug, category")
         .single();

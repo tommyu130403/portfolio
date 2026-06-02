@@ -2174,6 +2174,15 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
   };
 
   const handleSaveBar = async (cardId: string, bar: BarWithTools) => {
+    // アイコンは「セット」「名前」を両方入力するか両方空（＝Base/system フォールバック）に。
+    // 片方だけだと公開側で存在しないパス（例 Edit/system.svg）を読み壊れるため弾く。
+    const hasSet = !!bar.icon_set?.trim();
+    const hasName = !!bar.icon_name?.trim();
+    if (hasSet !== hasName) {
+      setGlobalError("アイコンは「セット」と「名前」を両方入力するか、両方空にしてください。");
+      return;
+    }
+    setGlobalError("");
     const { error } = await saveSkillBar({
       id: bar.id, card_id: cardId, label: bar.label, label_short: bar.label_short,
       segments: bar.segments, level: bar.level,

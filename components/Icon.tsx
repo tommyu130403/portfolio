@@ -83,9 +83,13 @@ export const Icon: FC<IconProps> = ({
         style={{
           display: "inline-block",
           backgroundColor: tintColor,
-          mask: `url(${src}) no-repeat center`,
+          maskImage: `url(${src})`,
+          maskRepeat: "no-repeat",
+          maskPosition: "center",
           maskSize: "contain",
-          WebkitMask: `url(${src}) no-repeat center`,
+          WebkitMaskImage: `url(${src})`,
+          WebkitMaskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
           WebkitMaskSize: "contain",
         }}
         role="img"

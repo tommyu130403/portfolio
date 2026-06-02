@@ -201,7 +201,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
           <Icon
             set={skill.icon.set}
             name={skill.icon.name}
-            tintColor="rgba(255,255,255,0.78)"
+            tintColor="#B3FFE7"
             className="w-4 h-4 shrink-0"
           />
           <span className="flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-[1.4] text-white">

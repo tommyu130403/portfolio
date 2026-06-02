@@ -1,7 +1,7 @@
 import { supabase } from "@/src/lib/supabase";
 
 export type SkillVocab = { id: string; label: string; category?: string | null };
-export type ToolVocab = { id: string; name: string; slug?: string | null };
+export type ToolVocab = { id: string; name: string; slug?: string | null; category?: string | null };
 
 export async function listSkillVocab(): Promise<SkillVocab[]> {
   const { data, error } = await supabase
@@ -15,7 +15,7 @@ export async function listSkillVocab(): Promise<SkillVocab[]> {
 export async function listToolVocab(): Promise<ToolVocab[]> {
   const { data, error } = await supabase
     .from("tools_vocab")
-    .select("id, name, slug")
+    .select("id, name, slug, category")
     .order("name");
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -38,18 +38,39 @@ export async function upsertSkillVocab(label: string): Promise<SkillVocab> {
   return data;
 }
 
-export async function upsertToolVocab(name: string): Promise<ToolVocab> {
+export async function upsertToolVocab(
+  name: string,
+  fields?: { slug?: string | null; category?: string | null },
+): Promise<ToolVocab> {
   const trimmed = name.trim();
   const { data: existing } = await supabase
     .from("tools_vocab")
-    .select("id, name, slug")
+    .select("id, name, slug, category")
     .ilike("name", trimmed)
     .maybeSingle();
-  if (existing) return existing;
+  if (existing) {
+    // tools_vocab は全バー・全プロジェクトで共有されるため、空/null では
+    // 既存の slug / category を上書きしない（非空の値が来たときだけ更新）。
+    // ＝あるバーで slug 未入力のまま保存しても、他で設定済みのロゴを消さない。
+    const update: { slug?: string; category?: string } = {};
+    if (fields?.slug != null && fields.slug !== "") update.slug = fields.slug;
+    if (fields?.category != null && fields.category !== "") update.category = fields.category;
+    if (Object.keys(update).length > 0) {
+      const { data: updated, error } = await supabase
+        .from("tools_vocab")
+        .update(update)
+        .eq("id", existing.id)
+        .select("id, name, slug, category")
+        .single();
+      if (error) throw new Error(error.message);
+      return updated;
+    }
+    return existing;
+  }
   const { data, error } = await supabase
     .from("tools_vocab")
-    .insert({ name: trimmed })
-    .select("id, name, slug")
+    .insert({ name: trimmed, slug: fields?.slug ?? null, category: fields?.category ?? null })
+    .select("id, name, slug, category")
     .single();
   if (error) throw new Error(error.message);
   return data;
@@ -84,5 +105,25 @@ export async function setProjectTools(projectId: string, toolIds: string[]): Pro
     sort_order: idx,
   }));
   const { error: insError } = await supabase.from("project_tools").insert(rows);
+  if (insError) throw new Error(insError.message);
+}
+
+/**
+ * スキル行（skill_experience）に紐づくツールを丸ごと置き換える。
+ * project_tools と同じ「全削除→挿入」方式で sort_order を 0..n に振り直す。
+ */
+export async function setExperienceTools(experienceId: string, toolIds: string[]): Promise<void> {
+  const { error: delError } = await supabase
+    .from("skill_experience_tools")
+    .delete()
+    .eq("experience_id", experienceId);
+  if (delError) throw new Error(delError.message);
+  if (toolIds.length === 0) return;
+  const rows = toolIds.map((tool_id, idx) => ({
+    experience_id: experienceId,
+    tool_id,
+    sort_order: idx,
+  }));
+  const { error: insError } = await supabase.from("skill_experience_tools").insert(rows);
   if (insError) throw new Error(insError.message);
 }

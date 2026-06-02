@@ -4,6 +4,7 @@ import {
   upsertToolVocab,
   setProjectSkills,
   setProjectTools,
+  setExperienceTools,
   listSkillVocab,
   listToolVocab,
 } from "@/src/lib/skills-tools-client";
@@ -226,6 +227,7 @@ export async function moveSkillCards(
 export async function saveSkillBar(bar: {
   id: string; card_id: string; label: string; label_short: string | null;
   segments: number; level: string; description: string | null; sort_order: number;
+  icon_set: string | null; icon_name: string | null; label_note: string | null;
 }): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase.from("skill_experience").upsert(bar);
@@ -254,6 +256,7 @@ export async function addSkillBar(cardId: string, sortOrder: number): Promise<{
     const { data, error } = await supabase.from("skill_experience").insert({
       card_id: cardId, label: "", label_short: null,
       segments: 5, level: "Lv.3 Senior", sort_order: sortOrder,
+      icon_set: "Base", icon_name: "system", label_note: null,
     }).select().single();
     if (error) return { data: null, error: error.message };
     return { data, error: null };
@@ -262,7 +265,34 @@ export async function addSkillBar(cardId: string, sortOrder: number): Promise<{
   }
 }
 
-// ─── skill_tools CRUD ─────────────────────────────────────────────────────────
+// ─── skill_experience_tools（スキル行単位のツール）────────────────────────────
+
+/**
+ * スキル行（skill_experience）のツール一覧をまとめて保存する。
+ *  - 各ツールは名前で tools_vocab を upsert（slug / category も保存）。
+ *  - その ID 群で skill_experience_tools を置き換える（順序＝配列順）。
+ * 同名ツールは 1 件に集約（中間テーブルの PK 重複を避ける）。
+ */
+export async function saveExperienceTools(
+  experienceId: string,
+  tools: { name: string; slug: string | null; category: string | null }[],
+): Promise<{ error: string | null }> {
+  try {
+    const ids: string[] = [];
+    for (const t of tools) {
+      const name = t.name.trim();
+      if (!name) continue;
+      const vocab = await upsertToolVocab(name, { slug: t.slug, category: t.category });
+      ids.push(vocab.id);
+    }
+    await setExperienceTools(experienceId, [...new Set(ids)]);
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+// ─── skill_tools CRUD（レガシー：カード単位。公開ページでは未使用）──────────────
 
 export async function saveSkillTool(tool: {
   id: string; card_id: string; name: string; years: string; sort_order: number;

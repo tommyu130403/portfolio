@@ -32,8 +32,7 @@ type IconRef = { set: NonNullable<IconProps["set"]>; name: string };
 // ──────────────────────────────────────────────
 // public/logos/ に実在する slug（モノクロームのツールロゴ）
 const LOGO_SLUGS = new Set([
-  "airtable", "discord", "figma", "github", "miro",
-  "notion", "sketch", "slack", "webflow", "zapier",
+  "figma", "github",
   "illustrator", "photoshop", "google-analytics", "asana", "vscode",
   "react", "nextjs", "html", "css", "javascript", "typescript",
   "docker", "vue", "vite", "webpack",

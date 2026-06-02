@@ -492,7 +492,7 @@ function ComponentsSection() {
     <section id="components" className="scroll-mt-8">
       <SectionTitle label="Components" title="コンポーネント" />
       <div className="flex flex-col gap-12">
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small（Figma Tag/Small: プロジェクトカード用）">
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small（Figma Tag/Small: プロジェクトカード用）/ tool（Slot-Tool: スキル展開パネル用・border付き・アイコン前置）">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -501,6 +501,11 @@ function ComponentsSection() {
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="UI Design" variant="small" />
             <Tag label="UX Research" variant="small" />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
+            <Tag label="GitHub" variant="tool" prefix={<ServiceLogo name="github" className="w-4 h-4 shrink-0 object-contain" />} />
+            <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />} />
           </div>
         </ComponentPreview>
 

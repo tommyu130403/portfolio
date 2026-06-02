@@ -3,7 +3,7 @@ import type { FC, ImgHTMLAttributes } from "react";
 export type ServiceLogoProps = ImgHTMLAttributes<HTMLImageElement> & {
   /**
    * ロゴ名（public/logos/ 配下のファイル名から .svg を除いた部分）。
-   * 例: "figma", "github", "notion"
+   * 例: "figma", "github", "react"
    */
   name: string;
 };

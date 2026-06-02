@@ -295,38 +295,6 @@ export type Database = {
           },
         ]
       }
-      skill_tools: {
-        Row: {
-          card_id: string
-          id: string
-          name: string
-          sort_order: number
-          years: string
-        }
-        Insert: {
-          card_id: string
-          id?: string
-          name: string
-          sort_order?: number
-          years: string
-        }
-        Update: {
-          card_id?: string
-          id?: string
-          name?: string
-          sort_order?: number
-          years?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "skill_tools_card_id_fkey"
-            columns: ["card_id"]
-            isOneToOne: false
-            referencedRelation: "skill_cards"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       skills_vocab: {
         Row: {
           category: string | null

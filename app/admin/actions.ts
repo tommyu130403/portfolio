@@ -151,7 +151,6 @@ export async function addSkillLabelFromProjects(
 
 /**
  * ツール名を tools_vocab に追加（Projects から新規入力された場合）
- * 旧: skill_tools への書き込みから移行済み。
  */
 export async function addToolNameFromProjects(
   name: string
@@ -289,45 +288,6 @@ export async function saveExperienceTools(
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-// ─── skill_tools CRUD（レガシー：カード単位。公開ページでは未使用）──────────────
-
-export async function saveSkillTool(tool: {
-  id: string; card_id: string; name: string; years: string; sort_order: number;
-}): Promise<{ error: string | null }> {
-  try {
-    const { error } = await supabase.from("skill_tools").upsert(tool);
-    if (error) return { error: error.message };
-    return { error: null };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function deleteSkillTool(toolId: string): Promise<{ error: string | null }> {
-  try {
-    const { error } = await supabase.from("skill_tools").delete().eq("id", toolId);
-    if (error) return { error: error.message };
-    return { error: null };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function addSkillTool(cardId: string, sortOrder: number): Promise<{
-  data: import("@/src/types/supabase").Tables<"skill_tools"> | null;
-  error: string | null;
-}> {
-  try {
-    const { data, error } = await supabase.from("skill_tools").insert({
-      card_id: cardId, name: "", years: "", sort_order: sortOrder,
-    }).select().single();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
   }
 }
 

@@ -26,13 +26,45 @@ type IconRef = { set: NonNullable<IconProps["set"]>; name: string };
 
 // ──────────────────────────────────────────────
 // Tool icon resolution (§3)
-//   1. public/logos/<slug>.svg があれば <ServiceLogo>
+//   1. slug（DB の tools_vocab.slug、無ければツール名→slug マップ）に対応する
+//      public/logos/<slug>.svg があれば <ServiceLogo>
 //   2. 無ければツールのカテゴリーに対応する既存アイコンでフォールバック
 // ──────────────────────────────────────────────
+// public/logos/ に実在する slug（モノクロームのツールロゴ）
 const LOGO_SLUGS = new Set([
   "airtable", "discord", "figma", "github", "miro",
   "notion", "sketch", "slack", "webflow", "zapier",
+  "illustrator", "photoshop", "google-analytics", "asana", "vscode",
+  "react", "nextjs", "html", "css", "javascript", "typescript",
+  "docker", "vue", "vite", "webpack",
 ]);
+
+// ツール名 → ロゴ slug（DB の slug が未設定でも名前から解決できるようにする）
+const TOOL_NAME_TO_SLUG: Record<string, string> = {
+  "Figma": "figma",
+  "Github": "github",
+  "GitHub": "github",
+  "Illustrator": "illustrator",
+  "Photoshop": "photoshop",
+  "Google Analytics": "google-analytics",
+  "Asana": "asana",
+  "Visual Studio Code": "vscode",
+  "React": "react",
+  "Next.js": "nextjs",
+  "HTML": "html",
+  "CSS": "css",
+  "JavaScript": "javascript",
+  "TypeScript": "typescript",
+  "Docker": "docker",
+  "Vue": "vue",
+  "Vite": "vite",
+  "Webpack": "webpack",
+};
+
+function resolveLogoSlug(tool: { name: string; slug?: string | null }): string | null {
+  const slug = tool.slug || TOOL_NAME_TO_SLUG[tool.name];
+  return slug && LOGO_SLUGS.has(slug) ? slug : null;
+}
 
 const TOOL_CATEGORY_ICON: Record<string, IconRef> = {
   "Frontend Frameworks & UI Libraries": { set: "Components", name: "page" },
@@ -53,8 +85,9 @@ type ToolRef = {
 
 function ToolTag({ tool }: { tool: ToolRef }) {
   let prefix;
-  if (tool.slug && LOGO_SLUGS.has(tool.slug)) {
-    prefix = <ServiceLogo name={tool.slug} className="w-4 h-4 shrink-0 object-contain" />;
+  const logoSlug = resolveLogoSlug(tool);
+  if (logoSlug) {
+    prefix = <ServiceLogo name={logoSlug} className="w-4 h-4 shrink-0 object-contain" />;
   } else {
     const icon = (tool.category && TOOL_CATEGORY_ICON[tool.category]) || FALLBACK_TOOL_ICON;
     prefix = (

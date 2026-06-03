@@ -1,74 +1,123 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import Icon from "@/components/Icon";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
 type CareerItem = Tables<"career_items">;
-type EnrichedItem = CareerItem & { startYear: number; endYear: number; isCurrent: boolean };
+type EnrichedItem = CareerItem & {
+  startVal: number;
+  endVal: number;
+  startYear: number;
+  endYear: number;
+  isCurrent: boolean;
+};
 type WorkLink = { id: string; title: string };
 
 const CHART_START = 2016;
-const CHART_TOTAL = 10; // 2016–2026
-const CHART_YEARS = Array.from({ length: 11 }, (_, i) => CHART_START + i);
+const CHART_TOTAL = 10; // 2016–2026（11 ラベル）
+const CHART_YEARS = Array.from({ length: CHART_TOTAL + 1 }, (_, i) => CHART_START + i);
 const CURRENT_YEAR = new Date().getFullYear();
 
-/* Figma node 770-6279 / 770-6653 準拠カラー（既存コードの未定義 CSS 変数を実 hex に置換） */
+/* Figma フォント指定（node 770-6652 準拠）
+   period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
+const FONT_EN = "Avenir, var(--font-noto-sans-jp), sans-serif";
+const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
+
+/* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
   outerBg: "#1a1a1a",
-  cardBg: "#212121", // System/900 (Background/Default)
-  cardBgHover: "#2a2a2a",
-  cardBorder: "#424242", // System/800 (Border/Default) — 折りたたみ default
-  cardBorderOpen: "#9e9e9e", // System/500 (Border/light) — 展開 default
+  cardBg: "#212121", // System/900
+  cardBorder: "#424242", // System/800（折りたたみ default）
+  cardBorderOpen: "#9e9e9e", // System/500（展開 default）
   currentBg: "#0f2a23",
-  currentBgHover: "#143a2e",
   currentBorder: "rgba(72,244,190,0.4)", // 折りたたみ current
-  currentBorderOpen: "#48f4be", // Main/100 — 展開 current
+  currentBorderOpen: "#48f4be", // Main/base（展開 current）
   period: "#b3ffe7", // Main/050
-  role: "#48f4be", // Main/100
-  company: "#9e9e9e", // System/500
+  role: "#48f4be", // Main/base
+  company: "#616161", // System/700
   desc: "#9e9e9e", // System/500
   worksLabel: "#616161", // System/700
   worksLink: "#b3ffe7", // Main/050
-  worksLinkHover: "#39c89b", // Main/200 — Works リンク hover 時
-  iconArrow: "#9e9e9e", // chevron / arrow-right ネイティブ色
+  worksLinkHover: "#39c89b", // Main/200
+  iconArrow: "#9e9e9e",
   badgeBg: "#48f4be",
-  badgeText: "#212121", // System/900
+  badgeText: "#212121",
+  divider: "rgba(255,255,255,0.05)", // Background/Light-α5
+  dot: "#424242", // System/800
+  dotActive: "#48f4be", // Main/base
+  bar: "#424242", // System/800
   gridLine: "#2a2a2a",
   yearText: "#757575", // System/600
-  yearCurrent: "#b3ffe7",
-  divider: "rgba(255,255,255,0.05)", // Background/Light-α5
-  // Figma Effects: shadow-wisper(折りたたみ) / shadow(展開)
+  yearCurrent: "#b3ffe7", // Main/050
   shadowWisper: "0px 1px 1.5px rgba(0,0,0,0.1)",
   shadowStrong: "1px 1px 8px rgba(0,0,0,0.25)",
 } as const;
 
-// "2022.04 - 現在"  or  "2019.04 - 2022.03"
-function parsePeriod(period: string) {
-  const [startStr, endStr] = period.split(/\s*[-–−]\s*/);
-  const sy = parseInt(startStr?.match(/(\d{4})/)?.[1] ?? "");
-  const isCurrent = Boolean(endStr?.trim().includes("現在"));
-  const ey = isCurrent ? CURRENT_YEAR : parseInt(endStr?.match(/(\d{4})/)?.[1] ?? "");
-  return {
-    startYear: isNaN(sy) ? CHART_START : sy,
-    endYear:   isNaN(ey) ? CURRENT_YEAR : ey,
-    isCurrent,
+/* 期間文字列を解析（月精度）。
+   "2023年12月 - 現在" / "2013年4月 - 2017年3月" / "2022.04 - 現在" などに対応。
+   startVal / endVal は CHART_START からの「年単位」値（バー長算出に使用）。 */
+function parsePeriod(period: string): {
+  startVal: number;
+  endVal: number;
+  startYear: number;
+  endYear: number;
+  isCurrent: boolean;
+} {
+  const [startStr = "", endStr = ""] = period.split(/\s*[-–−~〜]\s*/);
+  const parse = (s: string): [number, number] => {
+    const m = s.match(/(\d{4})\D*(\d{1,2})?/);
+    return [m ? parseInt(m[1], 10) : NaN, m && m[2] ? parseInt(m[2], 10) : NaN];
   };
+
+  const [syRaw, smRaw] = parse(startStr);
+  const isCurrent = /現在|present/i.test(endStr);
+
+  let eyRaw: number, emRaw: number;
+  if (isCurrent) {
+    const now = new Date();
+    eyRaw = now.getFullYear();
+    emRaw = now.getMonth() + 1;
+  } else {
+    [eyRaw, emRaw] = parse(endStr);
+  }
+
+  const startYear = isNaN(syRaw) ? CHART_START : syRaw;
+  const startMonth = isNaN(smRaw) ? 1 : smRaw;
+  const endYear = isNaN(eyRaw) ? CURRENT_YEAR : eyRaw;
+  const endMonth = isNaN(emRaw) ? 12 : emRaw;
+
+  // 開始は月初 (m-1)/12、終了は月末 m/12 → 連続する経歴のバーが隙間なく接する
+  const startVal = startYear - CHART_START + (startMonth - 1) / 12;
+  const endVal = endYear - CHART_START + endMonth / 12;
+
+  return { startVal, endVal, startYear, endYear, isCurrent };
+}
+
+/* 表示用に Figma 表記へ整形： "2023年12月" / "2022.04" → "2023.12" / "2022.4"（ゼロ埋めなし） */
+function formatPeriod(period: string): string {
+  return period
+    // YYYY年M月 / YYYY.MM → YYYY.M（ゼロ埋め除去）
+    .replace(/(\d{4})\s*[年.]\s*(\d{1,2})\s*月?/g, (_, y, m) => `${y}.${parseInt(m, 10)}`)
+    // 月欠落の YYYY年 → YYYY（和暦表記の取り残しを防ぐ）
+    .replace(/(\d{4})\s*年/g, "$1")
+    // 区切りを正規化
+    .replace(/\s*[-–−~〜]\s*/g, " - ");
 }
 
 function useIsMobile(bp: number) {
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < bp : false
+  // useSyncExternalStore で matchMedia を購読（SSR は desktop=false を返す）。
+  // effect 内同期 setState を避けつつ、ハイドレーション後に正しい値へ同期する。
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(`(max-width: ${bp - 1}px)`);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(`(max-width: ${bp - 1}px)`).matches,
+    () => false
   );
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${bp - 1}px)`);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    setIsMobile(mq.matches);
-    return () => mq.removeEventListener("change", handler);
-  }, [bp]);
-  return isMobile;
 }
 
 /* Works リンク列（展開カード内）。デスクトップ・モバイル共通 */
@@ -82,8 +131,10 @@ function WorksLinks({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   if (works.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 2 }}>
-      <p style={{ fontSize: 10, letterSpacing: ".3px", color: C.worksLabel, margin: 0 }}>Works</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <p style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: C.worksLabel, margin: 0 }}>
+        Works
+      </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {works.map((w) => {
           const linkColor = hoveredId === w.id ? C.worksLinkHover : C.worksLink;
@@ -115,7 +166,7 @@ function WorksLinks({
                 tintColor={linkColor}
                 style={{ width: 12, height: 12, flexShrink: 0, marginTop: 1, transition: "background-color .15s ease" }}
               />
-              <span style={{ fontSize: 10, letterSpacing: ".3px", color: linkColor, lineHeight: 1.4, transition: "color .15s ease" }}>
+              <span style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: linkColor, lineHeight: 1.4, transition: "color .15s ease" }}>
                 {w.title}
               </span>
             </button>
@@ -127,222 +178,109 @@ function WorksLinks({
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Mobile card — 縦型タイムライン（既存デザイン維持・内容のみ更新）
-   timeline: "end"=最新(上)  "middle"=中間  "start"=最古(下)
+   CareerCard — デスクトップ（バー下）／モバイル（縦リスト）共通の小型カード
+   width: fit-content（min 180 / max 400）で role が 1 行に収まる幅へ。
+   開閉は親が制御（バー・レールのドット色と連動）。
+   multiline=true（モバイル）では role/company を折り返し、幅は利用可能域まで。
    ────────────────────────────────────────────────────────────────────────── */
-function CareerCardMobile({
+function CareerCard({
   item,
-  timeline,
   works,
   onOpenWork,
+  isOpen,
+  onToggle,
+  multiline = false,
 }: {
   item: EnrichedItem;
-  timeline: "end" | "middle" | "start";
   works: WorkLink[];
   onOpenWork: (workId: string) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+  multiline?: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const topLineBg    = timeline === "middle" || timeline === "start" ? "#424242" : "transparent";
-  const dotBorder    = timeline === "start" ? "#424242" : "#48f4be";
-  const bottomLineBg = timeline === "start" ? "transparent" : "#424242";
-
-  return (
-    <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-      {/* タイムライン列 */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, alignSelf: "stretch", flexShrink: 0 }}>
-        <div style={{ height: 24, width: 2, flexShrink: 0, borderRadius: "0 0 2px 2px", background: topLineBg }} />
-        <div style={{ width: 12, height: 12, border: `2px solid ${dotBorder}`, borderRadius: "50%", flexShrink: 0 }} />
-        <div style={{ flex: 1, minHeight: 1, width: 2, borderRadius: "2px 2px 0 0", background: bottomLineBg }} />
-      </div>
-
-      {/* カード */}
-      <div style={{ display: "flex", flex: 1, flexDirection: "column", minHeight: 0, minWidth: 0, paddingBottom: 16 }}>
-        <div style={{
-          background: item.isCurrent ? "#122e24" : "#1a1a1a",
-          borderRadius: 14,
-          border: item.isCurrent
-            ? "1px solid rgba(72,244,190,0.72)"
-            : "1px solid #424242",
-          boxShadow: item.isCurrent
-            ? "0 0 0 1px rgba(72,244,190,0.12), 0 4px 24px rgba(72,244,190,0.10)"
-            : "none",
-          overflow: "hidden",
-          width: "100%",
-          flexShrink: 0,
-        }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 24 }}>
-            {/* ヘッダー（期間 / 役職 / 会社） */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Icon set="Time" name="calendar-three-mint" style={{ width: 16, height: 16, flexShrink: 0 }} />
-                <p style={{ fontSize: 11, lineHeight: 1.5, letterSpacing: ".33px", color: C.period, whiteSpace: "nowrap", margin: 0 }}>
-                  {item.period}
-                </p>
-                {item.isCurrent && (
-                  <span style={{ background: C.badgeBg, color: "#212121", fontSize: 10, padding: "1px 8px", borderRadius: 9999, flexShrink: 0, lineHeight: 1.6 }}>
-                    現在
-                  </span>
-                )}
-              </div>
-              <p style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.5, letterSpacing: ".51px", color: C.role, margin: 0 }}>
-                {item.role}
-              </p>
-              <p style={{ fontSize: 11, lineHeight: 1.5, letterSpacing: ".33px", color: C.company, margin: 0 }}>
-                {item.company}
-              </p>
-            </div>
-
-            {/* アコーディオン */}
-            <div>
-              <button
-                onClick={() => setIsOpen((o) => !o)}
-                style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", padding: 0, cursor: "pointer" }}
-              >
-                <p style={{ fontSize: 9, letterSpacing: ".6px", textTransform: "uppercase", color: C.worksLabel, margin: 0 }}>
-                  Details
-                </p>
-                <svg
-                  width={10} height={10} viewBox="0 0 24 24" fill="none"
-                  style={{ flexShrink: 0, opacity: 0.5, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .25s" }}
-                >
-                  <path d="M6 9l6 6 6-6" stroke="#48f4be" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <div style={{ maxHeight: isOpen ? 600 : 0, overflow: "hidden", transition: "max-height .3s ease" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 10 }}>
-                  {item.description && (
-                    <p style={{ fontSize: 11, lineHeight: 1.5, letterSpacing: ".33px", color: "#ffffff", margin: 0 }}>
-                      {item.description}
-                    </p>
-                  )}
-                  <WorksLinks works={works} onOpenWork={onOpenWork} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────────────────────
-   Desktop bar — ガントチャート（期間で伸縮するバーを維持）
-   ────────────────────────────────────────────────────────────────────────── */
-function CareerBar({
-  item,
-  index,
-  hoveredId,
-  setHoveredId,
-  works,
-  onOpenWork,
-}: {
-  item: EnrichedItem;
-  index: number;
-  hoveredId: number | null;
-  setHoveredId: (id: number | null) => void;
-  works: WorkLink[];
-  onOpenWork: (workId: string) => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const isHovered = hoveredId === index;
-
-  // 役職・会社テキストの実幅（省略されている分=scrollWidth も含む）を測定し、
-  // ホバー or 展開時に「1行で収まる幅」へ拡張するために使う。
-  // callback ref で計測することで effect 内 setState を避ける。
-  const [naturalContentWidth, setNaturalContentWidth] = useState(0);
-  const measureRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    let max = 140; // 期間行（アイコン+期間+シェブロン）が収まる最低幅
-    node.querySelectorAll<HTMLElement>("[data-measure]").forEach((el) => {
-      max = Math.max(max, el.scrollWidth);
-    });
-    setNaturalContentWidth(max);
-  }, []);
-
-  // 2016(チャート起点)より前に始まる項目（学歴など）はバーが左へ見切れるため、
-  // 開始を 2016 にクランプし、終了年に合わせた横幅にする。
-  const effectiveStart = Math.max(item.startYear, CHART_START);
-  const left  = (effectiveStart - CHART_START) / CHART_TOTAL * 100;
-  const width = (item.endYear   - effectiveStart) / CHART_TOTAL * 100;
-
-  // ホバー中、または展開中は幅を拡張（クリック展開後はホバーが外れても維持）
-  const isExpanded = isHovered || isOpen;
-  const CARD_PADDING = 24; // 左右 12px ずつ
-  const expandedPx = naturalContentWidth + CARD_PADDING + 4;
-  // 期間ベースのバー幅(100%)と、テキストが収まる幅の大きい方
-  const cardWidth = isExpanded ? `max(100%, ${expandedPx}px)` : "100%";
-
-  // Figma: 展開(toggle)で枠線が明るくなり、影も強くなる
+  const isCurrent = item.isCurrent;
   const borderColor = isOpen
-    ? (item.isCurrent ? C.currentBorderOpen : C.cardBorderOpen)
-    : (item.isCurrent ? C.currentBorder : C.cardBorder);
-  const boxShadow = isOpen ? C.shadowStrong : C.shadowWisper;
+    ? isCurrent
+      ? C.currentBorderOpen
+      : C.cardBorderOpen
+    : isCurrent
+      ? C.currentBorder
+      : C.cardBorder;
+
+  // role/company の 1 行クランプ（デスクトップ）／折り返し（モバイル）
+  const clampStyle = multiline
+    ? ({ whiteSpace: "normal", overflowWrap: "anywhere" } as const)
+    : ({ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const);
 
   return (
-    <div style={{ position: "relative", marginLeft: `${left}%`, width: `${width}%`, minWidth: 180 }}>
-      <div
-        ref={measureRef}
-        onMouseEnter={() => setHoveredId(index)}
-        onMouseLeave={() => setHoveredId(null)}
-        onClick={() => setIsOpen((o) => !o)}
-        style={{
-          width: cardWidth,
-          borderRadius: 10,
-          border: `1px solid ${borderColor}`,
-          background: item.isCurrent
-            ? (isHovered ? C.currentBgHover : C.currentBg)
-            : (isHovered ? C.cardBgHover : C.cardBg),
-          boxShadow,
-          padding: 12,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          cursor: "pointer",
-          transition: "width .2s ease, background .15s, box-shadow .2s ease, border-color .2s ease",
-          boxSizing: "border-box",
-          position: "relative",
-          zIndex: isExpanded ? 2 : 1,
-        }}
-      >
-        {/* ヘッダー（期間行 + 役職/会社）— Figma: gap 12 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, flexShrink: 0 }}>
-          {/* 期間行 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div
+      onClick={onToggle}
+      style={{
+        width: "fit-content",
+        minWidth: 180,
+        maxWidth: multiline ? "100%" : 400,
+        boxSizing: "border-box",
+        borderRadius: 10,
+        border: `1px solid ${borderColor}`,
+        background: isCurrent ? C.currentBg : C.cardBg,
+        boxShadow: isOpen ? C.shadowStrong : C.shadowWisper,
+        padding: 12,
+        display: "flex",
+        flexDirection: "column",
+        cursor: "pointer",
+        position: "relative",
+        transition: "border-color .2s ease, box-shadow .2s ease",
+      }}
+    >
+      {/* ヘッダー（期間行 + 役職 + 会社）— Figma: gap 6 */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {/* 期間行 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <Icon set="Time" name="calendar-three-mint" style={{ width: 12, height: 12, flexShrink: 0 }} />
-            <span style={{ color: C.period, fontSize: 11, letterSpacing: ".33px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
-              {item.period}
+            <span style={{ fontFamily: FONT_EN, fontWeight: 800, color: C.period, fontSize: 11, letterSpacing: ".33px", lineHeight: 1, whiteSpace: "nowrap" }}>
+              {formatPeriod(item.period)}
             </span>
-            {item.isCurrent && (
-              <span style={{ background: C.badgeBg, color: C.badgeText, fontSize: 10, padding: "1px 8px", borderRadius: 9999, flexShrink: 0, lineHeight: 1.6 }}>
+            {isCurrent && (
+              <span style={{ background: C.badgeBg, color: C.badgeText, fontSize: 9, lineHeight: 1, padding: "3px 7px", borderRadius: 9999, whiteSpace: "nowrap", flexShrink: 0 }}>
                 現在
               </span>
             )}
-            <Icon
-              set="Arrows"
-              name={isOpen ? "up" : "down"}
-              tintColor={C.iconArrow}
-              style={{ width: 12, height: 12, flexShrink: 0, marginLeft: 2 }}
-            />
           </div>
-
-          {/* 役職 + 会社 — Figma: gap 8 */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <p data-measure="role" style={{ color: C.role, fontWeight: 700, fontSize: 15, lineHeight: 1.5, letterSpacing: ".45px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
-              {item.role}
-            </p>
-            <p data-measure="company" style={{ color: C.company, fontSize: 10, lineHeight: "normal", letterSpacing: ".3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>
-              {item.company}
-            </p>
-          </div>
+          <Icon
+            set="Arrows"
+            name={isOpen ? "up" : "down"}
+            tintColor={C.iconArrow}
+            style={{ width: 12, height: 12, flexShrink: 0 }}
+          />
         </div>
 
-        {/* アコーディオン：区切り線 + 説明文 + Works（Figma: 各 gap 12） */}
-        <div style={{ maxHeight: isOpen ? 600 : 0, overflow: "hidden", transition: "max-height .3s ease, opacity .2s ease", opacity: isOpen ? 1 : 0, flexShrink: 0 }}>
-          <div style={{ height: 1, background: C.divider, margin: "12px 0" }} />
+        {/* 役職 — Noto Sans JP Bold */}
+        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: 1.5, letterSpacing: ".39px", margin: 0, ...clampStyle }}>
+          {item.role}
+        </p>
+        {/* 会社 — Noto Sans JP Regular */}
+        <p style={{ fontFamily: FONT_JP, color: C.company, fontSize: 10, lineHeight: "normal", letterSpacing: ".3px", margin: 0, ...clampStyle }}>
+          {item.company}
+        </p>
+      </div>
+
+      {/* アコーディオン（区切り線 + 説明 + Works）— width:0/minWidth:100% で
+         カード幅は role に依存させつつ、内部は幅いっぱいに折り返す */}
+      <div
+        style={{
+          width: 0,
+          minWidth: "100%",
+          maxHeight: isOpen ? 2000 : 0,
+          opacity: isOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height .3s ease, opacity .2s ease",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 12 }}>
+          <div style={{ height: 1, width: "100%", background: C.divider }} />
           {item.description && (
-            <p style={{ fontSize: 11, lineHeight: 1.5, letterSpacing: ".33px", color: C.desc, margin: "0 0 12px 0" }}>
+            <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: 1.5, letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
               {item.description}
             </p>
           )}
@@ -353,15 +291,119 @@ function CareerBar({
   );
 }
 
+/* タイムラインのドット（中空丸）。展開中は mint。 */
+function Dot({ active }: { active: boolean }) {
+  return (
+    <div
+      style={{
+        width: 12,
+        height: 12,
+        borderRadius: "50%",
+        border: `2px solid ${active ? C.dotActive : C.dot}`,
+        boxSizing: "border-box",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Desktop row — 期間でバーが伸縮し、その下に fit-content カードを配置
+   ────────────────────────────────────────────────────────────────────────── */
+function CareerRowDesktop({
+  item,
+  works,
+  onOpenWork,
+}: {
+  item: EnrichedItem;
+  works: WorkLink[];
+  onOpenWork: (workId: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // バー長 = 期間スパン（2016 以前開始は左端でクランプ）
+  const s = Math.max(0, Math.min(CHART_TOTAL, item.startVal));
+  const e = Math.max(0, Math.min(CHART_TOTAL, item.endVal));
+  const left = (s / CHART_TOTAL) * 100;
+  // 不正データ（開始 > 終了）でも width が負値（CSS 無効）にならないよう 0 でガード
+  const width = Math.max(0, ((e - s) / CHART_TOTAL) * 100);
+
+  // type: current = 右端まで（終点ドットなし）／ prev = 2016 以前開始（始点ドットなし）
+  const hasStartDot = item.startYear >= CHART_START;
+  const hasEndDot = !item.isCurrent;
+
+  return (
+    <div style={{ position: "relative", width: "100%", zIndex: isOpen ? 2 : 1 }}>
+      <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", flexDirection: "column", gap: 11 }}>
+        {/* バー行 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, width: "100%" }}>
+          {hasStartDot && <Dot active={isOpen} />}
+          <div style={{ flex: 1, minWidth: 0, height: 2, background: C.bar, borderRadius: 2 }} />
+          {hasEndDot && <Dot active={isOpen} />}
+        </div>
+        {/* カード（バー左端に揃え、px-16 インセット） */}
+        <div style={{ paddingLeft: 16, paddingRight: 16 }}>
+          <CareerCard
+            item={item}
+            works={works}
+            onOpenWork={onOpenWork}
+            isOpen={isOpen}
+            onToggle={() => setIsOpen((o) => !o)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Mobile item — 縦タイムラインレール + 共通カード（Figma node 781-9583）
+   ────────────────────────────────────────────────────────────────────────── */
+function CareerItemMobile({
+  item,
+  works,
+  onOpenWork,
+  isFirst,
+  isLast,
+}: {
+  item: EnrichedItem;
+  works: WorkLink[];
+  onOpenWork: (workId: string) => void;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+      {/* タイムラインレール */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, alignSelf: "stretch", flexShrink: 0 }}>
+        <div style={{ width: 2, height: 10, borderRadius: "0 0 2px 2px", background: isFirst ? "transparent" : C.bar, flexShrink: 0 }} />
+        <Dot active={isOpen} />
+        <div style={{ width: 2, flex: 1, minHeight: 1, borderRadius: "2px 2px 0 0", background: isLast ? "transparent" : C.bar }} />
+      </div>
+      {/* カード */}
+      <div style={{ paddingBottom: 16, minWidth: 0, flex: 1 }}>
+        <CareerCard
+          item={item}
+          works={works}
+          onOpenWork={onOpenWork}
+          isOpen={isOpen}
+          onToggle={() => setIsOpen((o) => !o)}
+          multiline
+        />
+      </div>
+    </div>
+  );
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
    Main export
    ────────────────────────────────────────────────────────────────────────── */
 export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [worksByCareer, setWorksByCareer] = useState<Record<string, WorkLink[]>>({});
   const isMobile = useIsMobile(728);
 
-  // career_item_id で projects をグルーピング → カード別 Works リンク
+  // career_item_id で works をグルーピング → カード別 Works リンク
   useEffect(() => {
     let active = true;
     supabase
@@ -371,43 +413,43 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
       .then(({ data }) => {
         if (!active) return;
         const map: Record<string, WorkLink[]> = {};
-        for (const p of data ?? []) {
-          if (!p.career_item_id) continue;
-          (map[p.career_item_id] ??= []).push({ id: p.id, title: p.title });
+        for (const w of data ?? []) {
+          if (!w.career_item_id) continue;
+          (map[w.career_item_id] ??= []).push({ id: w.id, title: w.title });
         }
         setWorksByCareer(map);
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Works リンククリック → Works セクションへスクロール＋モーダル展開イベント発火（リスナーは WorksList 側）
+  // Works リンククリック → Works セクションへスクロール＋モーダル展開イベント
   const handleOpenWork = (workId: string) => {
     const target = document.getElementById("works");
     target?.scrollIntoView({ behavior: "smooth" });
     window.dispatchEvent(new CustomEvent("portfolio:open-work", { detail: { workId } }));
   };
 
-  const enriched = career.map((item) => ({ ...item, ...parsePeriod(item.period) }));
+  const enriched: EnrichedItem[] = career.map((item) => ({ ...item, ...parsePeriod(item.period) }));
   // 古い順（上）→ 新しい順（下）
-  const reversed = [...enriched].reverse();
+  const oldestFirst = [...enriched].sort((a, b) => a.startVal - b.startVal);
 
   if (isMobile) {
+    // モバイルは新しい順（上）→ 古い順（下）
+    const newestFirst = [...oldestFirst].reverse();
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {reversed.map((item, i) => {
-          const timeline =
-            i === 0 ? "end" :
-            i === reversed.length - 1 ? "start" : "middle";
-          return (
-            <CareerCardMobile
-              key={item.id}
-              item={item}
-              timeline={timeline as "end" | "middle" | "start"}
-              works={worksByCareer[item.id] ?? []}
-              onOpenWork={handleOpenWork}
-            />
-          );
-        })}
+        {newestFirst.map((item, i) => (
+          <CareerItemMobile
+            key={item.id}
+            item={item}
+            works={worksByCareer[item.id] ?? []}
+            onOpenWork={handleOpenWork}
+            isFirst={i === 0}
+            isLast={i === newestFirst.length - 1}
+          />
+        ))}
       </div>
     );
   }
@@ -416,9 +458,21 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
     <div style={{ overflowX: "auto", width: "100%" }}>
       <div style={{ background: C.outerBg, borderRadius: 14, padding: 24, minWidth: 640 }}>
         {/* 年ラベル行 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(11, 1fr)", marginBottom: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${CHART_YEARS.length}, 1fr)`, marginBottom: 8 }}>
           {CHART_YEARS.map((year, i) => (
-            <div key={year} style={{ fontSize: 11, color: year === CURRENT_YEAR ? C.yearCurrent : C.yearText, letterSpacing: ".33px", textAlign: "center", borderLeft: i === 0 ? "none" : `1px solid ${C.gridLine}`, paddingTop: 2 }}>
+            <div
+              key={year}
+              style={{
+                fontFamily: FONT_EN,
+                fontWeight: 800,
+                fontSize: 11,
+                color: year === CURRENT_YEAR ? C.yearCurrent : C.yearText,
+                letterSpacing: ".33px",
+                textAlign: "center",
+                borderLeft: i === 0 ? "none" : `1px solid ${C.gridLine}`,
+                paddingTop: 2,
+              }}
+            >
               {year}
             </div>
           ))}
@@ -427,7 +481,7 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
         {/* チャート本体 */}
         <div style={{ position: "relative" }}>
           {/* 縦グリッド線 */}
-          <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "repeat(11, 1fr)", pointerEvents: "none" }}>
+          <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: `repeat(${CHART_YEARS.length}, 1fr)`, pointerEvents: "none" }}>
             {CHART_YEARS.map((_, i) => (
               <div key={i} style={{ borderLeft: i === 0 ? "none" : `1px solid ${C.gridLine}` }} />
             ))}
@@ -435,13 +489,10 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
 
           {/* バー列 */}
           <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
-            {reversed.map((item, i) => (
-              <CareerBar
+            {oldestFirst.map((item) => (
+              <CareerRowDesktop
                 key={item.id}
                 item={item}
-                index={i}
-                hoveredId={hoveredId}
-                setHoveredId={setHoveredId}
                 works={worksByCareer[item.id] ?? []}
                 onOpenWork={handleOpenWork}
               />

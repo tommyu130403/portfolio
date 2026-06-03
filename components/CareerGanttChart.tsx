@@ -261,8 +261,11 @@ function CareerBar({
     setNaturalContentWidth(max);
   }, []);
 
-  const left  = (item.startYear - CHART_START) / CHART_TOTAL * 100;
-  const width = (item.endYear   - item.startYear) / CHART_TOTAL * 100;
+  // 2016(チャート起点)より前に始まる項目（学歴など）はバーが左へ見切れるため、
+  // 開始を 2016 にクランプし、終了年に合わせた横幅にする。
+  const effectiveStart = Math.max(item.startYear, CHART_START);
+  const left  = (effectiveStart - CHART_START) / CHART_TOTAL * 100;
+  const width = (item.endYear   - effectiveStart) / CHART_TOTAL * 100;
 
   // ホバー中、または展開中は幅を拡張（クリック展開後はホバーが外れても維持）
   const isExpanded = isHovered || isOpen;

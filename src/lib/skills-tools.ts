@@ -107,14 +107,14 @@ export async function upsertToolVocab(name: string): Promise<ToolVocab> {
   return data;
 }
 
-// ─── プロジェクト × スキル / ツール ────────────────────────────
+// ─── Works × スキル / ツール ────────────────────────────
 
-export async function getProjectSkills(projectId: string): Promise<SkillVocab[]> {
+export async function getWorkSkills(workId: string): Promise<SkillVocab[]> {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
-    .from("project_skills")
+    .from("work_skills")
     .select("sort_order, skills_vocab(id, label, category)")
-    .eq("project_id", projectId)
+    .eq("work_id", workId)
     .order("sort_order");
   if (error) throw new Error(error.message);
   return (data ?? [])
@@ -122,12 +122,12 @@ export async function getProjectSkills(projectId: string): Promise<SkillVocab[]>
     .filter(Boolean);
 }
 
-export async function getProjectTools(projectId: string): Promise<ToolVocab[]> {
+export async function getWorkTools(workId: string): Promise<ToolVocab[]> {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
-    .from("project_tools")
+    .from("work_tools")
     .select("sort_order, tools_vocab(id, name, slug)")
-    .eq("project_id", projectId)
+    .eq("work_id", workId)
     .order("sort_order");
   if (error) throw new Error(error.message);
   return (data ?? [])
@@ -136,55 +136,55 @@ export async function getProjectTools(projectId: string): Promise<ToolVocab[]> {
 }
 
 /**
- * プロジェクトのスキルを上書き保存（set 型）。
+ * Works のスキルを上書き保存（set 型）。
  * 渡した skillIds がそのままセットとなるよう、差分 delete / insert を行う。
  */
-export async function setProjectSkills(
-  projectId: string,
+export async function setWorkSkills(
+  workId: string,
   skillIds: string[]
 ): Promise<void> {
   const admin = getSupabaseAdmin();
 
   // 既存を全削除してから insert（シンプルなセット型更新）
   const { error: delError } = await admin
-    .from("project_skills")
+    .from("work_skills")
     .delete()
-    .eq("project_id", projectId);
+    .eq("work_id", workId);
   if (delError) throw new Error(delError.message);
 
   if (skillIds.length === 0) return;
 
   const rows = skillIds.map((skill_id, idx) => ({
-    project_id: projectId,
+    work_id: workId,
     skill_id,
     sort_order: idx,
   }));
-  const { error: insError } = await admin.from("project_skills").insert(rows);
+  const { error: insError } = await admin.from("work_skills").insert(rows);
   if (insError) throw new Error(insError.message);
 }
 
 /**
- * プロジェクトのツールを上書き保存（set 型）。
+ * Works のツールを上書き保存（set 型）。
  */
-export async function setProjectTools(
-  projectId: string,
+export async function setWorkTools(
+  workId: string,
   toolIds: string[]
 ): Promise<void> {
   const admin = getSupabaseAdmin();
 
   const { error: delError } = await admin
-    .from("project_tools")
+    .from("work_tools")
     .delete()
-    .eq("project_id", projectId);
+    .eq("work_id", workId);
   if (delError) throw new Error(delError.message);
 
   if (toolIds.length === 0) return;
 
   const rows = toolIds.map((tool_id, idx) => ({
-    project_id: projectId,
+    work_id: workId,
     tool_id,
     sort_order: idx,
   }));
-  const { error: insError } = await admin.from("project_tools").insert(rows);
+  const { error: insError } = await admin.from("work_tools").insert(rows);
   if (insError) throw new Error(insError.message);
 }

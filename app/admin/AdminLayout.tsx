@@ -7,10 +7,10 @@ import Headline from "@/components/Headline";
 import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
 import { supabase } from "@/src/lib/supabase";
 import {
-  saveProject,
-  deleteProject,
-  addSkillLabelFromProjects,
-  addToolNameFromProjects,
+  saveWork,
+  deleteWork,
+  addSkillLabelFromWorks,
+  addToolNameFromWorks,
   saveSkillCard,
   deleteSkillCard,
   addSkillCard,
@@ -19,10 +19,10 @@ import {
   deleteSkillBar,
   addSkillBar,
   saveExperienceTools,
-  listAllProjectSkillLabels,
-  listAllProjectToolNames,
-  saveProjectSkillsByLabels,
-  saveProjectToolsByNames,
+  listAllWorkSkillLabels,
+  listAllWorkToolNames,
+  saveWorkSkillsByLabels,
+  saveWorkToolsByNames,
   listStorageImages,
   uploadStorageImage,
 } from "@/app/admin/actions";
@@ -34,13 +34,12 @@ import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 // ─── 型 ───────────────────────────────────────────────
 type Profile    = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
-type Project    = Tables<"projects">;
 type SkillCard       = Tables<"skill_cards">;
 type SkillExperience = Tables<"skill_experience">;
 
 // project_skills / project_tools はDB正規化テーブルで管理するため、
 // ローカル状態では skills/tools をフロントエンド専用フィールドとして保持する
-type ProjectLocal = Tables<"projects"> & { skills: string[]; tools: string[] };
+type WorkLocal = Tables<"works"> & { skills: string[]; tools: string[] };
 
 
 
@@ -48,7 +47,7 @@ type ProjectLocal = Tables<"projects"> & { skills: string[]; tools: string[] };
 const NAV_SECTIONS = [
   { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
   { id: "career",           label: "Career",           labelJa: "経歴" },
-  { id: "projects",         label: "Works",            labelJa: "制作・企画" },
+  { id: "works",         label: "Works",            labelJa: "制作・企画" },
   { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
 ] as const;
 
@@ -1255,8 +1254,8 @@ function SectionsEditor({
 
 // ─── Projects セクション ───────────────────────────────
 
-function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
-  const [projects, setProjects] = useState<ProjectLocal[]>([]);
+function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
+  const [projects, setProjects] = useState<WorkLocal[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -1355,7 +1354,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
     return end ? `${start} - ${end}` : `${start} - `;
   };
 
-  const handleProofread = async (project: ProjectLocal) => {
+  const handleProofread = async (project: WorkLocal) => {
     // sections の本文テキストをすべて連結してチェック
     const sections = (project.sections ?? []) as { heading: string; body: string }[];
     const text = sections.map((s) => `${s.heading}\n${s.body}`).join("\n\n");
@@ -1386,7 +1385,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       { data: careerRows },
     ] = await Promise.all([
       supabase
-        .from("projects")
+        .from("works")
         .select("*")
         .order("sort_order", { ascending: true }),
       // 語彙マスタから取得（skills_vocab / tools_vocab）
@@ -1398,8 +1397,8 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
         .select("*")
         .order("sort_order", { ascending: true }),
       // project_skills / project_tools の一括取得
-      listAllProjectSkillLabels(),
-      listAllProjectToolNames(),
+      listAllWorkSkillLabels(),
+      listAllWorkToolNames(),
       // 紐付け用の経歴一覧
       supabase
         .from("career_items")
@@ -1408,7 +1407,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
     ]);
 
     if (projectRows) {
-      const withLocal: ProjectLocal[] = projectRows.map((p) => ({
+      const withLocal: WorkLocal[] = projectRows.map((p) => ({
         ...p,
         skills: skillLabelsMap[p.id] ?? [],
         tools: toolNamesMap[p.id] ?? [],
@@ -1430,16 +1429,16 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
-  const updateProject = (id: string, key: keyof ProjectLocal, val: unknown) => {
+  const updateProject = (id: string, key: keyof WorkLocal, val: unknown) => {
     markDirty();
     setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
   };
 
-  const handleSave = async (project: ProjectLocal) => {
+  const handleSave = async (project: WorkLocal) => {
     setSaveError(null);
     setSavingId(project.id);
 
-    // ProjectLocal の skills/tools フィールドは DB カラムではないため除いて渡す
+    // WorkLocal の skills/tools フィールドは DB カラムではないため除いて渡す
     const { skills, tools, ...rest } = project;
     const periodInputs =
       projectPeriodInputs[project.id] ?? parseProjectPeriod(project.period);
@@ -1449,9 +1448,9 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       period: formattedPeriod,
     };
     const [{ error }, skillsResult, toolsResult] = await Promise.all([
-      saveProject(projectRow, {}),
-      saveProjectSkillsByLabels(project.id, skills),
-      saveProjectToolsByNames(project.id, tools),
+      saveWork(projectRow, {}),
+      saveWorkSkillsByLabels(project.id, skills),
+      saveWorkToolsByNames(project.id, tools),
     ]);
     setSavingId(null);
     const saveErr = error ?? skillsResult.error ?? toolsResult.error ?? null;
@@ -1474,7 +1473,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       return;
     }
     setDeletingId(id);
-    const { error } = await deleteProject(id);
+    const { error } = await deleteWork(id);
     setDeletingId(null);
     if (error) {
       console.error("Failed to delete project:", error);
@@ -1488,7 +1487,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
 
-    const newProject: ProjectLocal = {
+    const newProject: WorkLocal = {
       id,
       title: "新しいプロジェクト",
       category: null,
@@ -1510,7 +1509,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
 
   return (
-    <section id="projects" className="scroll-mt-8">
+    <section id="works" className="scroll-mt-8">
       <SectionTitle label="Works" title="制作・企画" />
       {dirty && (
         <p className="mb-3 text-[11px] text-[#f4c248]">
@@ -1825,7 +1824,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
                                   const name = newSkillLabel.trim();
                                   if (!name) return;
                                   // skills_vocab に登録して ID を取得
-                                  const result = await addSkillLabelFromProjects(name);
+                                  const result = await addSkillLabelFromWorks(name);
                                   if (result.id) {
                                     setSkillVocabOptions((prev) => {
                                       if (prev.some((v) => v.label.toLowerCase() === name.toLowerCase())) return prev;
@@ -1949,7 +1948,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
                                   const name = newToolName.trim();
                                   if (!name) return;
                                   // tools_vocab に登録して ID を取得
-                                  const result = await addToolNameFromProjects(name);
+                                  const result = await addToolNameFromWorks(name);
                                   if (result.id) {
                                     setToolVocabOptions((prev) => {
                                       if (prev.some((v) => v.name.toLowerCase() === name.toLowerCase())) return prev;
@@ -2661,7 +2660,7 @@ export function AdminLayout() {
           <div className="flex flex-col gap-24">
             <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
             <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
-            <ProjectsSection onDirtyChange={(dirty) => setSectionDirty("projects", dirty)} />
+            <WorksSection onDirtyChange={(dirty) => setSectionDirty("works", dirty)} />
             <SkillsExperienceSection
               onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
             />

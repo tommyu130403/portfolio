@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -79,119 +79,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
-      }
-      project_skills: {
-        Row: {
-          project_id: string
-          skill_id: string
-          sort_order: number | null
-        }
-        Insert: {
-          project_id: string
-          skill_id: string
-          sort_order?: number | null
-        }
-        Update: {
-          project_id?: string
-          skill_id?: string
-          sort_order?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_skills_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_skills_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "skills_vocab"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_tools: {
-        Row: {
-          project_id: string
-          sort_order: number | null
-          tool_id: string
-        }
-        Insert: {
-          project_id: string
-          sort_order?: number | null
-          tool_id: string
-        }
-        Update: {
-          project_id?: string
-          sort_order?: number | null
-          tool_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_tools_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_tools_tool_id_fkey"
-            columns: ["tool_id"]
-            isOneToOne: false
-            referencedRelation: "tools_vocab"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      projects: {
-        Row: {
-          career_item_id: string | null
-          category: string | null
-          created_at: string | null
-          id: string
-          period: string | null
-          role: string | null
-          sections: Json | null
-          sort_order: number | null
-          thumbnail_url: string | null
-          title: string
-        }
-        Insert: {
-          career_item_id?: string | null
-          category?: string | null
-          created_at?: string | null
-          id?: string
-          period?: string | null
-          role?: string | null
-          sections?: Json | null
-          sort_order?: number | null
-          thumbnail_url?: string | null
-          title: string
-        }
-        Update: {
-          career_item_id?: string | null
-          category?: string | null
-          created_at?: string | null
-          id?: string
-          period?: string | null
-          role?: string | null
-          sections?: Json | null
-          sort_order?: number | null
-          thumbnail_url?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "projects_career_item_id_fkey"
-            columns: ["career_item_id"]
-            isOneToOne: false
-            referencedRelation: "career_items"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       skill_cards: {
         Row: {
@@ -265,7 +152,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "skill_bars_card_id_fkey"
+            foreignKeyName: "skill_experience_card_id_fkey"
             columns: ["card_id"]
             isOneToOne: false
             referencedRelation: "skill_cards"
@@ -353,6 +240,119 @@ export type Database = {
           slug?: string | null
         }
         Relationships: []
+      }
+      work_skills: {
+        Row: {
+          skill_id: string
+          sort_order: number | null
+          work_id: string
+        }
+        Insert: {
+          skill_id: string
+          sort_order?: number | null
+          work_id: string
+        }
+        Update: {
+          skill_id?: string
+          sort_order?: number | null
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills_vocab"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_skills_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_tools: {
+        Row: {
+          sort_order: number | null
+          tool_id: string
+          work_id: string
+        }
+        Insert: {
+          sort_order?: number | null
+          tool_id: string
+          work_id: string
+        }
+        Update: {
+          sort_order?: number | null
+          tool_id?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_tools_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools_vocab"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_tools_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      works: {
+        Row: {
+          career_item_id: string | null
+          category: string | null
+          created_at: string | null
+          id: string
+          period: string | null
+          role: string | null
+          sections: Json | null
+          sort_order: number | null
+          thumbnail_url: string | null
+          title: string
+        }
+        Insert: {
+          career_item_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          period?: string | null
+          role?: string | null
+          sections?: Json | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title: string
+        }
+        Update: {
+          career_item_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          period?: string | null
+          role?: string | null
+          sections?: Json | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "works_career_item_id_fkey"
+            columns: ["career_item_id"]
+            isOneToOne: false
+            referencedRelation: "career_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

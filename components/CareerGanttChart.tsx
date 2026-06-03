@@ -77,7 +77,7 @@ function WorksLinks({
   onOpenWork,
 }: {
   works: WorkLink[];
-  onOpenWork: (projectId: string) => void;
+  onOpenWork: (workId: string) => void;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   if (works.length === 0) return null;
@@ -139,7 +139,7 @@ function CareerCardMobile({
   item: EnrichedItem;
   timeline: "end" | "middle" | "start";
   works: WorkLink[];
-  onOpenWork: (projectId: string) => void;
+  onOpenWork: (workId: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -243,7 +243,7 @@ function CareerBar({
   hoveredId: number | null;
   setHoveredId: (id: number | null) => void;
   works: WorkLink[];
-  onOpenWork: (projectId: string) => void;
+  onOpenWork: (workId: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const isHovered = hoveredId === index;
@@ -362,7 +362,7 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   useEffect(() => {
     let active = true;
     supabase
-      .from("projects")
+      .from("works")
       .select("id, title, career_item_id, sort_order")
       .order("sort_order", { ascending: true })
       .then(({ data }) => {
@@ -378,10 +378,10 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   }, []);
 
   // Works リンククリック → Works セクションへスクロール＋モーダル展開イベント発火（リスナーは WorksList 側）
-  const handleOpenWork = (projectId: string) => {
-    const target = document.getElementById("works") ?? document.getElementById("projects");
+  const handleOpenWork = (workId: string) => {
+    const target = document.getElementById("works");
     target?.scrollIntoView({ behavior: "smooth" });
-    window.dispatchEvent(new CustomEvent("portfolio:open-work", { detail: { projectId } }));
+    window.dispatchEvent(new CustomEvent("portfolio:open-work", { detail: { workId } }));
   };
 
   const enriched = career.map((item) => ({ ...item, ...parsePeriod(item.period) }));

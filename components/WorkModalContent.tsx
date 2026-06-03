@@ -5,7 +5,7 @@ import Icon from "./Icon";
 import Tag from "./Tag";
 import type { Tables } from "@/src/types/supabase";
 
-type Project = Tables<"projects">;
+type Work = Tables<"works">;
 type Section = { heading: string; body: string };
 
 /** Markdown の見出し（# / ##）・画像・段落をレンダリングするコンポーネント */
@@ -131,22 +131,22 @@ const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
 
-type ProjectModalContentProps = {
-  project: Project;
+type WorkModalContentProps = {
+  work: Work;
   skills?: string[];
   tools?: string[];
 };
 
-const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [], tools = [] }) => {
-  const sections = (project.sections ?? []) as Section[];
+const WorkModalContent: FC<WorkModalContentProps> = ({ work, skills = [], tools = [] }) => {
+  const sections = (work.sections ?? []) as Section[];
   const infoRows = [
     {
       key: "role",
       label: "役割",
       icon: <Icon set="Peoples" name="people" className="w-4 h-4 shrink-0" />,
-      content: project.role ? (
+      content: work.role ? (
         <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-white">
-          {project.role}
+          {work.role}
         </p>
       ) : null,
     },
@@ -154,9 +154,9 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
       key: "period",
       label: "期間",
       icon: <Icon set="Time" name="calendar-three" className="w-4 h-4 shrink-0" />,
-      content: project.period ? (
+      content: work.period ? (
         <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-white whitespace-nowrap">
-          {project.period}
+          {work.period}
         </p>
       ) : null,
     },
@@ -191,11 +191,11 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
   return (
     <div className="flex flex-col gap-16 p-10">
       {/* Hero image */}
-      {project.thumbnail_url && (
+      {work.thumbnail_url && (
         <div className="w-full rounded-[32px] overflow-hidden">
           <img
-            src={project.thumbnail_url}
-            alt={project.title}
+            src={work.thumbnail_url}
+            alt={work.title}
             className="w-full aspect-[728/410] object-cover"
           />
         </div>
@@ -203,13 +203,13 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
 
       {/* Title block */}
       <div className="flex flex-col gap-4">
-        {project.category && (
+        {work.category && (
           <p className="text-[15px] tracking-[0.45px] text-[var(--color-main-100)]">
-            {project.category}
+            {work.category}
           </p>
         )}
         <p className="text-[32px] font-bold leading-normal tracking-[0.96px] text-white">
-          {project.title}
+          {work.title}
         </p>
       </div>
 
@@ -243,4 +243,4 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
   );
 };
 
-export default ProjectModalContent;
+export default WorkModalContent;

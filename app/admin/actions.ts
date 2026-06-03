@@ -2,8 +2,8 @@ import { supabase } from "@/src/lib/supabase";
 import {
   upsertSkillVocab,
   upsertToolVocab,
-  setProjectSkills,
-  setProjectTools,
+  setWorkSkills,
+  setWorkTools,
   setExperienceTools,
   listSkillVocab,
   listToolVocab,
@@ -74,20 +74,19 @@ export async function uploadStorageImage(
   }
 }
 
-type ProjectRow = Tables<"projects">;
+type WorkRow = Tables<"works">;
 
 /**
- * プロジェクトを 1 件 upsert し、project_skills / project_tools も同期する。
+ * Works を 1 件 upsert し、work_skills / work_tools も同期する。
  * skillIds / toolIds が渡された場合は新テーブルで保存。
- * 旧カラム projects.skills / projects.tools は後方互換のため同時に更新する（将来削除予定）。
  */
-export async function saveProject(
-  payload: ProjectRow,
+export async function saveWork(
+  payload: WorkRow,
   opts?: { skillIds?: string[]; toolIds?: string[] }
 ): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase
-      .from("projects")
+      .from("works")
       .upsert(
         {
           id: payload.id,
@@ -98,6 +97,7 @@ export async function saveProject(
           period: payload.period ?? null,
           sections: payload.sections ?? null,
           sort_order: payload.sort_order,
+          career_item_id: payload.career_item_id ?? null,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
         },
         { onConflict: "id" }
@@ -106,10 +106,10 @@ export async function saveProject(
 
     // 新テーブルへの保存（skillIds / toolIds が渡された場合）
     if (opts?.skillIds !== undefined) {
-      await setProjectSkills(payload.id, opts.skillIds);
+      await setWorkSkills(payload.id, opts.skillIds);
     }
     if (opts?.toolIds !== undefined) {
-      await setProjectTools(payload.id, opts.toolIds);
+      await setWorkTools(payload.id, opts.toolIds);
     }
 
     return { error: null };
@@ -120,11 +120,11 @@ export async function saveProject(
 }
 
 /**
- * プロジェクトを 1 件削除（サーバー・サービスロールで実行）
+ * Works を 1 件削除（サーバー・サービスロールで実行）
  */
-export async function deleteProject(id: string): Promise<{ error: string | null }> {
+export async function deleteWork(id: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("projects").delete().eq("id", id);
+    const { error } = await supabase.from("works").delete().eq("id", id);
     if (error) return { error: error.message || error.code || String(error) };
     return { error: null };
   } catch (e) {
@@ -134,10 +134,10 @@ export async function deleteProject(id: string): Promise<{ error: string | null 
 }
 
 /**
- * スキルラベルを skills_vocab に追加（Projects から新規入力された場合）
+ * スキルラベルを skills_vocab に追加（Works から新規入力された場合）
  * 旧: skill_bars への書き込みから移行済み。
  */
-export async function addSkillLabelFromProjects(
+export async function addSkillLabelFromWorks(
   label: string
 ): Promise<{ error: string | null; id?: string }> {
   try {
@@ -150,9 +150,9 @@ export async function addSkillLabelFromProjects(
 }
 
 /**
- * ツール名を tools_vocab に追加（Projects から新規入力された場合）
+ * ツール名を tools_vocab に追加（Works から新規入力された場合）
  */
-export async function addToolNameFromProjects(
+export async function addToolNameFromWorks(
   name: string
 ): Promise<{ error: string | null; id?: string }> {
   try {
@@ -291,14 +291,14 @@ export async function saveExperienceTools(
   }
 }
 
-// ─── project_skills / project_tools 一括取得 ──────────────────────────────────
+// ─── work_skills / work_tools 一括取得 ──────────────────────────────────
 
 /**
- * スキルラベル配列からそのまま project_skills を更新する。
+ * スキルラベル配列からそのまま work_skills を更新する。
  * labels にないラベルは skills_vocab に自動登録してから保存する。
  */
-export async function saveProjectSkillsByLabels(
-  projectId: string,
+export async function saveWorkSkillsByLabels(
+  workId: string,
   labels: string[]
 ): Promise<{ error: string | null }> {
   try {
@@ -308,7 +308,7 @@ export async function saveProjectSkillsByLabels(
         return vocab.id;
       })
     );
-    await setProjectSkills(projectId, skillIds);
+    await setWorkSkills(workId, skillIds);
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -316,10 +316,10 @@ export async function saveProjectSkillsByLabels(
 }
 
 /**
- * ツール名配列からそのまま project_tools を更新する。
+ * ツール名配列からそのまま work_tools を更新する。
  */
-export async function saveProjectToolsByNames(
-  projectId: string,
+export async function saveWorkToolsByNames(
+  workId: string,
   names: string[]
 ): Promise<{ error: string | null }> {
   try {
@@ -329,41 +329,41 @@ export async function saveProjectToolsByNames(
         return vocab.id;
       })
     );
-    await setProjectTools(projectId, toolIds);
+    await setWorkTools(workId, toolIds);
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
 }
 
-/** 全プロジェクトのスキルラベルを一括取得 { projectId → label[] } */
-export async function listAllProjectSkillLabels(): Promise<Record<string, string[]>> {
+/** 全 Works のスキルラベルを一括取得 { workId → label[] } */
+export async function listAllWorkSkillLabels(): Promise<Record<string, string[]>> {
   const { data } = await supabase
-    .from("project_skills")
-    .select("project_id, sort_order, skills_vocab(label)")
+    .from("work_skills")
+    .select("work_id, sort_order, skills_vocab(label)")
     .order("sort_order");
   const result: Record<string, string[]> = {};
   for (const row of data ?? []) {
     const label = (row.skills_vocab as { label: string } | null)?.label;
     if (!label) continue;
-    if (!result[row.project_id]) result[row.project_id] = [];
-    result[row.project_id].push(label);
+    if (!result[row.work_id]) result[row.work_id] = [];
+    result[row.work_id].push(label);
   }
   return result;
 }
 
-/** 全プロジェクトのツール名を一括取得 { projectId → name[] } */
-export async function listAllProjectToolNames(): Promise<Record<string, string[]>> {
+/** 全 Works のツール名を一括取得 { workId → name[] } */
+export async function listAllWorkToolNames(): Promise<Record<string, string[]>> {
   const { data } = await supabase
-    .from("project_tools")
-    .select("project_id, sort_order, tools_vocab(name)")
+    .from("work_tools")
+    .select("work_id, sort_order, tools_vocab(name)")
     .order("sort_order");
   const result: Record<string, string[]> = {};
   for (const row of data ?? []) {
     const name = (row.tools_vocab as { name: string } | null)?.name;
     if (!name) continue;
-    if (!result[row.project_id]) result[row.project_id] = [];
-    result[row.project_id].push(name);
+    if (!result[row.work_id]) result[row.work_id] = [];
+    result[row.work_id].push(name);
   }
   return result;
 }

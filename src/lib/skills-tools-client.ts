@@ -76,35 +76,35 @@ export async function upsertToolVocab(
   return data;
 }
 
-export async function setProjectSkills(projectId: string, skillIds: string[]): Promise<void> {
+export async function setWorkSkills(workId: string, skillIds: string[]): Promise<void> {
   const { error: delError } = await supabase
-    .from("project_skills")
+    .from("work_skills")
     .delete()
-    .eq("project_id", projectId);
+    .eq("work_id", workId);
   if (delError) throw new Error(delError.message);
   if (skillIds.length === 0) return;
   const rows = skillIds.map((skill_id, idx) => ({
-    project_id: projectId,
+    work_id: workId,
     skill_id,
     sort_order: idx,
   }));
-  const { error: insError } = await supabase.from("project_skills").insert(rows);
+  const { error: insError } = await supabase.from("work_skills").insert(rows);
   if (insError) throw new Error(insError.message);
 }
 
-export async function setProjectTools(projectId: string, toolIds: string[]): Promise<void> {
+export async function setWorkTools(workId: string, toolIds: string[]): Promise<void> {
   const { error: delError } = await supabase
-    .from("project_tools")
+    .from("work_tools")
     .delete()
-    .eq("project_id", projectId);
+    .eq("work_id", workId);
   if (delError) throw new Error(delError.message);
   if (toolIds.length === 0) return;
   const rows = toolIds.map((tool_id, idx) => ({
-    project_id: projectId,
+    work_id: workId,
     tool_id,
     sort_order: idx,
   }));
-  const { error: insError } = await supabase.from("project_tools").insert(rows);
+  const { error: insError } = await supabase.from("work_tools").insert(rows);
   if (insError) throw new Error(insError.message);
 }
 

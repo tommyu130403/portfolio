@@ -9,7 +9,7 @@ import { ButtonFunction } from "./ButtonFunction";
 import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
 import { useAuth } from "@/lib/auth";
 
-export type SideMenuSectionId = "introduction" | "career" | "projects" | "skills";
+export type SideMenuSectionId = "introduction" | "career" | "works" | "skills";
 
 const AVATAR_URL =
   "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=88&q=80";
@@ -233,9 +233,9 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           />
           <SideMenuItem
             icon={{ set: "Charts", name: "ranking" }}
-            label="Projects"
-            href="#projects"
-            active={activeSection === "projects"}
+            label="Works"
+            href="#works"
+            active={activeSection === "works"}
             collapsed={collapsed}
           />
           <SideMenuItem

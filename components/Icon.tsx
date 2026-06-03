@@ -70,6 +70,7 @@ export const Icon: FC<IconProps> = ({
   alt,
   tintColor,
   className,
+  style,
   ...imgProps
 }) => {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -80,8 +81,11 @@ export const Icon: FC<IconProps> = ({
     return (
       <span
         className={className}
+        // 外部から渡された style（サイズ等）を先に展開し、
+        // mask 関連プロパティで上書きされないようにマージする。
         style={{
           display: "inline-block",
+          ...style,
           backgroundColor: tintColor,
           maskImage: `url(${src})`,
           maskRepeat: "no-repeat",
@@ -99,7 +103,7 @@ export const Icon: FC<IconProps> = ({
     );
   }
 
-  return <img src={src} alt={computedAlt} className={className} {...imgProps} />;
+  return <img src={src} alt={computedAlt} className={className} style={style} {...imgProps} />;
 };
 
 export default Icon;

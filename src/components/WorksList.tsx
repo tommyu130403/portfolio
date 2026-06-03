@@ -4,18 +4,18 @@ import type { FC } from "react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables, TablesInsert } from "@/src/types/supabase";
-import ProjectCard from "@/components/ProjectCard";
+import WorkCard from "@/components/WorkCard";
 import Modal from "@/components/Modal";
-import ProjectModalContent from "@/components/ProjectModalContent";
+import WorkModalContent from "@/components/WorkModalContent";
 
-type Project          = Tables<"projects">;
+type Work             = Tables<"works">;
 type SkillExperience  = Tables<"skill_experience">;
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
 
 /** ダミーデータ（Supabase にデータがない場合にシード） */
-const SEED_PROJECTS: TablesInsert<"projects">[] = [
+const SEED_WORKS: TablesInsert<"works">[] = [
   {
     title: "キャリアチケットスカウトサービスの立ち上げ（ベータ版リリース）",
     category: "プラットフォーム開発",
@@ -63,33 +63,33 @@ const SEED_PROJECTS: TablesInsert<"projects">[] = [
   },
 ];
 
-export type ProjectsListProps = {
+export type WorksListProps = {
   /** サイドバー折りたたみ時は true。Modal のオフセット計算に使用 */
   sidebarCollapsed?: boolean;
 };
 
-export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }) => {
-  const [projects, setProjects] = useState<Project[]>([]);
+export const WorksList: FC<WorksListProps> = ({ sidebarCollapsed = false }) => {
+  const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
-  const [projectSkillsMap, setProjectSkillsMap] = useState<Record<string, string[]>>({});
-  const [projectToolsMap, setProjectToolsMap] = useState<Record<string, string[]>>({});
+  const [workSkillsMap, setWorkSkillsMap] = useState<Record<string, string[]>>({});
+  const [workToolsMap, setWorkToolsMap] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchWorks = async () => {
       setLoading(true);
       setError(null);
 
       const [
         { data, error: fetchError },
         { data: skillExperience },
-        { data: projectSkillsRows },
-        { data: projectToolsRows },
+        { data: workSkillsRows },
+        { data: workToolsRows },
       ] = await Promise.all([
         supabase
-          .from("projects")
+          .from("works")
           .select("*")
           .order("sort_order", { ascending: true }),
         supabase
@@ -97,36 +97,36 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
           .select("*")
           .order("sort_order", { ascending: true }),
         supabase
-          .from("project_skills")
-          .select("project_id, sort_order, skills_vocab(label)")
+          .from("work_skills")
+          .select("work_id, sort_order, skills_vocab(label)")
           .order("sort_order"),
         supabase
-          .from("project_tools")
-          .select("project_id, sort_order, tools_vocab(name)")
+          .from("work_tools")
+          .select("work_id, sort_order, tools_vocab(name)")
           .order("sort_order"),
       ]);
 
-      // Build per-project maps
+      // Build per-work maps
       const skillsMap: Record<string, string[]> = {};
-      for (const row of projectSkillsRows ?? []) {
+      for (const row of workSkillsRows ?? []) {
         const label = (row.skills_vocab as { label: string } | null)?.label;
         if (label) {
-          skillsMap[row.project_id] = [...(skillsMap[row.project_id] ?? []), label];
+          skillsMap[row.work_id] = [...(skillsMap[row.work_id] ?? []), label];
         }
       }
-      setProjectSkillsMap(skillsMap);
+      setWorkSkillsMap(skillsMap);
 
       const toolsMap: Record<string, string[]> = {};
-      for (const row of projectToolsRows ?? []) {
+      for (const row of workToolsRows ?? []) {
         const name = (row.tools_vocab as { name: string } | null)?.name;
         if (name) {
-          toolsMap[row.project_id] = [...(toolsMap[row.project_id] ?? []), name];
+          toolsMap[row.work_id] = [...(toolsMap[row.work_id] ?? []), name];
         }
       }
-      setProjectToolsMap(toolsMap);
+      setWorkToolsMap(toolsMap);
 
       if (fetchError) {
-        console.error("Failed to fetch projects:", fetchError);
+        console.error("Failed to fetch works:", fetchError);
         setError(fetchError.message);
         setLoading(false);
         return;
@@ -134,21 +134,21 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
 
       if (!data || data.length === 0) {
         const { error: insertError } = await supabase
-          .from("projects")
-          .insert(SEED_PROJECTS);
+          .from("works")
+          .insert(SEED_WORKS);
 
         if (insertError) {
-          console.error("Failed to seed projects:", insertError);
+          console.error("Failed to seed works:", insertError);
           setError(insertError.message);
         } else {
           const { data: refetched } = await supabase
-            .from("projects")
+            .from("works")
             .select("*")
             .order("sort_order", { ascending: true });
-          setProjects(refetched ?? []);
+          setWorks(refetched ?? []);
         }
       } else {
-        setProjects(data);
+        setWorks(data);
       }
 
       setSkillExperienceRows((skillExperience ?? []) as SkillExperience[]);
@@ -156,27 +156,40 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
       setLoading(false);
     };
 
-    fetchProjects();
+    fetchWorks();
   }, []);
+
+  // Career カードの Works リンクから発火される遷移イベントを受け、
+  // 該当 Works のモーダルを開く（works ロード後に再バインド）。
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const id = (e as CustomEvent<{ workId?: string }>).detail?.workId;
+      if (!id) return;
+      const idx = works.findIndex((w) => w.id === id);
+      if (idx >= 0) setSelectedIndex(idx);
+    };
+    window.addEventListener("portfolio:open-work", handler);
+    return () => window.removeEventListener("portfolio:open-work", handler);
+  }, [works]);
 
   const handleClose = () => setSelectedIndex(null);
 
   const handlePrev = () => {
     setSelectedIndex((prev) =>
-      prev === null ? null : (prev - 1 + projects.length) % projects.length
+      prev === null ? null : (prev - 1 + works.length) % works.length
     );
   };
 
   const handleNext = () => {
     setSelectedIndex((prev) =>
-      prev === null ? null : (prev + 1) % projects.length
+      prev === null ? null : (prev + 1) % works.length
     );
   };
 
   if (loading) {
     return (
       <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
-        プロジェクトを読み込み中…
+        制作・企画を読み込み中…
       </div>
     );
   }
@@ -184,38 +197,38 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
   if (error) {
     return (
       <div className="rounded-md border border-red-500/40 bg-red-900/20 p-4 text-sm text-red-200">
-        プロジェクトの取得に失敗しました: {error}
+        制作・企画の取得に失敗しました: {error}
       </div>
     );
   }
 
-  if (projects.length === 0) {
+  if (works.length === 0) {
     return (
       <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
-        プロジェクトがありません。
+        制作・企画がありません。
       </div>
     );
   }
 
-  const selectedProject =
-    selectedIndex !== null ? projects[selectedIndex] : null;
+  const selectedWork =
+    selectedIndex !== null ? works[selectedIndex] : null;
 
   return (
     <>
       <div className="flex flex-wrap gap-[16px]">
-        {projects.map((project, i) => (
-          <ProjectCard
-            key={project.id}
-            category={project.category ?? "カテゴリなし"}
-            title={project.title}
-            tags={projectSkillsMap[project.id] ?? []}
-            image={project.thumbnail_url ?? DEFAULT_IMAGE}
+        {works.map((work, i) => (
+          <WorkCard
+            key={work.id}
+            category={work.category ?? "カテゴリなし"}
+            title={work.title}
+            tags={workSkillsMap[work.id] ?? []}
+            image={work.thumbnail_url ?? DEFAULT_IMAGE}
             onClick={() => setSelectedIndex(i)}
           />
         ))}
       </div>
 
-      {selectedProject && (
+      {selectedWork && (
         <Modal
           onClose={handleClose}
           sidebarOffset={sidebarCollapsed ? 88 : 256}
@@ -223,12 +236,12 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
           onPrev={handlePrev}
           onNext={handleNext}
           currentIndex={selectedIndex ?? 0}
-          total={projects.length}
+          total={works.length}
         >
-          <ProjectModalContent
-            project={selectedProject}
-            skills={projectSkillsMap[selectedProject.id] ?? []}
-            tools={projectToolsMap[selectedProject.id] ?? []}
+          <WorkModalContent
+            work={selectedWork}
+            skills={workSkillsMap[selectedWork.id] ?? []}
+            tools={workToolsMap[selectedWork.id] ?? []}
           />
         </Modal>
       )}

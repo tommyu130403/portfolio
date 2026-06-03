@@ -3,15 +3,16 @@
 import { useEffect, useState } from "react";
 import SideMenuBar, { type SideMenuSectionId } from "@/components/SideMenuBar";
 import Headline from "@/components/Headline";
-import HistoryItem from "@/components/HistoryItem";
-import { ProjectsList } from "@/src/components/ProjectsList";
+// HistoryItem は旧デザイン用として保持: import HistoryItem from "@/components/HistoryItem";
+import CareerGanttChart from "@/components/CareerGanttChart";
+import { WorksList } from "@/src/components/WorksList";
 import SkillsCardGrid from "@/src/components/SkillsCardGrid";
 import { ButtonAction } from "@/components/ButtonAction";
 import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
-const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "projects", "skills"];
+const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "works", "skills"];
 const DEFAULT_CAREER_LEAD =
   "こんにちは。UI/UXデザイナーの山田太郎です。 東京を拠点に、Webサイト、モバイルアプリケーション、ブランディングなど、 幅広いデジタルプロダクトのデザインを手がけています。";
 
@@ -165,38 +166,30 @@ export default function Home() {
           <section id="career" className="w-full max-w-[916px]">
             <Headline label="Career" title="経歴" />
             <div className="flex flex-col gap-6">
-              <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
-                {loading ? (
-                  <span className="inline-block h-12 w-full animate-pulse rounded bg-[#424242]" />
-                ) : (
-                  (profile?.career_lead ?? "").trim() || DEFAULT_CAREER_LEAD
-                )}
-              </p>
-              <div className="flex flex-col gap-0">
+              {/* careerLead — デザインソース (sections.jsx) 準拠スタイル */}
               {loading ? (
-                <>
-                  <span className="inline-block h-24 w-full animate-pulse rounded bg-[#424242]" />
-                  <span className="inline-block h-24 w-full animate-pulse rounded bg-[#424242]" />
-                </>
+                <span className="inline-block h-12 w-full animate-pulse rounded bg-[#424242]" />
               ) : (
-                career.map((item, idx) => (
-                  <HistoryItem
-                    key={item.id}
-                    {...item}
-                    timeline={
-                      idx === 0 ? "end" : idx === career.length - 1 ? "start" : "middle"
-                    }
-                  />
-                ))
+                <p style={{ fontFamily: "var(--font-body-jp)", fontSize: 14.5, lineHeight: 1.9, letterSpacing: ".04em", color: "var(--fg-muted)", margin: 0, maxWidth: 640 }}>
+                  {(profile?.career_lead ?? "").trim() || DEFAULT_CAREER_LEAD}
+                </p>
               )}
-              </div>
+              {loading ? (
+                <div className="flex flex-col gap-3">
+                  <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-[#424242]" />
+                  <span className="inline-block h-16 w-2/3 animate-pulse rounded-[10px] bg-[#424242]" style={{ marginLeft: "20%" }} />
+                  <span className="inline-block h-16 w-1/2 animate-pulse rounded-[10px] bg-[#424242]" style={{ marginLeft: "40%" }} />
+                </div>
+              ) : (
+                <CareerGanttChart career={career} />
+              )}
             </div>
           </section>
 
-          {/* Projects */}
-          <section id="projects" className="w-full max-w-[916px]">
-            <Headline label="Projects" title="プロジェクト" />
-            <ProjectsList sidebarCollapsed={sidebarCollapsed} />
+          {/* Works */}
+          <section id="works" className="w-full max-w-[916px]">
+            <Headline label="Works" title="制作・企画" />
+            <WorksList sidebarCollapsed={sidebarCollapsed} />
           </section>
 
           {/* Skills */}

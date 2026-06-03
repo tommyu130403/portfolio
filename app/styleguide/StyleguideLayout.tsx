@@ -10,7 +10,7 @@ import ButtonAction from "@/components/ButtonAction";
 import { ButtonFunction } from "@/components/ButtonFunction";
 import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
-import ProjectCard from "@/components/ProjectCard";
+import WorkCard from "@/components/WorkCard";
 import SideMenuBar from "@/components/SideMenuBar";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
@@ -510,7 +510,7 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / markdown-h1 / markdown-h2">
-          <div className="w-full"><Headline label="Projects" title="プロジェクト" /></div>
+          <div className="w-full"><Headline label="Works" title="制作・企画" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="見出し（# テキスト）" variant="markdown-h1" /></div>
           <div className="w-full"><Headline title="見出し（## テキスト）" variant="markdown-h2" /></div>
@@ -555,8 +555,8 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="ProjectCard" description="プロジェクト一覧カード。クリックでモーダルを開く">
-          <ProjectCard
+        <ComponentPreview title="WorkCard" description="制作・企画（Works）一覧カード。クリックでモーダルを開く">
+          <WorkCard
             category="プラットフォーム開発"
             title="キャリアチケットスカウトサービス"
             tags={["UI Design", "UX Research", "Figma"]}
@@ -569,7 +569,7 @@ function ComponentsSection() {
           description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成（アコーディオン形式は廃止）"
         >
           <div className="overflow-hidden rounded-[12px] border border-[#424242]">
-            <SideMenuBar activeSection="projects" collapsed={false} />
+            <SideMenuBar activeSection="works" collapsed={false} />
           </div>
         </ComponentPreview>
 

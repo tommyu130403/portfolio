@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import Tag from "./Tag";
 
-type ProjectCardProps = {
+type WorkCardProps = {
   category: string;
   title: string;
   tags: string[];
@@ -9,7 +9,7 @@ type ProjectCardProps = {
   onClick?: () => void;
 };
 
-const ProjectCard: FC<ProjectCardProps> = ({ category, title, tags, image, onClick }) => {
+const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) => {
   return (
     <div
       onClick={onClick}
@@ -47,4 +47,4 @@ const ProjectCard: FC<ProjectCardProps> = ({ category, title, tags, image, onCli
   );
 };
 
-export default ProjectCard;
+export default WorkCard;

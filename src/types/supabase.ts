@@ -148,6 +148,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          career_item_id: string | null
           category: string | null
           created_at: string | null
           id: string
@@ -159,6 +160,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          career_item_id?: string | null
           category?: string | null
           created_at?: string | null
           id?: string
@@ -170,6 +172,7 @@ export type Database = {
           title: string
         }
         Update: {
+          career_item_id?: string | null
           category?: string | null
           created_at?: string | null
           id?: string
@@ -180,7 +183,15 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_career_item_id_fkey"
+            columns: ["career_item_id"]
+            isOneToOne: false
+            referencedRelation: "career_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       skill_cards: {
         Row: {

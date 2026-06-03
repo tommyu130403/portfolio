@@ -4,9 +4,9 @@ import type { FC } from "react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables, TablesInsert } from "@/src/types/supabase";
-import ProjectCard from "@/components/ProjectCard";
+import WorkCard from "@/components/WorkCard";
 import Modal from "@/components/Modal";
-import ProjectModalContent from "@/components/ProjectModalContent";
+import WorkModalContent from "@/components/WorkModalContent";
 
 type Project          = Tables<"projects">;
 type SkillExperience  = Tables<"skill_experience">;
@@ -63,12 +63,12 @@ const SEED_PROJECTS: TablesInsert<"projects">[] = [
   },
 ];
 
-export type ProjectsListProps = {
+export type WorksListProps = {
   /** サイドバー折りたたみ時は true。Modal のオフセット計算に使用 */
   sidebarCollapsed?: boolean;
 };
 
-export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }) => {
+export const WorksList: FC<WorksListProps> = ({ sidebarCollapsed = false }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +159,19 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
     fetchProjects();
   }, []);
 
+  // Career カードの Works リンクから発火される遷移イベントを受け、
+  // 該当プロジェクトのモーダルを開く（projects ロード後に再バインド）。
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const id = (e as CustomEvent<{ projectId?: string }>).detail?.projectId;
+      if (!id) return;
+      const idx = projects.findIndex((p) => p.id === id);
+      if (idx >= 0) setSelectedIndex(idx);
+    };
+    window.addEventListener("portfolio:open-work", handler);
+    return () => window.removeEventListener("portfolio:open-work", handler);
+  }, [projects]);
+
   const handleClose = () => setSelectedIndex(null);
 
   const handlePrev = () => {
@@ -176,7 +189,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
   if (loading) {
     return (
       <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
-        プロジェクトを読み込み中…
+        制作・企画を読み込み中…
       </div>
     );
   }
@@ -184,7 +197,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
   if (error) {
     return (
       <div className="rounded-md border border-red-500/40 bg-red-900/20 p-4 text-sm text-red-200">
-        プロジェクトの取得に失敗しました: {error}
+        制作・企画の取得に失敗しました: {error}
       </div>
     );
   }
@@ -192,7 +205,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
   if (projects.length === 0) {
     return (
       <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
-        プロジェクトがありません。
+        制作・企画がありません。
       </div>
     );
   }
@@ -204,7 +217,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
     <>
       <div className="flex flex-wrap gap-[16px]">
         {projects.map((project, i) => (
-          <ProjectCard
+          <WorkCard
             key={project.id}
             category={project.category ?? "カテゴリなし"}
             title={project.title}
@@ -225,7 +238,7 @@ export const ProjectsList: FC<ProjectsListProps> = ({ sidebarCollapsed = false }
           currentIndex={selectedIndex ?? 0}
           total={projects.length}
         >
-          <ProjectModalContent
+          <WorkModalContent
             project={selectedProject}
             skills={projectSkillsMap[selectedProject.id] ?? []}
             tools={projectToolsMap[selectedProject.id] ?? []}

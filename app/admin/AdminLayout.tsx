@@ -48,7 +48,7 @@ type ProjectLocal = Tables<"projects"> & { skills: string[]; tools: string[] };
 const NAV_SECTIONS = [
   { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
   { id: "career",           label: "Career",           labelJa: "経歴" },
-  { id: "projects",         label: "Projects",         labelJa: "プロジェクト" },
+  { id: "projects",         label: "Works",            labelJa: "制作・企画" },
   { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
 ] as const;
 
@@ -1231,7 +1231,7 @@ function SectionsEditor({
         />
       )}
 
-      {/* プレビューエリア（ProjectModalContent のスタイルに合わせる） */}
+      {/* プレビューエリア（WorkModalContent のスタイルに合わせる） */}
       {tab === "preview" && (
         <div className="min-h-[160px] bg-[#1a1a1a] px-6 py-6">
           {preview.length === 0 ? (
@@ -1270,6 +1270,10 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
   const [openSkillSelectorProjectId, setOpenSkillSelectorProjectId] = useState<string | null>(null);
   const [openToolSelectorProjectId, setOpenToolSelectorProjectId] = useState<string | null>(null);
   const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
+  // 紐付け用の経歴一覧（career_item_id の選択肢）
+  const [careerOptions, setCareerOptions] = useState<
+    Pick<CareerItem, "id" | "role" | "company" | "period">[]
+  >([]);
   // 文章チェック（プロジェクトごと）
   const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
   const [proofResultsMap, setProofResultsMap] = useState<
@@ -1379,6 +1383,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       { data: skillExperience },
       skillLabelsMap,
       toolNamesMap,
+      { data: careerRows },
     ] = await Promise.all([
       supabase
         .from("projects")
@@ -1395,6 +1400,11 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       // project_skills / project_tools の一括取得
       listAllProjectSkillLabels(),
       listAllProjectToolNames(),
+      // 紐付け用の経歴一覧
+      supabase
+        .from("career_items")
+        .select("id, role, company, period")
+        .order("sort_order", { ascending: true }),
     ]);
 
     if (projectRows) {
@@ -1414,6 +1424,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
     setSkillVocabOptions((skillVocabRows ?? []) as SkillVocab[]);
     setToolVocabOptions((toolVocabRows ?? []) as ToolVocab[]);
     setSkillExperienceRows((skillExperience ?? []) as SkillExperience[]);
+    setCareerOptions(careerRows ?? []);
     setFetching(false);
   }, []);
 
@@ -1484,6 +1495,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
       thumbnail_url: null,
       role: null,
       period: null,
+      career_item_id: null,
       skills: [],
       tools: [],
       sections: [],
@@ -1499,7 +1511,7 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
 
   return (
     <section id="projects" className="scroll-mt-8">
-      <SectionTitle label="Projects" title="プロジェクト" />
+      <SectionTitle label="Works" title="制作・企画" />
       {dirty && (
         <p className="mb-3 text-[11px] text-[#f4c248]">
           未保存の変更があります
@@ -1558,6 +1570,30 @@ function ProjectsSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) =>
                         onChange={(v) => updateProject(project.id, "role", v || null)}
                         placeholder="UI/UX Designer"
                       />
+                    </div>
+                    <div className="col-span-2">
+                      <FieldLabel>担当経歴（Career）</FieldLabel>
+                      <select
+                        value={project.career_item_id ?? ""}
+                        onChange={(e) =>
+                          updateProject(
+                            project.id,
+                            "career_item_id",
+                            e.target.value || null,
+                          )
+                        }
+                        className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-[#48f4be]"
+                      >
+                        <option value="">（紐付けなし）</option>
+                        {careerOptions.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.role}｜{c.company}（{c.period}）
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-[11px] text-[#757575]">
+                        この制作・企画を担当した経歴。Career カードの Works リンクに表示されます。
+                      </p>
                     </div>
                     <div className="col-span-2">
                       <FieldLabel>期間</FieldLabel>

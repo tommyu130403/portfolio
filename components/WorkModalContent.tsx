@@ -131,13 +131,13 @@ const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
 
-type ProjectModalContentProps = {
+type WorkModalContentProps = {
   project: Project;
   skills?: string[];
   tools?: string[];
 };
 
-const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [], tools = [] }) => {
+const WorkModalContent: FC<WorkModalContentProps> = ({ project, skills = [], tools = [] }) => {
   const sections = (project.sections ?? []) as Section[];
   const infoRows = [
     {
@@ -243,4 +243,4 @@ const ProjectModalContent: FC<ProjectModalContentProps> = ({ project, skills = [
   );
 };
 
-export default ProjectModalContent;
+export default WorkModalContent;

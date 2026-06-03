@@ -98,6 +98,7 @@ export async function saveProject(
           period: payload.period ?? null,
           sections: payload.sections ?? null,
           sort_order: payload.sort_order,
+          career_item_id: payload.career_item_id ?? null,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
         },
         { onConflict: "id" }

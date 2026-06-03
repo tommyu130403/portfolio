@@ -98,7 +98,11 @@ function parsePeriod(period: string): {
 /* 表示用に Figma 表記へ整形： "2023年12月" / "2022.04" → "2023.12" / "2022.4"（ゼロ埋めなし） */
 function formatPeriod(period: string): string {
   return period
+    // YYYY年M月 / YYYY.MM → YYYY.M（ゼロ埋め除去）
     .replace(/(\d{4})\s*[年.]\s*(\d{1,2})\s*月?/g, (_, y, m) => `${y}.${parseInt(m, 10)}`)
+    // 月欠落の YYYY年 → YYYY（和暦表記の取り残しを防ぐ）
+    .replace(/(\d{4})\s*年/g, "$1")
+    // 区切りを正規化
     .replace(/\s*[-–−~〜]\s*/g, " - ");
 }
 
@@ -267,7 +271,7 @@ function CareerCard({
         style={{
           width: 0,
           minWidth: "100%",
-          maxHeight: isOpen ? 800 : 0,
+          maxHeight: isOpen ? 2000 : 0,
           opacity: isOpen ? 1 : 0,
           overflow: "hidden",
           transition: "max-height .3s ease, opacity .2s ease",
@@ -321,7 +325,8 @@ function CareerRowDesktop({
   const s = Math.max(0, Math.min(CHART_TOTAL, item.startVal));
   const e = Math.max(0, Math.min(CHART_TOTAL, item.endVal));
   const left = (s / CHART_TOTAL) * 100;
-  const width = ((e - s) / CHART_TOTAL) * 100;
+  // 不正データ（開始 > 終了）でも width が負値（CSS 無効）にならないよう 0 でガード
+  const width = Math.max(0, ((e - s) / CHART_TOTAL) * 100);
 
   // type: current = 右端まで（終点ドットなし）／ prev = 2016 以前開始（始点ドットなし）
   const hasStartDot = item.startYear >= CHART_START;

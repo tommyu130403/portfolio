@@ -293,29 +293,47 @@ const Hero: FC<{
 
   return (
     <div
-      className="relative flex min-h-[360px] flex-col justify-end overflow-hidden rounded-t-[14px] px-10 pb-10 pt-10"
+      className="relative flex min-h-[380px] flex-col overflow-hidden rounded-t-[14px] px-10 py-9"
       style={{ backgroundColor: bg }}
     >
-      {/* 右：デバイスモックアップ（絶対配置・下端揃え。テキスト幅を圧迫しない） */}
+      {/* 右：デバイスモックアップのコラージュ（傾け・重ね・右へはみ出す） */}
       {shots.length > 0 && (
-        <div className="pointer-events-none absolute bottom-0 right-8 flex items-end gap-3">
-          {shots.slice(0, 3).map((src, i) => (
-            <div
-              key={i}
-              className="w-[132px] overflow-hidden rounded-[22px] border-[3px] border-[#0a0a0a]/80 bg-[#0a0a0a] shadow-lg"
-              style={{ aspectRatio: "9 / 19.5", transform: `translateY(${i === 1 ? -12 : 8}px)` }}
-            >
-              <img src={src} alt="" className="h-full w-full object-cover" />
-            </div>
-          ))}
+        <div className="pointer-events-none absolute right-[-72px] top-1/2 flex -translate-y-1/2 items-center">
+          {shots.slice(0, 5).map((src, i) => {
+            const rot = [-8, 5, -5, 7, -4][i] ?? 0;
+            const dy = [12, -14, 6, -10, 14][i] ?? 0;
+            return (
+              <div
+                key={i}
+                className="w-[112px] shrink-0 overflow-hidden rounded-[20px] border-[3px] border-[#0a0a0a]/75 bg-[#0a0a0a] shadow-xl"
+                style={{
+                  aspectRatio: "9 / 19.5",
+                  marginLeft: i === 0 ? 0 : -38,
+                  transform: `rotate(${rot}deg) translateY(${dy}px)`,
+                  zIndex: i,
+                }}
+              >
+                <img src={src} alt="" className="h-full w-full object-cover" />
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* 左：テキスト */}
-      <div className="relative z-10 flex max-w-[56%] flex-col gap-4">
-        {work.category && (
-          <p className="text-[15px] font-bold tracking-[0.45px] text-[#0a0a0a]/70">{work.category}</p>
-        )}
+      {/* 上：ブランド名 + 制作カテゴリ */}
+      {(work.hero_brand || work.category) && (
+        <div className="relative z-10 flex items-baseline gap-3">
+          {work.hero_brand && (
+            <p className="text-[20px] font-extrabold leading-none tracking-[0.6px] text-[#0a0a0a]">{work.hero_brand}</p>
+          )}
+          {work.category && (
+            <p className="text-[12px] font-bold tracking-[0.6px] text-[#0a0a0a]/55">{work.category}</p>
+          )}
+        </div>
+      )}
+
+      {/* 下：タイトル + Skills/Tools（デバイスコラージュと重ならない幅に制限） */}
+      <div className="relative z-10 mt-auto flex max-w-[50%] flex-col gap-4 pt-10">
         <p className="text-[32px] font-bold leading-[1.3] tracking-[0.96px] text-[#0a0a0a]">{work.title}</p>
         {(skills.length > 0 || tools.length > 0) && (
           <div className="flex flex-col gap-2">

@@ -1622,6 +1622,7 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
         { icon: "Others/thinking-problem", heading: "Problem", body: "" },
         { icon: "Travels/flag", heading: "Goal", body: "" },
       ],
+      hero_brand: null,
       hero_screenshots: [],
       hero_bg_color: null,
       career_item_id: null,
@@ -1864,6 +1865,14 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                       />
                     </div>
 
+                    <div>
+                      <FieldLabel>ブランド名（Hero 左上のワードマーク）</FieldLabel>
+                      <Input
+                        value={project.hero_brand ?? ""}
+                        onChange={(v) => updateProject(project.id, "hero_brand", v || null)}
+                        placeholder="Bistecca"
+                      />
+                    </div>
                     <div>
                       <FieldLabel>Hero 背景色（空欄でデフォルト緑）</FieldLabel>
                       <div className="flex items-center gap-2">

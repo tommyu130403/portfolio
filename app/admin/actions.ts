@@ -97,6 +97,7 @@ export async function saveWork(
           period: payload.period ?? null,
           overview: payload.overview ?? null,
           overview_cards: payload.overview_cards ?? [],
+          hero_brand: payload.hero_brand ?? null,
           hero_screenshots: payload.hero_screenshots ?? [],
           hero_bg_color: payload.hero_bg_color ?? null,
           sections: payload.sections ?? null,

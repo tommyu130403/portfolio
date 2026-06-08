@@ -313,6 +313,7 @@ export type Database = {
           category: string | null
           created_at: string | null
           hero_bg_color: string | null
+          hero_brand: string | null
           hero_screenshots: Json | null
           id: string
           overview: string | null
@@ -329,6 +330,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           hero_bg_color?: string | null
+          hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
           overview?: string | null
@@ -345,6 +347,7 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           hero_bg_color?: string | null
+          hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
           overview?: string | null

@@ -779,15 +779,14 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     if (error) { setGlobalError(error.message); return; }
     setSavedId(item.id);
     setTimeout(() => setSavedId(null), 2000);
-    setOriginalItems((prev) => {
-      const nextOriginal = (() => {
-        const existing = prev.find((o) => o.id === item.id);
-        if (!existing) return [...prev, item];
-        return prev.map((o) => (o.id === item.id ? item : o));
-      })();
-      recomputeDirty(items, nextOriginal);
-      return nextOriginal;
-    });
+    // ※ recomputeDirty は onDirtyChange（親 setState）を含むため、state 更新関数の中では
+    //   呼ばない（レンダー中の親 setState 警告を避ける）。次の値を求めてから順に呼ぶ。
+    const existing = originalItems.find((o) => o.id === item.id);
+    const nextOriginal = existing
+      ? originalItems.map((o) => (o.id === item.id ? item : o))
+      : [...originalItems, item];
+    setOriginalItems(nextOriginal);
+    recomputeDirty(items, nextOriginal);
   };
 
   const handleDelete = async (id: string) => {
@@ -811,16 +810,13 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     };
     const { data } = await supabase.from("career_items").insert(newItem).select().single();
     if (data) {
-      setItems((prev) => {
-        const next = [...prev, data];
-        // 追加直後は DB の値と一致しているので dirty にはしない
-        setOriginalItems((base) => {
-          const nextOriginal = [...base, data];
-          recomputeDirty(next, nextOriginal);
-          return nextOriginal;
-        });
-        return next;
-      });
+      // 追加直後は DB の値と一致しているので dirty にはしない。
+      // setState 更新関数の中で親 setState を呼ばないよう、次の値を先に確定させてから順に呼ぶ。
+      const next = [...items, data];
+      const nextOriginal = [...originalItems, data];
+      setItems(next);
+      setOriginalItems(nextOriginal);
+      recomputeDirty(next, nextOriginal);
     }
   };
 

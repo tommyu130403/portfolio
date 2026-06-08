@@ -222,7 +222,7 @@ function TypographySection() {
       <SubHeading>Type Scale</SubHeading>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {TYPOGRAPHY_SCALE.map(({ size: fs, weight, tracking, sample, usage }) => (
-          <div key={fs} className="flex flex-col gap-2 py-5">
+          <div key={usage} className="flex flex-col gap-2 py-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-baseline gap-3">
                 <p className="font-mono text-[16px] text-white">{fs}px</p>

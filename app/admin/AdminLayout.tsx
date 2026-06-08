@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import MarkdownEditor from "@/components/MarkdownEditor";
+import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
+import { buildImageSrc } from "@/lib/image-layout";
 import { supabase } from "@/src/lib/supabase";
 import {
   saveWork,
@@ -324,6 +325,15 @@ function ImagePickerField({
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-[#9e9e9e]">{children}</p>;
+}
+
+/** フォーム内のグループ見出し（Hero / Overview / 本文 などの区切り） */
+function FormGroupHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="col-span-2 mt-3 border-t border-[#424242] pt-4">
+      <p className="text-[12px] font-semibold tracking-[0.5px] text-[#48f4be]">{children}</p>
+    </div>
+  );
 }
 
 function Input({
@@ -1130,128 +1140,70 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   );
 }
 
-// ─── SectionsEditor（ブロック型）───────────────────────
-// セクション = 見出し + ブロック（テキスト/画像）の並び。公開側 WorkModalContent の
-// blocks モデルにそのまま対応する。
-type AdminTextBlock = { type: "text"; md: string };
-type AdminImageBlock = {
-  type: "image";
-  url: string;
-  align: "full" | "left" | "right";
-  width: string;
-  scale: number;
-  caption: string;
-};
-type AdminBlock = AdminTextBlock | AdminImageBlock;
-type AdminSection = { heading: string; blocks: AdminBlock[] };
+// ─── SectionsEditor（単一リッチMarkdown）───────────────────────
+// 本文は markdown。`# 見出し` でセクション分割し、works.sections は { heading, body } 配列で保存。
+// 画像は markdown の `![caption](url#align=..&w=..&scale=..)` で表現し、配置/幅/倍率は
+// エディタ内の画像オーバーレイ操作（Image NodeView）で調整する。
+type SectionItem = { heading: string; body: string };
 
-/** works.sections(jsonb) を新旧両形式から AdminSection[] へ正規化 */
-function normalizeAdminSections(raw: unknown): AdminSection[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item): AdminSection => {
-    const obj = (item ?? {}) as Record<string, unknown>;
-    const heading = typeof obj.heading === "string" ? obj.heading : "";
-    let blocks: AdminBlock[] = [];
-    if (Array.isArray(obj.blocks)) {
-      blocks = (obj.blocks as unknown[]).map((b): AdminBlock => {
-        const blk = (b ?? {}) as Record<string, unknown>;
-        if (blk.type === "image" && typeof blk.url === "string") {
-          const align: AdminImageBlock["align"] =
-            blk.align === "left" || blk.align === "right" ? blk.align : "full";
-          return {
-            type: "image",
-            url: blk.url,
-            align,
-            width: blk.width == null ? "" : String(blk.width),
-            scale: typeof blk.scale === "number" ? blk.scale : 1,
-            caption: typeof blk.caption === "string" ? blk.caption : "",
-          };
-        }
-        const md = typeof blk.md === "string" ? blk.md : typeof blk.body === "string" ? blk.body : "";
-        return { type: "text", md };
-      });
-    } else if (typeof obj.body === "string") {
-      blocks = [{ type: "text", md: obj.body }];
-    }
-    if (blocks.length === 0) blocks = [{ type: "text", md: "" }];
-    return { heading, blocks };
-  });
-}
-
-/** AdminSection[] を works.sections(jsonb) 形へ直列化（width は数値文字列なら number 化） */
-function serializeAdminSections(sections: AdminSection[]): Json {
-  return sections.map((s) => ({
-    heading: s.heading,
-    blocks: s.blocks.map((b) => {
-      if (b.type === "image") {
-        const w = b.width.trim();
-        const widthVal: number | string | undefined =
-          w === "" ? undefined : /^\d+(\.\d+)?$/.test(w) ? Number(w) : w;
-        return {
-          type: "image",
-          url: b.url,
-          align: b.align,
-          ...(widthVal !== undefined ? { width: widthVal } : {}),
-          scale: b.scale,
-          ...(b.caption ? { caption: b.caption } : {}),
-        };
+/** works.sections を markdown へ（旧ブロック形式 {blocks} も text=md / image=![](url) に変換） */
+function sectionsToMarkdown(sections: unknown[]): string {
+  return (Array.isArray(sections) ? sections : [])
+    .map((raw) => {
+      const s = (raw ?? {}) as Record<string, unknown>;
+      const heading = typeof s.heading === "string" ? s.heading : "";
+      let body = "";
+      if (Array.isArray(s.blocks)) {
+        body = (s.blocks as unknown[])
+          .map((b) => {
+            const blk = (b ?? {}) as Record<string, unknown>;
+            if (blk.type === "image" && typeof blk.url === "string") {
+              // 旧ブロックの配置/幅/倍率は URL フラグメントへ畳み込んで保持
+              const src = buildImageSrc({
+                base: blk.url,
+                align: blk.align === "left" || blk.align === "right" ? blk.align : "full",
+                width: blk.width == null ? "" : String(blk.width),
+                scale: typeof blk.scale === "number" ? blk.scale : 1,
+              });
+              return `![${typeof blk.caption === "string" ? blk.caption : ""}](${src})`;
+            }
+            return typeof blk.md === "string" ? blk.md : "";
+          })
+          .filter(Boolean)
+          .join("\n\n");
+      } else if (typeof s.body === "string") {
+        body = s.body;
       }
-      return { type: "text", md: b.md };
-    }),
-  })) as unknown as Json;
+      return `# ${heading}\n\n${body}`;
+    })
+    .join("\n\n");
 }
 
-function ImageBlockEditor({
-  block,
-  onChange,
-}: {
-  block: AdminImageBlock;
-  onChange: (patch: Partial<AdminImageBlock>) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-3 md:flex-row">
-      <div className="md:w-44">
-        <ImagePickerField
-          value={block.url}
-          onChange={(url) => onChange({ url })}
-          folder="projects/sections"
-          previewClassName="mt-2 w-full rounded-[6px] object-cover"
-        />
-      </div>
-      <div className="grid flex-1 grid-cols-2 gap-2">
-        <div>
-          <FieldLabel>配置</FieldLabel>
-          <select
-            value={block.align}
-            onChange={(e) => onChange({ align: e.target.value as AdminImageBlock["align"] })}
-            className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none focus:border-[#48f4be]"
-          >
-            <option value="full">全幅</option>
-            <option value="left">左寄せ（回り込み）</option>
-            <option value="right">右寄せ（回り込み）</option>
-          </select>
-        </div>
-        <div>
-          <FieldLabel>幅（px または %）</FieldLabel>
-          <Input value={block.width} onChange={(v) => onChange({ width: v })} placeholder="260 / 60%" />
-        </div>
-        <div>
-          <FieldLabel>表示倍率（scale）</FieldLabel>
-          <Input value={String(block.scale)} onChange={(v) => onChange({ scale: Number(v) || 1 })} placeholder="1" />
-        </div>
-        <div>
-          <FieldLabel>キャプション（10px）</FieldLabel>
-          <Input value={block.caption} onChange={(v) => onChange({ caption: v })} placeholder="図1: …" />
-        </div>
-      </div>
-    </div>
-  );
+/** markdown を `# 見出し` 区切りで { heading, body } 配列へ */
+function markdownToSections(md: string): SectionItem[] {
+  const result: SectionItem[] = [];
+  let heading = "";
+  const bodyLines: string[] = [];
+  const flush = () => {
+    if (heading) result.push({ heading, body: bodyLines.join("\n").trim() });
+  };
+  for (const line of md.split("\n")) {
+    if (line.startsWith("# ")) {
+      flush();
+      heading = line.slice(2).trim();
+      bodyLines.length = 0;
+    } else {
+      bodyLines.push(line);
+    }
+  }
+  flush();
+  return result;
 }
 
 /**
- * ブロック型セクションエディタ。各セクション = 見出し + ブロック（テキスト/画像）の並び。
- * 画像ブロックは配置(full/left/right)・幅・倍率・キャプションを指定でき、
- * 公開側 `WorkModalContent` の blocks モデルにそのまま対応する。
+ * 本文（柔軟セクション）を単一のリッチMarkdownエディタで編集する。
+ * `# 見出し` でセクション分割し `{ heading, body }` 配列として保存。
+ * 画像は挿入後、エディタ内のオーバーレイ操作で配置/幅/倍率/キャプションを調整できる。
  */
 function SectionsEditor({
   value,
@@ -1260,94 +1212,35 @@ function SectionsEditor({
   value: Json | null;
   onChange: (v: Json) => void;
 }) {
-  const [sections, setSections] = useState<AdminSection[]>(() => normalizeAdminSections(value ?? []));
+  const [markdown, setMarkdown] = useState(() => sectionsToMarkdown((value ?? []) as unknown[]));
+  const editorRef = useRef<MarkdownEditorHandle>(null);
+  const [imgModalOpen, setImgModalOpen] = useState(false);
 
-  const commit = (next: AdminSection[]) => {
-    setSections(next);
-    onChange(serializeAdminSections(next));
+  const handleChange = (md: string) => {
+    setMarkdown(md);
+    onChange(markdownToSections(md) as unknown as Json);
   };
-  const patchSection = (si: number, patch: Partial<AdminSection>) =>
-    commit(sections.map((s, i) => (i === si ? { ...s, ...patch } : s)));
-  const patchBlock = (si: number, bi: number, patch: Partial<AdminBlock>) =>
-    commit(
-      sections.map((s, i) =>
-        i === si
-          ? { ...s, blocks: s.blocks.map((b, j) => (j === bi ? ({ ...b, ...patch } as AdminBlock) : b)) }
-          : s,
-      ),
-    );
-  const addBlock = (si: number, block: AdminBlock) =>
-    patchSection(si, { blocks: [...sections[si].blocks, block] });
-  const removeBlock = (si: number, bi: number) =>
-    patchSection(si, { blocks: sections[si].blocks.filter((_, j) => j !== bi) });
-  const moveBlock = (si: number, bi: number, dir: -1 | 1) => {
-    const blocks = [...sections[si].blocks];
-    const ni = bi + dir;
-    if (ni < 0 || ni >= blocks.length) return;
-    [blocks[bi], blocks[ni]] = [blocks[ni], blocks[bi]];
-    patchSection(si, { blocks });
-  };
-  const addSection = () =>
-    commit([...sections, { heading: "新しいセクション", blocks: [{ type: "text", md: "" }] }]);
-  const removeSection = (si: number) => commit(sections.filter((_, i) => i !== si));
-  const moveSection = (si: number, dir: -1 | 1) => {
-    const next = [...sections];
-    const ni = si + dir;
-    if (ni < 0 || ni >= next.length) return;
-    [next[si], next[ni]] = [next[ni], next[si]];
-    commit(next);
-  };
-
-  const iconBtn = "rounded px-2 py-1 text-[12px] text-[#9e9e9e] hover:text-white";
 
   return (
-    <div className="flex flex-col gap-4">
-      {sections.map((sec, si) => (
-        <div key={si} className="rounded-[8px] border border-[#424242] bg-[#141414] p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="text-[11px] text-[#616161]">セクション {si + 1}</span>
-            <div className="ml-auto flex items-center gap-1">
-              <button type="button" onClick={() => moveSection(si, -1)} className={iconBtn}>↑</button>
-              <button type="button" onClick={() => moveSection(si, 1)} className={iconBtn}>↓</button>
-              <button type="button" onClick={() => removeSection(si)} className="rounded px-2 py-1 text-[11px] text-[#616161] hover:text-[#f4487e]">セクション削除</button>
-            </div>
-          </div>
-          <FieldLabel>セクション見出し（# / 34px）</FieldLabel>
-          <Input value={sec.heading} onChange={(v) => patchSection(si, { heading: v })} placeholder="課題と背景" />
-
-          <div className="mt-3 flex flex-col gap-3">
-            {sec.blocks.map((block, bi) => (
-              <div key={bi} className="rounded-[6px] border border-[#2a2a2a] bg-[#1a1a1a] p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="rounded bg-[#0a0a0a] px-2 py-0.5 text-[10px] text-[#9e9e9e]">
-                    {block.type === "image" ? "画像" : "テキスト"}
-                  </span>
-                  <div className="ml-auto flex items-center gap-1">
-                    <button type="button" onClick={() => moveBlock(si, bi, -1)} className={iconBtn}>↑</button>
-                    <button type="button" onClick={() => moveBlock(si, bi, 1)} className={iconBtn}>↓</button>
-                    <button type="button" onClick={() => removeBlock(si, bi)} className="rounded px-1.5 py-0.5 text-[11px] text-[#616161] hover:text-[#f4487e]">削除</button>
-                  </div>
-                </div>
-                {block.type === "text" ? (
-                  <MarkdownEditor
-                    value={block.md}
-                    onChange={(md) => patchBlock(si, bi, { md })}
-                    placeholder={"本文（## 見出し01 / ### 見出し02 / #### 見出し03 / 小本文 / 引用）"}
-                  />
-                ) : (
-                  <ImageBlockEditor block={block} onChange={(patch) => patchBlock(si, bi, patch)} />
-                )}
-              </div>
-            ))}
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => addBlock(si, { type: "text", md: "" })} className="rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white">＋ テキスト</button>
-              <button type="button" onClick={() => addBlock(si, { type: "image", url: "", align: "full", width: "", scale: 1, caption: "" })} className="rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white">＋ 画像</button>
-            </div>
-          </div>
-        </div>
-      ))}
-      <button type="button" onClick={addSection} className="rounded-[8px] border border-dashed border-[#424242] py-3 text-[13px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white">＋ セクションを追加</button>
-    </div>
+    <>
+      <ImagePickerModal
+        open={imgModalOpen}
+        onClose={() => setImgModalOpen(false)}
+        onSelect={(url, alt) => {
+          editorRef.current?.insertImage(url, alt);
+          setImgModalOpen(false);
+        }}
+        folder="projects/sections"
+        showAlt
+      />
+      <MarkdownEditor
+        ref={editorRef}
+        value={markdown}
+        onChange={handleChange}
+        onRequestImage={() => setImgModalOpen(true)}
+        placeholder={`# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し`}
+      />
+    </>
   );
 }
 
@@ -1833,7 +1726,7 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                         );
                       })()}
                     </div>
-                    {/* ── Hero 設定 ── */}
+                    <FormGroupHeader>Hero エリア設定</FormGroupHeader>
                     <div>
                       <FieldLabel>ブランド名（Hero 左上のワードマーク）</FieldLabel>
                       <Input
@@ -1867,7 +1760,7 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                       />
                     </div>
 
-                    {/* ── Overview 設定 ── */}
+                    <FormGroupHeader>Overview 設定</FormGroupHeader>
                     <div className="col-span-2">
                       <FieldLabel>Overview（リード本文）</FieldLabel>
                       <Textarea
@@ -1887,6 +1780,7 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                       />
                     </div>
 
+                    <FormGroupHeader>公開・タグ設定（一覧サムネ / スキル / ツール）</FormGroupHeader>
                     <div className="col-span-2">
                       <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
                       <ImagePickerField
@@ -2145,8 +2039,9 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                         )}
                       </div>
                     </div>
+                    <FormGroupHeader>本文（リッチMarkdown）</FormGroupHeader>
                     <div className="col-span-2">
-                      <FieldLabel>セクション</FieldLabel>
+                      <FieldLabel>本文セクション（# で見出し・34px / 画像は挿入後にレイアウト調整）</FieldLabel>
                       <SectionsEditor
                         key={project.id}
                         value={project.sections}

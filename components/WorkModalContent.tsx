@@ -3,6 +3,7 @@ import React from "react";
 import Headline from "./Headline";
 import Icon from "./Icon";
 import Tag from "./Tag";
+import { parseImageSrc, widthToCss } from "@/lib/image-layout";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
@@ -178,7 +179,25 @@ const MarkdownBody: FC<{ md: string }> = ({ md }) => {
   };
   for (const rawLine of md.split("\n")) {
     const line = rawLine.trimEnd();
-    if (line.startsWith("##### ")) {
+    const imgOnly = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imgOnly) {
+      // 画像単独行 → 回り込みブロック（URL フラグメントで配置/幅/倍率を指定）
+      flush();
+      const layout = parseImageSrc(imgOnly[2]);
+      out.push(
+        <ImageFigure
+          key={`img-${out.length}`}
+          block={{
+            type: "image",
+            url: layout.base,
+            align: layout.align,
+            width: layout.width || undefined,
+            scale: layout.scale,
+            caption: imgOnly[1] || undefined,
+          }}
+        />
+      );
+    } else if (line.startsWith("##### ")) {
       // Body02（13px 白）。markdown では heading level 5 として表現（admin は「小本文」UIで指定）
       flush();
       out.push(
@@ -224,7 +243,8 @@ const MarkdownBody: FC<{ md: string }> = ({ md }) => {
     }
   }
   flush();
-  return <>{out}</>;
+  // flow-root で float 画像を内包し、後続テキストを回り込ませる
+  return <div style={{ display: "flow-root" }}>{out}</div>;
 };
 
 /* ------------------------------------------------------------------ *
@@ -233,8 +253,13 @@ const MarkdownBody: FC<{ md: string }> = ({ md }) => {
 
 const ImageFigure: FC<{ block: ImageBlock }> = ({ block }) => {
   const align = block.align ?? "full";
-  const width =
-    typeof block.width === "number" ? `${block.width}px` : block.width ?? (align === "full" ? "100%" : "50%");
+  const cssW =
+    block.width == null || block.width === ""
+      ? undefined
+      : typeof block.width === "number"
+        ? `${block.width}px`
+        : widthToCss(block.width);
+  const width = align === "full" ? "100%" : cssW ?? "50%";
   const scale = block.scale && block.scale !== 1 ? block.scale : undefined;
 
   const floatClass =

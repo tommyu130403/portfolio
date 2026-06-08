@@ -4,14 +4,28 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  type CSSProperties,
   type ReactNode,
 } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import {
+  useEditor,
+  EditorContent,
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+  type Editor,
+  type NodeViewProps,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "tiptap-markdown";
 import Icon from "./Icon";
+import {
+  parseImageSrc,
+  buildImageSrc,
+  widthToCss,
+  type ImageAlign,
+} from "@/lib/image-layout";
 
 /**
  * プロジェクト本文（projects.sections）編集用の WYSIWYG エディタ。
@@ -116,6 +130,128 @@ function TextButton({
   );
 }
 
+/**
+ * 画像の NodeView。画像の下に常時レイアウト操作（配置/幅/倍率/キャプション）を表示する。
+ * レイアウト属性は src のフラグメント（url#align=..&w=..&scale=..）に保存し markdown と往復させる。
+ * caption は alt（`![caption](url)`）に保存する。
+ */
+function ImageNodeView({ node, updateAttributes, selected }: NodeViewProps) {
+  const src = (node.attrs.src as string) ?? "";
+  const caption = (node.attrs.alt as string) ?? "";
+  const layout = parseImageSrc(src);
+
+  const setLayout = (patch: Partial<{ align: ImageAlign; width: string; scale: number }>) => {
+    updateAttributes({ src: buildImageSrc({ ...layout, ...patch }) });
+  };
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+
+  const cssWidth = widthToCss(layout.width);
+  const figStyle: CSSProperties = {
+    width: layout.align === "full" ? "100%" : cssWidth ?? "50%",
+    maxWidth: "100%",
+    marginLeft: layout.align === "right" ? "auto" : undefined,
+    marginRight: layout.align === "left" ? "auto" : undefined,
+  };
+
+  const inputCls =
+    "rounded border border-[#424242] bg-[#1a1a1a] px-1.5 py-0.5 text-[11px] text-white outline-none focus:border-[#48f4be]";
+
+  return (
+    <NodeViewWrapper
+      className="markdown-image-nodeview"
+      data-align={layout.align}
+      style={{ margin: "0.6em 0" }}
+    >
+      <figure
+        style={figStyle}
+        className={selected ? "rounded-[8px] outline outline-2 outline-[#48f4be]" : "rounded-[8px]"}
+      >
+        <div style={{ overflow: "hidden", borderRadius: 8 }}>
+          {layout.base ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={layout.base}
+              alt={caption}
+              style={{
+                display: "block",
+                width: "100%",
+                height: "auto",
+                transform: layout.scale !== 1 ? `scale(${layout.scale})` : undefined,
+                transformOrigin: "center",
+              }}
+            />
+          ) : (
+            <div className="flex h-24 items-center justify-center bg-[#0a0a0a] text-[12px] text-[#616161]">
+              画像URL未設定
+            </div>
+          )}
+        </div>
+        {caption && <figcaption className="mt-1 text-[10px] text-[#9e9e9e]">{caption}</figcaption>}
+      </figure>
+
+      {/* レイアウト操作（contentEditable 外。ProseMirror の選択/入力を妨げないよう stopPropagation） */}
+      <div
+        contentEditable={false}
+        onMouseDown={stop}
+        className="mt-1.5 flex flex-wrap items-center gap-1.5 rounded-[8px] border border-[#424242] bg-[#141414] p-1.5"
+      >
+        {(["full", "left", "right"] as const).map((a) => (
+          <button
+            key={a}
+            type="button"
+            onMouseDown={stop}
+            onClick={() => setLayout({ align: a })}
+            className={`rounded-[6px] border px-2 py-0.5 text-[11px] transition-colors ${
+              layout.align === a
+                ? "border-[#48f4be] bg-[#48f4be]/10 text-[#48f4be]"
+                : "border-[#424242] text-[#9e9e9e] hover:text-white"
+            }`}
+          >
+            {a === "full" ? "全幅" : a === "left" ? "左回り込み" : "右回り込み"}
+          </button>
+        ))}
+        <span className="mx-0.5 h-4 w-px bg-[#424242]" />
+        <label className="flex items-center gap-1 text-[11px] text-[#9e9e9e]">
+          幅
+          <input
+            value={layout.width}
+            onMouseDown={stop}
+            onChange={(e) => setLayout({ width: e.target.value })}
+            placeholder="260 / 60%"
+            className={`w-20 ${inputCls}`}
+          />
+        </label>
+        <label className="flex items-center gap-1 text-[11px] text-[#9e9e9e]">
+          倍率
+          <input
+            value={String(layout.scale)}
+            onMouseDown={stop}
+            onChange={(e) => setLayout({ scale: Number(e.target.value) || 1 })}
+            className={`w-12 ${inputCls}`}
+          />
+        </label>
+        <label className="flex items-center gap-1 text-[11px] text-[#9e9e9e]">
+          キャプション
+          <input
+            value={caption}
+            onMouseDown={stop}
+            onChange={(e) => updateAttributes({ alt: e.target.value })}
+            placeholder="図1: …"
+            className={`w-32 ${inputCls}`}
+          />
+        </label>
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
+/** Image 拡張に NodeView を付与（レイアウト操作UI付き） */
+const LayoutImage = Image.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageNodeView);
+  },
+});
+
 const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
     { value, onChange, placeholder, onRequestImage },
@@ -144,7 +280,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
           // 公開表示は不変。ツールバーには敢えてボタンを出さない（仕様準拠）。
           // bulletList / orderedList / listItem はデフォルト有効。
         }),
-        Image.configure({ inline: false, allowBase64: false }),
+        LayoutImage.configure({ inline: false, allowBase64: false }),
         Placeholder.configure({
           placeholder:
             placeholder ??

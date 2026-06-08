@@ -509,11 +509,26 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / markdown-h1 / markdown-h2">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / section / コンテンツ見出し 01・02・03（Library 305:265）">
           <div className="w-full"><Headline label="Works" title="制作・企画" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
-          <div className="w-full"><Headline title="見出し（# テキスト）" variant="markdown-h1" /></div>
-          <div className="w-full"><Headline title="見出し（## テキスト）" variant="markdown-h2" /></div>
+          <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
+          <div className="w-full"><Headline title="見出し 01（24px 白）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="見出し 02（20px mint）" variant="markdown-h2" /></div>
+          <div className="w-full"><Headline title="HEADLINE 03 (EN / 17px gray)" variant="markdown-h3" /></div>
+        </ComponentPreview>
+
+        <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
+          <div className="flex w-full flex-col gap-3">
+            <p className="text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
+            <p className="font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">見出し01（## / Noto Bold 24px 白）</p>
+            <p className="font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">見出し02（### / Noto Bold 20px mint）</p>
+            <p className="text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">見出し03（#### / Avenir Heavy 17px gray）</p>
+            <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
+            <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
+            <p className="border-l-2 border-[#424242] pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
+            <p className="text-[10px] leading-[16px] tracking-[0.5px] text-[#9e9e9e]">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
+          </div>
         </ComponentPreview>
 
         <ComponentPreview title="ButtonAction" description="CTA ボタン。Primary / Secondary / Ghost の 3 バリアント">

@@ -362,6 +362,106 @@ function Textarea({
   );
 }
 
+// Overview 情報カード（DB: works.overview_cards）のローカル編集型
+type OverviewCardLocal = { icon: string; heading: string; body: string };
+
+/** Overview 情報カード（Problem / Goal 等）の追加・削除・編集エディタ */
+function OverviewCardsEditor({
+  value, onChange,
+}: { value: OverviewCardLocal[]; onChange: (v: OverviewCardLocal[]) => void }) {
+  const cards = Array.isArray(value) ? value : [];
+  const update = (i: number, patch: Partial<OverviewCardLocal>) =>
+    onChange(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const remove = (i: number) => onChange(cards.filter((_, idx) => idx !== i));
+  const add = () =>
+    onChange([...cards, { icon: "Others/thinking-problem", heading: "", body: "" }]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {cards.map((card, i) => (
+        <div key={i} className="rounded-[8px] border border-[#424242] bg-[#161616] p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <Input
+              value={card.icon}
+              onChange={(v) => update(i, { icon: v })}
+              placeholder="アイコン（例: Others/thinking-problem）"
+              className="flex-1"
+            />
+            <Input
+              value={card.heading}
+              onChange={(v) => update(i, { heading: v })}
+              placeholder="見出し（例: Problem）"
+              className="flex-1"
+            />
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+            >
+              削除
+            </button>
+          </div>
+          <Textarea
+            value={card.body}
+            onChange={(v) => update(i, { body: v })}
+            rows={2}
+            placeholder="本文"
+          />
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={add}
+        className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+      >
+        ＋ カードを追加
+      </button>
+    </div>
+  );
+}
+
+/** Hero スクリーンショット（複数画像URL）の追加・削除エディタ */
+function HeroScreenshotsEditor({
+  value, onChange,
+}: { value: string[]; onChange: (v: string[]) => void }) {
+  const urls = Array.isArray(value) ? value : [];
+  const update = (i: number, url: string) =>
+    onChange(urls.map((u, idx) => (idx === i ? url : u)));
+  const remove = (i: number) => onChange(urls.filter((_, idx) => idx !== i));
+  const add = () => onChange([...urls, ""]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {urls.map((url, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <div className="flex-1">
+            <ImagePickerField
+              value={url}
+              onChange={(v) => update(i, v)}
+              folder="projects/hero"
+              previewClassName="mt-2 h-24 w-14 rounded-[6px] object-cover"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => remove(i)}
+            className="shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+          >
+            削除
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={add}
+        className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+      >
+        ＋ 画像を追加
+      </button>
+    </div>
+  );
+}
+
 function SaveButton({
   onClick, loading, saved, error,
 }: { onClick: () => void; loading: boolean; saved: boolean; error: string }) {
@@ -1039,108 +1139,131 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
 // sections JSON ↔ Markdown 変換ユーティリティ
 type SectionItem = { heading: string; body: string };
 
-/** Markdown の見出し（# / ##）・画像・段落をレンダリングして表示するコンポーネント */
+/**
+ * Markdown 本文を全タイポレベルで描画（公開側 `MarkdownBody` と同等のプレビュー）。
+ *  `## `→見出し01(24白) / `### `→見出し02(20mint) / `#### `→見出し03(17gray)
+ *  `> `→Body02(13) / 通常→Body01(15) / `![](url)`→画像
+ */
 function SectionBodyRenderer({ body }: { body: string }) {
   const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const renderParagraph = (para: string, key: string) => {
-    const lines = para.split("\n");
-    return (
-      <p key={key} className="text-[15px] leading-[1.5] tracking-[0.45px] text-white/80">
-        {lines.map((line, li) => {
-          const nodes: React.ReactNode[] = [];
-          let last = 0;
-          let m: RegExpExecArray | null;
-          IMG_RE.lastIndex = 0;
-          while ((m = IMG_RE.exec(line)) !== null) {
-            if (m.index > last) nodes.push(line.slice(last, m.index));
-            nodes.push(
-              <img
-                key={`img-${key}-${li}-${m.index}`}
-                src={m[2]}
-                alt={m[1]}
-                className="my-2 max-w-full rounded-[8px] block"
-              />,
-            );
-            last = IMG_RE.lastIndex;
-          }
-          if (last < line.length) nodes.push(line.slice(last));
-          return (
-            <React.Fragment key={li}>
-              {li > 0 && <br />}
-              {nodes}
-            </React.Fragment>
-          );
-        })}
-      </p>
-    );
+  const renderInline = (text: string, key: string): React.ReactNode[] => {
+    const nodes: React.ReactNode[] = [];
+    text.split("\n").forEach((line, li) => {
+      if (li > 0) nodes.push(<br key={`br-${key}-${li}`} />);
+      let last = 0;
+      let m: RegExpExecArray | null;
+      IMG_RE.lastIndex = 0;
+      while ((m = IMG_RE.exec(line)) !== null) {
+        if (m.index > last) nodes.push(line.slice(last, m.index));
+        nodes.push(
+          <img
+            key={`img-${key}-${li}-${m.index}`}
+            src={m[2]}
+            alt={m[1]}
+            className="my-2 max-w-full rounded-[8px] block"
+          />,
+        );
+        last = IMG_RE.lastIndex;
+      }
+      if (last < line.length) nodes.push(line.slice(last));
+    });
+    return nodes;
   };
 
-  type RawBlock = { t: "para"; node: React.ReactNode } | { t: "h2"; text: string };
-  const lines = body.split("\n");
-  const rawBlocks: RawBlock[] = [];
-  let paragraphLines: string[] = [];
-  const flushParagraph = () => {
-    const paragraph = paragraphLines.join("\n").trim();
-    if (paragraph) rawBlocks.push({ t: "para", node: renderParagraph(paragraph, `p-${rawBlocks.length}`) });
-    paragraphLines = [];
+  const out: React.ReactNode[] = [];
+  let para: string[] = [];
+  const flush = () => {
+    const text = para.join("\n").trim();
+    if (text) {
+      out.push(
+        <p key={`p-${out.length}`} className="mb-4 text-[15px] leading-[1.5] tracking-[0.45px] text-white/90">
+          {renderInline(text, `p-${out.length}`)}
+        </p>,
+      );
+    }
+    para = [];
   };
-  for (const rawLine of lines) {
+  for (const rawLine of body.split("\n")) {
     const line = rawLine.trimEnd();
-    if (line.startsWith("# ")) {
-      flushParagraph();
-      paragraphLines.push(line.slice(2).trim());
-      continue;
-    }
-    if (line.startsWith("## ")) {
-      flushParagraph();
-      rawBlocks.push({ t: "h2", text: line.slice(3).trim() });
-      continue;
-    }
-    if (line.trim() === "") {
-      flushParagraph();
-      continue;
-    }
-    paragraphLines.push(line);
-  }
-  flushParagraph();
-
-  type Segment =
-    | { type: "paras"; nodes: React.ReactNode[] }
-    | { type: "section02"; h2: string; nodes: React.ReactNode[] };
-  const segments: Segment[] = [];
-  let topParas: React.ReactNode[] = [];
-  for (const block of rawBlocks) {
-    if (block.t === "h2") {
-      if (topParas.length > 0) { segments.push({ type: "paras", nodes: topParas }); topParas = []; }
-      segments.push({ type: "section02", h2: block.text, nodes: [] });
+    if (line.startsWith("##### ")) {
+      // Body02（13px 白）: heading level 5 で表現
+      flush();
+      out.push(
+        <p key={`b2-${out.length}`} className="mb-3 text-[13px] leading-[1.5] tracking-[0.39px] text-white/90">
+          {renderInline(line.slice(6).trim(), `b2-${out.length}`)}
+        </p>,
+      );
+    } else if (line.startsWith("#### ")) {
+      flush();
+      out.push(
+        <p key={`h-${out.length}`} className="mb-3 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
+          {line.slice(5).trim()}
+        </p>,
+      );
+    } else if (line.startsWith("### ")) {
+      flush();
+      out.push(
+        <p key={`h-${out.length}`} className="mb-3 text-[20px] font-bold leading-[1.5] tracking-[1px] text-[#b3ffe7]">
+          {line.slice(4).trim()}
+        </p>,
+      );
+    } else if (line.startsWith("## ")) {
+      flush();
+      out.push(
+        <p key={`h-${out.length}`} className="mb-4 text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
+          {line.slice(3).trim()}
+        </p>,
+      );
+    } else if (line.startsWith("> ")) {
+      // blockquote（引用）: テキスト色 system-400(#BDBDBD) ＋ 左ボーダー
+      flush();
+      out.push(
+        <p key={`q-${out.length}`} className="mb-3 border-l-2 border-[#424242] pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-[#bdbdbd]">
+          {renderInline(line.slice(2).trim(), `q-${out.length}`)}
+        </p>,
+      );
+    } else if (line.trim() === "") {
+      flush();
+    } else if (line.startsWith("# ")) {
+      para.push(line.slice(2).trim());
     } else {
-      const last = segments[segments.length - 1];
-      if (last?.type === "section02") last.nodes.push(block.node);
-      else topParas.push(block.node);
+      para.push(line);
     }
   }
-  if (topParas.length > 0) segments.push({ type: "paras", nodes: topParas });
-
-  return (
-    <div className="flex flex-col gap-6">
-      {segments.map((seg, i) =>
-        seg.type === "paras" ? (
-          <React.Fragment key={i}>{seg.nodes}</React.Fragment>
-        ) : (
-          <div key={i} className="flex flex-col gap-2">
-            <p className="text-[20px] font-bold leading-[1.5] tracking-[1px] text-white w-full">
-              {seg.h2}
-            </p>
-            <div className="flex flex-col gap-4">{seg.nodes}</div>
-          </div>
-        )
-      )}
-    </div>
-  );
+  flush();
+  return <div>{out}</div>;
 }
 
-function sectionsToMarkdown(sections: SectionItem[]): string {
-  return sections.map((s) => `# ${s.heading}\n\n${s.body}`).join("\n\n");
+// ブロック型セクション（{heading, blocks:[{type:'text',md}|{type:'image',url,caption}]}）も
+// markdown へ可逆的に直列化する。旧 {heading, body} 形式も透過。
+// ※ 画像の size/scale/align は markdown では表現できないため、編集時は `![](url)` に正規化される。
+function blocksToMarkdown(blocks: unknown[]): string {
+  return blocks
+    .map((b) => {
+      const blk = (b ?? {}) as Record<string, unknown>;
+      if (blk.type === "image" && typeof blk.url === "string") {
+        return `![${typeof blk.caption === "string" ? blk.caption : ""}](${blk.url})`;
+      }
+      if (typeof blk.md === "string") return blk.md;
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function sectionsToMarkdown(sections: unknown[]): string {
+  return sections
+    .map((raw) => {
+      const s = (raw ?? {}) as Record<string, unknown>;
+      const heading = typeof s.heading === "string" ? s.heading : "";
+      const body = Array.isArray(s.blocks)
+        ? blocksToMarkdown(s.blocks as unknown[])
+        : typeof s.body === "string"
+          ? s.body
+          : "";
+      return `# ${heading}\n\n${body}`;
+    })
+    .join("\n\n");
 }
 
 function markdownToSections(md: string): SectionItem[] {
@@ -1175,7 +1298,7 @@ function SectionsEditor({
 }) {
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [markdown, setMarkdown] = useState(() =>
-    sectionsToMarkdown((value ?? []) as SectionItem[])
+    sectionsToMarkdown((value ?? []) as unknown[])
   );
   const editorRef = useRef<MarkdownEditorHandle>(null);
   const [imgModalOpen, setImgModalOpen] = useState(false);
@@ -1215,7 +1338,7 @@ function SectionsEditor({
           </button>
         ))}
         <p className="ml-auto px-4 text-[11px] text-[#3a3a3a]">
-          # 見出し で新しいセクション（本文内の ## 見出し も可）
+          # でセクション分割 / ## 見出し01 / ### 見出し02 / #### 見出し03 / ＞ 小本文
         </p>
       </div>
 
@@ -1239,7 +1362,7 @@ function SectionsEditor({
             <div className="flex flex-col gap-8">
               {preview.map((sec, i) => (
                 <div key={i} className="flex flex-col gap-6">
-                  <Headline title={sec.heading} variant="markdown-h1" />
+                  <Headline title={sec.heading} variant="section" />
                   <SectionBodyRenderer body={sec.body} />
                 </div>
               ))}
@@ -1494,6 +1617,13 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
       thumbnail_url: null,
       role: null,
       period: null,
+      overview: null,
+      overview_cards: [
+        { icon: "Others/thinking-problem", heading: "Problem", body: "" },
+        { icon: "Travels/flag", heading: "Goal", body: "" },
+      ],
+      hero_screenshots: [],
+      hero_bg_color: null,
       career_item_id: null,
       skills: [],
       tools: [],
@@ -1716,7 +1846,51 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                       })()}
                     </div>
                     <div className="col-span-2">
-                      <FieldLabel>サムネイル</FieldLabel>
+                      <FieldLabel>Overview（リード本文）</FieldLabel>
+                      <Textarea
+                        value={project.overview ?? ""}
+                        onChange={(v) => updateProject(project.id, "overview", v || null)}
+                        rows={4}
+                        placeholder="このプロジェクトの概要…"
+                      />
+                    </div>
+
+                    {/* Overview 情報カード（Problem / Goal 等。2カラムグリッドで表示・増減/非表示可） */}
+                    <div className="col-span-2">
+                      <FieldLabel>Overview 情報カード（アイコン付き見出し）</FieldLabel>
+                      <OverviewCardsEditor
+                        value={(project.overview_cards ?? []) as OverviewCardLocal[]}
+                        onChange={(v) => updateProject(project.id, "overview_cards", v as unknown as Json)}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>Hero 背景色（空欄でデフォルト緑）</FieldLabel>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={project.hero_bg_color ?? "#48f4be"}
+                          onChange={(e) => updateProject(project.id, "hero_bg_color", e.target.value)}
+                          className="h-9 w-12 shrink-0 rounded-[6px] border border-[#424242] bg-[#1a1a1a]"
+                        />
+                        <Input
+                          value={project.hero_bg_color ?? ""}
+                          onChange={(v) => updateProject(project.id, "hero_bg_color", v || null)}
+                          placeholder="#48f4be"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="col-span-2">
+                      <FieldLabel>Hero スクリーンショット（デバイスモックアップ）</FieldLabel>
+                      <HeroScreenshotsEditor
+                        value={(project.hero_screenshots ?? []) as string[]}
+                        onChange={(v) => updateProject(project.id, "hero_screenshots", v as unknown as Json)}
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
                       <ImagePickerField
                         value={project.thumbnail_url ?? ""}
                         onChange={(v) => updateProject(project.id, "thumbnail_url", v || null)}

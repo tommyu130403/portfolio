@@ -312,7 +312,11 @@ export type Database = {
           career_item_id: string | null
           category: string | null
           created_at: string | null
+          hero_bg_color: string | null
+          hero_screenshots: Json | null
           id: string
+          overview: string | null
+          overview_cards: Json | null
           period: string | null
           role: string | null
           sections: Json | null
@@ -324,7 +328,11 @@ export type Database = {
           career_item_id?: string | null
           category?: string | null
           created_at?: string | null
+          hero_bg_color?: string | null
+          hero_screenshots?: Json | null
           id?: string
+          overview?: string | null
+          overview_cards?: Json | null
           period?: string | null
           role?: string | null
           sections?: Json | null
@@ -336,7 +344,11 @@ export type Database = {
           career_item_id?: string | null
           category?: string | null
           created_at?: string | null
+          hero_bg_color?: string | null
+          hero_screenshots?: Json | null
           id?: string
+          overview?: string | null
+          overview_cards?: Json | null
           period?: string | null
           role?: string | null
           sections?: Json | null

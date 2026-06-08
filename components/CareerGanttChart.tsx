@@ -22,8 +22,10 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 /* Figma フォント指定（node 770-6652 準拠）
    period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
+// 英数字/日本語の自動切替（EN Avenir → JP Noto）。Avenir に日本語グリフが無いため
+// 日本語は Noto へフォールバックする。FONT_EN/FONT_JP は同一スタックだが用途の意図を残す。
 const FONT_EN = "Avenir, var(--font-noto-sans-jp), sans-serif";
-const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
+const FONT_JP = "Avenir, var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {

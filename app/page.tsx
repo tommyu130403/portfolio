@@ -170,7 +170,7 @@ export default function Home() {
               {loading ? (
                 <span className="inline-block h-12 w-full animate-pulse rounded bg-[#424242]" />
               ) : (
-                <p style={{ fontFamily: "var(--font-body-jp)", fontSize: 14.5, lineHeight: 1.9, letterSpacing: ".04em", color: "var(--fg-muted)", margin: 0, maxWidth: 640 }}>
+                <p style={{ fontFamily: "Avenir, var(--font-noto-sans-jp), sans-serif", fontSize: 14.5, lineHeight: 1.9, letterSpacing: ".04em", color: "var(--fg-muted)", margin: 0, maxWidth: 640 }}>
                   {(profile?.career_lead ?? "").trim() || DEFAULT_CAREER_LEAD}
                 </p>
               )}

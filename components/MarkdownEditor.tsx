@@ -89,6 +89,33 @@ function ToolbarButton({
   );
 }
 
+function TextButton({
+  onClick,
+  active = false,
+  label,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      title={label}
+      className={[
+        "flex h-8 items-center rounded-[6px] border px-2 text-[11px] transition-colors",
+        active
+          ? "border-[#48f4be] bg-[#48f4be]/10 text-[#48f4be]"
+          : "border-[#424242] text-[#9e9e9e] hover:border-[#616161] hover:text-white",
+      ].join(" ")}
+    >
+      {label}
+    </button>
+  );
+}
+
 const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   function MarkdownEditor(
     { value, onChange, placeholder, onRequestImage },
@@ -99,15 +126,16 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
       immediatelyRender: false,
       extensions: [
         StarterKit.configure({
-          // 互換対象のみ有効化（heading は level 1,2 のみ）
-          heading: { levels: [1, 2] },
-          // 公開側 SectionBodyRenderer が解釈できない装飾マークは無効化
+          // 見出し level 1-4（# セクション / ## 見出01 / ### 見出02 / #### 見出03）
+          // ＋ level 5 を「小本文 Body02(13px)」として流用（markdown ##### / UI「小本文」ボタン）
+          heading: { levels: [1, 2, 3, 4, 5] },
+          // 公開側 MarkdownBody が解釈できない装飾マークは無効化
           bold: false,
           italic: false,
           strike: false,
           code: false,
           codeBlock: false,
-          blockquote: false,
+          // blockquote（> ）は「引用」として描画（テキスト色 system-400）
           horizontalRule: false,
           link: false,
           underline: false,
@@ -165,45 +193,51 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value, editor]);
 
-    const isH1 = editor?.isActive("heading", { level: 1 }) ?? false;
-    const isH2 = editor?.isActive("heading", { level: 2 }) ?? false;
+    const headingButtons: { label: string; level: 1 | 2 | 3 | 4 }[] = [
+      { label: "セクション", level: 1 },
+      { label: "見出01", level: 2 },
+      { label: "見出02", level: 3 },
+      { label: "見出03", level: 4 },
+    ];
     const isParagraph = editor?.isActive("paragraph") ?? false;
+    const isQuote = editor?.isActive("blockquote") ?? false;
 
     return (
       <div className="overflow-hidden rounded-[8px] border border-[#424242] bg-[#1a1a1a] focus-within:border-[#48f4be]">
-        {/* ツールバー（上部固定・互換対象に限定） */}
-        <div className="flex items-center gap-1.5 border-b border-[#424242] bg-[#141414] px-3 py-2">
-          <ToolbarButton
-            label="見出し1"
-            active={isH1}
-            onClick={() =>
-              editor?.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-          >
-            <Icon set="Edit" name="h1" tintColor="currentColor" className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            label="見出し2"
-            active={isH2}
-            onClick={() =>
-              editor?.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-          >
-            <Icon set="Edit" name="h2" tintColor="currentColor" className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
+        {/* ツールバー（タイポ体系：# セクション / ##〜#### 見出01-03 / > 小本文） */}
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-[#424242] bg-[#141414] px-3 py-2">
+          {headingButtons.map((b) => {
+            const active = editor?.isActive("heading", { level: b.level }) ?? false;
+            return (
+              <TextButton
+                key={b.level}
+                label={b.label}
+                active={active}
+                onClick={() => editor?.chain().focus().toggleHeading({ level: b.level }).run()}
+              />
+            );
+          })}
+          <TextButton
+            label="小本文"
+            active={editor?.isActive("heading", { level: 5 }) ?? false}
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 5 }).run()}
+          />
+          <TextButton
+            label="引用"
+            active={isQuote}
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          />
+          <TextButton
             label="段落"
             active={isParagraph}
             onClick={() => editor?.chain().focus().setParagraph().run()}
-          >
-            <Icon set="Edit" name="text" tintColor="currentColor" className="h-4 w-4" />
-          </ToolbarButton>
+          />
           <span className="mx-1 h-5 w-px bg-[#424242]" />
           <ToolbarButton label="画像を挿入" onClick={() => onRequestImage?.()}>
             <Icon set="Edit" name="add-pic" tintColor="currentColor" className="h-4 w-4" />
           </ToolbarButton>
           <p className="ml-auto text-[11px] text-[#3a3a3a]">
-            H1 でセクション分割・H2 で小見出し
+            # セクション ／ ##〜#### 見出01-03 ／ 小本文 ／ 引用
           </p>
         </div>
 
@@ -212,11 +246,11 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
 
         {/* .ProseMirror のスタイリング（公開側プレビューとトーンを揃える） */}
         <style>{`
+          /* h1=セクション(34 Avenir) / h2=見出01(24白) / h3=見出02(20mint) / h4=見出03(17gray) */
           .markdown-editor-prose.ProseMirror h1 {
-            font-size: 24px;
-            font-weight: 700;
-            line-height: 1.5;
-            letter-spacing: 1.2px;
+            font-size: 34px;
+            font-weight: 800;
+            line-height: 1.2;
             color: #ffffff;
             margin: 1.2em 0 0.5em;
           }
@@ -224,12 +258,37 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
             margin-top: 0;
           }
           .markdown-editor-prose.ProseMirror h2 {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.5;
+            letter-spacing: 1.2px;
+            color: #ffffff;
+            margin: 1em 0 0.4em;
+          }
+          .markdown-editor-prose.ProseMirror h3 {
             font-size: 20px;
             font-weight: 700;
             line-height: 1.5;
             letter-spacing: 1px;
-            color: #ffffff;
+            color: #b3ffe7;
             margin: 1em 0 0.4em;
+          }
+          .markdown-editor-prose.ProseMirror h4 {
+            font-size: 17px;
+            font-weight: 800;
+            line-height: 1.3;
+            letter-spacing: 0.85px;
+            color: #9e9e9e;
+            margin: 1em 0 0.4em;
+          }
+          /* h5 = 小本文 Body02(13px 白) */
+          .markdown-editor-prose.ProseMirror h5 {
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
+            letter-spacing: 0.39px;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0.5em 0;
           }
           .markdown-editor-prose.ProseMirror p {
             font-size: 15px;
@@ -237,6 +296,17 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
             letter-spacing: 0.45px;
             color: rgba(255, 255, 255, 0.8);
             margin: 0.5em 0;
+          }
+          /* blockquote = 引用（テキスト色 system-400 #BDBDBD） */
+          .markdown-editor-prose.ProseMirror blockquote {
+            border-left: 2px solid #424242;
+            padding-left: 0.8em;
+            margin: 0.5em 0;
+          }
+          .markdown-editor-prose.ProseMirror blockquote p {
+            font-size: 13px;
+            letter-spacing: 0.39px;
+            color: #bdbdbd;
           }
           .markdown-editor-prose.ProseMirror ul,
           .markdown-editor-prose.ProseMirror ol {

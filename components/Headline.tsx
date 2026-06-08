@@ -5,8 +5,14 @@ type HeadlineProps = {
   label?: string;
   /** 日本語タイトル */
   title: string;
-  /** 見出しタイプ（default: セクション見出し / sub: 小見出し / markdown-h1 / markdown-h2） */
-  variant?: "default" | "sub" | "markdown-h1" | "markdown-h2";
+  /**
+   * 見出しタイプ
+   * - default: ページ上部のセクション見出し（EN ラベル + 32px + 下線）
+   * - sub: 小見出し
+   * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
+   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（Library 305:265 = 01/02/03）
+   */
+  variant?: "default" | "sub" | "section" | "markdown-h1" | "markdown-h2" | "markdown-h3";
 };
 
 const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
@@ -20,24 +26,39 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  if (variant === "markdown-h2") {
+  // Headline/Section（Work詳細セクションタイトル）: Avenir Heavy 34px white
+  if (variant === "section") {
     return (
-      <p className="text-[20px] font-bold leading-[1.5] tracking-[1px] text-white w-full">
+      <p className="w-full text-[34px] font-extrabold leading-[1.2] text-white [word-break:break-word]">
         {title}
       </p>
     );
   }
 
+  // Library 305:265 / 03: Avenir(Body/EN) Heavy 17px #9e9e9e
+  if (variant === "markdown-h3") {
+    return (
+      <p className="w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
+        {title}
+      </p>
+    );
+  }
+
+  // Library 305:265 / 02: Noto Sans JP Bold 20px main-050(#b3ffe7)
+  if (variant === "markdown-h2") {
+    return (
+      <p className="w-full font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">
+        {title}
+      </p>
+    );
+  }
+
+  // Library 305:265 / 01: Noto Sans JP Bold 24px white（装飾バー無し）
   if (variant === "markdown-h1") {
     return (
-      <div className="flex items-start gap-2 w-full">
-        <div className="flex items-center self-stretch py-2 shrink-0">
-          <div className="w-[3px] h-full rounded-[2px] bg-[#48f4be]" />
-        </div>
-        <p className="flex-1 text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
-          {title}
-        </p>
-      </div>
+      <p className="w-full font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
+        {title}
+      </p>
     );
   }
 

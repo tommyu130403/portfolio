@@ -1833,25 +1833,7 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                         );
                       })()}
                     </div>
-                    <div className="col-span-2">
-                      <FieldLabel>Overview（リード本文）</FieldLabel>
-                      <Textarea
-                        value={project.overview ?? ""}
-                        onChange={(v) => updateProject(project.id, "overview", v || null)}
-                        rows={4}
-                        placeholder="このプロジェクトの概要…"
-                      />
-                    </div>
-
-                    {/* Overview 情報カード（Problem / Goal 等。2カラムグリッドで表示・増減/非表示可） */}
-                    <div className="col-span-2">
-                      <FieldLabel>Overview 情報カード（アイコン付き見出し）</FieldLabel>
-                      <OverviewCardsEditor
-                        value={(project.overview_cards ?? []) as OverviewCardLocal[]}
-                        onChange={(v) => updateProject(project.id, "overview_cards", v as unknown as Json)}
-                      />
-                    </div>
-
+                    {/* ── Hero 設定 ── */}
                     <div>
                       <FieldLabel>ブランド名（Hero 左上のワードマーク）</FieldLabel>
                       <Input
@@ -1882,6 +1864,26 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
                       <HeroScreenshotsEditor
                         value={(project.hero_screenshots ?? []) as string[]}
                         onChange={(v) => updateProject(project.id, "hero_screenshots", v as unknown as Json)}
+                      />
+                    </div>
+
+                    {/* ── Overview 設定 ── */}
+                    <div className="col-span-2">
+                      <FieldLabel>Overview（リード本文）</FieldLabel>
+                      <Textarea
+                        value={project.overview ?? ""}
+                        onChange={(v) => updateProject(project.id, "overview", v || null)}
+                        rows={4}
+                        placeholder="このプロジェクトの概要…"
+                      />
+                    </div>
+
+                    {/* Overview 情報カード（Problem / Goal 等。2カラムグリッドで表示・増減/非表示可） */}
+                    <div className="col-span-2">
+                      <FieldLabel>Overview 情報カード（アイコン付き見出し）</FieldLabel>
+                      <OverviewCardsEditor
+                        value={(project.overview_cards ?? []) as OverviewCardLocal[]}
+                        onChange={(v) => updateProject(project.id, "overview_cards", v as unknown as Json)}
                       />
                     </div>
 

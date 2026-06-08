@@ -232,10 +232,14 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
             active={isParagraph}
             onClick={() => editor?.chain().focus().setParagraph().run()}
           />
-          <span className="mx-1 h-5 w-px bg-[#424242]" />
-          <ToolbarButton label="画像を挿入" onClick={() => onRequestImage?.()}>
-            <Icon set="Edit" name="add-pic" tintColor="currentColor" className="h-4 w-4" />
-          </ToolbarButton>
+          {onRequestImage && (
+            <>
+              <span className="mx-1 h-5 w-px bg-[#424242]" />
+              <ToolbarButton label="画像を挿入" onClick={() => onRequestImage()}>
+                <Icon set="Edit" name="add-pic" tintColor="currentColor" className="h-4 w-4" />
+              </ToolbarButton>
+            </>
+          )}
           <p className="ml-auto text-[11px] text-[#3a3a3a]">
             # セクション ／ ##〜#### 見出01-03 ／ 小本文 ／ 引用
           </p>

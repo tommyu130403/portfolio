@@ -3,8 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import Headline from "@/components/Headline";
-import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import { supabase } from "@/src/lib/supabase";
 import {
   saveWork,
@@ -1135,160 +1134,129 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   );
 }
 
-// ─── SectionsEditor ───────────────────────────────────
-// sections JSON ↔ Markdown 変換ユーティリティ
-type SectionItem = { heading: string; body: string };
+// ─── SectionsEditor（ブロック型）───────────────────────
+// セクション = 見出し + ブロック（テキスト/画像）の並び。公開側 WorkModalContent の
+// blocks モデルにそのまま対応する。
+type AdminTextBlock = { type: "text"; md: string };
+type AdminImageBlock = {
+  type: "image";
+  url: string;
+  align: "full" | "left" | "right";
+  width: string;
+  scale: number;
+  caption: string;
+};
+type AdminBlock = AdminTextBlock | AdminImageBlock;
+type AdminSection = { heading: string; blocks: AdminBlock[] };
+
+/** works.sections(jsonb) を新旧両形式から AdminSection[] へ正規化 */
+function normalizeAdminSections(raw: unknown): AdminSection[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item): AdminSection => {
+    const obj = (item ?? {}) as Record<string, unknown>;
+    const heading = typeof obj.heading === "string" ? obj.heading : "";
+    let blocks: AdminBlock[] = [];
+    if (Array.isArray(obj.blocks)) {
+      blocks = (obj.blocks as unknown[]).map((b): AdminBlock => {
+        const blk = (b ?? {}) as Record<string, unknown>;
+        if (blk.type === "image" && typeof blk.url === "string") {
+          const align: AdminImageBlock["align"] =
+            blk.align === "left" || blk.align === "right" ? blk.align : "full";
+          return {
+            type: "image",
+            url: blk.url,
+            align,
+            width: blk.width == null ? "" : String(blk.width),
+            scale: typeof blk.scale === "number" ? blk.scale : 1,
+            caption: typeof blk.caption === "string" ? blk.caption : "",
+          };
+        }
+        const md = typeof blk.md === "string" ? blk.md : typeof blk.body === "string" ? blk.body : "";
+        return { type: "text", md };
+      });
+    } else if (typeof obj.body === "string") {
+      blocks = [{ type: "text", md: obj.body }];
+    }
+    if (blocks.length === 0) blocks = [{ type: "text", md: "" }];
+    return { heading, blocks };
+  });
+}
+
+/** AdminSection[] を works.sections(jsonb) 形へ直列化（width は数値文字列なら number 化） */
+function serializeAdminSections(sections: AdminSection[]): Json {
+  return sections.map((s) => ({
+    heading: s.heading,
+    blocks: s.blocks.map((b) => {
+      if (b.type === "image") {
+        const w = b.width.trim();
+        const widthVal: number | string | undefined =
+          w === "" ? undefined : /^\d+(\.\d+)?$/.test(w) ? Number(w) : w;
+        return {
+          type: "image",
+          url: b.url,
+          align: b.align,
+          ...(widthVal !== undefined ? { width: widthVal } : {}),
+          scale: b.scale,
+          ...(b.caption ? { caption: b.caption } : {}),
+        };
+      }
+      return { type: "text", md: b.md };
+    }),
+  })) as unknown as Json;
+}
+
+function ImageBlockEditor({
+  block,
+  onChange,
+}: {
+  block: AdminImageBlock;
+  onChange: (patch: Partial<AdminImageBlock>) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 md:flex-row">
+      <div className="md:w-44">
+        <ImagePickerField
+          value={block.url}
+          onChange={(url) => onChange({ url })}
+          folder="projects/sections"
+          previewClassName="mt-2 w-full rounded-[6px] object-cover"
+        />
+      </div>
+      <div className="grid flex-1 grid-cols-2 gap-2">
+        <div>
+          <FieldLabel>配置</FieldLabel>
+          <select
+            value={block.align}
+            onChange={(e) => onChange({ align: e.target.value as AdminImageBlock["align"] })}
+            className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none focus:border-[#48f4be]"
+          >
+            <option value="full">全幅</option>
+            <option value="left">左寄せ（回り込み）</option>
+            <option value="right">右寄せ（回り込み）</option>
+          </select>
+        </div>
+        <div>
+          <FieldLabel>幅（px または %）</FieldLabel>
+          <Input value={block.width} onChange={(v) => onChange({ width: v })} placeholder="260 / 60%" />
+        </div>
+        <div>
+          <FieldLabel>表示倍率（scale）</FieldLabel>
+          <Input value={String(block.scale)} onChange={(v) => onChange({ scale: Number(v) || 1 })} placeholder="1" />
+        </div>
+        <div>
+          <FieldLabel>キャプション（10px）</FieldLabel>
+          <Input value={block.caption} onChange={(v) => onChange({ caption: v })} placeholder="図1: …" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
- * Markdown 本文を全タイポレベルで描画（公開側 `MarkdownBody` と同等のプレビュー）。
- *  `## `→見出し01(24白) / `### `→見出し02(20mint) / `#### `→見出し03(17gray)
- *  `> `→Body02(13) / 通常→Body01(15) / `![](url)`→画像
+ * ブロック型セクションエディタ。各セクション = 見出し + ブロック（テキスト/画像）の並び。
+ * 画像ブロックは配置(full/left/right)・幅・倍率・キャプションを指定でき、
+ * 公開側 `WorkModalContent` の blocks モデルにそのまま対応する。
  */
-function SectionBodyRenderer({ body }: { body: string }) {
-  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const renderInline = (text: string, key: string): React.ReactNode[] => {
-    const nodes: React.ReactNode[] = [];
-    text.split("\n").forEach((line, li) => {
-      if (li > 0) nodes.push(<br key={`br-${key}-${li}`} />);
-      let last = 0;
-      let m: RegExpExecArray | null;
-      IMG_RE.lastIndex = 0;
-      while ((m = IMG_RE.exec(line)) !== null) {
-        if (m.index > last) nodes.push(line.slice(last, m.index));
-        nodes.push(
-          <img
-            key={`img-${key}-${li}-${m.index}`}
-            src={m[2]}
-            alt={m[1]}
-            className="my-2 max-w-full rounded-[8px] block"
-          />,
-        );
-        last = IMG_RE.lastIndex;
-      }
-      if (last < line.length) nodes.push(line.slice(last));
-    });
-    return nodes;
-  };
-
-  const out: React.ReactNode[] = [];
-  let para: string[] = [];
-  const flush = () => {
-    const text = para.join("\n").trim();
-    if (text) {
-      out.push(
-        <p key={`p-${out.length}`} className="mb-4 text-[15px] leading-[1.5] tracking-[0.45px] text-white/90">
-          {renderInline(text, `p-${out.length}`)}
-        </p>,
-      );
-    }
-    para = [];
-  };
-  for (const rawLine of body.split("\n")) {
-    const line = rawLine.trimEnd();
-    if (line.startsWith("##### ")) {
-      // Body02（13px 白）: heading level 5 で表現
-      flush();
-      out.push(
-        <p key={`b2-${out.length}`} className="mb-3 text-[13px] leading-[1.5] tracking-[0.39px] text-white/90">
-          {renderInline(line.slice(6).trim(), `b2-${out.length}`)}
-        </p>,
-      );
-    } else if (line.startsWith("#### ")) {
-      flush();
-      out.push(
-        <p key={`h-${out.length}`} className="mb-3 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
-          {line.slice(5).trim()}
-        </p>,
-      );
-    } else if (line.startsWith("### ")) {
-      flush();
-      out.push(
-        <p key={`h-${out.length}`} className="mb-3 text-[20px] font-bold leading-[1.5] tracking-[1px] text-[#b3ffe7]">
-          {line.slice(4).trim()}
-        </p>,
-      );
-    } else if (line.startsWith("## ")) {
-      flush();
-      out.push(
-        <p key={`h-${out.length}`} className="mb-4 text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
-          {line.slice(3).trim()}
-        </p>,
-      );
-    } else if (line.startsWith("> ")) {
-      // blockquote（引用）: テキスト色 system-400(#BDBDBD) ＋ 左ボーダー
-      flush();
-      out.push(
-        <p key={`q-${out.length}`} className="mb-3 border-l-2 border-[#424242] pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-[#bdbdbd]">
-          {renderInline(line.slice(2).trim(), `q-${out.length}`)}
-        </p>,
-      );
-    } else if (line.trim() === "") {
-      flush();
-    } else if (line.startsWith("# ")) {
-      para.push(line.slice(2).trim());
-    } else {
-      para.push(line);
-    }
-  }
-  flush();
-  return <div>{out}</div>;
-}
-
-// ブロック型セクション（{heading, blocks:[{type:'text',md}|{type:'image',url,caption}]}）も
-// markdown へ可逆的に直列化する。旧 {heading, body} 形式も透過。
-// ※ 画像の size/scale/align は markdown では表現できないため、編集時は `![](url)` に正規化される。
-function blocksToMarkdown(blocks: unknown[]): string {
-  return blocks
-    .map((b) => {
-      const blk = (b ?? {}) as Record<string, unknown>;
-      if (blk.type === "image" && typeof blk.url === "string") {
-        return `![${typeof blk.caption === "string" ? blk.caption : ""}](${blk.url})`;
-      }
-      if (typeof blk.md === "string") return blk.md;
-      return "";
-    })
-    .filter(Boolean)
-    .join("\n\n");
-}
-
-function sectionsToMarkdown(sections: unknown[]): string {
-  return sections
-    .map((raw) => {
-      const s = (raw ?? {}) as Record<string, unknown>;
-      const heading = typeof s.heading === "string" ? s.heading : "";
-      const body = Array.isArray(s.blocks)
-        ? blocksToMarkdown(s.blocks as unknown[])
-        : typeof s.body === "string"
-          ? s.body
-          : "";
-      return `# ${heading}\n\n${body}`;
-    })
-    .join("\n\n");
-}
-
-function markdownToSections(md: string): SectionItem[] {
-  const result: SectionItem[] = [];
-  let heading = "";
-  const bodyLines: string[] = [];
-
-  const flush = () => {
-    if (heading) {
-      result.push({ heading, body: bodyLines.join("\n").trim() });
-    }
-  };
-  for (const line of md.split("\n")) {
-    if (line.startsWith("# ")) {
-      flush();
-      heading = line.slice(2).trim();
-      bodyLines.length = 0;
-    } else {
-      bodyLines.push(line);
-    }
-  }
-  flush();
-  return result;
-}
-
 function SectionsEditor({
   value,
   onChange,
@@ -1296,82 +1264,94 @@ function SectionsEditor({
   value: Json | null;
   onChange: (v: Json) => void;
 }) {
-  const [tab, setTab] = useState<"edit" | "preview">("edit");
-  const [markdown, setMarkdown] = useState(() =>
-    sectionsToMarkdown((value ?? []) as unknown[])
-  );
-  const editorRef = useRef<MarkdownEditorHandle>(null);
-  const [imgModalOpen, setImgModalOpen] = useState(false);
+  const [sections, setSections] = useState<AdminSection[]>(() => normalizeAdminSections(value ?? []));
 
-  const handleChange = (md: string) => {
-    setMarkdown(md);
-    onChange(markdownToSections(md) as unknown as Json);
+  const commit = (next: AdminSection[]) => {
+    setSections(next);
+    onChange(serializeAdminSections(next));
+  };
+  const patchSection = (si: number, patch: Partial<AdminSection>) =>
+    commit(sections.map((s, i) => (i === si ? { ...s, ...patch } : s)));
+  const patchBlock = (si: number, bi: number, patch: Partial<AdminBlock>) =>
+    commit(
+      sections.map((s, i) =>
+        i === si
+          ? { ...s, blocks: s.blocks.map((b, j) => (j === bi ? ({ ...b, ...patch } as AdminBlock) : b)) }
+          : s,
+      ),
+    );
+  const addBlock = (si: number, block: AdminBlock) =>
+    patchSection(si, { blocks: [...sections[si].blocks, block] });
+  const removeBlock = (si: number, bi: number) =>
+    patchSection(si, { blocks: sections[si].blocks.filter((_, j) => j !== bi) });
+  const moveBlock = (si: number, bi: number, dir: -1 | 1) => {
+    const blocks = [...sections[si].blocks];
+    const ni = bi + dir;
+    if (ni < 0 || ni >= blocks.length) return;
+    [blocks[bi], blocks[ni]] = [blocks[ni], blocks[bi]];
+    patchSection(si, { blocks });
+  };
+  const addSection = () =>
+    commit([...sections, { heading: "新しいセクション", blocks: [{ type: "text", md: "" }] }]);
+  const removeSection = (si: number) => commit(sections.filter((_, i) => i !== si));
+  const moveSection = (si: number, dir: -1 | 1) => {
+    const next = [...sections];
+    const ni = si + dir;
+    if (ni < 0 || ni >= next.length) return;
+    [next[si], next[ni]] = [next[ni], next[si]];
+    commit(next);
   };
 
-  const preview = markdownToSections(markdown);
+  const iconBtn = "rounded px-2 py-1 text-[12px] text-[#9e9e9e] hover:text-white";
 
   return (
-    <>
-      <ImagePickerModal
-        open={imgModalOpen}
-        onClose={() => setImgModalOpen(false)}
-        onSelect={(url, alt) => { editorRef.current?.insertImage(url, alt); setImgModalOpen(false); }}
-        folder="projects/sections"
-        showAlt
-      />
-    <div className="overflow-hidden rounded-[8px] border border-[#424242]">
-      {/* タブヘッダー */}
-      <div className="flex items-center border-b border-[#424242] bg-[#141414]">
-        {(["edit", "preview"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={[
-              "px-4 py-2 text-[12px] font-medium transition-colors",
-              tab === t
-                ? "border-b-2 border-[#48f4be] text-white"
-                : "text-[#616161] hover:text-white",
-            ].join(" ")}
-          >
-            {t === "edit" ? "エディタ" : "プレビュー"}
-          </button>
-        ))}
-        <p className="ml-auto px-4 text-[11px] text-[#3a3a3a]">
-          # でセクション分割 / ## 見出し01 / ### 見出し02 / #### 見出し03 / ＞ 小本文
-        </p>
-      </div>
-
-      {/* 編集エリア（Tiptap WYSIWYG） */}
-      {tab === "edit" && (
-        <MarkdownEditor
-          ref={editorRef}
-          value={markdown}
-          onChange={handleChange}
-          onRequestImage={() => setImgModalOpen(true)}
-          placeholder={`# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。`}
-        />
-      )}
-
-      {/* プレビューエリア（WorkModalContent のスタイルに合わせる） */}
-      {tab === "preview" && (
-        <div className="min-h-[160px] bg-[#1a1a1a] px-6 py-6">
-          {preview.length === 0 ? (
-            <p className="text-[13px] text-[#424242]">セクションがありません</p>
-          ) : (
-            <div className="flex flex-col gap-8">
-              {preview.map((sec, i) => (
-                <div key={i} className="flex flex-col gap-6">
-                  <Headline title={sec.heading} variant="section" />
-                  <SectionBodyRenderer body={sec.body} />
-                </div>
-              ))}
+    <div className="flex flex-col gap-4">
+      {sections.map((sec, si) => (
+        <div key={si} className="rounded-[8px] border border-[#424242] bg-[#141414] p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-[11px] text-[#616161]">セクション {si + 1}</span>
+            <div className="ml-auto flex items-center gap-1">
+              <button type="button" onClick={() => moveSection(si, -1)} className={iconBtn}>↑</button>
+              <button type="button" onClick={() => moveSection(si, 1)} className={iconBtn}>↓</button>
+              <button type="button" onClick={() => removeSection(si)} className="rounded px-2 py-1 text-[11px] text-[#616161] hover:text-[#f4487e]">セクション削除</button>
             </div>
-          )}
+          </div>
+          <FieldLabel>セクション見出し（# / 34px）</FieldLabel>
+          <Input value={sec.heading} onChange={(v) => patchSection(si, { heading: v })} placeholder="課題と背景" />
+
+          <div className="mt-3 flex flex-col gap-3">
+            {sec.blocks.map((block, bi) => (
+              <div key={bi} className="rounded-[6px] border border-[#2a2a2a] bg-[#1a1a1a] p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="rounded bg-[#0a0a0a] px-2 py-0.5 text-[10px] text-[#9e9e9e]">
+                    {block.type === "image" ? "画像" : "テキスト"}
+                  </span>
+                  <div className="ml-auto flex items-center gap-1">
+                    <button type="button" onClick={() => moveBlock(si, bi, -1)} className={iconBtn}>↑</button>
+                    <button type="button" onClick={() => moveBlock(si, bi, 1)} className={iconBtn}>↓</button>
+                    <button type="button" onClick={() => removeBlock(si, bi)} className="rounded px-1.5 py-0.5 text-[11px] text-[#616161] hover:text-[#f4487e]">削除</button>
+                  </div>
+                </div>
+                {block.type === "text" ? (
+                  <MarkdownEditor
+                    value={block.md}
+                    onChange={(md) => patchBlock(si, bi, { md })}
+                    placeholder={"本文（## 見出し01 / ### 見出し02 / #### 見出し03 / 小本文 / 引用）"}
+                  />
+                ) : (
+                  <ImageBlockEditor block={block} onChange={(patch) => patchBlock(si, bi, patch)} />
+                )}
+              </div>
+            ))}
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => addBlock(si, { type: "text", md: "" })} className="rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white">＋ テキスト</button>
+              <button type="button" onClick={() => addBlock(si, { type: "image", url: "", align: "full", width: "", scale: 1, caption: "" })} className="rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white">＋ 画像</button>
+            </div>
+          </div>
         </div>
-      )}
+      ))}
+      <button type="button" onClick={addSection} className="rounded-[8px] border border-dashed border-[#424242] py-3 text-[13px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white">＋ セクションを追加</button>
     </div>
-    </>
   );
 }
 
@@ -1478,9 +1458,20 @@ function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
   };
 
   const handleProofread = async (project: WorkLocal) => {
-    // sections の本文テキストをすべて連結してチェック
-    const sections = (project.sections ?? []) as { heading: string; body: string }[];
-    const text = sections.map((s) => `${s.heading}\n${s.body}`).join("\n\n");
+    // sections の本文テキストをすべて連結してチェック（ブロック型・旧形式の両対応）
+    const sections = (project.sections ?? []) as Array<{
+      heading?: string;
+      body?: string;
+      blocks?: Array<{ md?: string; caption?: string }>;
+    }>;
+    const text = sections
+      .map((s) => {
+        const blockText = Array.isArray(s.blocks)
+          ? s.blocks.map((b) => b.md ?? b.caption ?? "").join("\n")
+          : s.body ?? "";
+        return `${s.heading ?? ""}\n${blockText}`;
+      })
+      .join("\n\n");
     setProofCheckingId(project.id);
     setProofResultsMap((prev) => ({ ...prev, [project.id]: { issues: null, error: "" } }));
     try {

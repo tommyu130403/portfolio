@@ -2713,9 +2713,9 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      {/* メインコンテンツ */}
+      {/* メインコンテンツ（サイトの最大表示幅 916px までレスポンシブに使用） */}
       <main ref={mainRef} className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[800px] px-12 py-12">
+        <div className="mx-auto w-full max-w-[916px] px-8 py-12 lg:px-12">
           <div className="mb-16">
             <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Content Management</p>
             <p className="mt-1 font-mplus text-[40px] font-bold tracking-[2px] text-white">Admin</p>

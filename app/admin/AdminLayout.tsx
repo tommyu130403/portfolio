@@ -44,12 +44,15 @@ type WorkLocal = Tables<"works"> & { skills: string[]; tools: string[] };
 
 
 // ─── ナビゲーション ────────────────────────────────────
-const NAV_SECTIONS = [
+// 各設定は /admin/<id> の専用ページとして表示する（1画面1セクション）
+export const NAV_SECTIONS = [
   { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
   { id: "career",           label: "Career",           labelJa: "経歴" },
   { id: "works",         label: "Works",            labelJa: "制作・企画" },
   { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
 ] as const;
+
+export type AdminSectionId = (typeof NAV_SECTIONS)[number]["id"];
 
 // ─── 共通 UI ──────────────────────────────────────────
 
@@ -2603,10 +2606,9 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
 }
 
 // ─── メインレイアウト ───────────────────────────────────
+// 各設定セクションは /admin/<section> の専用ページとして 1 画面 1 セクションで表示する。
 
-export function AdminLayout() {
-  const [activeId, setActiveId] = useState<string>("profile");
-  const mainRef = useRef<HTMLDivElement>(null);
+export function AdminLayout({ section }: { section: AdminSectionId }) {
   const [dirtySections, setDirtySections] = useState<Record<string, boolean>>({});
 
   const hasUnsavedChanges = Object.values(dirtySections).some(Boolean);
@@ -2619,22 +2621,6 @@ export function AdminLayout() {
   };
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveId(entry.target.id);
-        });
-      },
-      { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
-    );
-    NAV_SECTIONS.forEach(({ id }) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges) return;
       e.preventDefault();
@@ -2644,8 +2630,15 @@ export function AdminLayout() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  const scrollTo = (id: string) =>
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // 未保存の変更があるときはページ遷移前に確認する（Link 共通）
+  const confirmLeave = (e: React.MouseEvent) => {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
+    ) {
+      e.preventDefault();
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#0a0a0a]">
@@ -2655,14 +2648,7 @@ export function AdminLayout() {
           <Link
             href="/"
             className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline"
-            onClick={(e) => {
-              if (
-                hasUnsavedChanges &&
-                !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
-              ) {
-                e.preventDefault();
-              }
-            }}
+            onClick={confirmLeave}
           >
             ← Portfolio
           </Link>
@@ -2671,12 +2657,13 @@ export function AdminLayout() {
         </div>
         <nav className="flex flex-col gap-1">
           {NAV_SECTIONS.map(({ id, label, labelJa }) => {
-            const isActive = activeId === id;
+            const isActive = section === id;
             return (
-              <button
+              <Link
                 key={id}
-                type="button"
-                onClick={() => scrollTo(id)}
+                href={`/admin/${id}`}
+                onClick={confirmLeave}
+                aria-current={isActive ? "page" : undefined}
                 className={[
                   "flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-left transition-colors",
                   isActive
@@ -2689,7 +2676,7 @@ export function AdminLayout() {
                   <span className="text-[14px] leading-[1.4]">{label}</span>
                   <span className="text-[11px] text-[#616161]">{labelJa}</span>
                 </span>
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -2699,14 +2686,7 @@ export function AdminLayout() {
           <Link
             href="/styleguide"
             className="block rounded-[8px] px-3 py-2 text-[12px] text-[#616161] hover:bg-[#1a1a1a] hover:text-[#9e9e9e]"
-            onClick={(e) => {
-              if (
-                hasUnsavedChanges &&
-                !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
-              ) {
-                e.preventDefault();
-              }
-            }}
+            onClick={confirmLeave}
           >
             Style Guide →
           </Link>
@@ -2714,7 +2694,7 @@ export function AdminLayout() {
       </aside>
 
       {/* メインコンテンツ（サイトの最大表示幅 916px までレスポンシブに使用） */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[916px] px-8 py-12 lg:px-12">
           <div className="mb-16">
             <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Content Management</p>
@@ -2724,14 +2704,21 @@ export function AdminLayout() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-24">
+          {/* 1画面1セクション（/admin/<section> ごとに該当セクションのみ表示） */}
+          {section === "profile" && (
             <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
+          )}
+          {section === "career" && (
             <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
+          )}
+          {section === "works" && (
             <WorksSection onDirtyChange={(dirty) => setSectionDirty("works", dirty)} />
+          )}
+          {section === "skills-experience" && (
             <SkillsExperienceSection
               onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
             />
-          </div>
+          )}
 
           <div className="mt-24 border-t border-[#2a2a2a] pt-8">
             <p className="text-[12px] text-[#424242]">Portfolio Admin</p>

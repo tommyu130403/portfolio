@@ -12,9 +12,6 @@ type Work = Tables<"works">;
  * データモデル
  * ------------------------------------------------------------------ */
 
-/** Overview 内のアイコン付き見出しカード（Problem / Goal など。増減・非表示可） */
-type OverviewCard = { icon: string; heading: string; body: string };
-
 /** セクション＝見出し＋本文 markdown。旧ブロック形式 {blocks} は markdown へ変換して互換維持 */
 type ContentSection = { heading: string; md: string };
 
@@ -54,39 +51,39 @@ function normalizeSections(raw: unknown): ContentSection[] {
   });
 }
 
-function parseOverviewCards(raw: unknown): OverviewCard[] {
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map((item): OverviewCard | null => {
-      const obj = (item ?? {}) as Record<string, unknown>;
-      if (typeof obj.heading !== "string") return null;
-      return {
-        icon: typeof obj.icon === "string" ? obj.icon : "",
-        heading: obj.heading,
-        body: typeof obj.body === "string" ? obj.body : "",
-      };
-    })
-    .filter((c): c is OverviewCard => c !== null);
-}
-
 function parseScreenshots(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((u): u is string => typeof u === "string" && u.length > 0);
 }
 
-/** "Set/name" 形式のアイコン指定を Icon の set/name へ分解 */
-function splitIcon(icon: string): { set: string; name: string } | null {
-  const idx = icon.indexOf("/");
-  if (idx < 0) return null;
-  return { set: icon.slice(0, idx), name: icon.slice(idx + 1) };
-}
+/**
+ * 旧 overview / overview_cards カラムのデータを「# Overview」markdown セクションへ変換する
+ * （Overview は本文 markdown に統合済み。旧データの表示互換のみ。
+ *   カード見出しは 見出し02（###）、2カラムは ::: grid で表現する）。
+ */
+function legacyOverviewSection(work: Work, sections: ContentSection[]): ContentSection[] {
+  const overview = typeof work.overview === "string" ? work.overview.trim() : "";
+  const cards = (Array.isArray(work.overview_cards) ? work.overview_cards : [])
+    .map((item) => {
+      const obj = (item ?? {}) as Record<string, unknown>;
+      if (typeof obj.heading !== "string") return null;
+      return { heading: obj.heading, body: typeof obj.body === "string" ? obj.body : "" };
+    })
+    .filter((c): c is { heading: string; body: string } => c !== null)
+    .filter((c) => c.heading.trim() || c.body.trim());
+  if (!overview && cards.length === 0) return sections;
+  // 本文側に既に Overview セクションがある場合は二重表示しない
+  if (sections.some((s) => s.heading.trim().toLowerCase() === "overview")) return sections;
 
-const CardIcon: FC<{ icon: string; className?: string; tint?: string }> = ({ icon, className, tint }) => {
-  const parsed = splitIcon(icon);
-  if (!parsed) return null;
-  // Icon の set は型上 IconSet だが、DB 由来の文字列を許容するため any 経由で渡す
-  return <Icon set={parsed.set as never} name={parsed.name} className={className} tintColor={tint} />;
-};
+  const parts: string[] = [];
+  if (overview) parts.push(overview);
+  if (cards.length > 0) {
+    parts.push(
+      `::: grid cols=2 gap=10\n${cards.map((c) => `### ${c.heading}\n${c.body}`).join("\n---\n")}\n:::`
+    );
+  }
+  return [{ heading: "Overview", md: parts.join("\n\n") }, ...sections];
+}
 
 /* ------------------------------------------------------------------ *
  * Hero
@@ -171,67 +168,26 @@ const Hero: FC<{
 };
 
 /* ------------------------------------------------------------------ *
- * Overview 大セクション（R1: Timeline・Stakeholder までを内包）
+ * メタ行（役割 / 期間）
  * ------------------------------------------------------------------ */
 
-// アイコン付き見出し（Problem / Goal / Timeline / Stakeholders）。
-// Figma: テキスト・アイコンともに main-050(#b3ffe7)。サイズは 02（20px）。
-const IconHeading: FC<{ icon?: string; title: string }> = ({ icon, title }) => (
-  <div className="flex items-center gap-2">
-    {icon && <CardIcon icon={icon} tint="var(--color-main-050)" className="h-[22px] w-[22px] shrink-0" />}
-    <Headline title={title} variant="markdown-h2" />
-  </div>
-);
-
-const OverviewSection: FC<{ work: Work; cards: OverviewCard[] }> = ({ work, cards }) => {
-  const hasMeta = Boolean(work.role || work.period);
+const MetaRow: FC<{ work: Work }> = ({ work }) => {
+  if (!work.role && !work.period) return null;
   return (
-    <section className="flex flex-col gap-8">
-      {/* リード */}
-      <div className="flex flex-col gap-4">
-        <Headline title="Overview" variant="section" />
-        {work.overview && (
-          <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white whitespace-pre-line">
-            {work.overview}
-          </p>
-        )}
-        {hasMeta && (
-          <div className="flex flex-col gap-2">
-            {work.role && (
-              <span className="flex items-center gap-2 text-[15px] leading-[1.5] tracking-[0.45px] text-[#9e9e9e]">
-                <Icon set="Peoples" name="people" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" />
-                {work.role}
-              </span>
-            )}
-            {work.period && (
-              <span className="flex items-center gap-2 text-[15px] leading-[1.5] tracking-[0.45px] text-[#9e9e9e]">
-                <Icon set="Time" name="calendar-three" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" />
-                {work.period}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 情報カードグリッド（R2: 2カラム・増減/非表示可） */}
-      {cards.length > 0 && (
-        <div className="grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-          {cards.map((card, i) => (
-            <div key={i} className="flex flex-col gap-2">
-              <IconHeading icon={card.icon} title={card.heading} />
-              {card.body && (
-                <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white whitespace-pre-line">
-                  {card.body}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
+    <div className="flex flex-col gap-2">
+      {work.role && (
+        <span className="flex items-center gap-2 text-[15px] leading-[1.5] tracking-[0.45px] text-[#9e9e9e]">
+          <Icon set="Peoples" name="people" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" />
+          {work.role}
+        </span>
       )}
-
-      {/* Phase 2: Timeline (_Process) / Stakeholders (_Stakeholder) をここに描画予定。
-          現状はデータ列が無いため非表示。 */}
-    </section>
+      {work.period && (
+        <span className="flex items-center gap-2 text-[15px] leading-[1.5] tracking-[0.45px] text-[#9e9e9e]">
+          <Icon set="Time" name="calendar-three" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" />
+          {work.period}
+        </span>
+      )}
+    </div>
   );
 };
 
@@ -246,18 +202,18 @@ type WorkModalContentProps = {
 };
 
 const WorkModalContent: FC<WorkModalContentProps> = ({ work, skills = [], tools = [] }) => {
-  const cards = parseOverviewCards(work.overview_cards);
   const screenshots = parseScreenshots(work.hero_screenshots);
-  const sections = normalizeSections(work.sections);
+  // Overview は本文 markdown（# Overview セクション）に統合。旧カラムのデータは変換して表示
+  const sections = legacyOverviewSection(work, normalizeSections(work.sections));
 
   return (
     <div className="flex flex-col">
       <Hero work={work} skills={skills} tools={tools} screenshots={screenshots} />
 
       <div className="flex flex-col gap-16 px-10 py-10">
-        <OverviewSection work={work} cards={cards} />
+        <MetaRow work={work} />
 
-        {/* 柔軟な Headline セクション群（R4: ブロック型・画像回り込み/倍率対応） */}
+        {/* 本文セクション群（markdown: 見出し/グリッド/画像回り込み等） */}
         {sections.map((section, i) => (
           <section key={i} className="flex flex-col gap-6">
             <Headline title={section.heading} variant="section" />

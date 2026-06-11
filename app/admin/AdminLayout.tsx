@@ -359,64 +359,6 @@ export function Textarea({
   );
 }
 
-// Overview 情報カード（DB: works.overview_cards）のローカル編集型
-export type OverviewCardLocal = { icon: string; heading: string; body: string };
-
-/** Overview 情報カード（Problem / Goal 等）の追加・削除・編集エディタ */
-export function OverviewCardsEditor({
-  value, onChange,
-}: { value: OverviewCardLocal[]; onChange: (v: OverviewCardLocal[]) => void }) {
-  const cards = Array.isArray(value) ? value : [];
-  const update = (i: number, patch: Partial<OverviewCardLocal>) =>
-    onChange(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
-  const remove = (i: number) => onChange(cards.filter((_, idx) => idx !== i));
-  const add = () =>
-    onChange([...cards, { icon: "Others/thinking-problem", heading: "", body: "" }]);
-
-  return (
-    <div className="flex flex-col gap-3">
-      {cards.map((card, i) => (
-        <div key={i} className="rounded-[8px] border border-[#424242] bg-[#161616] p-3">
-          <div className="mb-2 flex items-center gap-2">
-            <Input
-              value={card.icon}
-              onChange={(v) => update(i, { icon: v })}
-              placeholder="アイコン（例: Others/thinking-problem）"
-              className="flex-1"
-            />
-            <Input
-              value={card.heading}
-              onChange={(v) => update(i, { heading: v })}
-              placeholder="見出し（例: Problem）"
-              className="flex-1"
-            />
-            <button
-              type="button"
-              onClick={() => remove(i)}
-              className="shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
-            >
-              削除
-            </button>
-          </div>
-          <Textarea
-            value={card.body}
-            onChange={(v) => update(i, { body: v })}
-            rows={2}
-            placeholder="本文"
-          />
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={add}
-        className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-      >
-        ＋ カードを追加
-      </button>
-    </div>
-  );
-}
-
 /** Hero スクリーンショット（複数画像URL）の追加・削除エディタ */
 export function HeroScreenshotsEditor({
   value, onChange,

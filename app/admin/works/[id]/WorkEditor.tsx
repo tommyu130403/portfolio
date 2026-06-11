@@ -11,9 +11,6 @@ import {
   ImagePickerField,
   ImagePickerModal,
   Input,
-  OverviewCardsEditor,
-  Textarea,
-  type OverviewCardLocal,
 } from "../../AdminLayout";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { sectionsToMarkdown, markdownToSections } from "@/lib/work-sections";
@@ -42,10 +39,7 @@ function emptyWork(id: string): Work {
     role: null,
     period: null,
     overview: null,
-    overview_cards: [
-      { icon: "Others/thinking-problem", heading: "Problem", body: "" },
-      { icon: "Travels/flag", heading: "Goal", body: "" },
-    ] as unknown as Json,
+    overview_cards: [] as unknown as Json,
     hero_brand: null,
     hero_screenshots: [] as unknown as Json,
     hero_bg_color: null,
@@ -55,6 +49,24 @@ function emptyWork(id: string): Work {
     created_at: null,
   };
 }
+
+/**
+ * 新規作成時に本文へ既定で入る Overview テンプレート。
+ * Overview は専用設定ではなく本文 markdown で管理する
+ * （見出しは 見出し02=###、2カラムは ::: grid 指定）。
+ */
+const DEFAULT_BODY_MD = `# Overview
+
+プロジェクトの概要を入力します。
+
+::: grid cols=2 gap=10
+### Problem
+解決したい課題を入力します。
+---
+### Goal
+目指すゴールを入力します。
+:::
+`;
 
 type PeriodInputs = { startYear: string; startMonth: string; endYear: string; endMonth: string; isCurrent: boolean };
 
@@ -87,7 +99,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
   const id = useMemo(() => (isNew ? crypto.randomUUID() : workId), [isNew, workId]);
 
   const [work, setWork] = useState<Work | null>(isNew ? emptyWork(id) : null);
-  const [markdown, setMarkdown] = useState("");
+  const [markdown, setMarkdown] = useState(isNew ? DEFAULT_BODY_MD : "");
   const [period, setPeriod] = useState<PeriodInputs>(parsePeriod(null));
   const [skills, setSkills] = useState<string[]>([]);
   const [tools, setTools] = useState<string[]>([]);
@@ -386,19 +398,6 @@ export default function WorkEditor({ workId }: { workId: string }) {
               <HeroScreenshotsEditor
                 value={(work.hero_screenshots ?? []) as string[]}
                 onChange={(v) => setField("hero_screenshots", v as unknown as Json)}
-              />
-            </div>
-
-            <FormGroupHeader>Overview 設定</FormGroupHeader>
-            <div className="col-span-2">
-              <FieldLabel>Overview（リード本文）</FieldLabel>
-              <Textarea value={work.overview ?? ""} onChange={(v) => setField("overview", v || null)} rows={4} placeholder="このプロジェクトの概要…" />
-            </div>
-            <div className="col-span-2">
-              <FieldLabel>Overview 情報カード（アイコン付き見出し）</FieldLabel>
-              <OverviewCardsEditor
-                value={(work.overview_cards ?? []) as OverviewCardLocal[]}
-                onChange={(v) => setField("overview_cards", v as unknown as Json)}
               />
             </div>
 

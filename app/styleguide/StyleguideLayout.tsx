@@ -12,7 +12,7 @@ import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
 import WorkCard from "@/components/WorkCard";
 import SideMenuBar from "@/components/SideMenuBar";
-import MarkdownEditor from "@/components/MarkdownEditor";
+import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -478,11 +478,11 @@ function ComponentPreview({ title, description, children }: {
 
 function MarkdownEditorDemo() {
   const [md, setMd] = useState(
-    "# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。",
+    "# プロジェクト概要\n\n本文テキストを **太字** や *斜体*、[リンク](https://example.com) 付きで入力できます。\n\n## 見出し01\n\n- 箇条書き\n- 項目",
   );
   return (
     <div className="w-full">
-      <MarkdownEditor value={md} onChange={setMd} />
+      <RichMarkdownEditor value={md} onChange={setMd} className="h-[420px]" />
     </div>
   );
 }
@@ -589,8 +589,8 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview
-          title="MarkdownEditor"
-          description="プロジェクト本文（projects.sections）編集用の Tiptap WYSIWYG エディタ。ツールバーは H1 / H2 / 段落 / 画像挿入 に限定し、公開側 SectionBodyRenderer と互換"
+          title="RichMarkdownEditor"
+          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画"
         >
           <MarkdownEditorDemo />
         </ComponentPreview>

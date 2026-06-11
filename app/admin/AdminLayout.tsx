@@ -3,14 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
-import { buildImageSrc } from "@/lib/image-layout";
 import { supabase } from "@/src/lib/supabase";
 import {
-  saveWork,
-  deleteWork,
-  addSkillLabelFromWorks,
-  addToolNameFromWorks,
   saveSkillCard,
   deleteSkillCard,
   addSkillCard,
@@ -19,16 +13,11 @@ import {
   deleteSkillBar,
   addSkillBar,
   saveExperienceTools,
-  listAllWorkSkillLabels,
-  listAllWorkToolNames,
-  saveWorkSkillsByLabels,
-  saveWorkToolsByNames,
   listStorageImages,
   uploadStorageImage,
 } from "@/app/admin/actions";
-import type { SkillVocab, ToolVocab, StorageImage } from "@/app/admin/actions";
+import type { StorageImage } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
-import type { Json } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -36,10 +25,6 @@ type Profile    = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
 type SkillCard       = Tables<"skill_cards">;
 type SkillExperience = Tables<"skill_experience">;
-
-// project_skills / project_tools はDB正規化テーブルで管理するため、
-// ローカル状態では skills/tools をフロントエンド専用フィールドとして保持する
-type WorkLocal = Tables<"works"> & { skills: string[]; tools: string[] };
 
 
 
@@ -68,7 +53,7 @@ function SectionTitle({ label, title }: { label: string; title: string }) {
 
 // ─── 画像ピッカー モーダル ────────────────────────────────────────────────────
 
-function ImagePickerModal({
+export function ImagePickerModal({
   open,
   onClose,
   onSelect,
@@ -279,7 +264,7 @@ function ImagePickerModal({
 
 // ─── 画像ピッカー フィールド（URL入力欄の置き換え）────────────────────────────
 
-function ImagePickerField({
+export function ImagePickerField({
   value,
   onChange,
   folder,
@@ -326,12 +311,12 @@ function ImagePickerField({
 
 // ─── 汎用UIパーツ ─────────────────────────────────────────────────────────────
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+export function FieldLabel({ children }: { children: React.ReactNode }) {
   return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-[#9e9e9e]">{children}</p>;
 }
 
 /** フォーム内のグループ見出し（Hero / Overview / 本文 などの区切り） */
-function FormGroupHeader({ children }: { children: React.ReactNode }) {
+export function FormGroupHeader({ children }: { children: React.ReactNode }) {
   return (
     <div className="col-span-2 mt-3 border-t border-[#424242] pt-4">
       <p className="text-[12px] font-semibold tracking-[0.5px] text-[#48f4be]">{children}</p>
@@ -339,7 +324,7 @@ function FormGroupHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Input({
+export function Input({
   value, onChange, placeholder, className = "", list,
 }: {
   value: string;
@@ -360,7 +345,7 @@ function Input({
   );
 }
 
-function Textarea({
+export function Textarea({
   value, onChange, rows = 4, placeholder,
 }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
   return (
@@ -375,10 +360,10 @@ function Textarea({
 }
 
 // Overview 情報カード（DB: works.overview_cards）のローカル編集型
-type OverviewCardLocal = { icon: string; heading: string; body: string };
+export type OverviewCardLocal = { icon: string; heading: string; body: string };
 
 /** Overview 情報カード（Problem / Goal 等）の追加・削除・編集エディタ */
-function OverviewCardsEditor({
+export function OverviewCardsEditor({
   value, onChange,
 }: { value: OverviewCardLocal[]; onChange: (v: OverviewCardLocal[]) => void }) {
   const cards = Array.isArray(value) ? value : [];
@@ -433,7 +418,7 @@ function OverviewCardsEditor({
 }
 
 /** Hero スクリーンショット（複数画像URL）の追加・削除エディタ */
-function HeroScreenshotsEditor({
+export function HeroScreenshotsEditor({
   value, onChange,
 }: { value: string[]; onChange: (v: string[]) => void }) {
   const urls = Array.isArray(value) ? value : [];
@@ -493,7 +478,7 @@ function SaveButton({
   );
 }
 
-function ProofreadPanel({
+export function ProofreadPanel({
   checking,
   issues,
   error,
@@ -1143,971 +1128,54 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   );
 }
 
-// ─── SectionsEditor（単一リッチMarkdown）───────────────────────
-// 本文は markdown。`# 見出し` でセクション分割し、works.sections は { heading, body } 配列で保存。
-// 画像は markdown の `![caption](url#align=..&w=..&scale=..)` で表現し、配置/幅/倍率は
-// エディタ内の画像オーバーレイ操作（Image NodeView）で調整する。
-type SectionItem = { heading: string; body: string };
-
-/** works.sections を markdown へ（旧ブロック形式 {blocks} も text=md / image=![](url) に変換） */
-function sectionsToMarkdown(sections: unknown[]): string {
-  return (Array.isArray(sections) ? sections : [])
-    .map((raw) => {
-      const s = (raw ?? {}) as Record<string, unknown>;
-      const heading = typeof s.heading === "string" ? s.heading : "";
-      let body = "";
-      if (Array.isArray(s.blocks)) {
-        body = (s.blocks as unknown[])
-          .map((b) => {
-            const blk = (b ?? {}) as Record<string, unknown>;
-            if (blk.type === "image" && typeof blk.url === "string") {
-              // 旧ブロックの配置/幅/倍率は URL フラグメントへ畳み込んで保持
-              const src = buildImageSrc({
-                base: blk.url,
-                align: blk.align === "left" || blk.align === "right" ? blk.align : "full",
-                width: blk.width == null ? "" : String(blk.width),
-                scale: typeof blk.scale === "number" ? blk.scale : 1,
-              });
-              return `![${typeof blk.caption === "string" ? blk.caption : ""}](${src})`;
-            }
-            return typeof blk.md === "string" ? blk.md : "";
-          })
-          .filter(Boolean)
-          .join("\n\n");
-      } else if (typeof s.body === "string") {
-        body = s.body;
-      }
-      return `# ${heading}\n\n${body}`;
-    })
-    .join("\n\n");
-}
-
-/** markdown を `# 見出し` 区切りで { heading, body } 配列へ */
-function markdownToSections(md: string): SectionItem[] {
-  const result: SectionItem[] = [];
-  let heading = "";
-  const bodyLines: string[] = [];
-  const flush = () => {
-    if (heading) result.push({ heading, body: bodyLines.join("\n").trim() });
-  };
-  for (const line of md.split("\n")) {
-    if (line.startsWith("# ")) {
-      flush();
-      heading = line.slice(2).trim();
-      bodyLines.length = 0;
-    } else {
-      bodyLines.push(line);
-    }
-  }
-  flush();
-  return result;
-}
-
-/**
- * 本文（柔軟セクション）を単一のリッチMarkdownエディタで編集する。
- * `# 見出し` でセクション分割し `{ heading, body }` 配列として保存。
- * 画像は挿入後、エディタ内のオーバーレイ操作で配置/幅/倍率/キャプションを調整できる。
- */
-function SectionsEditor({
-  value,
-  onChange,
-}: {
-  value: Json | null;
-  onChange: (v: Json) => void;
-}) {
-  const [markdown, setMarkdown] = useState(() => sectionsToMarkdown((value ?? []) as unknown[]));
-  const editorRef = useRef<MarkdownEditorHandle>(null);
-  const [imgModalOpen, setImgModalOpen] = useState(false);
-
-  const handleChange = (md: string) => {
-    setMarkdown(md);
-    onChange(markdownToSections(md) as unknown as Json);
-  };
-
-  return (
-    <>
-      <ImagePickerModal
-        open={imgModalOpen}
-        onClose={() => setImgModalOpen(false)}
-        onSelect={(url, alt) => {
-          editorRef.current?.insertImage(url, alt);
-          setImgModalOpen(false);
-        }}
-        folder="projects/sections"
-        showAlt
-      />
-      <MarkdownEditor
-        ref={editorRef}
-        value={markdown}
-        onChange={handleChange}
-        onRequestImage={() => setImgModalOpen(true)}
-        placeholder={`# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し`}
-      />
-    </>
-  );
-}
-
 // ─── Projects セクション ───────────────────────────────
 
-function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
-  const [projects, setProjects] = useState<WorkLocal[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+function WorksSection() {
+  const [projects, setProjects] = useState<Tables<"works">[]>([]);
   const [fetching, setFetching] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [skillVocabOptions, setSkillVocabOptions] = useState<SkillVocab[]>([]);
-  const [toolVocabOptions, setToolVocabOptions] = useState<ToolVocab[]>([]);
-  const [newSkillLabel, setNewSkillLabel] = useState("");
-  const [newToolName, setNewToolName] = useState("");
-  const [openSkillSelectorProjectId, setOpenSkillSelectorProjectId] = useState<string | null>(null);
-  const [openToolSelectorProjectId, setOpenToolSelectorProjectId] = useState<string | null>(null);
-  const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
-  // 紐付け用の経歴一覧（career_item_id の選択肢）
-  const [careerOptions, setCareerOptions] = useState<
-    Pick<CareerItem, "id" | "role" | "company" | "period">[]
-  >([]);
-  // 文章チェック（プロジェクトごと）
-  const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
-  const [proofResultsMap, setProofResultsMap] = useState<
-    Record<string, { issues: ProofreadIssue[] | null; error: string }>
-  >({});
 
-  const [dirty, setDirty] = useState(false);
-  const [projectPeriodInputs, setProjectPeriodInputs] = useState<
-    Record<
-      string,
-      {
-        startYear: string;
-        startMonth: string;
-        endYear: string;
-        endMonth: string;
-        isCurrent: boolean;
-      }
-    >
-  >({});
-
-  const markDirty = () => {
-    if (!dirty) {
-      setDirty(true);
-      onDirtyChange(true);
-    }
-  };
-
-  const markSaved = () => {
-    setDirty(false);
-    onDirtyChange(false);
-  };
-
-  const parseProjectPeriod = (period: string | null) => {
-    const text = period ?? "";
-    const m = text.match(
-      /^(\d{4})年(\d{1,2})月\s*-\s*(現在|(\d{4})年(\d{1,2})月)?$/,
-    );
-    if (!m) {
-      return {
-        startYear: "",
-        startMonth: "",
-        endYear: "",
-        endMonth: "",
-        isCurrent: false,
-      };
-    }
-    const startYear = m[1] ?? "";
-    const startMonth = m[2] ?? "";
-    const isCurrent = m[3] === "現在";
-    const endYear = m[4] ?? "";
-    const endMonth = m[5] ?? "";
-    return {
-      startYear,
-      startMonth,
-      endYear,
-      endMonth,
-      isCurrent,
-    };
-  };
-
-  const formatProjectPeriod = (opts: {
-    startYear: string;
-    startMonth: string;
-    endYear: string;
-    endMonth: string;
-    isCurrent: boolean;
-  }) => {
-    const sy = opts.startYear.trim();
-    const sm = opts.startMonth.trim();
-    const ey = opts.endYear.trim();
-    const em = opts.endMonth.trim();
-    if (!sy || !sm) return null;
-    const start = `${sy}年${sm}月`;
-    const end = opts.isCurrent
-      ? "現在"
-      : ey && em
-        ? `${ey}年${em}月`
-        : "";
-    return end ? `${start} - ${end}` : `${start} - `;
-  };
-
-  const handleProofread = async (project: WorkLocal) => {
-    // sections の本文テキストをすべて連結してチェック（ブロック型・旧形式の両対応）
-    const sections = (project.sections ?? []) as Array<{
-      heading?: string;
-      body?: string;
-      blocks?: Array<{ md?: string; caption?: string }>;
-    }>;
-    const text = sections
-      .map((s) => {
-        const blockText = Array.isArray(s.blocks)
-          ? s.blocks.map((b) => b.md ?? b.caption ?? "").join("\n")
-          : s.body ?? "";
-        return `${s.heading ?? ""}\n${blockText}`;
-      })
-      .join("\n\n");
-    setProofCheckingId(project.id);
-    setProofResultsMap((prev) => ({ ...prev, [project.id]: { issues: null, error: "" } }));
-    try {
-      const { issues } = await runProofread(text || project.title);
-      setProofResultsMap((prev) => ({ ...prev, [project.id]: { issues, error: "" } }));
-    } catch {
-      setProofResultsMap((prev) => ({
-        ...prev,
-        [project.id]: { issues: null, error: "チェックに失敗しました" },
-      }));
-    } finally {
-      setProofCheckingId(null);
-    }
-  };
-
-  const fetchProjects = useCallback(async () => {
-    setFetching(true);
-    const [
-      { data: projectRows },
-      { data: skillVocabRows },
-      { data: toolVocabRows },
-      { data: skillExperience },
-      skillLabelsMap,
-      toolNamesMap,
-      { data: careerRows },
-    ] = await Promise.all([
-      supabase
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const { data } = await supabase
         .from("works")
         .select("*")
-        .order("sort_order", { ascending: true }),
-      // 語彙マスタから取得（skills_vocab / tools_vocab）
-      supabase.from("skills_vocab").select("id, label").order("label"),
-      supabase.from("tools_vocab").select("id, name").order("name"),
-      // スキル経験（タグ表示用）
-      supabase
-        .from("skill_experience")
-        .select("*")
-        .order("sort_order", { ascending: true }),
-      // project_skills / project_tools の一括取得
-      listAllWorkSkillLabels(),
-      listAllWorkToolNames(),
-      // 紐付け用の経歴一覧
-      supabase
-        .from("career_items")
-        .select("id, role, company, period")
-        .order("sort_order", { ascending: true }),
-    ]);
-
-    if (projectRows) {
-      const withLocal: WorkLocal[] = projectRows.map((p) => ({
-        ...p,
-        skills: skillLabelsMap[p.id] ?? [],
-        tools: toolNamesMap[p.id] ?? [],
-      }));
-      setProjects(withLocal);
-      // 期間入力用のローカル状態を初期化
-      const periodState: typeof projectPeriodInputs = {};
-      for (const p of withLocal) {
-        periodState[p.id] = parseProjectPeriod(p.period ?? null);
-      }
-      setProjectPeriodInputs(periodState);
-    }
-    setSkillVocabOptions((skillVocabRows ?? []) as SkillVocab[]);
-    setToolVocabOptions((toolVocabRows ?? []) as ToolVocab[]);
-    setSkillExperienceRows((skillExperience ?? []) as SkillExperience[]);
-    setCareerOptions(careerRows ?? []);
-    setFetching(false);
+        .order("sort_order", { ascending: true });
+      if (data) setProjects(data);
+      setFetching(false);
+    };
+    fetchProjects();
   }, []);
-
-  useEffect(() => { fetchProjects(); }, [fetchProjects]);
-
-  const updateProject = (id: string, key: keyof WorkLocal, val: unknown) => {
-    markDirty();
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
-  };
-
-  const handleSave = async (project: WorkLocal) => {
-    setSaveError(null);
-    setSavingId(project.id);
-
-    // WorkLocal の skills/tools フィールドは DB カラムではないため除いて渡す
-    const { skills, tools, ...rest } = project;
-    const periodInputs =
-      projectPeriodInputs[project.id] ?? parseProjectPeriod(project.period);
-    const formattedPeriod = formatProjectPeriod(periodInputs);
-    const projectRow = {
-      ...rest,
-      period: formattedPeriod,
-    };
-    const [{ error }, skillsResult, toolsResult] = await Promise.all([
-      saveWork(projectRow, {}),
-      saveWorkSkillsByLabels(project.id, skills),
-      saveWorkToolsByNames(project.id, tools),
-    ]);
-    setSavingId(null);
-    const saveErr = error ?? skillsResult.error ?? toolsResult.error ?? null;
-    if (saveErr) {
-      setSaveError(saveErr);
-      return;
-    }
-    setSavedId(project.id);
-    setTimeout(() => setSavedId(null), 2000);
-    markSaved();
-    await fetchProjects();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        "このプロジェクトを削除します。よろしいですか？\nこの操作は取り消せません。"
-      )
-    ) {
-      return;
-    }
-    setDeletingId(id);
-    const { error } = await deleteWork(id);
-    setDeletingId(null);
-    if (error) {
-      console.error("Failed to delete project:", error);
-      return;
-    }
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-    if (expandedId === id) setExpandedId(null);
-  };
-
-  const handleAdd = () => {
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    const newProject: WorkLocal = {
-      id,
-      title: "新しいプロジェクト",
-      category: null,
-      thumbnail_url: null,
-      role: null,
-      period: null,
-      overview: null,
-      overview_cards: [
-        { icon: "Others/thinking-problem", heading: "Problem", body: "" },
-        { icon: "Travels/flag", heading: "Goal", body: "" },
-      ],
-      hero_brand: null,
-      hero_screenshots: [],
-      hero_bg_color: null,
-      career_item_id: null,
-      skills: [],
-      tools: [],
-      sections: [],
-      sort_order: projects.length,
-      created_at: now,
-    };
-
-    setProjects((prev) => [...prev, newProject]);
-    setExpandedId(id);
-  };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
 
   return (
     <section id="works" className="scroll-mt-8">
       <SectionTitle label="Works" title="制作・企画" />
-      {dirty && (
-        <p className="mb-3 text-[11px] text-[#f4c248]">
-          未保存の変更があります
-        </p>
-      )}
-
+      <p className="mb-6 text-[13px] text-[#9e9e9e]">
+        各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。
+      </p>
       <div className="mb-6 flex flex-col gap-3">
-        {projects.map((project) => {
-          const isOpen = expandedId === project.id;
-          return (
-            <div key={project.id} className="rounded-[12px] border border-[#424242] bg-[#212121]">
-              {/* ヘッダー行 */}
-              <div
-                className="flex cursor-pointer items-center justify-between px-5 py-4"
-                onClick={() => setExpandedId(isOpen ? null : project.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-medium text-[#48f4be]">{project.category ?? "—"}</span>
-                  <span className="text-[14px] text-white">{project.title}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] text-[#616161]">{isOpen ? "▲" : "▼"}</span>
-                </div>
-              </div>
-
-              {/* 編集フォーム（展開時） */}
-              {isOpen && (
-                <div className="border-t border-[#424242] p-5">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <FieldLabel>タイトル</FieldLabel>
-                      <Input
-                        value={project.title}
-                        onChange={(v) => updateProject(project.id, "title", v)}
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel>カテゴリ</FieldLabel>
-                      <Input
-                        value={project.category ?? ""}
-                        onChange={(v) => updateProject(project.id, "category", v || null)}
-                        placeholder="プラットフォーム開発"
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel>並び順 (sort_order)</FieldLabel>
-                      <Input
-                        value={String(project.sort_order)}
-                        onChange={(v) => updateProject(project.id, "sort_order", Number(v) || 0)}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>担当役割</FieldLabel>
-                      <Input
-                        value={project.role ?? ""}
-                        onChange={(v) => updateProject(project.id, "role", v || null)}
-                        placeholder="UI/UX Designer"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>担当経歴（Career）</FieldLabel>
-                      <select
-                        value={project.career_item_id ?? ""}
-                        onChange={(e) =>
-                          updateProject(
-                            project.id,
-                            "career_item_id",
-                            e.target.value || null,
-                          )
-                        }
-                        className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-[#48f4be]"
-                      >
-                        <option value="">（紐付けなし）</option>
-                        {careerOptions.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.role}｜{c.company}（{c.period}）
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-[11px] text-[#757575]">
-                        この制作・企画を担当した経歴。Career カードの Works リンクに表示されます。
-                      </p>
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>期間</FieldLabel>
-                      {(() => {
-                        const {
-                          startYear,
-                          startMonth,
-                          endYear,
-                          endMonth,
-                          isCurrent,
-                        } = projectPeriodInputs[project.id] ??
-                          parseProjectPeriod(project.period);
-                        const handleChange = (next: {
-                          startYear?: string;
-                          startMonth?: string;
-                          endYear?: string;
-                          endMonth?: string;
-                          isCurrent?: boolean;
-                        }) => {
-                          const current = projectPeriodInputs[project.id] ??
-                            parseProjectPeriod(project.period);
-                          const updated = {
-                            ...current,
-                            ...next,
-                          };
-                          setProjectPeriodInputs((prev) => ({
-                            ...prev,
-                            [project.id]: updated,
-                          }));
-                          markDirty();
-                        };
-                        return (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="mb-1 text-[11px] text-[#9e9e9e]">
-                                期間開始
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  min={1900}
-                                  max={2100}
-                                  value={startYear}
-                                  onChange={(e) =>
-                                    handleChange({ startYear: e.target.value })
-                                  }
-                                  placeholder="2023"
-                                  className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
-                                />
-                                <span className="text-[12px] text-[#9e9e9e]">
-                                  年
-                                </span>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={12}
-                                  value={startMonth}
-                                  onChange={(e) =>
-                                    handleChange({ startMonth: e.target.value })
-                                  }
-                                  placeholder="4"
-                                  className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
-                                />
-                                <span className="text-[12px] text-[#9e9e9e]">
-                                  月
-                                </span>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="mb-1 text-[11px] text-[#9e9e9e]">
-                                期間終了
-                              </p>
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
-                                    min={1900}
-                                    max={2100}
-                                    value={isCurrent ? "" : endYear}
-                                    onChange={(e) =>
-                                      handleChange({ endYear: e.target.value })
-                                    }
-                                    placeholder="2024"
-                                    disabled={isCurrent}
-                                    className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
-                                  />
-                                  <span className="text-[12px] text-[#9e9e9e]">
-                                    年
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    max={12}
-                                    value={isCurrent ? "" : endMonth}
-                                    onChange={(e) =>
-                                      handleChange({ endMonth: e.target.value })
-                                    }
-                                    placeholder="3"
-                                    disabled={isCurrent}
-                                    className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
-                                  />
-                                  <span className="text-[12px] text-[#9e9e9e]">
-                                    月
-                                  </span>
-                                </div>
-                                <label className="inline-flex items-center gap-2 text-[12px] text-[#9e9e9e]">
-                                  <input
-                                    type="checkbox"
-                                    className="h-3 w-3 accent-[#48f4be]"
-                                    checked={isCurrent}
-                                    onChange={(e) =>
-                                      handleChange({ isCurrent: e.target.checked })
-                                    }
-                                  />
-                                  <span>現在</span>
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <FormGroupHeader>Hero エリア設定</FormGroupHeader>
-                    <div>
-                      <FieldLabel>ブランド名（Hero 左上のワードマーク）</FieldLabel>
-                      <Input
-                        value={project.hero_brand ?? ""}
-                        onChange={(v) => updateProject(project.id, "hero_brand", v || null)}
-                        placeholder="Bistecca"
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel>Hero 背景色（空欄でデフォルト緑）</FieldLabel>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={project.hero_bg_color ?? "#48f4be"}
-                          onChange={(e) => updateProject(project.id, "hero_bg_color", e.target.value)}
-                          className="h-9 w-12 shrink-0 rounded-[6px] border border-[#424242] bg-[#1a1a1a]"
-                        />
-                        <Input
-                          value={project.hero_bg_color ?? ""}
-                          onChange={(v) => updateProject(project.id, "hero_bg_color", v || null)}
-                          placeholder="#48f4be"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="col-span-2">
-                      <FieldLabel>Hero スクリーンショット（デバイスモックアップ）</FieldLabel>
-                      <HeroScreenshotsEditor
-                        value={(project.hero_screenshots ?? []) as string[]}
-                        onChange={(v) => updateProject(project.id, "hero_screenshots", v as unknown as Json)}
-                      />
-                    </div>
-
-                    <FormGroupHeader>Overview 設定</FormGroupHeader>
-                    <div className="col-span-2">
-                      <FieldLabel>Overview（リード本文）</FieldLabel>
-                      <Textarea
-                        value={project.overview ?? ""}
-                        onChange={(v) => updateProject(project.id, "overview", v || null)}
-                        rows={4}
-                        placeholder="このプロジェクトの概要…"
-                      />
-                    </div>
-
-                    {/* Overview 情報カード（Problem / Goal 等。2カラムグリッドで表示・増減/非表示可） */}
-                    <div className="col-span-2">
-                      <FieldLabel>Overview 情報カード（アイコン付き見出し）</FieldLabel>
-                      <OverviewCardsEditor
-                        value={(project.overview_cards ?? []) as OverviewCardLocal[]}
-                        onChange={(v) => updateProject(project.id, "overview_cards", v as unknown as Json)}
-                      />
-                    </div>
-
-                    <FormGroupHeader>公開・タグ設定（一覧サムネ / スキル / ツール）</FormGroupHeader>
-                    <div className="col-span-2">
-                      <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
-                      <ImagePickerField
-                        value={project.thumbnail_url ?? ""}
-                        onChange={(v) => updateProject(project.id, "thumbnail_url", v || null)}
-                        folder="projects/thumbnails"
-                        previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>スキル</FieldLabel>
-                      <div className="flex flex-col gap-2">
-                        {/* 選択済みスキルの表示（常時） */}
-                        <div className="flex flex-wrap gap-2">
-                          {(project.skills ?? []).map((s) => (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => {
-                                // ピルをクリックしたら選択解除
-                                const current = new Set(project.skills ?? []);
-                                for (const v of Array.from(current)) {
-                                  if (v.toLowerCase() === s.toLowerCase()) {
-                                    current.delete(v);
-                                  }
-                                }
-                                updateProject(
-                                  project.id,
-                                  "skills",
-                                  Array.from(current)
-                                );
-                              }}
-                              className="rounded-[999px] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white hover:bg-[#2a2a2a]"
-                              title="クリックで削除"
-                            >
-                              {s}
-                            </button>
-                          ))}
-                          {(project.skills ?? []).length === 0 && (
-                            <span className="text-[12px] text-[#616161]">
-                              未選択
-                            </span>
-                          )}
-                        </div>
-                        {/* 選択中のみ開くセレクタ */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenSkillSelectorProjectId(
-                              openSkillSelectorProjectId === project.id ? null : project.id
-                            )
-                          }
-                          className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                        >
-                          スキルを選択
-                        </button>
-                        {openSkillSelectorProjectId === project.id && (
-                          <div className="mt-2 flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-2">
-                              {skillExperienceRows.map((row) => {
-                                const label = row.label_short || row.label;
-                                const selected = (project.skills ?? []).some(
-                                  (s) => s.toLowerCase() === label.toLowerCase()
-                                );
-                                return (
-                                  <label
-                                    key={row.id}
-                                    className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-3 w-3 accent-[#48f4be]"
-                                      checked={selected}
-                                      onChange={(e) => {
-                                        const current = new Set(project.skills);
-                                        if (e.target.checked) {
-                                          current.add(label);
-                                        } else {
-                                          for (const s of Array.from(current)) {
-                                            if (s.toLowerCase() === label.toLowerCase()) {
-                                              current.delete(s);
-                                            }
-                                          }
-                                        }
-                                        updateProject(
-                                          project.id,
-                                          "skills",
-                                          Array.from(current)
-                                        );
-                                      }}
-                                    />
-                                    <span>{label}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={newSkillLabel}
-                                onChange={setNewSkillLabel}
-                                placeholder="新しいスキル名を追加"
-                                className="text-[12px] py-1"
-                              />
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const name = newSkillLabel.trim();
-                                  if (!name) return;
-                                  // skills_vocab に登録して ID を取得
-                                  const result = await addSkillLabelFromWorks(name);
-                                  if (result.id) {
-                                    setSkillVocabOptions((prev) => {
-                                      if (prev.some((v) => v.label.toLowerCase() === name.toLowerCase())) return prev;
-                                      return [...prev, { id: result.id!, label: name }];
-                                    });
-                                  }
-                                  const current = new Set(project.skills ?? []);
-                                  current.add(name);
-                                  updateProject(
-                                    project.id,
-                                    "skills",
-                                    Array.from(current)
-                                  );
-                                  setNewSkillLabel("");
-                                }}
-                                className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                              >
-                                追加
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>ツール</FieldLabel>
-                      <div className="flex flex-col gap-2">
-                        {/* 選択済みツールの表示（常時） */}
-                        <div className="flex flex-wrap gap-2">
-                          {(project.tools ?? []).map((t) => (
-                            <button
-                              key={t}
-                              type="button"
-                              onClick={() => {
-                                // ピルをクリックしたら選択解除
-                                const current = new Set(project.tools ?? []);
-                                for (const v of Array.from(current)) {
-                                  if (v.toLowerCase() === t.toLowerCase()) {
-                                    current.delete(v);
-                                  }
-                                }
-                                updateProject(
-                                  project.id,
-                                  "tools",
-                                  Array.from(current)
-                                );
-                              }}
-                              className="rounded-[999px] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white hover:bg-[#2a2a2a]"
-                              title="クリックで削除"
-                            >
-                              {t}
-                            </button>
-                          ))}
-                          {(project.tools ?? []).length === 0 && (
-                            <span className="text-[12px] text-[#616161]">
-                              未選択
-                            </span>
-                          )}
-                        </div>
-                        {/* 選択中のみ開くセレクタ */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenToolSelectorProjectId(
-                              openToolSelectorProjectId === project.id ? null : project.id
-                            )
-                          }
-                          className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                        >
-                          ツールを選択
-                        </button>
-                        {openToolSelectorProjectId === project.id && (
-                          <div className="mt-2 flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-2">
-                              {toolVocabOptions.map((vocab) => {
-                                const selected = (project.tools ?? []).some(
-                                  (t) => t.toLowerCase() === vocab.name.toLowerCase()
-                                );
-                                return (
-                                  <label
-                                    key={vocab.id}
-                                    className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-3 w-3 accent-[#48f4be]"
-                                      checked={selected}
-                                      onChange={(e) => {
-                                        const current = new Set(project.tools ?? []);
-                                        if (e.target.checked) {
-                                          current.add(vocab.name);
-                                        } else {
-                                          for (const t of Array.from(current)) {
-                                            if (t.toLowerCase() === vocab.name.toLowerCase()) {
-                                              current.delete(t);
-                                            }
-                                          }
-                                        }
-                                        updateProject(
-                                          project.id,
-                                          "tools",
-                                          Array.from(current)
-                                        );
-                                      }}
-                                    />
-                                    <span>{vocab.name}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={newToolName}
-                                onChange={setNewToolName}
-                                placeholder="新しいツール名を追加"
-                                className="text-[12px] py-1"
-                              />
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const name = newToolName.trim();
-                                  if (!name) return;
-                                  // tools_vocab に登録して ID を取得
-                                  const result = await addToolNameFromWorks(name);
-                                  if (result.id) {
-                                    setToolVocabOptions((prev) => {
-                                      if (prev.some((v) => v.name.toLowerCase() === name.toLowerCase())) return prev;
-                                      return [...prev, { id: result.id!, name }];
-                                    });
-                                  }
-                                  const current = new Set(project.tools ?? []);
-                                  current.add(name);
-                                  updateProject(
-                                    project.id,
-                                    "tools",
-                                    Array.from(current)
-                                  );
-                                  setNewToolName("");
-                                }}
-                                className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                              >
-                                追加
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <FormGroupHeader>本文（リッチMarkdown）</FormGroupHeader>
-                    <div className="col-span-2">
-                      <FieldLabel>本文セクション（# で見出し・34px / 画像は挿入後にレイアウト調整）</FieldLabel>
-                      <SectionsEditor
-                        key={project.id}
-                        value={project.sections}
-                        onChange={(v) => updateProject(project.id, "sections", v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleSave(project)}
-                        disabled={savingId === project.id}
-                        className="rounded-[8px] bg-[#48f4be] px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
-                      >
-                        {savingId === project.id ? "保存中…" : "保存"}
-                      </button>
-                      {savedId === project.id && (
-                        <span className="text-[12px] text-[#48f4be]">✓ 保存しました</span>
-                      )}
-                      {saveError && expandedId === project.id && (
-                        <span className="text-[12px] text-[#f4487e]" title={saveError}>
-                          保存に失敗しました
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleProofread(project)}
-                        disabled={proofCheckingId === project.id}
-                        className="rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white disabled:opacity-40"
-                      >
-                        {proofCheckingId === project.id ? "チェック中…" : "文章をチェック"}
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(project.id)}
-                      disabled={deletingId === project.id}
-                      className="rounded-[8px] px-3 py-1.5 text-[13px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
-                    >
-                      {deletingId === project.id ? "削除中…" : "削除"}
-                    </button>
-                  </div>
-                  <ProofreadPanel
-                    checking={proofCheckingId === project.id}
-                    issues={proofResultsMap[project.id]?.issues ?? null}
-                    error={proofResultsMap[project.id]?.error ?? ""}
-                  />
-                </div>
-              )}
+        {projects.map((project) => (
+          <Link
+            key={project.id}
+            href={`/admin/works/${project.id}`}
+            className="flex items-center justify-between rounded-[12px] border border-[#424242] bg-[#161616] px-5 py-4 transition-colors hover:border-[#48f4be]"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="shrink-0 text-[12px] font-medium text-[#48f4be]">{project.category ?? "—"}</span>
+              <span className="truncate text-[14px] text-white">{project.title}</span>
             </div>
-          );
-        })}
+            <span className="shrink-0 text-[12px] text-[#616161]">編集 →</span>
+          </Link>
+        ))}
+        {projects.length === 0 && <p className="text-[13px] text-[#616161]">プロジェクトがありません</p>}
       </div>
-
-      <button
-        type="button"
-        onClick={handleAdd}
-        className="w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
+      <Link
+        href="/admin/works/new"
+        className="block w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-center text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
       >
         ＋ プロジェクトを追加
-      </button>
+      </Link>
     </section>
   );
 }
@@ -2605,21 +1673,25 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
   );
 }
 
-// ─── メインレイアウト ───────────────────────────────────
-// 各設定セクションは /admin/<section> の専用ページとして 1 画面 1 セクションで表示する。
+// ─── 共通シェル ─────────────────────────────────────
 
-export function AdminLayout({ section }: { section: AdminSectionId }) {
-  const [dirtySections, setDirtySections] = useState<Record<string, boolean>>({});
-
-  const hasUnsavedChanges = Object.values(dirtySections).some(Boolean);
-
-  const setSectionDirty = (sectionId: string, dirty: boolean) => {
-    setDirtySections((prev) => ({
-      ...prev,
-      [sectionId]: dirty,
-    }));
-  };
-
+/**
+ * admin 共通シェル（サイドバー + main）。
+ * /admin/<section> 各ページと /admin/works/[id] の全画面エディタページで共用する。
+ */
+export function AdminShell({
+  section,
+  hasUnsavedChanges = false,
+  wide = false,
+  children,
+}: {
+  /** サイドバーでハイライトするセクション */
+  section: AdminSectionId;
+  hasUnsavedChanges?: boolean;
+  /** true で main の最大幅制限（916px）を外し全幅・全高レイアウトにする（全画面エディタ用） */
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges) return;
@@ -2693,38 +1765,64 @@ export function AdminLayout({ section }: { section: AdminSectionId }) {
         </div>
       </aside>
 
-      {/* メインコンテンツ（サイトの最大表示幅 916px までレスポンシブに使用） */}
+      {/* メインコンテンツ（通常はサイトの最大表示幅 916px、wide は全幅・全高） */}
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[916px] px-8 py-12 lg:px-12">
-          <div className="mb-16">
-            <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Content Management</p>
-            <p className="mt-1 font-mplus text-[40px] font-bold tracking-[2px] text-white">Admin</p>
-            <p className="mt-3 text-[14px] text-[#9e9e9e]">
-              ポートフォリオのコンテンツを編集・管理します。変更は保存ボタンを押すと即時反映されます。
-            </p>
-          </div>
-
-          {/* 1画面1セクション（/admin/<section> ごとに該当セクションのみ表示） */}
-          {section === "profile" && (
-            <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
-          )}
-          {section === "career" && (
-            <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
-          )}
-          {section === "works" && (
-            <WorksSection onDirtyChange={(dirty) => setSectionDirty("works", dirty)} />
-          )}
-          {section === "skills-experience" && (
-            <SkillsExperienceSection
-              onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
-            />
-          )}
-
-          <div className="mt-24 border-t border-[#2a2a2a] pt-8">
-            <p className="text-[12px] text-[#424242]">Portfolio Admin</p>
-          </div>
+        <div
+          className={
+            wide
+              ? "flex h-full min-h-0 w-full flex-col px-8 py-8 lg:px-10"
+              : "mx-auto w-full max-w-[916px] px-8 py-12 lg:px-12"
+          }
+        >
+          {children}
         </div>
       </main>
     </div>
+  );
+}
+
+// ─── メインレイアウト ───────────────────────────────────
+// 各設定セクションは /admin/<section> の専用ページとして 1 画面 1 セクションで表示する。
+
+export function AdminLayout({ section }: { section: AdminSectionId }) {
+  const [dirtySections, setDirtySections] = useState<Record<string, boolean>>({});
+
+  const hasUnsavedChanges = Object.values(dirtySections).some(Boolean);
+
+  const setSectionDirty = (sectionId: string, dirty: boolean) => {
+    setDirtySections((prev) => ({
+      ...prev,
+      [sectionId]: dirty,
+    }));
+  };
+
+  return (
+    <AdminShell section={section} hasUnsavedChanges={hasUnsavedChanges}>
+      <div className="mb-16">
+        <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Content Management</p>
+        <p className="mt-1 font-mplus text-[40px] font-bold tracking-[2px] text-white">Admin</p>
+        <p className="mt-3 text-[14px] text-[#9e9e9e]">
+          ポートフォリオのコンテンツを編集・管理します。変更は保存ボタンを押すと即時反映されます。
+        </p>
+      </div>
+
+      {/* 1画面1セクション（/admin/<section> ごとに該当セクションのみ表示） */}
+      {section === "profile" && (
+        <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
+      )}
+      {section === "career" && (
+        <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
+      )}
+      {section === "works" && <WorksSection />}
+      {section === "skills-experience" && (
+        <SkillsExperienceSection
+          onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
+        />
+      )}
+
+      <div className="mt-24 border-t border-[#2a2a2a] pt-8">
+        <p className="text-[12px] text-[#424242]">Portfolio Admin</p>
+      </div>
+    </AdminShell>
   );
 }

@@ -1,9 +1,9 @@
-import type { FC, ReactNode } from "react";
-import React from "react";
+import type { FC } from "react";
 import Headline from "./Headline";
 import Icon from "./Icon";
 import Tag from "./Tag";
-import { parseImageSrc, widthToCss } from "@/lib/image-layout";
+import { MarkdownBody } from "./WorkMarkdown";
+import { buildImageMarkdown } from "@/lib/image-layout";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
@@ -15,53 +15,42 @@ type Work = Tables<"works">;
 /** Overview 内のアイコン付き見出しカード（Problem / Goal など。増減・非表示可） */
 type OverviewCard = { icon: string; heading: string; body: string };
 
-/** 柔軟な Headline セクションのコンテンツブロック（R4） */
-type TextBlock = { type: "text"; md: string };
-type ImageBlock = {
-  type: "image";
-  url: string;
-  /** 表示幅。number は px、string はそのまま（例: "60%"）。未指定で 100% */
-  width?: number | string;
-  /** 回り込み（折り返し）配置。full=単独行 / left・right=テキスト回り込み */
-  align?: "full" | "left" | "right";
-  /** 表示倍率（画像内容のズーム）。1 = 等倍 */
-  scale?: number;
-  /** 補足キャプション（10px） */
-  caption?: string;
-};
-type Block = TextBlock | ImageBlock;
-type ContentSection = { heading: string; blocks: Block[] };
+/** セクション＝見出し＋本文 markdown。旧ブロック形式 {blocks} は markdown へ変換して互換維持 */
+type ContentSection = { heading: string; md: string };
 
-/** sections(jsonb) を新旧両対応で ContentSection[] に正規化（後方互換アダプタ） */
 function normalizeSections(raw: unknown): ContentSection[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((item): ContentSection => {
     const obj = (item ?? {}) as Record<string, unknown>;
     const heading = typeof obj.heading === "string" ? obj.heading : "";
     if (Array.isArray(obj.blocks)) {
-      const blocks = (obj.blocks as unknown[])
-        .map((b): Block | null => {
+      // 旧ブロック形式: text は markdown として、image は attrs 付き画像行へ変換
+      const md = (obj.blocks as unknown[])
+        .map((b) => {
           const blk = (b ?? {}) as Record<string, unknown>;
           if (blk.type === "image" && typeof blk.url === "string") {
-            return {
-              type: "image",
-              url: blk.url,
-              width: (blk.width as number | string | undefined) ?? undefined,
-              align: (blk.align as ImageBlock["align"]) ?? "full",
-              scale: typeof blk.scale === "number" ? blk.scale : 1,
-              caption: typeof blk.caption === "string" ? blk.caption : undefined,
-            };
+            return buildImageMarkdown(
+              typeof blk.caption === "string" ? blk.caption : "",
+              blk.url,
+              {
+                align:
+                  blk.align === "left" || blk.align === "right" || blk.align === "center"
+                    ? blk.align
+                    : "full",
+                width: blk.width == null ? "" : String(blk.width),
+                scale: typeof blk.scale === "number" ? blk.scale : 1,
+              }
+            );
           }
-          if (typeof blk.md === "string") return { type: "text", md: blk.md };
-          if (typeof blk.body === "string") return { type: "text", md: blk.body };
-          return null;
+          if (typeof blk.md === "string") return blk.md;
+          if (typeof blk.body === "string") return blk.body;
+          return "";
         })
-        .filter((b): b is Block => b !== null);
-      return { heading, blocks };
+        .filter(Boolean)
+        .join("\n\n");
+      return { heading, md };
     }
-    // 旧形式 { heading, body } → text ブロック1つ
-    const body = typeof obj.body === "string" ? obj.body : "";
-    return { heading, blocks: [{ type: "text", md: body }] };
+    return { heading, md: typeof obj.body === "string" ? obj.body : "" };
   });
 }
 
@@ -97,208 +86,6 @@ const CardIcon: FC<{ icon: string; className?: string; tint?: string }> = ({ ico
   if (!parsed) return null;
   // Icon の set は型上 IconSet だが、DB 由来の文字列を許容するため any 経由で渡す
   return <Icon set={parsed.set as never} name={parsed.name} className={className} tintColor={tint} />;
-};
-
-/* ------------------------------------------------------------------ *
- * テキスト（markdown）レンダリング
- *  - SectionBodyRenderer: 既存スタック表示（## 見出し・画像・段落）
- *  - FlowText: float 画像に回り込ませるためのブロックフロー版
- * ------------------------------------------------------------------ */
-
-const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
-
-function renderInline(text: string, key: string): ReactNode[] {
-  const parts: ReactNode[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  IMG_RE.lastIndex = 0;
-  while ((m = IMG_RE.exec(text)) !== null) {
-    const before = text.slice(last, m.index);
-    if (before) {
-      parts.push(
-        <React.Fragment key={`${key}-t-${last}`}>
-          {before.split("\n").map((line, li, arr) => (
-            <React.Fragment key={li}>
-              {line}
-              {li < arr.length - 1 && <br />}
-            </React.Fragment>
-          ))}
-        </React.Fragment>
-      );
-    }
-    parts.push(
-      <img
-        key={`${key}-img-${m.index}`}
-        src={m[2]}
-        alt={m[1]}
-        className="my-4 max-w-full rounded-[12px] block"
-      />
-    );
-    last = m.index + m[0].length;
-  }
-  const tail = text.slice(last);
-  if (tail) {
-    parts.push(
-      <React.Fragment key={`${key}-tail`}>
-        {tail.split("\n").map((line, li, arr) => (
-          <React.Fragment key={li}>
-            {line}
-            {li < arr.length - 1 && <br />}
-          </React.Fragment>
-        ))}
-      </React.Fragment>
-    );
-  }
-  return parts;
-}
-
-/**
- * Markdown 本文を全タイポレベルで描画（ブロックフロー＝float 画像に回り込み可）。
- * Figma 457:2366 のタイポ体系に準拠：
- *  - `## `   → 見出し01（Noto Bold 24px white / tracking 1.2px）
- *  - `### `  → 見出し02（Noto Bold 20px mint #b3ffe7 / tracking 1px）
- *  - `#### ` → 見出し03（Avenir Heavy 17px gray #9e9e9e / tracking 0.85px）
- *  - `> `    → Body02（Noto Regular 13px white / tracking 0.39px、blockquote 由来）
- *  - 通常段落 → Body01（Noto Regular 15px white / tracking 0.45px）
- *  - `![alt](url)` → インライン画像
- * （`# ` はセクション分割記号のため本文には来ない想定。来た場合は本文として扱う）
- */
-const MarkdownBody: FC<{ md: string }> = ({ md }) => {
-  const out: ReactNode[] = [];
-  let para: string[] = [];
-  const flush = () => {
-    const text = para.join("\n").trim();
-    if (text) {
-      out.push(
-        <p key={`p-${out.length}`} className="mb-4 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
-          {renderInline(text, `p-${out.length}`)}
-        </p>
-      );
-    }
-    para = [];
-  };
-  for (const rawLine of md.split("\n")) {
-    const line = rawLine.trimEnd();
-    const imgOnly = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-    if (imgOnly) {
-      // 画像単独行 → 回り込みブロック（URL フラグメントで配置/幅/倍率を指定）
-      flush();
-      const layout = parseImageSrc(imgOnly[2]);
-      out.push(
-        <ImageFigure
-          key={`img-${out.length}`}
-          block={{
-            type: "image",
-            url: layout.base,
-            align: layout.align,
-            width: layout.width || undefined,
-            scale: layout.scale,
-            caption: imgOnly[1] || undefined,
-          }}
-        />
-      );
-    } else if (line.startsWith("##### ")) {
-      // Body02（13px 白）。markdown では heading level 5 として表現（admin は「小本文」UIで指定）
-      flush();
-      out.push(
-        <p key={`b2-${out.length}`} className="mb-3 text-[13px] leading-[1.5] tracking-[0.39px] text-white">
-          {renderInline(line.slice(6).trim(), `b2-${out.length}`)}
-        </p>
-      );
-    } else if (line.startsWith("#### ")) {
-      flush();
-      out.push(
-        <p key={`h-${out.length}`} className="mb-3 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
-          {line.slice(5).trim()}
-        </p>
-      );
-    } else if (line.startsWith("### ")) {
-      flush();
-      out.push(
-        <p key={`h-${out.length}`} className="mb-3 font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">
-          {line.slice(4).trim()}
-        </p>
-      );
-    } else if (line.startsWith("## ")) {
-      flush();
-      out.push(
-        <p key={`h-${out.length}`} className="mb-4 font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
-          {line.slice(3).trim()}
-        </p>
-      );
-    } else if (line.startsWith("> ")) {
-      // blockquote（引用）: テキスト色 system-400(#BDBDBD) ＋ 左ボーダー
-      flush();
-      out.push(
-        <p key={`q-${out.length}`} className="mb-3 border-l-2 border-[#424242] pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">
-          {renderInline(line.slice(2).trim(), `q-${out.length}`)}
-        </p>
-      );
-    } else if (line.trim() === "") {
-      flush();
-    } else if (line.startsWith("# ")) {
-      para.push(line.slice(2).trim());
-    } else {
-      para.push(line);
-    }
-  }
-  flush();
-  // flow-root で float 画像を内包し、後続テキストを回り込ませる
-  return <div style={{ display: "flow-root" }}>{out}</div>;
-};
-
-/* ------------------------------------------------------------------ *
- * 画像ブロック
- * ------------------------------------------------------------------ */
-
-const ImageFigure: FC<{ block: ImageBlock }> = ({ block }) => {
-  const align = block.align ?? "full";
-  const cssW =
-    block.width == null || block.width === ""
-      ? undefined
-      : typeof block.width === "number"
-        ? `${block.width}px`
-        : widthToCss(block.width);
-  const width = align === "full" ? "100%" : cssW ?? "50%";
-  const scale = block.scale && block.scale !== 1 ? block.scale : undefined;
-
-  const floatClass =
-    align === "left"
-      ? "float-left mr-6 mb-2"
-      : align === "right"
-        ? "float-right ml-6 mb-2"
-        : "clear-both my-2";
-
-  return (
-    <figure className={`${floatClass}`} style={{ width: align === "full" ? "100%" : width, maxWidth: "100%" }}>
-      <div className="overflow-hidden rounded-[12px]">
-        <img
-          src={block.url}
-          alt={block.caption ?? ""}
-          className="block w-full h-auto"
-          style={scale ? { transform: `scale(${scale})`, transformOrigin: "center" } : undefined}
-        />
-      </div>
-      {block.caption && (
-        <figcaption className="mt-2 text-[10px] leading-[1.5] tracking-[0.3px] text-[#9e9e9e]">
-          {block.caption}
-        </figcaption>
-      )}
-    </figure>
-  );
-};
-
-/** Headline セクション本体。常にブロックフローで描画し、float 画像の回り込みに対応 */
-const ContentSectionBody: FC<{ blocks: Block[] }> = ({ blocks }) => {
-  const hasFloat = blocks.some((b) => b.type === "image" && (b.align === "left" || b.align === "right"));
-  return (
-    <div className={hasFloat ? "overflow-hidden" : undefined}>
-      {blocks.map((b, i) =>
-        b.type === "text" ? <MarkdownBody key={i} md={b.md} /> : <ImageFigure key={i} block={b} />
-      )}
-      {hasFloat && <div className="clear-both" />}
-    </div>
-  );
 };
 
 /* ------------------------------------------------------------------ *
@@ -474,7 +261,7 @@ const WorkModalContent: FC<WorkModalContentProps> = ({ work, skills = [], tools 
         {sections.map((section, i) => (
           <section key={i} className="flex flex-col gap-6">
             <Headline title={section.heading} variant="section" />
-            <ContentSectionBody blocks={section.blocks} />
+            <MarkdownBody md={section.md} />
           </section>
         ))}
       </div>

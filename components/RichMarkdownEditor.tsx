@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type FC,
@@ -9,12 +10,14 @@ import {
 } from "react";
 import { WorkMarkdownDocument } from "./WorkMarkdown";
 import { buildImageMarkdown, widthToCss, type ImageAlign } from "@/lib/image-layout";
+import { container, type DeviceMode } from "@/lib/design-tokens";
 
 /**
  * Work 本文用のリッチ Markdown エディタ（リファレンス「リッチマークダウンエディタ実装」準拠）。
  *
  * - 生 Markdown の textarea ＋ ツールバー ＋ 編集 / 分割 / プレビュー の3モード
  * - プレビューは公開側と同一の共有レンダラ（WorkMarkdownDocument）で描画
+ * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
  * - 画像・リンク・グリッドは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）
  */
 
@@ -29,6 +32,16 @@ export type RichMarkdownEditorProps = {
 };
 
 type Mode = "edit" | "split" | "preview";
+
+/** プレビューのデバイス幅。"full" はペイン幅いっぱい（実寸指定なし） */
+type PreviewDevice = "full" | DeviceMode;
+
+const DEVICE_OPTIONS: { key: PreviewDevice; label: string }[] = [
+  { key: "full", label: "フル" },
+  { key: "desktop", label: "Desktop" },
+  { key: "tablet", label: "Tablet" },
+  { key: "mobile", label: "Mobile" },
+];
 
 /* ─── 小物 UI ─────────────────────────────────────── */
 
@@ -88,6 +101,58 @@ const dBtnPrimary =
 const dBtnGhost =
   "rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] hover:border-[#616161] hover:text-white";
 
+/* ─── プレビューペイン（デバイス幅切替）────────────────── */
+
+/**
+ * デバイス実寸（Device コレクションの Screen.Width）でプレビューを描画する。
+ * コンテンツは Main.Max で中央寄せし、ペインが実寸より狭い場合は縮小表示する。
+ */
+function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; half: boolean }) {
+  const paneRef = useRef<HTMLDivElement>(null);
+  const [paneW, setPaneW] = useState(0);
+
+  useEffect(() => {
+    const el = paneRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => setPaneW(entries[0].contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const widthClass = half ? "w-1/2" : "w-full";
+
+  if (device === "full") {
+    return (
+      <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#212121] p-6`}>
+        <WorkMarkdownDocument md={md} />
+      </div>
+    );
+  }
+
+  const screenW = container[device].width.screen;
+  const mainMax = container[device].width.mainMax;
+  const scale = paneW > 0 ? Math.min(1, (paneW - 24) / screenW) : 1;
+
+  return (
+    <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#141414] p-3`}>
+      <p className="pb-2 text-center text-[11px] text-[#616161]">
+        {screenW}px × {container[device].height.screen}px
+        {scale < 1 && `（${Math.round(scale * 100)}% 縮小表示）`}
+      </p>
+      {/* デバイスフレーム（Screen.Width 実寸。ペイン幅に収まらない場合は zoom で縮小） */}
+      <div
+        style={{ width: screenW, zoom: scale }}
+        className="mx-auto rounded-[8px] border border-[#2a2a2a] bg-[#212121] py-8"
+      >
+        {/* メインコンテンツ幅（Main.Max）で中央寄せ */}
+        <div style={{ maxWidth: mainMax }} className="mx-auto px-6">
+          <WorkMarkdownDocument md={md} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── 本体 ─────────────────────────────────────────── */
 
 const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
@@ -98,6 +163,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   className,
 }) => {
   const [mode, setMode] = useState<Mode>("split");
+  const [device, setDevice] = useState<PreviewDevice>("full");
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [dialog, setDialog] = useState<null | "link" | "image" | "grid">(null);
 
@@ -166,26 +232,51 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         <TBtn label="画像" title="画像を挿入（幅 / 配置 / 倍率 / キャプション）" onClick={() => setDialog("image")} />
         <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
 
-        {/* モード切替 */}
-        <div className="ml-auto flex items-center gap-0.5 rounded-[8px] border border-[#424242] bg-[#1a1a1a] p-0.5">
-          {(
-            [
-              ["edit", "編集"],
-              ["split", "分割"],
-              ["preview", "プレビュー"],
-            ] as const
-          ).map(([m, label]) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`rounded-[6px] px-2.5 py-1 text-[11px] transition-colors ${
-                mode === m ? "bg-[#48f4be]/10 text-[#48f4be]" : "text-[#9e9e9e] hover:text-white"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        {/* デバイス幅切替（プレビュー表示時のみ。Device コレクション = container トークン参照） */}
+        <div className="ml-auto flex items-center gap-2">
+          {mode !== "edit" && (
+            <div className="flex items-center gap-0.5 rounded-[8px] border border-[#424242] bg-[#1a1a1a] p-0.5">
+              {DEVICE_OPTIONS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  title={
+                    key === "full"
+                      ? "ペイン幅いっぱいで表示"
+                      : `${container[key].width.screen}px（Device/${label} Screen.Width）`
+                  }
+                  onClick={() => setDevice(key)}
+                  className={`rounded-[6px] px-2.5 py-1 text-[11px] transition-colors ${
+                    device === key ? "bg-[#48f4be]/10 text-[#48f4be]" : "text-[#9e9e9e] hover:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* モード切替 */}
+          <div className="flex items-center gap-0.5 rounded-[8px] border border-[#424242] bg-[#1a1a1a] p-0.5">
+            {(
+              [
+                ["edit", "編集"],
+                ["split", "分割"],
+                ["preview", "プレビュー"],
+              ] as const
+            ).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`rounded-[6px] px-2.5 py-1 text-[11px] transition-colors ${
+                  mode === m ? "bg-[#48f4be]/10 text-[#48f4be]" : "text-[#9e9e9e] hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -214,9 +305,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           />
         )}
         {(mode === "preview" || mode === "split") && (
-          <div className={`${mode === "split" ? "w-1/2" : "w-full"} h-full min-h-[320px] overflow-auto bg-[#212121] p-6`}>
-            <WorkMarkdownDocument md={value} />
-          </div>
+          <PreviewPane md={value} device={device} half={mode === "split"} />
         )}
       </div>
 

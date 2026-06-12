@@ -296,8 +296,12 @@ function TokensSection() {
         ))}
       </div>
 
-      {/* ── Container ── */}
-      <SubHeading>Container</SubHeading>
+      {/* ── Container（Figma Variables「Device」コレクションと同期） ── */}
+      <SubHeading>Container / Device</SubHeading>
+      <p className="mb-4 text-[12px] text-[#616161]">
+        Figma の Device コレクション（desktop / tablet / Mobile モード）と同期。
+        本文エディタのデバイス幅プレビューもこの値を参照する。
+      </p>
       <div className="grid grid-cols-2 gap-3">
         {(
           [
@@ -309,9 +313,12 @@ function TokensSection() {
             { label: "Tablet / Screen Width",     token: "container.tablet.width.screen",   value: container.tablet.width.screen },
             { label: "Tablet / Screen Height",    token: "container.tablet.height.screen",  value: container.tablet.height.screen },
             { label: "Tablet / Main Width Max",   token: "container.tablet.width.mainMax",  value: container.tablet.width.mainMax },
+            { label: "Tablet / Main Width Min",   token: "container.tablet.width.mainMin",  value: container.tablet.width.mainMin },
             { label: "Tablet / Sidebar Width",    token: "container.tablet.width.side",     value: container.tablet.width.side },
             { label: "Mobile / Screen Width",     token: "container.mobile.width.screen",   value: container.mobile.width.screen },
             { label: "Mobile / Screen Height",    token: "container.mobile.height.screen",  value: container.mobile.height.screen },
+            { label: "Mobile / Main Width Max",   token: "container.mobile.width.mainMax",  value: container.mobile.width.mainMax },
+            { label: "Mobile / Main Width Min",   token: "container.mobile.width.mainMin",  value: container.mobile.width.mainMin },
             { label: "Mobile / Sidebar Width",    token: "container.mobile.width.side",     value: container.mobile.width.side },
           ] as const
         ).map(({ label, token, value }) => (

@@ -17,12 +17,15 @@ html {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Special フォント: 指定箇所のみ使用 (typo.guide) */
+  /* Special フォント: 指定箇所のみ使用 (typo.special)。英数字/日本語の自動切替は対象外 */
   --font-guide: var(--font-afacad), var(--font-mplus-1p); /* EN: Afacad / JP: M PLUS 1p */
-  --font-sans:  var(--font-afacad);       /* Special 英字のみ: Afacad     (typo.guide.en) */
-  --font-mplus: var(--font-mplus-1p);     /* Special 日本語のみ: M PLUS 1p (typo.guide.jp) */
-  /* Body フォント: 全要素のデフォルト (typo.body) */
-  --font-noto:  var(--font-noto-sans-jp); /* Body 日本語: Noto Sans JP (typo.body.jp) */
+  --font-sans:  var(--font-afacad);       /* Special 英字のみ: Afacad     (typo.special.en) */
+  --font-mplus: var(--font-mplus-1p);     /* Special 日本語のみ: M PLUS 1p (typo.special.jp) */
+  /* Body フォント: 全要素のデフォルト (typo.body)。
+     英数字は EN(Avenir)、日本語は JP(Noto Sans JP) へ自動で切り替わる
+     （Avenir に日本語グリフが無いため Noto へフォールバックする仕組み）。 */
+  --font-body:  Avenir, var(--font-noto-sans-jp), sans-serif; /* Body 自動切替: EN Avenir / JP Noto */
+  --font-noto:  var(--font-noto-sans-jp); /* Body 日本語のみ: Noto Sans JP (typo.body.jp) */
   --font-mono:  var(--font-geist-mono);
 }
 
@@ -77,6 +80,10 @@ html {
   --color-system-black: #000000;
   --color-system-white: #FFFFFF;
 
+  /* Container: メインコンテンツの最大表示幅（Figma Device/desktop Main.Max と同期）
+     生成ユーティリティ: max-w-main（lib/design-tokens.ts container.desktop.width.mainMax と同値） */
+  --container-main: 1024px;
+
   /* Radius (prefix "r" to avoid collision with Tailwind built-ins) */
   --radius-r2:  2px;
   --radius-r4:  4px;
@@ -96,7 +103,9 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Body: 英字 Avenir → 日本語 Noto Sans JP → system (typo.body) */
+  /* Body: 英数字 Avenir → 日本語 Noto Sans JP へ自動切替 (typo.body)。
+     ※ @theme inline の --font-body は CSS 変数として出力されない（font-body ユーティリティに
+        インライン展開されるのみ）ため、ここでは実体スタックを直接指定する。 */
   font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
   /* Body JP 文字間: 0.03em (3%) */
   letter-spacing: 0.03em;

@@ -1,135 +1,199 @@
-import type { FC, ReactNode } from "react";
-import React from "react";
+import type { FC } from "react";
 import Headline from "./Headline";
 import Icon from "./Icon";
 import Tag from "./Tag";
+import { MarkdownBody } from "./WorkMarkdown";
+import { buildImageMarkdown } from "@/lib/image-layout";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
-type Section = { heading: string; body: string };
 
-/** Markdown の見出し（# / ##）・画像・段落をレンダリングするコンポーネント */
-const SectionBodyRenderer: FC<{ body: string }> = ({ body }) => {
-  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const renderParagraph = (para: string, key: string) => {
-    const parts: ReactNode[] = [];
-    let last = 0;
-    let m: RegExpExecArray | null;
-    IMG_RE.lastIndex = 0;
-    while ((m = IMG_RE.exec(para)) !== null) {
-      const before = para.slice(last, m.index);
-      if (before) {
-        parts.push(
-          <React.Fragment key={`${key}-t-${last}`}>
-            {before.split("\n").map((line, li, arr) => (
-              <React.Fragment key={li}>
-                {line}
-                {li < arr.length - 1 && <br />}
-              </React.Fragment>
-            ))}
-          </React.Fragment>
-        );
-      }
-      parts.push(
-        <img
-          key={`${key}-img-${m.index}`}
-          src={m[2]}
-          alt={m[1]}
-          className="my-4 max-w-full rounded-[12px] block"
-        />
-      );
-      last = m.index + m[0].length;
+/* ------------------------------------------------------------------ *
+ * データモデル
+ * ------------------------------------------------------------------ */
+
+/** セクション＝見出し＋本文 markdown。旧ブロック形式 {blocks} は markdown へ変換して互換維持 */
+type ContentSection = { heading: string; md: string };
+
+function normalizeSections(raw: unknown): ContentSection[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item): ContentSection => {
+    const obj = (item ?? {}) as Record<string, unknown>;
+    const heading = typeof obj.heading === "string" ? obj.heading : "";
+    if (Array.isArray(obj.blocks)) {
+      // 旧ブロック形式: text は markdown として、image は attrs 付き画像行へ変換
+      const md = (obj.blocks as unknown[])
+        .map((b) => {
+          const blk = (b ?? {}) as Record<string, unknown>;
+          if (blk.type === "image" && typeof blk.url === "string") {
+            return buildImageMarkdown(
+              typeof blk.caption === "string" ? blk.caption : "",
+              blk.url,
+              {
+                align:
+                  blk.align === "left" || blk.align === "right" || blk.align === "center"
+                    ? blk.align
+                    : "full",
+                width: blk.width == null ? "" : String(blk.width),
+                scale: typeof blk.scale === "number" ? blk.scale : 1,
+              }
+            );
+          }
+          if (typeof blk.md === "string") return blk.md;
+          if (typeof blk.body === "string") return blk.body;
+          return "";
+        })
+        .filter(Boolean)
+        .join("\n\n");
+      return { heading, md };
     }
-    const tail = para.slice(last);
-    if (tail) {
-      parts.push(
-        <React.Fragment key={`${key}-tail`}>
-          {tail.split("\n").map((line, li, arr) => (
-            <React.Fragment key={li}>
-              {line}
-              {li < arr.length - 1 && <br />}
-            </React.Fragment>
-          ))}
-        </React.Fragment>
-      );
-    }
-    const hasOnlyImages = parts.every((p) => React.isValidElement(p) && p.type === "img");
-    return hasOnlyImages ? (
-      <div key={key}>{parts}</div>
-    ) : (
-      <p key={key} className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
-        {parts}
-      </p>
+    return { heading, md: typeof obj.body === "string" ? obj.body : "" };
+  });
+}
+
+function parseScreenshots(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((u): u is string => typeof u === "string" && u.length > 0);
+}
+
+/**
+ * 旧 overview / overview_cards カラムのデータを「# Overview」markdown セクションへ変換する
+ * （Overview は本文 markdown に統合済み。旧データの表示互換のみ。
+ *   カード見出しは 見出し02（###）、2カラムは ::: grid で表現する）。
+ */
+function legacyOverviewSection(work: Work, sections: ContentSection[]): ContentSection[] {
+  const overview = typeof work.overview === "string" ? work.overview.trim() : "";
+  const cards = (Array.isArray(work.overview_cards) ? work.overview_cards : [])
+    .map((item) => {
+      const obj = (item ?? {}) as Record<string, unknown>;
+      if (typeof obj.heading !== "string") return null;
+      return { heading: obj.heading, body: typeof obj.body === "string" ? obj.body : "" };
+    })
+    .filter((c): c is { heading: string; body: string } => c !== null)
+    .filter((c) => c.heading.trim() || c.body.trim());
+  if (!overview && cards.length === 0) return sections;
+  // 本文側に既に Overview セクションがある場合は二重表示しない
+  if (sections.some((s) => s.heading.trim().toLowerCase() === "overview")) return sections;
+
+  const parts: string[] = [];
+  if (overview) parts.push(overview);
+  if (cards.length > 0) {
+    parts.push(
+      `::: grid cols=2 gap=10\n${cards.map((c) => `### ${c.heading}\n${c.body}`).join("\n---\n")}\n:::`
     );
-  };
-
-  type RawBlock = { t: "para"; node: ReactNode } | { t: "h2"; text: string };
-  const lines = body.split("\n");
-  const rawBlocks: RawBlock[] = [];
-  let paragraphLines: string[] = [];
-  const flushParagraph = () => {
-    const paragraph = paragraphLines.join("\n").trim();
-    if (paragraph) rawBlocks.push({ t: "para", node: renderParagraph(paragraph, `p-${rawBlocks.length}`) });
-    paragraphLines = [];
-  };
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-    if (line.startsWith("# ")) {
-      flushParagraph();
-      paragraphLines.push(line.slice(2).trim());
-      continue;
-    }
-    if (line.startsWith("## ")) {
-      flushParagraph();
-      rawBlocks.push({ t: "h2", text: line.slice(3).trim() });
-      continue;
-    }
-    if (line.trim() === "") {
-      flushParagraph();
-      continue;
-    }
-    paragraphLines.push(line);
   }
-  flushParagraph();
+  return [{ heading: "Overview", md: parts.join("\n\n") }, ...sections];
+}
 
-  // Group into top-level paras and Section02 sub-sections (gap-2 = 8px)
-  type Segment =
-    | { type: "paras"; nodes: ReactNode[] }
-    | { type: "section02"; h2: string; nodes: ReactNode[] };
-  const segments: Segment[] = [];
-  let topParas: ReactNode[] = [];
-  for (const block of rawBlocks) {
-    if (block.t === "h2") {
-      if (topParas.length > 0) { segments.push({ type: "paras", nodes: topParas }); topParas = []; }
-      segments.push({ type: "section02", h2: block.text, nodes: [] });
-    } else {
-      const last = segments[segments.length - 1];
-      if (last?.type === "section02") last.nodes.push(block.node);
-      else topParas.push(block.node);
-    }
-  }
-  if (topParas.length > 0) segments.push({ type: "paras", nodes: topParas });
+/* ------------------------------------------------------------------ *
+ * Hero
+ * ------------------------------------------------------------------ */
+
+const DEFAULT_HERO_BG = "#48f4be";
+
+const Hero: FC<{
+  work: Work;
+  skills: string[];
+  tools: string[];
+  screenshots: string[];
+}> = ({ work, skills, tools, screenshots }) => {
+  const bg = work.hero_bg_color || DEFAULT_HERO_BG;
+  const shots = screenshots.length > 0 ? screenshots : work.thumbnail_url ? [work.thumbnail_url] : [];
 
   return (
-    <div className="flex flex-col gap-6">
-      {segments.map((seg, i) =>
-        seg.type === "paras" ? (
-          <React.Fragment key={i}>{seg.nodes}</React.Fragment>
-        ) : (
-          <div key={i} className="flex flex-col gap-2">
-            <p className="text-[20px] font-bold leading-[1.5] tracking-[1px] text-white w-full">
-              {seg.h2}
-            </p>
-            <div className="flex flex-col gap-4">{seg.nodes}</div>
+    <div
+      className="relative flex min-h-[380px] flex-col overflow-hidden rounded-t-[14px] px-10 py-9"
+      style={{ backgroundColor: bg }}
+    >
+      {/* 右：デバイスモックアップのコラージュ（傾け・重ね・右へはみ出す） */}
+      {shots.length > 0 && (
+        <div className="pointer-events-none absolute right-[-72px] top-1/2 flex -translate-y-1/2 items-center">
+          {shots.slice(0, 5).map((src, i) => {
+            const rot = [-8, 5, -5, 7, -4][i] ?? 0;
+            const dy = [12, -14, 6, -10, 14][i] ?? 0;
+            return (
+              <div
+                key={i}
+                className="w-[112px] shrink-0 overflow-hidden rounded-[20px] border-[3px] border-[#0a0a0a]/75 bg-[#0a0a0a] shadow-xl"
+                style={{
+                  aspectRatio: "9 / 19.5",
+                  marginLeft: i === 0 ? 0 : -38,
+                  transform: `rotate(${rot}deg) translateY(${dy}px)`,
+                  zIndex: i,
+                }}
+              >
+                <img src={src} alt="" className="h-full w-full object-cover" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 上：ブランド名 + 制作カテゴリ */}
+      {(work.hero_brand || work.category) && (
+        <div className="relative z-10 flex items-baseline gap-3">
+          {work.hero_brand && (
+            <p className="text-[20px] font-extrabold leading-none tracking-[0.6px] text-[#0a0a0a]">{work.hero_brand}</p>
+          )}
+          {work.category && (
+            <p className="text-[12px] font-bold tracking-[0.6px] text-[#0a0a0a]/55">{work.category}</p>
+          )}
+        </div>
+      )}
+
+      {/* 下：タイトル + Skills/Tools（デバイスコラージュと重ならない幅に制限） */}
+      <div className="relative z-10 mt-auto flex max-w-[50%] flex-col gap-4 pt-10">
+        <p className="text-[32px] font-bold leading-[1.3] tracking-[0.96px] text-[#0a0a0a]">{work.title}</p>
+        {(skills.length > 0 || tools.length > 0) && (
+          <div className="flex flex-col gap-2">
+            {skills.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {skills.map((s) => (
+                  <Tag key={s} label={s} variant="small" />
+                ))}
+              </div>
+            )}
+            {tools.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {tools.map((t) => (
+                  <Tag key={t} label={t} variant="small" />
+                ))}
+              </div>
+            )}
           </div>
-        )
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ *
+ * メタ行（役割 / 期間）
+ * ------------------------------------------------------------------ */
+
+const MetaRow: FC<{ work: Work }> = ({ work }) => {
+  if (!work.role && !work.period) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      {work.role && (
+        <span className="flex items-center gap-2 text-[15px] leading-[1.5] tracking-[0.45px] text-[#9e9e9e]">
+          <Icon set="Peoples" name="people" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" />
+          {work.role}
+        </span>
+      )}
+      {work.period && (
+        <span className="flex items-center gap-2 text-[15px] leading-[1.5] tracking-[0.45px] text-[#9e9e9e]">
+          <Icon set="Time" name="calendar-three" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" />
+          {work.period}
+        </span>
       )}
     </div>
   );
 };
 
-const DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
+/* ------------------------------------------------------------------ *
+ * 本体
+ * ------------------------------------------------------------------ */
 
 type WorkModalContentProps = {
   work: Work;
@@ -138,107 +202,25 @@ type WorkModalContentProps = {
 };
 
 const WorkModalContent: FC<WorkModalContentProps> = ({ work, skills = [], tools = [] }) => {
-  const sections = (work.sections ?? []) as Section[];
-  const infoRows = [
-    {
-      key: "role",
-      label: "役割",
-      icon: <Icon set="Peoples" name="people" className="w-4 h-4 shrink-0" />,
-      content: work.role ? (
-        <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-white">
-          {work.role}
-        </p>
-      ) : null,
-    },
-    {
-      key: "period",
-      label: "期間",
-      icon: <Icon set="Time" name="calendar-three" className="w-4 h-4 shrink-0" />,
-      content: work.period ? (
-        <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-white whitespace-nowrap">
-          {work.period}
-        </p>
-      ) : null,
-    },
-    {
-      key: "skills",
-      label: "スキル",
-      icon: <Icon set="Charts" name="radar-chart" className="w-4 h-4 shrink-0" />,
-      content:
-        skills.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {skills.map((skill) => (
-              <Tag key={skill} label={skill} variant="small" />
-            ))}
-          </div>
-        ) : null,
-    },
-    {
-      key: "tools",
-      label: "ツール",
-      icon: <Icon set="Industry" name="spanner" className="w-4 h-4 shrink-0" />,
-      content:
-        tools.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {tools.map((tool) => (
-              <Tag key={tool} label={tool} variant="small" />
-            ))}
-          </div>
-        ) : null,
-    },
-  ].filter((row) => row.content !== null);
+  const screenshots = parseScreenshots(work.hero_screenshots);
+  // Overview は本文 markdown（# Overview セクション）に統合。旧カラムのデータは変換して表示
+  const sections = legacyOverviewSection(work, normalizeSections(work.sections));
 
   return (
-    <div className="flex flex-col gap-16 p-10">
-      {/* Hero image */}
-      {work.thumbnail_url && (
-        <div className="w-full rounded-[32px] overflow-hidden">
-          <img
-            src={work.thumbnail_url}
-            alt={work.title}
-            className="w-full aspect-[728/410] object-cover"
-          />
-        </div>
-      )}
+    <div className="flex flex-col">
+      <Hero work={work} skills={skills} tools={tools} screenshots={screenshots} />
 
-      {/* Title block */}
-      <div className="flex flex-col gap-4">
-        {work.category && (
-          <p className="text-[15px] tracking-[0.45px] text-[var(--color-main-100)]">
-            {work.category}
-          </p>
-        )}
-        <p className="text-[32px] font-bold leading-normal tracking-[0.96px] text-white">
-          {work.title}
-        </p>
-      </div>
+      <div className="flex flex-col gap-16 px-10 py-10">
+        <MetaRow work={work} />
 
-      {/* Project summary table */}
-      <div className="flex flex-col gap-[1px] rounded-[8px] overflow-hidden bg-[#212121]">
-        {infoRows.map((row) => (
-          <div key={row.key} className="flex gap-[2px] items-stretch">
-            <div className="w-[104px] min-h-[40px] px-4 py-[10px] bg-[#1a1a1a]">
-              <div className="flex items-center gap-2">
-                {row.icon}
-                <p className="text-[11px] font-bold leading-[1.5] tracking-[0.33px] text-[#9e9e9e] whitespace-nowrap">
-                  {row.label}
-                </p>
-              </div>
-            </div>
-            <div className="flex-1 min-h-[40px] px-4 py-2 bg-[#1a1a1a] flex items-center">
-              {row.content}
-            </div>
-          </div>
+        {/* 本文セクション群（markdown: 見出し/グリッド/画像回り込み等） */}
+        {sections.map((section, i) => (
+          <section key={i} className="flex flex-col gap-6">
+            <Headline title={section.heading} variant="section" />
+            <MarkdownBody md={section.md} />
+          </section>
         ))}
       </div>
-
-      {/* Sections */}
-      {sections.map((section, i) => (
-        <div key={i} className="flex flex-col gap-6">
-          <Headline title={section.heading} variant="markdown-h1" />
-          <SectionBodyRenderer body={section.body} />
-        </div>
-      ))}
     </div>
   );
 };

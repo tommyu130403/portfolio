@@ -3,14 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import Headline from "@/components/Headline";
-import MarkdownEditor, { type MarkdownEditorHandle } from "@/components/MarkdownEditor";
 import { supabase } from "@/src/lib/supabase";
 import {
-  saveWork,
-  deleteWork,
-  addSkillLabelFromWorks,
-  addToolNameFromWorks,
   saveSkillCard,
   deleteSkillCard,
   addSkillCard,
@@ -19,16 +13,11 @@ import {
   deleteSkillBar,
   addSkillBar,
   saveExperienceTools,
-  listAllWorkSkillLabels,
-  listAllWorkToolNames,
-  saveWorkSkillsByLabels,
-  saveWorkToolsByNames,
   listStorageImages,
   uploadStorageImage,
 } from "@/app/admin/actions";
-import type { SkillVocab, ToolVocab, StorageImage } from "@/app/admin/actions";
+import type { StorageImage } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
-import type { Json } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -37,19 +26,18 @@ type CareerItem = Tables<"career_items">;
 type SkillCard       = Tables<"skill_cards">;
 type SkillExperience = Tables<"skill_experience">;
 
-// project_skills / project_tools はDB正規化テーブルで管理するため、
-// ローカル状態では skills/tools をフロントエンド専用フィールドとして保持する
-type WorkLocal = Tables<"works"> & { skills: string[]; tools: string[] };
-
 
 
 // ─── ナビゲーション ────────────────────────────────────
-const NAV_SECTIONS = [
+// 各設定は /admin/<id> の専用ページとして表示する（1画面1セクション）
+export const NAV_SECTIONS = [
   { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
   { id: "career",           label: "Career",           labelJa: "経歴" },
   { id: "works",         label: "Works",            labelJa: "制作・企画" },
   { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
 ] as const;
+
+export type AdminSectionId = (typeof NAV_SECTIONS)[number]["id"];
 
 // ─── 共通 UI ──────────────────────────────────────────
 
@@ -65,7 +53,7 @@ function SectionTitle({ label, title }: { label: string; title: string }) {
 
 // ─── 画像ピッカー モーダル ────────────────────────────────────────────────────
 
-function ImagePickerModal({
+export function ImagePickerModal({
   open,
   onClose,
   onSelect,
@@ -276,7 +264,7 @@ function ImagePickerModal({
 
 // ─── 画像ピッカー フィールド（URL入力欄の置き換え）────────────────────────────
 
-function ImagePickerField({
+export function ImagePickerField({
   value,
   onChange,
   folder,
@@ -323,11 +311,20 @@ function ImagePickerField({
 
 // ─── 汎用UIパーツ ─────────────────────────────────────────────────────────────
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+export function FieldLabel({ children }: { children: React.ReactNode }) {
   return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-[#9e9e9e]">{children}</p>;
 }
 
-function Input({
+/** フォーム内のグループ見出し（Hero / Overview / 本文 などの区切り） */
+export function FormGroupHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="col-span-2 mt-3 border-t border-[#424242] pt-4">
+      <p className="text-[12px] font-semibold tracking-[0.5px] text-[#48f4be]">{children}</p>
+    </div>
+  );
+}
+
+export function Input({
   value, onChange, placeholder, className = "", list,
 }: {
   value: string;
@@ -348,7 +345,7 @@ function Input({
   );
 }
 
-function Textarea({
+export function Textarea({
   value, onChange, rows = 4, placeholder,
 }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
   return (
@@ -359,6 +356,48 @@ function Textarea({
       placeholder={placeholder}
       className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-relaxed text-white placeholder-[#616161] outline-none transition-colors focus:border-[#48f4be]"
     />
+  );
+}
+
+/** Hero スクリーンショット（複数画像URL）の追加・削除エディタ */
+export function HeroScreenshotsEditor({
+  value, onChange,
+}: { value: string[]; onChange: (v: string[]) => void }) {
+  const urls = Array.isArray(value) ? value : [];
+  const update = (i: number, url: string) =>
+    onChange(urls.map((u, idx) => (idx === i ? url : u)));
+  const remove = (i: number) => onChange(urls.filter((_, idx) => idx !== i));
+  const add = () => onChange([...urls, ""]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {urls.map((url, i) => (
+        <div key={i} className="flex items-start gap-2">
+          <div className="flex-1">
+            <ImagePickerField
+              value={url}
+              onChange={(v) => update(i, v)}
+              folder="projects/hero"
+              previewClassName="mt-2 h-24 w-14 rounded-[6px] object-cover"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => remove(i)}
+            className="shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+          >
+            削除
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={add}
+        className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+      >
+        ＋ 画像を追加
+      </button>
+    </div>
   );
 }
 
@@ -381,7 +420,7 @@ function SaveButton({
   );
 }
 
-function ProofreadPanel({
+export function ProofreadPanel({
   checking,
   issues,
   error,
@@ -680,15 +719,14 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     if (error) { setGlobalError(error.message); return; }
     setSavedId(item.id);
     setTimeout(() => setSavedId(null), 2000);
-    setOriginalItems((prev) => {
-      const nextOriginal = (() => {
-        const existing = prev.find((o) => o.id === item.id);
-        if (!existing) return [...prev, item];
-        return prev.map((o) => (o.id === item.id ? item : o));
-      })();
-      recomputeDirty(items, nextOriginal);
-      return nextOriginal;
-    });
+    // ※ recomputeDirty は onDirtyChange（親 setState）を含むため、state 更新関数の中では
+    //   呼ばない（レンダー中の親 setState 警告を避ける）。次の値を求めてから順に呼ぶ。
+    const existing = originalItems.find((o) => o.id === item.id);
+    const nextOriginal = existing
+      ? originalItems.map((o) => (o.id === item.id ? item : o))
+      : [...originalItems, item];
+    setOriginalItems(nextOriginal);
+    recomputeDirty(items, nextOriginal);
   };
 
   const handleDelete = async (id: string) => {
@@ -712,16 +750,13 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     };
     const { data } = await supabase.from("career_items").insert(newItem).select().single();
     if (data) {
-      setItems((prev) => {
-        const next = [...prev, data];
-        // 追加直後は DB の値と一致しているので dirty にはしない
-        setOriginalItems((base) => {
-          const nextOriginal = [...base, data];
-          recomputeDirty(next, nextOriginal);
-          return nextOriginal;
-        });
-        return next;
-      });
+      // 追加直後は DB の値と一致しているので dirty にはしない。
+      // setState 更新関数の中で親 setState を呼ばないよう、次の値を先に確定させてから順に呼ぶ。
+      const next = [...items, data];
+      const nextOriginal = [...originalItems, data];
+      setItems(next);
+      setOriginalItems(nextOriginal);
+      recomputeDirty(next, nextOriginal);
     }
   };
 
@@ -1035,1009 +1070,54 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   );
 }
 
-// ─── SectionsEditor ───────────────────────────────────
-// sections JSON ↔ Markdown 変換ユーティリティ
-type SectionItem = { heading: string; body: string };
-
-/** Markdown の見出し（# / ##）・画像・段落をレンダリングして表示するコンポーネント */
-function SectionBodyRenderer({ body }: { body: string }) {
-  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const renderParagraph = (para: string, key: string) => {
-    const lines = para.split("\n");
-    return (
-      <p key={key} className="text-[15px] leading-[1.5] tracking-[0.45px] text-white/80">
-        {lines.map((line, li) => {
-          const nodes: React.ReactNode[] = [];
-          let last = 0;
-          let m: RegExpExecArray | null;
-          IMG_RE.lastIndex = 0;
-          while ((m = IMG_RE.exec(line)) !== null) {
-            if (m.index > last) nodes.push(line.slice(last, m.index));
-            nodes.push(
-              <img
-                key={`img-${key}-${li}-${m.index}`}
-                src={m[2]}
-                alt={m[1]}
-                className="my-2 max-w-full rounded-[8px] block"
-              />,
-            );
-            last = IMG_RE.lastIndex;
-          }
-          if (last < line.length) nodes.push(line.slice(last));
-          return (
-            <React.Fragment key={li}>
-              {li > 0 && <br />}
-              {nodes}
-            </React.Fragment>
-          );
-        })}
-      </p>
-    );
-  };
-
-  type RawBlock = { t: "para"; node: React.ReactNode } | { t: "h2"; text: string };
-  const lines = body.split("\n");
-  const rawBlocks: RawBlock[] = [];
-  let paragraphLines: string[] = [];
-  const flushParagraph = () => {
-    const paragraph = paragraphLines.join("\n").trim();
-    if (paragraph) rawBlocks.push({ t: "para", node: renderParagraph(paragraph, `p-${rawBlocks.length}`) });
-    paragraphLines = [];
-  };
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-    if (line.startsWith("# ")) {
-      flushParagraph();
-      paragraphLines.push(line.slice(2).trim());
-      continue;
-    }
-    if (line.startsWith("## ")) {
-      flushParagraph();
-      rawBlocks.push({ t: "h2", text: line.slice(3).trim() });
-      continue;
-    }
-    if (line.trim() === "") {
-      flushParagraph();
-      continue;
-    }
-    paragraphLines.push(line);
-  }
-  flushParagraph();
-
-  type Segment =
-    | { type: "paras"; nodes: React.ReactNode[] }
-    | { type: "section02"; h2: string; nodes: React.ReactNode[] };
-  const segments: Segment[] = [];
-  let topParas: React.ReactNode[] = [];
-  for (const block of rawBlocks) {
-    if (block.t === "h2") {
-      if (topParas.length > 0) { segments.push({ type: "paras", nodes: topParas }); topParas = []; }
-      segments.push({ type: "section02", h2: block.text, nodes: [] });
-    } else {
-      const last = segments[segments.length - 1];
-      if (last?.type === "section02") last.nodes.push(block.node);
-      else topParas.push(block.node);
-    }
-  }
-  if (topParas.length > 0) segments.push({ type: "paras", nodes: topParas });
-
-  return (
-    <div className="flex flex-col gap-6">
-      {segments.map((seg, i) =>
-        seg.type === "paras" ? (
-          <React.Fragment key={i}>{seg.nodes}</React.Fragment>
-        ) : (
-          <div key={i} className="flex flex-col gap-2">
-            <p className="text-[20px] font-bold leading-[1.5] tracking-[1px] text-white w-full">
-              {seg.h2}
-            </p>
-            <div className="flex flex-col gap-4">{seg.nodes}</div>
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-function sectionsToMarkdown(sections: SectionItem[]): string {
-  return sections.map((s) => `# ${s.heading}\n\n${s.body}`).join("\n\n");
-}
-
-function markdownToSections(md: string): SectionItem[] {
-  const result: SectionItem[] = [];
-  let heading = "";
-  const bodyLines: string[] = [];
-
-  const flush = () => {
-    if (heading) {
-      result.push({ heading, body: bodyLines.join("\n").trim() });
-    }
-  };
-  for (const line of md.split("\n")) {
-    if (line.startsWith("# ")) {
-      flush();
-      heading = line.slice(2).trim();
-      bodyLines.length = 0;
-    } else {
-      bodyLines.push(line);
-    }
-  }
-  flush();
-  return result;
-}
-
-function SectionsEditor({
-  value,
-  onChange,
-}: {
-  value: Json | null;
-  onChange: (v: Json) => void;
-}) {
-  const [tab, setTab] = useState<"edit" | "preview">("edit");
-  const [markdown, setMarkdown] = useState(() =>
-    sectionsToMarkdown((value ?? []) as SectionItem[])
-  );
-  const editorRef = useRef<MarkdownEditorHandle>(null);
-  const [imgModalOpen, setImgModalOpen] = useState(false);
-
-  const handleChange = (md: string) => {
-    setMarkdown(md);
-    onChange(markdownToSections(md) as unknown as Json);
-  };
-
-  const preview = markdownToSections(markdown);
-
-  return (
-    <>
-      <ImagePickerModal
-        open={imgModalOpen}
-        onClose={() => setImgModalOpen(false)}
-        onSelect={(url, alt) => { editorRef.current?.insertImage(url, alt); setImgModalOpen(false); }}
-        folder="projects/sections"
-        showAlt
-      />
-    <div className="overflow-hidden rounded-[8px] border border-[#424242]">
-      {/* タブヘッダー */}
-      <div className="flex items-center border-b border-[#424242] bg-[#141414]">
-        {(["edit", "preview"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={[
-              "px-4 py-2 text-[12px] font-medium transition-colors",
-              tab === t
-                ? "border-b-2 border-[#48f4be] text-white"
-                : "text-[#616161] hover:text-white",
-            ].join(" ")}
-          >
-            {t === "edit" ? "エディタ" : "プレビュー"}
-          </button>
-        ))}
-        <p className="ml-auto px-4 text-[11px] text-[#3a3a3a]">
-          # 見出し で新しいセクション（本文内の ## 見出し も可）
-        </p>
-      </div>
-
-      {/* 編集エリア（Tiptap WYSIWYG） */}
-      {tab === "edit" && (
-        <MarkdownEditor
-          ref={editorRef}
-          value={markdown}
-          onChange={handleChange}
-          onRequestImage={() => setImgModalOpen(true)}
-          placeholder={`# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。`}
-        />
-      )}
-
-      {/* プレビューエリア（WorkModalContent のスタイルに合わせる） */}
-      {tab === "preview" && (
-        <div className="min-h-[160px] bg-[#1a1a1a] px-6 py-6">
-          {preview.length === 0 ? (
-            <p className="text-[13px] text-[#424242]">セクションがありません</p>
-          ) : (
-            <div className="flex flex-col gap-8">
-              {preview.map((sec, i) => (
-                <div key={i} className="flex flex-col gap-6">
-                  <Headline title={sec.heading} variant="markdown-h1" />
-                  <SectionBodyRenderer body={sec.body} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-    </>
-  );
-}
-
 // ─── Projects セクション ───────────────────────────────
 
-function WorksSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
-  const [projects, setProjects] = useState<WorkLocal[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+function WorksSection() {
+  const [projects, setProjects] = useState<Tables<"works">[]>([]);
   const [fetching, setFetching] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [skillVocabOptions, setSkillVocabOptions] = useState<SkillVocab[]>([]);
-  const [toolVocabOptions, setToolVocabOptions] = useState<ToolVocab[]>([]);
-  const [newSkillLabel, setNewSkillLabel] = useState("");
-  const [newToolName, setNewToolName] = useState("");
-  const [openSkillSelectorProjectId, setOpenSkillSelectorProjectId] = useState<string | null>(null);
-  const [openToolSelectorProjectId, setOpenToolSelectorProjectId] = useState<string | null>(null);
-  const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
-  // 紐付け用の経歴一覧（career_item_id の選択肢）
-  const [careerOptions, setCareerOptions] = useState<
-    Pick<CareerItem, "id" | "role" | "company" | "period">[]
-  >([]);
-  // 文章チェック（プロジェクトごと）
-  const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
-  const [proofResultsMap, setProofResultsMap] = useState<
-    Record<string, { issues: ProofreadIssue[] | null; error: string }>
-  >({});
 
-  const [dirty, setDirty] = useState(false);
-  const [projectPeriodInputs, setProjectPeriodInputs] = useState<
-    Record<
-      string,
-      {
-        startYear: string;
-        startMonth: string;
-        endYear: string;
-        endMonth: string;
-        isCurrent: boolean;
-      }
-    >
-  >({});
-
-  const markDirty = () => {
-    if (!dirty) {
-      setDirty(true);
-      onDirtyChange(true);
-    }
-  };
-
-  const markSaved = () => {
-    setDirty(false);
-    onDirtyChange(false);
-  };
-
-  const parseProjectPeriod = (period: string | null) => {
-    const text = period ?? "";
-    const m = text.match(
-      /^(\d{4})年(\d{1,2})月\s*-\s*(現在|(\d{4})年(\d{1,2})月)?$/,
-    );
-    if (!m) {
-      return {
-        startYear: "",
-        startMonth: "",
-        endYear: "",
-        endMonth: "",
-        isCurrent: false,
-      };
-    }
-    const startYear = m[1] ?? "";
-    const startMonth = m[2] ?? "";
-    const isCurrent = m[3] === "現在";
-    const endYear = m[4] ?? "";
-    const endMonth = m[5] ?? "";
-    return {
-      startYear,
-      startMonth,
-      endYear,
-      endMonth,
-      isCurrent,
-    };
-  };
-
-  const formatProjectPeriod = (opts: {
-    startYear: string;
-    startMonth: string;
-    endYear: string;
-    endMonth: string;
-    isCurrent: boolean;
-  }) => {
-    const sy = opts.startYear.trim();
-    const sm = opts.startMonth.trim();
-    const ey = opts.endYear.trim();
-    const em = opts.endMonth.trim();
-    if (!sy || !sm) return null;
-    const start = `${sy}年${sm}月`;
-    const end = opts.isCurrent
-      ? "現在"
-      : ey && em
-        ? `${ey}年${em}月`
-        : "";
-    return end ? `${start} - ${end}` : `${start} - `;
-  };
-
-  const handleProofread = async (project: WorkLocal) => {
-    // sections の本文テキストをすべて連結してチェック
-    const sections = (project.sections ?? []) as { heading: string; body: string }[];
-    const text = sections.map((s) => `${s.heading}\n${s.body}`).join("\n\n");
-    setProofCheckingId(project.id);
-    setProofResultsMap((prev) => ({ ...prev, [project.id]: { issues: null, error: "" } }));
-    try {
-      const { issues } = await runProofread(text || project.title);
-      setProofResultsMap((prev) => ({ ...prev, [project.id]: { issues, error: "" } }));
-    } catch {
-      setProofResultsMap((prev) => ({
-        ...prev,
-        [project.id]: { issues: null, error: "チェックに失敗しました" },
-      }));
-    } finally {
-      setProofCheckingId(null);
-    }
-  };
-
-  const fetchProjects = useCallback(async () => {
-    setFetching(true);
-    const [
-      { data: projectRows },
-      { data: skillVocabRows },
-      { data: toolVocabRows },
-      { data: skillExperience },
-      skillLabelsMap,
-      toolNamesMap,
-      { data: careerRows },
-    ] = await Promise.all([
-      supabase
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const { data } = await supabase
         .from("works")
         .select("*")
-        .order("sort_order", { ascending: true }),
-      // 語彙マスタから取得（skills_vocab / tools_vocab）
-      supabase.from("skills_vocab").select("id, label").order("label"),
-      supabase.from("tools_vocab").select("id, name").order("name"),
-      // スキル経験（タグ表示用）
-      supabase
-        .from("skill_experience")
-        .select("*")
-        .order("sort_order", { ascending: true }),
-      // project_skills / project_tools の一括取得
-      listAllWorkSkillLabels(),
-      listAllWorkToolNames(),
-      // 紐付け用の経歴一覧
-      supabase
-        .from("career_items")
-        .select("id, role, company, period")
-        .order("sort_order", { ascending: true }),
-    ]);
-
-    if (projectRows) {
-      const withLocal: WorkLocal[] = projectRows.map((p) => ({
-        ...p,
-        skills: skillLabelsMap[p.id] ?? [],
-        tools: toolNamesMap[p.id] ?? [],
-      }));
-      setProjects(withLocal);
-      // 期間入力用のローカル状態を初期化
-      const periodState: typeof projectPeriodInputs = {};
-      for (const p of withLocal) {
-        periodState[p.id] = parseProjectPeriod(p.period ?? null);
-      }
-      setProjectPeriodInputs(periodState);
-    }
-    setSkillVocabOptions((skillVocabRows ?? []) as SkillVocab[]);
-    setToolVocabOptions((toolVocabRows ?? []) as ToolVocab[]);
-    setSkillExperienceRows((skillExperience ?? []) as SkillExperience[]);
-    setCareerOptions(careerRows ?? []);
-    setFetching(false);
+        .order("sort_order", { ascending: true });
+      if (data) setProjects(data);
+      setFetching(false);
+    };
+    fetchProjects();
   }, []);
-
-  useEffect(() => { fetchProjects(); }, [fetchProjects]);
-
-  const updateProject = (id: string, key: keyof WorkLocal, val: unknown) => {
-    markDirty();
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: val } : p)));
-  };
-
-  const handleSave = async (project: WorkLocal) => {
-    setSaveError(null);
-    setSavingId(project.id);
-
-    // WorkLocal の skills/tools フィールドは DB カラムではないため除いて渡す
-    const { skills, tools, ...rest } = project;
-    const periodInputs =
-      projectPeriodInputs[project.id] ?? parseProjectPeriod(project.period);
-    const formattedPeriod = formatProjectPeriod(periodInputs);
-    const projectRow = {
-      ...rest,
-      period: formattedPeriod,
-    };
-    const [{ error }, skillsResult, toolsResult] = await Promise.all([
-      saveWork(projectRow, {}),
-      saveWorkSkillsByLabels(project.id, skills),
-      saveWorkToolsByNames(project.id, tools),
-    ]);
-    setSavingId(null);
-    const saveErr = error ?? skillsResult.error ?? toolsResult.error ?? null;
-    if (saveErr) {
-      setSaveError(saveErr);
-      return;
-    }
-    setSavedId(project.id);
-    setTimeout(() => setSavedId(null), 2000);
-    markSaved();
-    await fetchProjects();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        "このプロジェクトを削除します。よろしいですか？\nこの操作は取り消せません。"
-      )
-    ) {
-      return;
-    }
-    setDeletingId(id);
-    const { error } = await deleteWork(id);
-    setDeletingId(null);
-    if (error) {
-      console.error("Failed to delete project:", error);
-      return;
-    }
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-    if (expandedId === id) setExpandedId(null);
-  };
-
-  const handleAdd = () => {
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    const newProject: WorkLocal = {
-      id,
-      title: "新しいプロジェクト",
-      category: null,
-      thumbnail_url: null,
-      role: null,
-      period: null,
-      career_item_id: null,
-      skills: [],
-      tools: [],
-      sections: [],
-      sort_order: projects.length,
-      created_at: now,
-    };
-
-    setProjects((prev) => [...prev, newProject]);
-    setExpandedId(id);
-  };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
 
   return (
     <section id="works" className="scroll-mt-8">
       <SectionTitle label="Works" title="制作・企画" />
-      {dirty && (
-        <p className="mb-3 text-[11px] text-[#f4c248]">
-          未保存の変更があります
-        </p>
-      )}
-
+      <p className="mb-6 text-[13px] text-[#9e9e9e]">
+        各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。
+      </p>
       <div className="mb-6 flex flex-col gap-3">
-        {projects.map((project) => {
-          const isOpen = expandedId === project.id;
-          return (
-            <div key={project.id} className="rounded-[12px] border border-[#424242] bg-[#212121]">
-              {/* ヘッダー行 */}
-              <div
-                className="flex cursor-pointer items-center justify-between px-5 py-4"
-                onClick={() => setExpandedId(isOpen ? null : project.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-medium text-[#48f4be]">{project.category ?? "—"}</span>
-                  <span className="text-[14px] text-white">{project.title}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] text-[#616161]">{isOpen ? "▲" : "▼"}</span>
-                </div>
-              </div>
-
-              {/* 編集フォーム（展開時） */}
-              {isOpen && (
-                <div className="border-t border-[#424242] p-5">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <FieldLabel>タイトル</FieldLabel>
-                      <Input
-                        value={project.title}
-                        onChange={(v) => updateProject(project.id, "title", v)}
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel>カテゴリ</FieldLabel>
-                      <Input
-                        value={project.category ?? ""}
-                        onChange={(v) => updateProject(project.id, "category", v || null)}
-                        placeholder="プラットフォーム開発"
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel>並び順 (sort_order)</FieldLabel>
-                      <Input
-                        value={String(project.sort_order)}
-                        onChange={(v) => updateProject(project.id, "sort_order", Number(v) || 0)}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>担当役割</FieldLabel>
-                      <Input
-                        value={project.role ?? ""}
-                        onChange={(v) => updateProject(project.id, "role", v || null)}
-                        placeholder="UI/UX Designer"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>担当経歴（Career）</FieldLabel>
-                      <select
-                        value={project.career_item_id ?? ""}
-                        onChange={(e) =>
-                          updateProject(
-                            project.id,
-                            "career_item_id",
-                            e.target.value || null,
-                          )
-                        }
-                        className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-[#48f4be]"
-                      >
-                        <option value="">（紐付けなし）</option>
-                        {careerOptions.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.role}｜{c.company}（{c.period}）
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-[11px] text-[#757575]">
-                        この制作・企画を担当した経歴。Career カードの Works リンクに表示されます。
-                      </p>
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>期間</FieldLabel>
-                      {(() => {
-                        const {
-                          startYear,
-                          startMonth,
-                          endYear,
-                          endMonth,
-                          isCurrent,
-                        } = projectPeriodInputs[project.id] ??
-                          parseProjectPeriod(project.period);
-                        const handleChange = (next: {
-                          startYear?: string;
-                          startMonth?: string;
-                          endYear?: string;
-                          endMonth?: string;
-                          isCurrent?: boolean;
-                        }) => {
-                          const current = projectPeriodInputs[project.id] ??
-                            parseProjectPeriod(project.period);
-                          const updated = {
-                            ...current,
-                            ...next,
-                          };
-                          setProjectPeriodInputs((prev) => ({
-                            ...prev,
-                            [project.id]: updated,
-                          }));
-                          markDirty();
-                        };
-                        return (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="mb-1 text-[11px] text-[#9e9e9e]">
-                                期間開始
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  min={1900}
-                                  max={2100}
-                                  value={startYear}
-                                  onChange={(e) =>
-                                    handleChange({ startYear: e.target.value })
-                                  }
-                                  placeholder="2023"
-                                  className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
-                                />
-                                <span className="text-[12px] text-[#9e9e9e]">
-                                  年
-                                </span>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  max={12}
-                                  value={startMonth}
-                                  onChange={(e) =>
-                                    handleChange({ startMonth: e.target.value })
-                                  }
-                                  placeholder="4"
-                                  className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
-                                />
-                                <span className="text-[12px] text-[#9e9e9e]">
-                                  月
-                                </span>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="mb-1 text-[11px] text-[#9e9e9e]">
-                                期間終了
-                              </p>
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
-                                    min={1900}
-                                    max={2100}
-                                    value={isCurrent ? "" : endYear}
-                                    onChange={(e) =>
-                                      handleChange({ endYear: e.target.value })
-                                    }
-                                    placeholder="2024"
-                                    disabled={isCurrent}
-                                    className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
-                                  />
-                                  <span className="text-[12px] text-[#9e9e9e]">
-                                    年
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    max={12}
-                                    value={isCurrent ? "" : endMonth}
-                                    onChange={(e) =>
-                                      handleChange({ endMonth: e.target.value })
-                                    }
-                                    placeholder="3"
-                                    disabled={isCurrent}
-                                    className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
-                                  />
-                                  <span className="text-[12px] text-[#9e9e9e]">
-                                    月
-                                  </span>
-                                </div>
-                                <label className="inline-flex items-center gap-2 text-[12px] text-[#9e9e9e]">
-                                  <input
-                                    type="checkbox"
-                                    className="h-3 w-3 accent-[#48f4be]"
-                                    checked={isCurrent}
-                                    onChange={(e) =>
-                                      handleChange({ isCurrent: e.target.checked })
-                                    }
-                                  />
-                                  <span>現在</span>
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>サムネイル</FieldLabel>
-                      <ImagePickerField
-                        value={project.thumbnail_url ?? ""}
-                        onChange={(v) => updateProject(project.id, "thumbnail_url", v || null)}
-                        folder="projects/thumbnails"
-                        previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>スキル</FieldLabel>
-                      <div className="flex flex-col gap-2">
-                        {/* 選択済みスキルの表示（常時） */}
-                        <div className="flex flex-wrap gap-2">
-                          {(project.skills ?? []).map((s) => (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => {
-                                // ピルをクリックしたら選択解除
-                                const current = new Set(project.skills ?? []);
-                                for (const v of Array.from(current)) {
-                                  if (v.toLowerCase() === s.toLowerCase()) {
-                                    current.delete(v);
-                                  }
-                                }
-                                updateProject(
-                                  project.id,
-                                  "skills",
-                                  Array.from(current)
-                                );
-                              }}
-                              className="rounded-[999px] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white hover:bg-[#2a2a2a]"
-                              title="クリックで削除"
-                            >
-                              {s}
-                            </button>
-                          ))}
-                          {(project.skills ?? []).length === 0 && (
-                            <span className="text-[12px] text-[#616161]">
-                              未選択
-                            </span>
-                          )}
-                        </div>
-                        {/* 選択中のみ開くセレクタ */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenSkillSelectorProjectId(
-                              openSkillSelectorProjectId === project.id ? null : project.id
-                            )
-                          }
-                          className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                        >
-                          スキルを選択
-                        </button>
-                        {openSkillSelectorProjectId === project.id && (
-                          <div className="mt-2 flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-2">
-                              {skillExperienceRows.map((row) => {
-                                const label = row.label_short || row.label;
-                                const selected = (project.skills ?? []).some(
-                                  (s) => s.toLowerCase() === label.toLowerCase()
-                                );
-                                return (
-                                  <label
-                                    key={row.id}
-                                    className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-3 w-3 accent-[#48f4be]"
-                                      checked={selected}
-                                      onChange={(e) => {
-                                        const current = new Set(project.skills);
-                                        if (e.target.checked) {
-                                          current.add(label);
-                                        } else {
-                                          for (const s of Array.from(current)) {
-                                            if (s.toLowerCase() === label.toLowerCase()) {
-                                              current.delete(s);
-                                            }
-                                          }
-                                        }
-                                        updateProject(
-                                          project.id,
-                                          "skills",
-                                          Array.from(current)
-                                        );
-                                      }}
-                                    />
-                                    <span>{label}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={newSkillLabel}
-                                onChange={setNewSkillLabel}
-                                placeholder="新しいスキル名を追加"
-                                className="text-[12px] py-1"
-                              />
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const name = newSkillLabel.trim();
-                                  if (!name) return;
-                                  // skills_vocab に登録して ID を取得
-                                  const result = await addSkillLabelFromWorks(name);
-                                  if (result.id) {
-                                    setSkillVocabOptions((prev) => {
-                                      if (prev.some((v) => v.label.toLowerCase() === name.toLowerCase())) return prev;
-                                      return [...prev, { id: result.id!, label: name }];
-                                    });
-                                  }
-                                  const current = new Set(project.skills ?? []);
-                                  current.add(name);
-                                  updateProject(
-                                    project.id,
-                                    "skills",
-                                    Array.from(current)
-                                  );
-                                  setNewSkillLabel("");
-                                }}
-                                className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                              >
-                                追加
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>ツール</FieldLabel>
-                      <div className="flex flex-col gap-2">
-                        {/* 選択済みツールの表示（常時） */}
-                        <div className="flex flex-wrap gap-2">
-                          {(project.tools ?? []).map((t) => (
-                            <button
-                              key={t}
-                              type="button"
-                              onClick={() => {
-                                // ピルをクリックしたら選択解除
-                                const current = new Set(project.tools ?? []);
-                                for (const v of Array.from(current)) {
-                                  if (v.toLowerCase() === t.toLowerCase()) {
-                                    current.delete(v);
-                                  }
-                                }
-                                updateProject(
-                                  project.id,
-                                  "tools",
-                                  Array.from(current)
-                                );
-                              }}
-                              className="rounded-[999px] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white hover:bg-[#2a2a2a]"
-                              title="クリックで削除"
-                            >
-                              {t}
-                            </button>
-                          ))}
-                          {(project.tools ?? []).length === 0 && (
-                            <span className="text-[12px] text-[#616161]">
-                              未選択
-                            </span>
-                          )}
-                        </div>
-                        {/* 選択中のみ開くセレクタ */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenToolSelectorProjectId(
-                              openToolSelectorProjectId === project.id ? null : project.id
-                            )
-                          }
-                          className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                        >
-                          ツールを選択
-                        </button>
-                        {openToolSelectorProjectId === project.id && (
-                          <div className="mt-2 flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-2">
-                              {toolVocabOptions.map((vocab) => {
-                                const selected = (project.tools ?? []).some(
-                                  (t) => t.toLowerCase() === vocab.name.toLowerCase()
-                                );
-                                return (
-                                  <label
-                                    key={vocab.id}
-                                    className="inline-flex items-center gap-1 rounded-[999px] border border-[#424242] bg-[#1a1a1a] px-3 py-1 text-[12px] text-white"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-3 w-3 accent-[#48f4be]"
-                                      checked={selected}
-                                      onChange={(e) => {
-                                        const current = new Set(project.tools ?? []);
-                                        if (e.target.checked) {
-                                          current.add(vocab.name);
-                                        } else {
-                                          for (const t of Array.from(current)) {
-                                            if (t.toLowerCase() === vocab.name.toLowerCase()) {
-                                              current.delete(t);
-                                            }
-                                          }
-                                        }
-                                        updateProject(
-                                          project.id,
-                                          "tools",
-                                          Array.from(current)
-                                        );
-                                      }}
-                                    />
-                                    <span>{vocab.name}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={newToolName}
-                                onChange={setNewToolName}
-                                placeholder="新しいツール名を追加"
-                                className="text-[12px] py-1"
-                              />
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const name = newToolName.trim();
-                                  if (!name) return;
-                                  // tools_vocab に登録して ID を取得
-                                  const result = await addToolNameFromWorks(name);
-                                  if (result.id) {
-                                    setToolVocabOptions((prev) => {
-                                      if (prev.some((v) => v.name.toLowerCase() === name.toLowerCase())) return prev;
-                                      return [...prev, { id: result.id!, name }];
-                                    });
-                                  }
-                                  const current = new Set(project.tools ?? []);
-                                  current.add(name);
-                                  updateProject(
-                                    project.id,
-                                    "tools",
-                                    Array.from(current)
-                                  );
-                                  setNewToolName("");
-                                }}
-                                className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
-                              >
-                                追加
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <FieldLabel>セクション</FieldLabel>
-                      <SectionsEditor
-                        key={project.id}
-                        value={project.sections}
-                        onChange={(v) => updateProject(project.id, "sections", v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleSave(project)}
-                        disabled={savingId === project.id}
-                        className="rounded-[8px] bg-[#48f4be] px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
-                      >
-                        {savingId === project.id ? "保存中…" : "保存"}
-                      </button>
-                      {savedId === project.id && (
-                        <span className="text-[12px] text-[#48f4be]">✓ 保存しました</span>
-                      )}
-                      {saveError && expandedId === project.id && (
-                        <span className="text-[12px] text-[#f4487e]" title={saveError}>
-                          保存に失敗しました
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleProofread(project)}
-                        disabled={proofCheckingId === project.id}
-                        className="rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white disabled:opacity-40"
-                      >
-                        {proofCheckingId === project.id ? "チェック中…" : "文章をチェック"}
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(project.id)}
-                      disabled={deletingId === project.id}
-                      className="rounded-[8px] px-3 py-1.5 text-[13px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
-                    >
-                      {deletingId === project.id ? "削除中…" : "削除"}
-                    </button>
-                  </div>
-                  <ProofreadPanel
-                    checking={proofCheckingId === project.id}
-                    issues={proofResultsMap[project.id]?.issues ?? null}
-                    error={proofResultsMap[project.id]?.error ?? ""}
-                  />
-                </div>
-              )}
+        {projects.map((project) => (
+          <Link
+            key={project.id}
+            href={`/admin/works/${project.id}`}
+            className="flex items-center justify-between rounded-[12px] border border-[#424242] bg-[#161616] px-5 py-4 transition-colors hover:border-[#48f4be]"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="shrink-0 text-[12px] font-medium text-[#48f4be]">{project.category ?? "—"}</span>
+              <span className="truncate text-[14px] text-white">{project.title}</span>
             </div>
-          );
-        })}
+            <span className="shrink-0 text-[12px] text-[#616161]">編集 →</span>
+          </Link>
+        ))}
+        {projects.length === 0 && <p className="text-[13px] text-[#616161]">プロジェクトがありません</p>}
       </div>
-
-      <button
-        type="button"
-        onClick={handleAdd}
-        className="w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
+      <Link
+        href="/admin/works/new"
+        className="block w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-center text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
       >
         ＋ プロジェクトを追加
-      </button>
+      </Link>
     </section>
   );
 }
@@ -2535,38 +1615,25 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
   );
 }
 
-// ─── メインレイアウト ───────────────────────────────────
+// ─── 共通シェル ─────────────────────────────────────
 
-export function AdminLayout() {
-  const [activeId, setActiveId] = useState<string>("profile");
-  const mainRef = useRef<HTMLDivElement>(null);
-  const [dirtySections, setDirtySections] = useState<Record<string, boolean>>({});
-
-  const hasUnsavedChanges = Object.values(dirtySections).some(Boolean);
-
-  const setSectionDirty = (sectionId: string, dirty: boolean) => {
-    setDirtySections((prev) => ({
-      ...prev,
-      [sectionId]: dirty,
-    }));
-  };
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveId(entry.target.id);
-        });
-      },
-      { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
-    );
-    NAV_SECTIONS.forEach(({ id }) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
-
+/**
+ * admin 共通シェル（サイドバー + main）。
+ * /admin/<section> 各ページと /admin/works/[id] の全画面エディタページで共用する。
+ */
+export function AdminShell({
+  section,
+  hasUnsavedChanges = false,
+  wide = false,
+  children,
+}: {
+  /** サイドバーでハイライトするセクション */
+  section: AdminSectionId;
+  hasUnsavedChanges?: boolean;
+  /** true で main の最大幅制限（max-w-main = Device/desktop Main.Max）を外し全幅・全高レイアウトにする（全画面エディタ用） */
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges) return;
@@ -2577,8 +1644,15 @@ export function AdminLayout() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  const scrollTo = (id: string) =>
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // 未保存の変更があるときはページ遷移前に確認する（Link 共通）
+  const confirmLeave = (e: React.MouseEvent) => {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
+    ) {
+      e.preventDefault();
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#0a0a0a]">
@@ -2588,14 +1662,7 @@ export function AdminLayout() {
           <Link
             href="/"
             className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline"
-            onClick={(e) => {
-              if (
-                hasUnsavedChanges &&
-                !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
-              ) {
-                e.preventDefault();
-              }
-            }}
+            onClick={confirmLeave}
           >
             ← Portfolio
           </Link>
@@ -2604,12 +1671,13 @@ export function AdminLayout() {
         </div>
         <nav className="flex flex-col gap-1">
           {NAV_SECTIONS.map(({ id, label, labelJa }) => {
-            const isActive = activeId === id;
+            const isActive = section === id;
             return (
-              <button
+              <Link
                 key={id}
-                type="button"
-                onClick={() => scrollTo(id)}
+                href={`/admin/${id}`}
+                onClick={confirmLeave}
+                aria-current={isActive ? "page" : undefined}
                 className={[
                   "flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-left transition-colors",
                   isActive
@@ -2622,7 +1690,7 @@ export function AdminLayout() {
                   <span className="text-[14px] leading-[1.4]">{label}</span>
                   <span className="text-[11px] text-[#616161]">{labelJa}</span>
                 </span>
-              </button>
+              </Link>
             );
           })}
         </nav>
@@ -2632,45 +1700,71 @@ export function AdminLayout() {
           <Link
             href="/styleguide"
             className="block rounded-[8px] px-3 py-2 text-[12px] text-[#616161] hover:bg-[#1a1a1a] hover:text-[#9e9e9e]"
-            onClick={(e) => {
-              if (
-                hasUnsavedChanges &&
-                !window.confirm("未保存の変更があります。破棄してページを移動しますか？")
-              ) {
-                e.preventDefault();
-              }
-            }}
+            onClick={confirmLeave}
           >
             Style Guide →
           </Link>
         </div>
       </aside>
 
-      {/* メインコンテンツ */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[800px] px-12 py-12">
-          <div className="mb-16">
-            <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Content Management</p>
-            <p className="mt-1 font-mplus text-[40px] font-bold tracking-[2px] text-white">Admin</p>
-            <p className="mt-3 text-[14px] text-[#9e9e9e]">
-              ポートフォリオのコンテンツを編集・管理します。変更は保存ボタンを押すと即時反映されます。
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-24">
-            <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
-            <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
-            <WorksSection onDirtyChange={(dirty) => setSectionDirty("works", dirty)} />
-            <SkillsExperienceSection
-              onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
-            />
-          </div>
-
-          <div className="mt-24 border-t border-[#2a2a2a] pt-8">
-            <p className="text-[12px] text-[#424242]">Portfolio Admin</p>
-          </div>
+      {/* メインコンテンツ（通常はサイトの最大表示幅 max-w-main、wide は全幅・全高） */}
+      <main className="flex-1 overflow-y-auto">
+        <div
+          className={
+            wide
+              ? "flex h-full min-h-0 w-full flex-col px-8 py-8 lg:px-10"
+              : "mx-auto w-full max-w-main px-8 py-12 lg:px-12"
+          }
+        >
+          {children}
         </div>
       </main>
     </div>
+  );
+}
+
+// ─── メインレイアウト ───────────────────────────────────
+// 各設定セクションは /admin/<section> の専用ページとして 1 画面 1 セクションで表示する。
+
+export function AdminLayout({ section }: { section: AdminSectionId }) {
+  const [dirtySections, setDirtySections] = useState<Record<string, boolean>>({});
+
+  const hasUnsavedChanges = Object.values(dirtySections).some(Boolean);
+
+  const setSectionDirty = (sectionId: string, dirty: boolean) => {
+    setDirtySections((prev) => ({
+      ...prev,
+      [sectionId]: dirty,
+    }));
+  };
+
+  return (
+    <AdminShell section={section} hasUnsavedChanges={hasUnsavedChanges}>
+      <div className="mb-16">
+        <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Content Management</p>
+        <p className="mt-1 font-mplus text-[40px] font-bold tracking-[2px] text-white">Admin</p>
+        <p className="mt-3 text-[14px] text-[#9e9e9e]">
+          ポートフォリオのコンテンツを編集・管理します。変更は保存ボタンを押すと即時反映されます。
+        </p>
+      </div>
+
+      {/* 1画面1セクション（/admin/<section> ごとに該当セクションのみ表示） */}
+      {section === "profile" && (
+        <ProfileSection onDirtyChange={(dirty) => setSectionDirty("profile", dirty)} />
+      )}
+      {section === "career" && (
+        <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
+      )}
+      {section === "works" && <WorksSection />}
+      {section === "skills-experience" && (
+        <SkillsExperienceSection
+          onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
+        />
+      )}
+
+      <div className="mt-24 border-t border-[#2a2a2a] pt-8">
+        <p className="text-[12px] text-[#424242]">Portfolio Admin</p>
+      </div>
+    </AdminShell>
   );
 }

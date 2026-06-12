@@ -77,7 +77,7 @@ const Modal: FC<ModalProps> = ({
         )}
 
         {/* Modal container + Close button wrapper (overflow-visible でボタンが切れないように) */}
-        <div className="relative w-full max-w-[916px]">
+        <div className="relative w-full max-w-main">
           <div
             className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-[14px] border border-[#424242] bg-[#212121]"
             onClick={(e) => e.stopPropagation()}

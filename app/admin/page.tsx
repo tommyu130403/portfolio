@@ -1,15 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { AdminLayout } from "./AdminLayout";
-import { OwnerGate } from "@/components/OwnerGate";
-import { AuthGate } from "@/components/AuthGate";
-
-export default function AdminPage() {
-  return (
-    <AuthGate>
-      <OwnerGate>
-        <AdminLayout />
-      </OwnerGate>
-    </AuthGate>
-  );
+/** /admin は最初のセクション（Profile）の専用ページへリダイレクトする */
+export default function AdminIndexPage() {
+  redirect("/admin/profile");
 }

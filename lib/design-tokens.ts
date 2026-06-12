@@ -122,13 +122,18 @@ export const size = {
 
 export type SizeKey = keyof typeof size;
 
-// ─── Container ────────────────────────────────────────────────────────────────
+// ─── Container（Figma Variables「Device」コレクションと同期）────────────────────
+// Source of truth: Figma の Device コレクション（モード: desktop / tablet / Mobile）。
+//   Screen.Width  = VariableID:153:281 / Screen.Height = VariableID:153:285
+//   Main.Max      = VariableID:153:283 / Main.Min      = VariableID:153:284
+//   Side          = VariableID:153:282 / Breakpoints   = VariableID:148:300
+// Figma 側の変数を更新したら、この値も合わせて更新する。
 
 export const container = {
   desktop: {
     width: {
       screen:  1440,
-      mainMax:  916,
+      mainMax: 1024,  // Device/desktop Main.Max
       mainMin:  728,
       side:     256,
     },
@@ -150,14 +155,19 @@ export const container = {
   },
   mobile: {
     width: {
-      screen: 390,
-      side:    96,
+      screen:  390,
+      mainMax: 390,   // Device/Mobile Main.Max（モバイルは全幅）
+      mainMin: 390,
+      side:     96,
     },
     height: {
       screen: 844,
     },
   },
 } as const;
+
+/** Device プレビュー等で列挙するためのモードキー（Figma Device コレクションのモードに対応） */
+export type DeviceMode = keyof typeof container;
 
 // ─── Typography ───────────────────────────────────────────────────────────────
 
@@ -176,8 +186,10 @@ export const typo = {
 
 // ─── Breakpoints ──────────────────────────────────────────────────────────────
 
-/** Tailwind responsive prefix reference: lg = tablet, xl = desktop */
+/** Tailwind responsive prefix reference: lg = tablet, xl = desktop（Device/Breakpoints と同期） */
 export const breakpoint = {
+  /** 390px — Device/Mobile Breakpoints */
+  mobile:   390,
   /** 1024px — Tailwind `lg`: iPad Pro 12.9" portrait baseline */
   tablet:  1024,
   /** 1280px — Tailwind `xl`: standard desktop baseline */

@@ -277,13 +277,13 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
           <div className="flex flex-col gap-4 border-t border-white/5 px-8 pt-4 pb-3">
             <div className="flex flex-col gap-1">
               {skill.labelNote && (
-                <span className="font-noto text-[10px] tracking-[0.3px]" style={{ color: "#757575" }}>
+                <span className="font-body text-[10px] tracking-[0.3px]" style={{ color: "#757575" }}>
                   {skill.labelNote}
                 </span>
               )}
               {skill.description && (
                 <p
-                  className="font-noto text-[13px] leading-[1.5] tracking-[0.39px] whitespace-pre-line"
+                  className="font-body text-[13px] leading-[1.5] tracking-[0.39px] whitespace-pre-line"
                   style={{ color: "#9E9E9E" }}
                 >
                   {skill.description}
@@ -326,7 +326,7 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span className="text-[20px] font-bold leading-[28px] text-white">{card.title}</span>
           <span
-            className="font-noto text-[13px] leading-[1.5] tracking-[0.39px]"
+            className="font-body text-[13px] leading-[1.5] tracking-[0.39px]"
             style={{ color: "#757575" }}
           >
             {card.titleJP}

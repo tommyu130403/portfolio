@@ -12,7 +12,7 @@ import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
 import WorkCard from "@/components/WorkCard";
 import SideMenuBar from "@/components/SideMenuBar";
-import MarkdownEditor from "@/components/MarkdownEditor";
+import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -222,7 +222,7 @@ function TypographySection() {
       <SubHeading>Type Scale</SubHeading>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {TYPOGRAPHY_SCALE.map(({ size: fs, weight, tracking, sample, usage }) => (
-          <div key={fs} className="flex flex-col gap-2 py-5">
+          <div key={usage} className="flex flex-col gap-2 py-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-baseline gap-3">
                 <p className="font-mono text-[16px] text-white">{fs}px</p>
@@ -296,8 +296,14 @@ function TokensSection() {
         ))}
       </div>
 
-      {/* ── Container ── */}
-      <SubHeading>Container</SubHeading>
+      {/* ── Container（Figma Variables「Device」コレクションと同期） ── */}
+      <SubHeading>Container / Device</SubHeading>
+      <p className="mb-4 text-[12px] text-[#616161]">
+        Figma の Device コレクション（desktop / tablet / Mobile モード）と同期。
+        本文エディタのデバイス幅プレビューもこの値を参照する。
+        サイトの最大表示幅は <TokenBadge>--container-main</TokenBadge>（globals.css）→
+        {" "}<TokenBadge>max-w-main</TokenBadge> ユーティリティで Desktop / Main Width Max と同値。
+      </p>
       <div className="grid grid-cols-2 gap-3">
         {(
           [
@@ -309,9 +315,12 @@ function TokensSection() {
             { label: "Tablet / Screen Width",     token: "container.tablet.width.screen",   value: container.tablet.width.screen },
             { label: "Tablet / Screen Height",    token: "container.tablet.height.screen",  value: container.tablet.height.screen },
             { label: "Tablet / Main Width Max",   token: "container.tablet.width.mainMax",  value: container.tablet.width.mainMax },
+            { label: "Tablet / Main Width Min",   token: "container.tablet.width.mainMin",  value: container.tablet.width.mainMin },
             { label: "Tablet / Sidebar Width",    token: "container.tablet.width.side",     value: container.tablet.width.side },
             { label: "Mobile / Screen Width",     token: "container.mobile.width.screen",   value: container.mobile.width.screen },
             { label: "Mobile / Screen Height",    token: "container.mobile.height.screen",  value: container.mobile.height.screen },
+            { label: "Mobile / Main Width Max",   token: "container.mobile.width.mainMax",  value: container.mobile.width.mainMax },
+            { label: "Mobile / Main Width Min",   token: "container.mobile.width.mainMin",  value: container.mobile.width.mainMin },
             { label: "Mobile / Sidebar Width",    token: "container.mobile.width.side",     value: container.mobile.width.side },
           ] as const
         ).map(({ label, token, value }) => (
@@ -478,11 +487,11 @@ function ComponentPreview({ title, description, children }: {
 
 function MarkdownEditorDemo() {
   const [md, setMd] = useState(
-    "# プロジェクト概要\n\n本文テキストをここに入力します。\n\n## 小見出し\n\n補足テキスト。",
+    "# プロジェクト概要\n\n本文テキストを **太字** や *斜体*、[リンク](https://example.com) 付きで入力できます。\n\n## 見出し01\n\n- 箇条書き\n- 項目",
   );
   return (
     <div className="w-full">
-      <MarkdownEditor value={md} onChange={setMd} />
+      <RichMarkdownEditor value={md} onChange={setMd} className="h-[420px]" />
     </div>
   );
 }
@@ -509,11 +518,26 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / markdown-h1 / markdown-h2">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / section / コンテンツ見出し 01・02・03（Library 305:265）">
           <div className="w-full"><Headline label="Works" title="制作・企画" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
-          <div className="w-full"><Headline title="見出し（# テキスト）" variant="markdown-h1" /></div>
-          <div className="w-full"><Headline title="見出し（## テキスト）" variant="markdown-h2" /></div>
+          <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
+          <div className="w-full"><Headline title="見出し 01（24px 白）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="見出し 02（20px mint）" variant="markdown-h2" /></div>
+          <div className="w-full"><Headline title="HEADLINE 03 (EN / 17px gray)" variant="markdown-h3" /></div>
+        </ComponentPreview>
+
+        <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
+          <div className="flex w-full flex-col gap-3">
+            <p className="text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
+            <p className="font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">見出し01（## / Noto Bold 24px 白）</p>
+            <p className="font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">見出し02（### / Noto Bold 20px mint）</p>
+            <p className="text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">見出し03（#### / Avenir Heavy 17px gray）</p>
+            <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
+            <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
+            <p className="border-l-2 border-[#424242] pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
+            <p className="text-[10px] leading-[16px] tracking-[0.5px] text-[#9e9e9e]">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
+          </div>
         </ComponentPreview>
 
         <ComponentPreview title="ButtonAction" description="CTA ボタン。Primary / Secondary / Ghost の 3 バリアント">
@@ -574,8 +598,8 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview
-          title="MarkdownEditor"
-          description="プロジェクト本文（projects.sections）編集用の Tiptap WYSIWYG エディタ。ツールバーは H1 / H2 / 段落 / 画像挿入 に限定し、公開側 SectionBodyRenderer と互換"
+          title="RichMarkdownEditor"
+          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画"
         >
           <MarkdownEditorDemo />
         </ComponentPreview>

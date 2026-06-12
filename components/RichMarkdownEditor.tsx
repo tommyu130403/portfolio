@@ -8,7 +8,7 @@ import {
   type FC,
   type ReactNode,
 } from "react";
-import { WorkMarkdownDocument } from "./WorkMarkdown";
+import { WorkMarkdownDocument, type WorkVizData } from "./WorkMarkdown";
 import { buildImageMarkdown, widthToCss, type ImageAlign } from "@/lib/image-layout";
 import { container, type DeviceMode } from "@/lib/design-tokens";
 
@@ -29,6 +29,8 @@ export type RichMarkdownEditorProps = {
   onPickImage?: () => Promise<{ url: string; alt?: string } | null>;
   /** ルート要素の追加クラス（高さは親から指定する） */
   className?: string;
+  /** ::: timeline / ::: stakeholders ディレクティブが参照する構造化データ（プレビュー用） */
+  viz?: WorkVizData;
 };
 
 type Mode = "edit" | "split" | "preview";
@@ -107,7 +109,7 @@ const dBtnGhost =
  * デバイス実寸（Device コレクションの Screen.Width）でプレビューを描画する。
  * コンテンツは Main.Max で中央寄せし、ペインが実寸より狭い場合は縮小表示する。
  */
-function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; half: boolean }) {
+function PreviewPane({ md, device, half, viz }: { md: string; device: PreviewDevice; half: boolean; viz?: WorkVizData }) {
   const paneRef = useRef<HTMLDivElement>(null);
   const [paneW, setPaneW] = useState(0);
 
@@ -124,7 +126,7 @@ function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; 
   if (device === "full") {
     return (
       <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#212121] p-6`}>
-        <WorkMarkdownDocument md={md} />
+        <WorkMarkdownDocument md={md} viz={viz} />
       </div>
     );
   }
@@ -146,7 +148,7 @@ function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; 
       >
         {/* メインコンテンツ幅（Main.Max）で中央寄せ */}
         <div style={{ maxWidth: mainMax }} className="mx-auto px-6">
-          <WorkMarkdownDocument md={md} />
+          <WorkMarkdownDocument md={md} viz={viz} />
         </div>
       </div>
     </div>
@@ -161,6 +163,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   placeholder,
   onPickImage,
   className,
+  viz,
 }) => {
   const [mode, setMode] = useState<Mode>("split");
   const [device, setDevice] = useState<PreviewDevice>("full");
@@ -231,6 +234,8 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         <TBtn label="リンク" title="リンクを挿入" onClick={() => setDialog("link")} />
         <TBtn label="画像" title="画像を挿入（幅 / 配置 / 倍率 / キャプション）" onClick={() => setDialog("image")} />
         <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
+        <TBtn label="Timeline" title="Timeline（設定タブのデータを描画）を挿入" onClick={() => insertLine("::: timeline")} />
+        <TBtn label="SH図" title="Stakeholders（設定タブのデータを描画）を挿入" onClick={() => insertLine("::: stakeholders")} />
 
         {/* デバイス幅切替（プレビュー表示時のみ。Device コレクション = container トークン参照） */}
         <div className="ml-auto flex items-center gap-2">
@@ -305,7 +310,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           />
         )}
         {(mode === "preview" || mode === "split") && (
-          <PreviewPane md={value} device={device} half={mode === "split"} />
+          <PreviewPane md={value} device={device} half={mode === "split"} viz={viz} />
         )}
       </div>
 

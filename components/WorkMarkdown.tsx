@@ -6,6 +6,18 @@ import {
   widthToCss,
   type ImageAlign,
 } from "@/lib/image-layout";
+import {
+  WorkProcessChart,
+  WorkStakeholderDiagram,
+  type TimelineData,
+  type StakeholdersData,
+} from "./WorkViz";
+
+/** 構造化ビジュアルのデータ（::: timeline / ::: stakeholders ディレクティブで参照） */
+export type WorkVizData = {
+  timeline?: TimelineData | null;
+  stakeholders?: StakeholdersData | null;
+};
 
 /**
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
@@ -218,7 +230,8 @@ type Block =
   | { type: "ol"; items: string[] }
   | { type: "hr" }
   | { type: "code"; lang: string; content: string }
-  | { type: "grid"; cols: number; gap: number; cells: string[] };
+  | { type: "grid"; cols: number; gap: number; cells: string[] }
+  | { type: "viz"; kind: "timeline" | "stakeholders" };
 
 function parseBlocks(src: string): Block[] {
   const lines = src.split("\n");
@@ -231,12 +244,20 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     /^```/.test(line) ||
-    /^:::\s*grid/.test(line) ||
+    /^:::/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
 
   while (i < lines.length) {
     const line = lines[i].trimEnd();
+
+    // 構造化ビジュアル: ::: timeline / ::: stakeholders（単独行ディレクティブ）
+    const viz = line.match(/^:::\s*(timeline|stakeholders)\s*$/);
+    if (viz) {
+      blocks.push({ type: "viz", kind: viz[1] as "timeline" | "stakeholders" });
+      i++;
+      continue;
+    }
 
     // グリッド: ::: grid cols=N gap=M
     const gridOpen = line.match(/^:::\s*grid\s*(.*)$/);
@@ -373,7 +394,7 @@ function parseBlocks(src: string): Block[] {
  * ブロック描画
  * ------------------------------------------------------------------ */
 
-function RenderBlock({ block, idx }: { block: Block; idx: number }) {
+function RenderBlock({ block, idx, viz }: { block: Block; idx: number; viz?: WorkVizData }) {
   const k = `b-${idx}`;
   switch (block.type) {
     case "h1":
@@ -461,21 +482,28 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
         >
           {block.cells.map((cell, i) => (
             <div key={i} className="min-w-0">
-              <MarkdownBody md={cell} />
+              <MarkdownBody md={cell} viz={viz} />
             </div>
           ))}
         </div>
       );
+    case "viz": {
+      // データ未設定時は何も描画しない（公開側で空のまま安全に省略）
+      if (block.kind === "timeline") {
+        return viz?.timeline ? <div className="mb-4"><WorkProcessChart data={viz.timeline} /></div> : null;
+      }
+      return viz?.stakeholders ? <div className="mb-4"><WorkStakeholderDiagram data={viz.stakeholders} /></div> : null;
+    }
   }
 }
 
 /** 本文 markdown を描画する（flow-root で float 画像を内包し回り込みを成立させる） */
-export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
+export const MarkdownBody: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz }) => {
   const blocks = parseBlocks(md);
   return (
     <div style={{ display: "flow-root" }}>
       {blocks.map((b, i) => (
-        <RenderBlock key={i} block={b} idx={i} />
+        <RenderBlock key={i} block={b} idx={i} viz={viz} />
       ))}
     </div>
   );
@@ -485,7 +513,7 @@ export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
  * `# 見出し` でセクション分割された markdown ドキュメント全体を描画する
  * （admin の本文プレビュー用。公開側と同じ Section 見出し 34px + 本文の見た目）。
  */
-export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
+export const WorkMarkdownDocument: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz }) => {
   type Section = { heading: string; body: string[] };
   const sections: Section[] = [];
   let current: Section | null = null;
@@ -508,7 +536,7 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
       {sections.map((sec, i) => (
         <section key={i} className="flex flex-col gap-5">
           {sec.heading && <Headline title={sec.heading} variant="section" />}
-          <MarkdownBody md={sec.body.join("\n").trim()} />
+          <MarkdownBody md={sec.body.join("\n").trim()} viz={viz} />
         </section>
       ))}
     </div>

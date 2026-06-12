@@ -85,7 +85,7 @@ export default function Home() {
       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">
         <div className="flex w-full flex-col items-center gap-[120px] px-6 lg:px-8 xl:px-10 py-20">
           {/* Hero */}
-          <section className="flex w-full max-w-[916px] items-center gap-16">
+          <section className="flex w-full max-w-main items-center gap-16">
             <div className="relative aspect-square flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-[#424242]" />
@@ -116,7 +116,7 @@ export default function Home() {
           </section>
 
           {/* Introduction */}
-          <section id="introduction" className="w-full max-w-[916px]">
+          <section id="introduction" className="w-full max-w-main">
             <Headline label="Introduction" title="自己紹介" />
             <div className="flex flex-col gap-10 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
               {/* Opening paragraphs */}
@@ -163,7 +163,7 @@ export default function Home() {
           </section>
 
           {/* Career */}
-          <section id="career" className="w-full max-w-[916px]">
+          <section id="career" className="w-full max-w-main">
             <Headline label="Career" title="経歴" />
             <div className="flex flex-col gap-6">
               {/* careerLead — デザインソース (sections.jsx) 準拠スタイル */}
@@ -187,7 +187,7 @@ export default function Home() {
           </section>
 
           {/* Works */}
-          <section id="works" className="w-full max-w-[916px]">
+          <section id="works" className="w-full max-w-main">
             <Headline label="Works" title="制作・企画" />
             <WorksList sidebarCollapsed={sidebarCollapsed} />
           </section>
@@ -195,10 +195,10 @@ export default function Home() {
           {/* Skills */}
           <section id="skills" className="mb-10 w-full">
             {/* 見出し+タブ: 他セクションと同じ最大幅・中央寄せ */}
-            <div className="mx-auto w-full max-w-[916px]">
+            <div className="mx-auto w-full max-w-main">
               <Headline label="Skills" title="スキル" />
             </div>
-            <div className="w-full max-w-[916px] mx-auto">
+            <div className="w-full max-w-main mx-auto">
               <SkillsCardGrid />
             </div>
           </section>

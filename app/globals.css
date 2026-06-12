@@ -80,6 +80,10 @@ html {
   --color-system-black: #000000;
   --color-system-white: #FFFFFF;
 
+  /* Container: メインコンテンツの最大表示幅（Figma Device/desktop Main.Max と同期）
+     生成ユーティリティ: max-w-main（lib/design-tokens.ts container.desktop.width.mainMax と同値） */
+  --container-main: 1024px;
+
   /* Radius (prefix "r" to avoid collision with Tailwind built-ins) */
   --radius-r2:  2px;
   --radius-r4:  4px;

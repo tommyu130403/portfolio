@@ -325,7 +325,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
       {/* 設定タブ */}
       {tab === "settings" && (
         <div className="min-h-0 flex-1 overflow-y-auto pb-12">
-          <div className="grid max-w-[916px] grid-cols-2 gap-4">
+          <div className="grid max-w-main grid-cols-2 gap-4">
             <div>
               <FieldLabel>カテゴリ</FieldLabel>
               <Input value={work.category ?? ""} onChange={(v) => setField("category", v || null)} placeholder="プラットフォーム開発" />

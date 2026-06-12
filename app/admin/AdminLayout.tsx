@@ -1630,7 +1630,7 @@ export function AdminShell({
   /** サイドバーでハイライトするセクション */
   section: AdminSectionId;
   hasUnsavedChanges?: boolean;
-  /** true で main の最大幅制限（916px）を外し全幅・全高レイアウトにする（全画面エディタ用） */
+  /** true で main の最大幅制限（max-w-main = Device/desktop Main.Max）を外し全幅・全高レイアウトにする（全画面エディタ用） */
   wide?: boolean;
   children: React.ReactNode;
 }) {
@@ -1707,13 +1707,13 @@ export function AdminShell({
         </div>
       </aside>
 
-      {/* メインコンテンツ（通常はサイトの最大表示幅 916px、wide は全幅・全高） */}
+      {/* メインコンテンツ（通常はサイトの最大表示幅 max-w-main、wide は全幅・全高） */}
       <main className="flex-1 overflow-y-auto">
         <div
           className={
             wide
               ? "flex h-full min-h-0 w-full flex-col px-8 py-8 lg:px-10"
-              : "mx-auto w-full max-w-[916px] px-8 py-12 lg:px-12"
+              : "mx-auto w-full max-w-main px-8 py-12 lg:px-12"
           }
         >
           {children}

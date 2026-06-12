@@ -301,6 +301,8 @@ function TokensSection() {
       <p className="mb-4 text-[12px] text-[#616161]">
         Figma の Device コレクション（desktop / tablet / Mobile モード）と同期。
         本文エディタのデバイス幅プレビューもこの値を参照する。
+        サイトの最大表示幅は <TokenBadge>--container-main</TokenBadge>（globals.css）→
+        {" "}<TokenBadge>max-w-main</TokenBadge> ユーティリティで Desktop / Main Width Max と同値。
       </p>
       <div className="grid grid-cols-2 gap-3">
         {(

@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import Icon from "./Icon";
+import Icon, { ICON_SETS, type IconSet } from "./Icon";
 
 /**
  * Work 詳細の構造化ビジュアル（Figma: _Process / _Stakeholder）。
@@ -79,11 +79,13 @@ export function parseStakeholders(raw: unknown): StakeholdersData | null {
   return groups.length > 0 ? { groups } : null;
 }
 
-/** "Set/name" 形式のアイコン参照を描画（DB 由来の文字列を許容） */
+/** "Set/name" 形式のアイコン参照を描画（DB 由来の文字列を許容）。不正な set 名は描画しない（404 アイコンを避ける）。 */
 const RefIcon: FC<{ icon?: string; tint: string; className: string }> = ({ icon, tint, className }) => {
   if (!icon || !icon.includes("/")) return null;
-  const [set, name] = [icon.slice(0, icon.indexOf("/")), icon.slice(icon.indexOf("/") + 1)];
-  return <Icon set={set as never} name={name} tintColor={tint} className={className} />;
+  const set = icon.slice(0, icon.indexOf("/"));
+  const name = icon.slice(icon.indexOf("/") + 1);
+  if (!name || !(ICON_SETS as readonly string[]).includes(set)) return null;
+  return <Icon set={set as IconSet} name={name} tintColor={tint} className={className} />;
 };
 
 /* ─── Timeline（_Process）────────────────────────────── */

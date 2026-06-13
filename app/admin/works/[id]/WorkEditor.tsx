@@ -190,6 +190,14 @@ export default function WorkEditor({ workId }: { workId: string }) {
   };
   const markDirty = () => setDirty(true);
 
+  // jsonb のパースは work の該当カラムが変わったときだけ（毎レンダー・毎キーストロークの再パースを防ぐ）
+  const parsedTimeline = useMemo(() => parseTimeline(work?.timeline), [work?.timeline]);
+  const parsedStakeholders = useMemo(() => parseStakeholders(work?.stakeholders), [work?.stakeholders]);
+  const viz = useMemo(
+    () => ({ timeline: parsedTimeline, stakeholders: parsedStakeholders }),
+    [parsedTimeline, parsedStakeholders]
+  );
+
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setList(list.some((s) => s.toLowerCase() === value.toLowerCase())
       ? list.filter((s) => s.toLowerCase() !== value.toLowerCase())
@@ -326,7 +334,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
           }}
           onPickImage={pickImage}
           className="min-h-0 flex-1"
-          viz={{ timeline: parseTimeline(work.timeline), stakeholders: parseStakeholders(work.stakeholders) }}
+          viz={viz}
         />
       )}
 
@@ -486,7 +494,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
             <FormGroupHeader>Timeline（本文の「::: timeline」位置に描画）</FormGroupHeader>
             <div className="col-span-2">
               <TimelineForm
-                value={parseTimeline(work.timeline) ?? { totalUnits: 12, phases: [] }}
+                value={parsedTimeline ?? { totalUnits: 12, phases: [] }}
                 onChange={(v) => setField("timeline", (v.phases.length ? v : null) as unknown as Work["timeline"])}
               />
             </div>
@@ -494,7 +502,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
             <FormGroupHeader>Stakeholders（本文の「::: stakeholders」位置に描画）</FormGroupHeader>
             <div className="col-span-2">
               <StakeholdersForm
-                value={parseStakeholders(work.stakeholders) ?? { groups: [] }}
+                value={parsedStakeholders ?? { groups: [] }}
                 onChange={(v) => setField("stakeholders", (v.groups.length ? v : null) as unknown as Work["stakeholders"])}
               />
             </div>
@@ -521,6 +529,15 @@ const vizBtn =
 const vizDel = "rounded px-2 py-1 text-[11px] text-[#616161] hover:text-[#f4487e]";
 const RACI_KEYS: RaciKey[] = ["R", "A", "C", "I"];
 
+/**
+ * 数値入力を整数へ。空欄・非数値・min 未満は min に丸める
+ * （`Number(v) || 既定値` だと空欄で恣意的な大きい既定へ飛ぶ・0 を握り潰すため）。
+ */
+const clampInt = (v: string, min: number): number => {
+  const n = parseInt(v, 10);
+  return Number.isNaN(n) ? min : Math.max(min, n);
+};
+
 function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: TimelineData) => void }) {
   const patch = (i: number, p: Partial<TimelineData["phases"][number]>) =>
     onChange({ ...value, phases: value.phases.map((ph, idx) => (idx === i ? { ...ph, ...p } : ph)) });
@@ -528,16 +545,16 @@ function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: 
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <FieldLabel>週数（W1〜）</FieldLabel>
-        <Input className="!w-20" value={String(value.totalUnits)} onChange={(v) => onChange({ ...value, totalUnits: Math.max(1, Number(v) || 12) })} />
+        <Input className="!w-20" value={String(value.totalUnits)} onChange={(v) => onChange({ ...value, totalUnits: clampInt(v, 1) })} />
       </div>
       {value.phases.map((ph, i) => (
         <div key={i} className="rounded-[8px] border border-[#424242] bg-[#161616] p-3">
           <div className="flex flex-wrap items-center gap-2">
             <Input className="!w-44" value={ph.label} onChange={(v) => patch(i, { label: v })} placeholder="フェーズ名" />
             <span className="text-[11px] text-[#9e9e9e]">開始W</span>
-            <Input className="!w-14" value={String(ph.start)} onChange={(v) => patch(i, { start: Number(v) || 1 })} />
+            <Input className="!w-14" value={String(ph.start)} onChange={(v) => patch(i, { start: clampInt(v, 1) })} />
             <span className="text-[11px] text-[#9e9e9e]">期間</span>
-            <Input className="!w-14" value={String(ph.span)} onChange={(v) => patch(i, { span: Math.max(1, Number(v) || 1) })} />
+            <Input className="!w-14" value={String(ph.span)} onChange={(v) => patch(i, { span: clampInt(v, 1) })} />
             <span className="text-[11px] text-[#9e9e9e]">進捗%</span>
             <Input className="!w-16" value={ph.progress == null ? "" : String(ph.progress)} onChange={(v) => patch(i, { progress: v === "" ? undefined : Number(v) || 0 })} />
             <span className="ml-1 flex items-center gap-1.5">

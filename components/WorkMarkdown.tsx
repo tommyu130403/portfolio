@@ -244,7 +244,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     /^```/.test(line) ||
-    /^:::/.test(line) ||
+    /^:::\s*(timeline|stakeholders|grid)\b/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
 
@@ -385,7 +385,13 @@ function parseBlocks(src: string): Block[] {
       buf.push(lines[i].replace(/^#\s+/, ""));
       i++;
     }
-    if (buf.length) blocks.push({ type: "paragraph", content: buf.join("\n") });
+    if (buf.length) {
+      blocks.push({ type: "paragraph", content: buf.join("\n") });
+    } else {
+      // どの分岐にも一致せず段落も空（未知の ::: 行など）→ 強制的に1行進めて無限ループを防ぐ
+      blocks.push({ type: "paragraph", content: line.replace(/^#\s+/, "") });
+      i++;
+    }
   }
   return blocks;
 }

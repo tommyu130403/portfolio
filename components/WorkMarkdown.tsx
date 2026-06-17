@@ -191,7 +191,7 @@ const ImageFigure: FC<{
     ...(align === "center" ? { marginLeft: "auto", marginRight: "auto" } : {}),
   };
   const floatClass =
-    align === "left" ? "float-left mr-6 mb-2" : align === "right" ? "float-right ml-6 mb-2" : "clear-both my-2";
+    align === "left" ? "float-left mr-10 mb-2" : align === "right" ? "float-right ml-10 mb-2" : "clear-both my-2";
 
   return (
     <figure className={floatClass} style={figStyle}>
@@ -424,19 +424,19 @@ function RenderBlock({
   switch (block.type) {
     case "h1":
       return (
-        <p className="mb-4 mt-2 font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
+        <p className="mb-4 mt-10 font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
           {renderInline(block.content, k)}
         </p>
       );
     case "h2":
       return (
-        <p className="mb-3 mt-2 font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">
+        <p className="mb-4 mt-10 font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">
           {renderInline(block.content, k)}
         </p>
       );
     case "h3":
       return (
-        <p className="mb-3 mt-2 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
+        <p className="mb-4 mt-10 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
           {renderInline(block.content, k)}
         </p>
       );
@@ -492,14 +492,14 @@ function RenderBlock({
       return <hr className="my-6 border-[#424242]" />;
     case "code":
       return (
-        <pre className="mb-4 overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-[#e0e0e0]">
+        <pre className="mb-4 mt-10 overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-[#e0e0e0]">
           <code>{block.content}</code>
         </pre>
       );
     case "grid":
       return (
         <div
-          className="mb-4 grid"
+          className="mb-4 mt-10 grid"
           style={{
             gridTemplateColumns: `repeat(${block.cols}, minmax(0, 1fr))`,
             gap: `${block.gap * 4}px`,
@@ -515,9 +515,9 @@ function RenderBlock({
     case "viz": {
       // データ未設定時は何も描画しない（公開側で空のまま安全に省略）
       if (block.kind === "timeline") {
-        return viz?.timeline ? <div className="mb-4"><WorkProcessChart data={viz.timeline} /></div> : null;
+        return viz?.timeline ? <div className="mb-4 mt-10"><WorkProcessChart data={viz.timeline} /></div> : null;
       }
-      return viz?.stakeholders ? <div className="mb-4"><WorkStakeholderDiagram data={viz.stakeholders} /></div> : null;
+      return viz?.stakeholders ? <div className="mb-4 mt-10"><WorkStakeholderDiagram data={viz.stakeholders} /></div> : null;
     }
   }
 }
@@ -533,8 +533,9 @@ export const MarkdownBody: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz })
     else if (b.type === "h2" || b.type === "h3") level = "02";
     bodyLevels.push(level);
   }
+  // flow-root の先頭ブロックの mt（ブロック区切り 40）はセクション gap が担うため打ち消す
   return (
-    <div style={{ display: "flow-root" }}>
+    <div style={{ display: "flow-root" }} className="[&>*:first-child]:mt-0">
       {blocks.map((b, i) => (
         <RenderBlock key={i} block={b} idx={i} viz={viz} bodyLevel={bodyLevels[i]} />
       ))}
@@ -565,9 +566,9 @@ export const WorkMarkdownDocument: FC<{ md: string; viz?: WorkVizData }> = ({ md
     return <p className="text-[13px] text-[#616161]">本文がありません</p>;
   }
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-[120px]">
       {sections.map((sec, i) => (
-        <section key={i} className="flex flex-col gap-5">
+        <section key={i} className="flex flex-col gap-10">
           {sec.heading && <Headline title={sec.heading} variant="section" />}
           <MarkdownBody md={sec.body.join("\n").trim()} viz={viz} />
         </section>

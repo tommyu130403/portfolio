@@ -74,7 +74,7 @@ const Hero: FC<{
 
   return (
     <div
-      className="relative flex min-h-[380px] flex-col overflow-hidden rounded-t-[14px] px-10 py-9"
+      className="relative flex min-h-[380px] flex-col overflow-hidden rounded-t-[14px] px-20 py-9"
       style={{ backgroundColor: bg }}
     >
       {/* 右：デバイスモックアップのコラージュ（傾け・重ね・右へはみ出す） */}
@@ -183,16 +183,19 @@ const WorkModalContent: FC<WorkModalContentProps> = ({ work, skills = [], tools 
     <div className="flex flex-col">
       <Hero work={work} skills={skills} tools={tools} screenshots={screenshots} />
 
-      <div className="flex flex-col gap-16 px-10 py-10">
+      {/* コンテンツ枠 padding=80 / MetaRow→本文=40（Figma 788:10909） */}
+      <div className="flex flex-col gap-10 px-20 py-20">
         <MetaRow work={work} />
 
-        {/* 本文セクション群（markdown: 見出し/グリッド/画像回り込み等） */}
-        {sections.map((section, i) => (
-          <section key={i} className="flex flex-col gap-6">
-            <Headline title={section.heading} variant="section" />
-            <MarkdownBody md={section.md} viz={viz} />
-          </section>
-        ))}
+        {/* 本文セクション群（markdown: 見出し/グリッド/画像回り込み等）。セクション間=120 */}
+        <div className="flex flex-col gap-[120px]">
+          {sections.map((section, i) => (
+            <section key={i} className="flex flex-col gap-10">
+              <Headline title={section.heading} variant="section" />
+              <MarkdownBody md={section.md} viz={viz} />
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   );

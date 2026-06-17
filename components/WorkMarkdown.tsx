@@ -28,7 +28,9 @@ export type WorkVizData = {
  *  - `#### ` → 見出し03（Avenir Heavy 17px gray #9e9e9e）
  *  - `##### `→ 小本文 Body02（13px white）
  *  - `> `    → 引用（13px system-400 #BDBDBD・左ボーダー、連続行対応）
- *  - 段落    → Body01（15px white）
+ *  - 段落・リスト → 直前の見出しに応じて本文サイズを切替
+ *      ・セクションタイトル / 見出し01（`## `）の配下 → Body01（15px / 0.45px）
+ *      ・見出し02（`### `）/ 見出し03（`#### `）の配下 → Body02（13px / 0.39px）
  * 拡張記法:
  *  - **太字** / *斜体* / ~~取消線~~ / `インラインコード` / [リンク](url)（外部はアイコン付き）
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
@@ -400,7 +402,24 @@ function parseBlocks(src: string): Block[] {
  * ブロック描画
  * ------------------------------------------------------------------ */
 
-function RenderBlock({ block, idx, viz }: { block: Block; idx: number; viz?: WorkVizData }) {
+/** 本文サイズ（直前の見出しレベルで決まる）。01=15px / 02=13px */
+type BodyLevel = "01" | "02";
+
+/** 本文（段落・リスト）の Body01 / Body02 タイポクラス */
+const bodyTypo = (level: BodyLevel) =>
+  level === "02" ? "text-[13px] leading-[1.5] tracking-[0.39px]" : "text-[15px] leading-[1.5] tracking-[0.45px]";
+
+function RenderBlock({
+  block,
+  idx,
+  viz,
+  bodyLevel = "01",
+}: {
+  block: Block;
+  idx: number;
+  viz?: WorkVizData;
+  bodyLevel?: BodyLevel;
+}) {
   const k = `b-${idx}`;
   switch (block.type) {
     case "h1":
@@ -429,7 +448,7 @@ function RenderBlock({ block, idx, viz }: { block: Block; idx: number; viz?: Wor
       );
     case "paragraph":
       return (
-        <p className="mb-4 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
+        <p className={`mb-4 ${bodyTypo(bodyLevel)} text-white`}>
           {renderInline(block.content, k)}
         </p>
       );
@@ -455,7 +474,7 @@ function RenderBlock({ block, idx, viz }: { block: Block; idx: number; viz?: Wor
       );
     case "ul":
       return (
-        <ul className="mb-4 list-disc space-y-1 pl-6 text-[15px] leading-[1.5] tracking-[0.45px] text-white marker:text-[#9e9e9e]">
+        <ul className={`mb-4 list-disc space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-[#9e9e9e]`}>
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -463,7 +482,7 @@ function RenderBlock({ block, idx, viz }: { block: Block; idx: number; viz?: Wor
       );
     case "ol":
       return (
-        <ol className="mb-4 list-decimal space-y-1 pl-6 text-[15px] leading-[1.5] tracking-[0.45px] text-white marker:text-[#9e9e9e]">
+        <ol className={`mb-4 list-decimal space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-[#9e9e9e]`}>
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -506,10 +525,18 @@ function RenderBlock({ block, idx, viz }: { block: Block; idx: number; viz?: Wor
 /** 本文 markdown を描画する（flow-root で float 画像を内包し回り込みを成立させる） */
 export const MarkdownBody: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz }) => {
   const blocks = parseBlocks(md);
+  // 各ブロックの本文サイズを直前の見出しから事前算出（セクションタイトル / 見出し01 配下=Body01、見出し02・03 配下=Body02）
+  const bodyLevels: BodyLevel[] = [];
+  let level: BodyLevel = "01";
+  for (const b of blocks) {
+    if (b.type === "h1") level = "01";
+    else if (b.type === "h2" || b.type === "h3") level = "02";
+    bodyLevels.push(level);
+  }
   return (
     <div style={{ display: "flow-root" }}>
       {blocks.map((b, i) => (
-        <RenderBlock key={i} block={b} idx={i} viz={viz} />
+        <RenderBlock key={i} block={b} idx={i} viz={viz} bodyLevel={bodyLevels[i]} />
       ))}
     </div>
   );

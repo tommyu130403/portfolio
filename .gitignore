@@ -15,8 +15,6 @@
 
 # next.js
 /.next/
-/.next-cursor/
-/.next-claude/
 /out/
 
 # production

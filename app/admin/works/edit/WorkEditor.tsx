@@ -33,7 +33,7 @@ import type { Json, Tables } from "@/src/types/supabase";
 type Work = Tables<"works">;
 
 /**
- * Work 1件の全画面エディタ（/admin/works/[id]、id="new" で新規作成）。
+ * Work 1件の全画面エディタ（/admin/works/edit?id=xxx、id 省略 or "new" で新規作成）。
  * 「本文」タブ = メインエリア全体のリッチ Markdown エディタ、「設定」タブ = メタ情報フォーム。
  */
 
@@ -229,7 +229,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
     setDirty(false);
     setSavedAt(true);
     setTimeout(() => setSavedAt(false), 2000);
-    if (isNew) router.replace(`/admin/works/${id}`);
+    if (isNew) router.replace(`/admin/works/edit?id=${id}`);
   };
 
   const handleDelete = async () => {

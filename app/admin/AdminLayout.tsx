@@ -19,6 +19,7 @@ import {
 import type { StorageImage } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
+import { NAV_SECTIONS, type AdminSectionId } from "./sections";
 
 // ─── 型 ───────────────────────────────────────────────
 type Profile    = Tables<"profile">;
@@ -30,14 +31,8 @@ type SkillExperience = Tables<"skill_experience">;
 
 // ─── ナビゲーション ────────────────────────────────────
 // 各設定は /admin/<id> の専用ページとして表示する（1画面1セクション）
-export const NAV_SECTIONS = [
-  { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
-  { id: "career",           label: "Career",           labelJa: "経歴" },
-  { id: "works",         label: "Works",            labelJa: "制作・企画" },
-  { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
-] as const;
-
-export type AdminSectionId = (typeof NAV_SECTIONS)[number]["id"];
+// 定義は ./sections（純粋モジュール）に置き、ここでは再エクスポートのみ行う。
+export { NAV_SECTIONS, type AdminSectionId };
 
 // ─── 共通 UI ──────────────────────────────────────────
 
@@ -1100,7 +1095,7 @@ function WorksSection() {
         {projects.map((project) => (
           <Link
             key={project.id}
-            href={`/admin/works/${project.id}`}
+            href={`/admin/works/edit?id=${project.id}`}
             className="flex items-center justify-between rounded-[12px] border border-[#424242] bg-[#161616] px-5 py-4 transition-colors hover:border-[#48f4be]"
           >
             <div className="flex min-w-0 items-center gap-3">
@@ -1113,7 +1108,7 @@ function WorksSection() {
         {projects.length === 0 && <p className="text-[13px] text-[#616161]">プロジェクトがありません</p>}
       </div>
       <Link
-        href="/admin/works/new"
+        href="/admin/works/edit?id=new"
         className="block w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-center text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
       >
         ＋ プロジェクトを追加
@@ -1619,7 +1614,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
 
 /**
  * admin 共通シェル（サイドバー + main）。
- * /admin/<section> 各ページと /admin/works/[id] の全画面エディタページで共用する。
+ * /admin/<section> 各ページと /admin/works/edit の全画面エディタページで共用する。
  */
 export function AdminShell({
   section,

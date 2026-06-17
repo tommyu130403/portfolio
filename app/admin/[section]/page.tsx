@@ -1,25 +1,22 @@
-"use client";
-
-import { use } from "react";
 import { notFound } from "next/navigation";
-import { AdminLayout, NAV_SECTIONS, type AdminSectionId } from "../AdminLayout";
-import { OwnerGate } from "@/components/OwnerGate";
-import { AuthGate } from "@/components/AuthGate";
+import { NAV_SECTIONS, type AdminSectionId } from "../sections";
+import AdminSectionClient from "./AdminSectionClient";
 
-/** 各設定セクションの専用ページ（/admin/profile・/admin/career・/admin/works・/admin/skills-experience） */
-export default function AdminSectionPage({
+/**
+ * 各設定セクションの専用ページ（/admin/profile・/admin/career・/admin/works・/admin/skills-experience）。
+ * セクションは有限のため、静的エクスポート（output: export）向けに全 id を事前生成する。
+ */
+export function generateStaticParams() {
+  return NAV_SECTIONS.map(({ id }) => ({ section: id }));
+}
+
+export default async function AdminSectionPage({
   params,
 }: {
   params: Promise<{ section: string }>;
 }) {
-  const { section } = use(params);
+  const { section } = await params;
   if (!NAV_SECTIONS.some(({ id }) => id === section)) notFound();
 
-  return (
-    <AuthGate>
-      <OwnerGate>
-        <AdminLayout section={section as AdminSectionId} />
-      </OwnerGate>
-    </AuthGate>
-  );
+  return <AdminSectionClient section={section as AdminSectionId} />;
 }

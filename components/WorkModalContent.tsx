@@ -3,6 +3,7 @@ import Headline from "./Headline";
 import Icon from "./Icon";
 import Tag from "./Tag";
 import { MarkdownBody } from "./WorkMarkdown";
+import { parseTimeline, parseStakeholders } from "./WorkViz";
 import { buildImageMarkdown } from "@/lib/image-layout";
 import type { Tables } from "@/src/types/supabase";
 
@@ -54,35 +55,6 @@ function normalizeSections(raw: unknown): ContentSection[] {
 function parseScreenshots(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((u): u is string => typeof u === "string" && u.length > 0);
-}
-
-/**
- * 旧 overview / overview_cards カラムのデータを「# Overview」markdown セクションへ変換する
- * （Overview は本文 markdown に統合済み。旧データの表示互換のみ。
- *   カード見出しは 見出し02（###）、2カラムは ::: grid で表現する）。
- */
-function legacyOverviewSection(work: Work, sections: ContentSection[]): ContentSection[] {
-  const overview = typeof work.overview === "string" ? work.overview.trim() : "";
-  const cards = (Array.isArray(work.overview_cards) ? work.overview_cards : [])
-    .map((item) => {
-      const obj = (item ?? {}) as Record<string, unknown>;
-      if (typeof obj.heading !== "string") return null;
-      return { heading: obj.heading, body: typeof obj.body === "string" ? obj.body : "" };
-    })
-    .filter((c): c is { heading: string; body: string } => c !== null)
-    .filter((c) => c.heading.trim() || c.body.trim());
-  if (!overview && cards.length === 0) return sections;
-  // 本文側に既に Overview セクションがある場合は二重表示しない
-  if (sections.some((s) => s.heading.trim().toLowerCase() === "overview")) return sections;
-
-  const parts: string[] = [];
-  if (overview) parts.push(overview);
-  if (cards.length > 0) {
-    parts.push(
-      `::: grid cols=2 gap=10\n${cards.map((c) => `### ${c.heading}\n${c.body}`).join("\n---\n")}\n:::`
-    );
-  }
-  return [{ heading: "Overview", md: parts.join("\n\n") }, ...sections];
 }
 
 /* ------------------------------------------------------------------ *
@@ -203,8 +175,9 @@ type WorkModalContentProps = {
 
 const WorkModalContent: FC<WorkModalContentProps> = ({ work, skills = [], tools = [] }) => {
   const screenshots = parseScreenshots(work.hero_screenshots);
-  // Overview は本文 markdown（# Overview セクション）に統合。旧カラムのデータは変換して表示
-  const sections = legacyOverviewSection(work, normalizeSections(work.sections));
+  const sections = normalizeSections(work.sections);
+  // ::: timeline / ::: stakeholders ディレクティブが参照する構造化データ
+  const viz = { timeline: parseTimeline(work.timeline), stakeholders: parseStakeholders(work.stakeholders) };
 
   return (
     <div className="flex flex-col">
@@ -217,7 +190,7 @@ const WorkModalContent: FC<WorkModalContentProps> = ({ work, skills = [], tools 
         {sections.map((section, i) => (
           <section key={i} className="flex flex-col gap-6">
             <Headline title={section.heading} variant="section" />
-            <MarkdownBody md={section.md} />
+            <MarkdownBody md={section.md} viz={viz} />
           </section>
         ))}
       </div>

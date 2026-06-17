@@ -1,41 +1,15 @@
 import type { FC, ImgHTMLAttributes } from "react";
 
-type IconSet =
-  | "Abstract"
-  | "Animals"
-  | "Arrows"
-  | "Base"
-  | "Brand"
-  | "Build"
-  | "Character"
-  | "Charts"
-  | "Clothes"
-  | "Communicate"
-  | "Components"
-  | "Connect"
-  | "Constellation"
-  | "Datas"
-  | "Edit"
-  | "Emoji"
-  | "Energy"
-  | "Graphics"
-  | "Hands"
-  | "Hardware"
-  | "Health"
-  | "Industry"
-  | "Makeups"
-  | "Measurement"
-  | "Money"
-  | "Music"
-  | "Office"
-  | "Operate"
-  | "Others"
-  | "Peoples"
-  | "Safe"
-  | "Sports"
-  | "Time"
-  | "Travels"
-  | "Weather";
+/** 有効なアイコンカテゴリ（`public/icons` 配下のフォルダ名）の単一ソース。型もここから導出する。 */
+export const ICON_SETS = [
+  "Abstract", "Animals", "Arrows", "Base", "Brand", "Build", "Character",
+  "Charts", "Clothes", "Communicate", "Components", "Connect", "Constellation",
+  "Datas", "Edit", "Emoji", "Energy", "Graphics", "Hands", "Hardware", "Health",
+  "Industry", "Makeups", "Measurement", "Money", "Music", "Office", "Operate",
+  "Others", "Peoples", "Safe", "Sports", "Time", "Travels", "Weather",
+] as const;
+
+export type IconSet = (typeof ICON_SETS)[number];
 
 export type IconProps = ImgHTMLAttributes<HTMLImageElement> & {
   /**

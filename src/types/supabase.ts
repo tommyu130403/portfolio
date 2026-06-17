@@ -316,11 +316,11 @@ export type Database = {
           hero_brand: string | null
           hero_screenshots: Json | null
           id: string
-          overview: string | null
-          overview_cards: Json | null
           period: string | null
           role: string | null
           sections: Json | null
+          stakeholders: Json | null
+          timeline: Json | null
           sort_order: number | null
           thumbnail_url: string | null
           title: string
@@ -333,11 +333,11 @@ export type Database = {
           hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
-          overview?: string | null
-          overview_cards?: Json | null
           period?: string | null
           role?: string | null
           sections?: Json | null
+          stakeholders?: Json | null
+          timeline?: Json | null
           sort_order?: number | null
           thumbnail_url?: string | null
           title: string
@@ -350,11 +350,11 @@ export type Database = {
           hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
-          overview?: string | null
-          overview_cards?: Json | null
           period?: string | null
           role?: string | null
           sections?: Json | null
+          stakeholders?: Json | null
+          timeline?: Json | null
           sort_order?: number | null
           thumbnail_url?: string | null
           title?: string

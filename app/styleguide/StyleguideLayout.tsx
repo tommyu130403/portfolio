@@ -13,6 +13,7 @@ import HistoryItem from "@/components/HistoryItem";
 import WorkCard from "@/components/WorkCard";
 import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
+import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
 import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -602,6 +603,35 @@ function ComponentsSection() {
           description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画"
         >
           <MarkdownEditorDemo />
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkProcessChart"
+          description="Work 詳細の Timeline（Figma _Process）。本文の「::: timeline」位置に works.timeline を描画"
+        >
+          <div className="w-full">
+            <WorkProcessChart
+              data={{ totalUnits: 8, phases: [
+                { label: "Research", start: 1, span: 3, raci: ["R"], progress: 90, note: { title: "調査", body: "ヒアリングを実施" } },
+                { label: "Design", start: 3, span: 3, raci: ["R", "A"], progress: 100 },
+                { label: "QA", start: 6, span: 3, raci: ["C"], progress: 40 },
+              ] }}
+            />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkStakeholderDiagram"
+          description="Work 詳細の Stakeholders（Figma _Stakeholder）。本文の「::: stakeholders」位置に works.stakeholders を描画"
+        >
+          <div className="w-full">
+            <WorkStakeholderDiagram
+              data={{ groups: [
+                { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
+                { label: "Designer", icon: "Edit/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
+              ] }}
+            />
+          </div>
         </ComponentPreview>
       </div>
     </section>

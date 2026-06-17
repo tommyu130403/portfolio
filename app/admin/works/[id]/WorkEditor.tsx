@@ -13,6 +13,13 @@ import {
   Input,
 } from "../../AdminLayout";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
+import {
+  parseTimeline,
+  parseStakeholders,
+  type TimelineData,
+  type StakeholdersData,
+  type RaciKey,
+} from "@/components/WorkViz";
 import { sectionsToMarkdown, markdownToSections } from "@/lib/work-sections";
 import {
   saveWork,
@@ -38,8 +45,8 @@ function emptyWork(id: string): Work {
     thumbnail_url: null,
     role: null,
     period: null,
-    overview: null,
-    overview_cards: [] as unknown as Json,
+    timeline: null,
+    stakeholders: null,
     hero_brand: null,
     hero_screenshots: [] as unknown as Json,
     hero_bg_color: null,
@@ -183,6 +190,14 @@ export default function WorkEditor({ workId }: { workId: string }) {
   };
   const markDirty = () => setDirty(true);
 
+  // jsonb のパースは work の該当カラムが変わったときだけ（毎レンダー・毎キーストロークの再パースを防ぐ）
+  const parsedTimeline = useMemo(() => parseTimeline(work?.timeline), [work?.timeline]);
+  const parsedStakeholders = useMemo(() => parseStakeholders(work?.stakeholders), [work?.stakeholders]);
+  const viz = useMemo(
+    () => ({ timeline: parsedTimeline, stakeholders: parsedStakeholders }),
+    [parsedTimeline, parsedStakeholders]
+  );
+
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setList(list.some((s) => s.toLowerCase() === value.toLowerCase())
       ? list.filter((s) => s.toLowerCase() !== value.toLowerCase())
@@ -319,6 +334,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
           }}
           onPickImage={pickImage}
           className="min-h-0 flex-1"
+          viz={viz}
         />
       )}
 
@@ -474,6 +490,22 @@ export default function WorkEditor({ workId }: { workId: string }) {
                 </button>
               </div>
             </div>
+
+            <FormGroupHeader>Timeline（本文の「::: timeline」位置に描画）</FormGroupHeader>
+            <div className="col-span-2">
+              <TimelineForm
+                value={parsedTimeline ?? { totalUnits: 12, phases: [] }}
+                onChange={(v) => setField("timeline", (v.phases.length ? v : null) as unknown as Work["timeline"])}
+              />
+            </div>
+
+            <FormGroupHeader>Stakeholders（本文の「::: stakeholders」位置に描画）</FormGroupHeader>
+            <div className="col-span-2">
+              <StakeholdersForm
+                value={parsedStakeholders ?? { groups: [] }}
+                onChange={(v) => setField("stakeholders", (v.groups.length ? v : null) as unknown as Work["stakeholders"])}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -487,5 +519,109 @@ export default function WorkEditor({ workId }: { workId: string }) {
         showAlt
       />
     </AdminShell>
+  );
+}
+
+/* ─── Timeline / Stakeholders 構造化フォーム ───────────── */
+
+const vizBtn =
+  "rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white";
+const vizDel = "rounded px-2 py-1 text-[11px] text-[#616161] hover:text-[#f4487e]";
+const RACI_KEYS: RaciKey[] = ["R", "A", "C", "I"];
+
+/**
+ * 数値入力を整数へ。空欄・非数値・min 未満は min に丸める
+ * （`Number(v) || 既定値` だと空欄で恣意的な大きい既定へ飛ぶ・0 を握り潰すため）。
+ */
+const clampInt = (v: string, min: number): number => {
+  const n = parseInt(v, 10);
+  return Number.isNaN(n) ? min : Math.max(min, n);
+};
+
+function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: TimelineData) => void }) {
+  const patch = (i: number, p: Partial<TimelineData["phases"][number]>) =>
+    onChange({ ...value, phases: value.phases.map((ph, idx) => (idx === i ? { ...ph, ...p } : ph)) });
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <FieldLabel>週数（W1〜）</FieldLabel>
+        <Input className="!w-20" value={String(value.totalUnits)} onChange={(v) => onChange({ ...value, totalUnits: clampInt(v, 1) })} />
+      </div>
+      {value.phases.map((ph, i) => (
+        <div key={i} className="rounded-[8px] border border-[#424242] bg-[#161616] p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input className="!w-44" value={ph.label} onChange={(v) => patch(i, { label: v })} placeholder="フェーズ名" />
+            <span className="text-[11px] text-[#9e9e9e]">開始W</span>
+            <Input className="!w-14" value={String(ph.start)} onChange={(v) => patch(i, { start: clampInt(v, 1) })} />
+            <span className="text-[11px] text-[#9e9e9e]">期間</span>
+            <Input className="!w-14" value={String(ph.span)} onChange={(v) => patch(i, { span: clampInt(v, 1) })} />
+            <span className="text-[11px] text-[#9e9e9e]">進捗%</span>
+            <Input className="!w-16" value={ph.progress == null ? "" : String(ph.progress)} onChange={(v) => patch(i, { progress: v === "" ? undefined : Number(v) || 0 })} />
+            <span className="ml-1 flex items-center gap-1.5">
+              {RACI_KEYS.map((k) => (
+                <label key={k} className="inline-flex items-center gap-0.5 text-[11px] text-[#9e9e9e]">
+                  <input
+                    type="checkbox"
+                    className="h-3 w-3 accent-[#48f4be]"
+                    checked={ph.raci.includes(k)}
+                    onChange={(e) =>
+                      patch(i, { raci: e.target.checked ? [...ph.raci, k] : ph.raci.filter((r) => r !== k) })
+                    }
+                  />
+                  {k}
+                </label>
+              ))}
+            </span>
+            <button type="button" className={`${vizDel} ml-auto`} onClick={() => onChange({ ...value, phases: value.phases.filter((_, idx) => idx !== i) })}>削除</button>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <Input className="!w-44" value={ph.note?.title ?? ""} onChange={(v) => patch(i, { note: { ...ph.note, title: v || undefined } })} placeholder="ツールチップ見出し" />
+            <Input value={ph.note?.body ?? ""} onChange={(v) => patch(i, { note: { ...ph.note, body: v || undefined } })} placeholder="ツールチップ本文" />
+          </div>
+        </div>
+      ))}
+      <button type="button" className={`${vizBtn} self-start`} onClick={() => onChange({ ...value, phases: [...value.phases, { label: "", start: 1, span: 2, raci: ["R"], progress: 0 }] })}>
+        ＋ フェーズを追加
+      </button>
+    </div>
+  );
+}
+
+function StakeholdersForm({ value, onChange }: { value: StakeholdersData; onChange: (v: StakeholdersData) => void }) {
+  const patchGroup = (i: number, p: Partial<StakeholdersData["groups"][number]>) =>
+    onChange({ groups: value.groups.map((g, idx) => (idx === i ? { ...g, ...p } : g)) });
+  return (
+    <div className="flex flex-col gap-3">
+      {value.groups.map((g, gi) => (
+        <div key={gi} className="rounded-[8px] border border-[#424242] bg-[#161616] p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input className="!w-36" value={g.label} onChange={(v) => patchGroup(gi, { label: v })} placeholder="グループ名" />
+            <Input className="!w-56" value={g.icon ?? ""} onChange={(v) => patchGroup(gi, { icon: v || undefined })} placeholder="アイコン（例: Components/page）" />
+            <button type="button" className={`${vizDel} ml-auto`} onClick={() => onChange({ groups: value.groups.filter((_, idx) => idx !== gi) })}>グループ削除</button>
+          </div>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {g.members.map((m, mi) => (
+              <div key={mi} className="flex items-center gap-2">
+                <Input className="!w-56" value={m.label} onChange={(v) => patchGroup(gi, { members: g.members.map((mm, idx) => (idx === mi ? { ...mm, label: v } : mm)) })} placeholder="メンバー名（役職）" />
+                <label className="inline-flex items-center gap-1 text-[11px] text-[#9e9e9e]">
+                  <input
+                    type="checkbox"
+                    className="h-3 w-3 accent-[#48f4be]"
+                    checked={m.me === true}
+                    onChange={(e) => patchGroup(gi, { members: g.members.map((mm, idx) => (idx === mi ? { ...mm, me: e.target.checked } : mm)) })}
+                  />
+                  me（自分）
+                </label>
+                <button type="button" className={vizDel} onClick={() => patchGroup(gi, { members: g.members.filter((_, idx) => idx !== mi) })}>削除</button>
+              </div>
+            ))}
+            <button type="button" className={`${vizBtn} self-start`} onClick={() => patchGroup(gi, { members: [...g.members, { label: "" }] })}>＋ メンバー</button>
+          </div>
+        </div>
+      ))}
+      <button type="button" className={`${vizBtn} self-start`} onClick={() => onChange({ groups: [...value.groups, { label: "", members: [{ label: "" }] }] })}>
+        ＋ グループを追加
+      </button>
+    </div>
   );
 }

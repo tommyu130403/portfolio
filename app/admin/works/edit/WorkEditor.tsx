@@ -148,7 +148,9 @@ export default function WorkEditor({ workId }: { workId: string }) {
           ? Promise.resolve({ data: [] })
           : supabase.from("work_tools").select("sort_order, tools_vocab(name)").eq("work_id", workId).order("sort_order"),
         supabase.from("career_items").select("id, role, company, period").order("sort_order"),
-        supabase.from("skill_experience").select("label, label_short").order("sort_order"),
+        // Work タグ用のスキル語彙は専用マスタ skills_vocab を単一ソースとする
+        // （スキルセクションの skill_experience とは疎結合）
+        supabase.from("skills_vocab").select("label").order("label"),
         supabase.from("tools_vocab").select("name").order("name"),
       ]);
 
@@ -174,9 +176,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
       }
       setCareerOptions((careerRes.data ?? []) as CareerOption[]);
       setSkillOptions(
-        ((skillVocabRes.data ?? []) as { label: string; label_short: string | null }[]).map(
-          (r) => r.label_short || r.label
-        )
+        ((skillVocabRes.data ?? []) as { label: string }[]).map((r) => r.label)
       );
       setToolOptions(((toolVocabRes.data ?? []) as { name: string }[]).map((r) => r.name));
     };

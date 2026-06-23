@@ -217,12 +217,23 @@ export default function WorkEditor({ workId }: { workId: string }) {
     markDirty();
   };
 
-  // ツールアイコン（tools_vocab.icon_url）は共有語彙のため work 保存とは独立に即時保存する
-  const setToolIcon = async (toolId: string, url: string) => {
+  // ツールアイコン（tools_vocab.icon_url）は共有語彙のため work 保存とは独立に保存する。
+  // テキスト入力は1文字ごとに onChange が発火するため、ローカル状態は即時更新しつつ
+  // DB 書き込みは debounce（最後の値のみ）し、書き込み競合と UPDATE 連打を防ぐ。
+  const iconSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const setToolIcon = (toolId: string, url: string) => {
     const next = url.trim() || null;
+    const prevVal = toolOptions.find((t) => t.id === toolId)?.icon_url ?? null;
     setToolOptions((prev) => prev.map((t) => (t.id === toolId ? { ...t, icon_url: next } : t)));
-    const { error } = await saveToolIconUrl(toolId, next);
-    if (error) setSaveError(error);
+    if (iconSaveTimers.current[toolId]) clearTimeout(iconSaveTimers.current[toolId]);
+    iconSaveTimers.current[toolId] = setTimeout(async () => {
+      const { error } = await saveToolIconUrl(toolId, next);
+      if (error) {
+        setSaveError(error);
+        // 保存失敗時は楽観更新をロールバック（ローカルと DB の乖離を防ぐ）
+        setToolOptions((prev) => prev.map((t) => (t.id === toolId ? { ...t, icon_url: prevVal } : t)));
+      }
+    }, 600);
   };
 
   const handleSave = async () => {
@@ -412,25 +423,11 @@ export default function WorkEditor({ workId }: { workId: string }) {
               </div>
             </div>
 
-            <FormGroupHeader>Hero エリア設定</FormGroupHeader>
-            <div>
-              <FieldLabel>ブランド名（Hero 左上のワードマーク）</FieldLabel>
-              <Input value={work.hero_brand ?? ""} onChange={(v) => setField("hero_brand", v || null)} placeholder="Bistecca" />
-            </div>
-            <div>
-              <FieldLabel>Hero 背景色（空欄でデフォルト緑）</FieldLabel>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={work.hero_bg_color ?? "#48f4be"}
-                  onChange={(e) => setField("hero_bg_color", e.target.value)}
-                  className="h-9 w-12 shrink-0 rounded-[6px] border border-[#424242] bg-[#1a1a1a]"
-                />
-                <Input value={work.hero_bg_color ?? ""} onChange={(v) => setField("hero_bg_color", v || null)} placeholder="#48f4be" />
-              </div>
-            </div>
+            <FormGroupHeader>デバイスモックアップ</FormGroupHeader>
+            {/* 旧 Hero の hero_brand / hero_bg_color は新詳細ページ（/works）で未使用のため入力を撤去。
+                カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
             <div className="col-span-2">
-              <FieldLabel>Hero スクリーンショット（デバイスモックアップ）</FieldLabel>
+              <FieldLabel>スクリーンショット（左パネルのデバイスモックアップ・先頭2枚を表示）</FieldLabel>
               <HeroScreenshotsEditor
                 value={(work.hero_screenshots ?? []) as string[]}
                 onChange={(v) => setField("hero_screenshots", v as unknown as Json)}

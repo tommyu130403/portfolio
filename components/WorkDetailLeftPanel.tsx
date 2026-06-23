@@ -76,6 +76,8 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
   onBack,
 }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  // icon_url が読み込み失敗したツールはテキスト Tag へフォールバックする
+  const [brokenIcons, setBrokenIcons] = useState<Record<string, boolean>>({});
   const shots = screenshots.length > 0 ? screenshots : work.thumbnail_url ? [work.thumbnail_url] : [];
 
   return (
@@ -168,8 +170,15 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
           {tools.length > 0 && (
             <div className="flex w-full flex-wrap items-center gap-2">
               {tools.map((t) =>
-                t.icon_url ? (
-                  <img key={t.name} src={t.icon_url} alt={t.name} title={t.name} className="h-4 w-4 shrink-0 object-contain" />
+                t.icon_url && !brokenIcons[t.name] ? (
+                  <img
+                    key={t.name}
+                    src={t.icon_url}
+                    alt={t.name}
+                    title={t.name}
+                    className="h-4 w-4 shrink-0 object-contain"
+                    onError={() => setBrokenIcons((prev) => ({ ...prev, [t.name]: true }))}
+                  />
                 ) : (
                   <Tag key={t.name} label={t.name} variant="small" />
                 )

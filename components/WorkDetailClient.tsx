@@ -43,7 +43,6 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
         { data: workData, error: workError },
         { data: skillRows },
         { data: toolRows },
-        { data: orderRows },
       ] = await Promise.all([
         supabase.from("works").select("*").eq("id", id).single(),
         supabase
@@ -56,7 +55,6 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           .select("sort_order, tools_vocab(name, icon_url)")
           .eq("work_id", id)
           .order("sort_order"),
-        supabase.from("works").select("id").order("sort_order", { ascending: true }),
       ]);
 
       if (cancelled) return;
@@ -80,7 +78,6 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           .filter((t): t is { name: string; icon_url: string | null } => Boolean(t?.name))
           .map((t) => ({ name: t.name, icon_url: t.icon_url }))
       );
-      setOrder((orderRows ?? []).map((r) => r.id));
       setLoading(false);
     };
 
@@ -91,6 +88,21 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       cancelled = true;
     };
   }, [id]);
+
+  // 前後ナビ用の並び順は全 Works で共通のため初回のみ取得する（ナビのたびに再取得しない）。
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("works")
+      .select("id")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        if (!cancelled) setOrder((data ?? []).map((r) => r.id));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleBack = () => router.push("/#works");
 

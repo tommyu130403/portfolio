@@ -5,6 +5,7 @@ import {
   setWorkSkills,
   setWorkTools,
   setExperienceTools,
+  setToolIconUrl,
   listSkillVocab,
   listToolVocab,
 } from "@/src/lib/skills-tools-client";
@@ -168,6 +169,22 @@ export async function addToolNameFromWorks(
   try {
     const vocab = await upsertToolVocab(name);
     return { error: null, id: vocab.id };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg };
+  }
+}
+
+/**
+ * ツールのアイコン（tools_vocab.icon_url）を更新（共有語彙のロゴ。空で消去）。
+ */
+export async function saveToolIconUrl(
+  toolId: string,
+  iconUrl: string | null
+): Promise<{ error: string | null }> {
+  try {
+    await setToolIconUrl(toolId, iconUrl);
+    return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { error: msg };

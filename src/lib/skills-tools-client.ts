@@ -1,7 +1,7 @@
 import { supabase } from "@/src/lib/supabase";
 
 export type SkillVocab = { id: string; label: string; category?: string | null };
-export type ToolVocab = { id: string; name: string; slug?: string | null; category?: string | null };
+export type ToolVocab = { id: string; name: string; slug?: string | null; category?: string | null; icon_url?: string | null };
 
 export async function listSkillVocab(): Promise<SkillVocab[]> {
   const { data, error } = await supabase
@@ -15,10 +15,22 @@ export async function listSkillVocab(): Promise<SkillVocab[]> {
 export async function listToolVocab(): Promise<ToolVocab[]> {
   const { data, error } = await supabase
     .from("tools_vocab")
-    .select("id, name, slug, category")
+    .select("id, name, slug, category, icon_url")
     .order("name");
   if (error) throw new Error(error.message);
   return data ?? [];
+}
+
+/**
+ * tools_vocab.icon_url を更新（共有語彙のロゴ。空文字は null として消去）。
+ * Works 編集画面のツールアイコン設定から呼ばれる。
+ */
+export async function setToolIconUrl(toolId: string, iconUrl: string | null): Promise<void> {
+  const { error } = await supabase
+    .from("tools_vocab")
+    .update({ icon_url: iconUrl && iconUrl.trim() ? iconUrl.trim() : null })
+    .eq("id", toolId);
+  if (error) throw new Error(error.message);
 }
 
 export async function upsertSkillVocab(label: string): Promise<SkillVocab> {

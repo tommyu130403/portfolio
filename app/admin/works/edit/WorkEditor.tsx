@@ -26,6 +26,8 @@ import {
   deleteWork,
   saveWorkSkillsByLabels,
   saveWorkToolsByNames,
+  addToolNameFromWorks,
+  saveToolIconUrl,
 } from "@/app/admin/actions";
 import { supabase } from "@/src/lib/supabase";
 import type { Json, Tables } from "@/src/types/supabase";
@@ -104,6 +106,7 @@ function formatPeriod(p: PeriodInputs): string | null {
 }
 
 type CareerOption = Pick<Tables<"career_items">, "id" | "role" | "company" | "period">;
+type ToolOption = { id: string; name: string; icon_url: string | null };
 
 export default function WorkEditor({ workId }: { workId: string }) {
   const router = useRouter();
@@ -116,7 +119,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
   const [skills, setSkills] = useState<string[]>([]);
   const [tools, setTools] = useState<string[]>([]);
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
-  const [toolOptions, setToolOptions] = useState<string[]>([]);
+  const [toolOptions, setToolOptions] = useState<ToolOption[]>([]);
   const [newToolName, setNewToolName] = useState("");
   const [careerOptions, setCareerOptions] = useState<CareerOption[]>([]);
   const [tab, setTab] = useState<"content" | "settings">("content");
@@ -156,7 +159,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
         // Work タグ用のスキル語彙は専用マスタ skills_vocab を単一ソースとする
         // （スキルセクションの skill_experience とは疎結合）
         supabase.from("skills_vocab").select("label").order("label"),
-        supabase.from("tools_vocab").select("name").order("name"),
+        supabase.from("tools_vocab").select("id, name, icon_url").order("name"),
       ]);
 
       if (!isNew) {
@@ -183,7 +186,11 @@ export default function WorkEditor({ workId }: { workId: string }) {
       setSkillOptions(
         ((skillVocabRes.data ?? []) as { label: string }[]).map((r) => r.label)
       );
-      setToolOptions(((toolVocabRes.data ?? []) as { name: string }[]).map((r) => r.name));
+      setToolOptions(
+        ((toolVocabRes.data ?? []) as { id: string; name: string; icon_url: string | null }[]).map(
+          (r) => ({ id: r.id, name: r.name, icon_url: r.icon_url })
+        )
+      );
     };
     fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,6 +215,14 @@ export default function WorkEditor({ workId }: { workId: string }) {
       ? list.filter((s) => s.toLowerCase() !== value.toLowerCase())
       : [...list, value]);
     markDirty();
+  };
+
+  // ツールアイコン（tools_vocab.icon_url）は共有語彙のため work 保存とは独立に即時保存する
+  const setToolIcon = async (toolId: string, url: string) => {
+    const next = url.trim() || null;
+    setToolOptions((prev) => prev.map((t) => (t.id === toolId ? { ...t, icon_url: next } : t)));
+    const { error } = await saveToolIconUrl(toolId, next);
+    if (error) setSaveError(error);
   };
 
   const handleSave = async () => {
@@ -458,20 +473,23 @@ export default function WorkEditor({ workId }: { workId: string }) {
             <div className="col-span-2">
               <FieldLabel>ツール</FieldLabel>
               <div className="flex flex-wrap gap-2">
-                {toolOptions.map((name) => {
-                  const selected = tools.some((t) => t.toLowerCase() === name.toLowerCase());
+                {toolOptions.map((opt) => {
+                  const selected = tools.some((t) => t.toLowerCase() === opt.name.toLowerCase());
                   return (
                     <button
-                      key={name}
+                      key={opt.id}
                       type="button"
-                      onClick={() => toggle(tools, setTools, name)}
-                      className={`rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${
+                      onClick={() => toggle(tools, setTools, opt.name)}
+                      className={`flex items-center gap-1.5 rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${
                         selected
                           ? "border-[#48f4be] bg-[#48f4be]/10 text-[#48f4be]"
                           : "border-[#424242] bg-[#1a1a1a] text-[#9e9e9e] hover:text-white"
                       }`}
                     >
-                      {name}
+                      {opt.icon_url && (
+                        <img src={opt.icon_url} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />
+                      )}
+                      {opt.name}
                     </button>
                   );
                 })}
@@ -480,11 +498,17 @@ export default function WorkEditor({ workId }: { workId: string }) {
                 <Input value={newToolName} onChange={setNewToolName} placeholder="新しいツール名" className="!w-56" />
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     const name = newToolName.trim();
                     if (!name) return;
-                    if (!toolOptions.some((t) => t.toLowerCase() === name.toLowerCase())) {
-                      setToolOptions((prev) => [...prev, name]);
+                    if (!toolOptions.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+                      // 即時に tools_vocab へ登録して id を得る（アイコン設定を直後から可能にする）
+                      const res = await addToolNameFromWorks(name);
+                      if (res.error || !res.id) {
+                        setSaveError(res.error ?? "ツールの追加に失敗しました");
+                        return;
+                      }
+                      setToolOptions((prev) => [...prev, { id: res.id!, name, icon_url: null }]);
                     }
                     toggle(tools, setTools, name);
                     setNewToolName("");
@@ -494,6 +518,41 @@ export default function WorkEditor({ workId }: { workId: string }) {
                   追加
                 </button>
               </div>
+
+              {/* ツールアイコン（共有語彙・任意。未設定時は詳細ページでテキスト表示） */}
+              {(() => {
+                const selectedTools = toolOptions.filter((t) =>
+                  tools.some((n) => n.toLowerCase() === t.name.toLowerCase())
+                );
+                if (selectedTools.length === 0) return null;
+                return (
+                  <div className="mt-3 flex flex-col gap-2 border-t border-[#2a2a2a] pt-3">
+                    <p className="text-[11px] text-[#9e9e9e]">
+                      ツールアイコン（共有・任意。未設定なら詳細ページでテキスト表示）
+                    </p>
+                    {selectedTools.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2">
+                        {t.icon_url ? (
+                          <img src={t.icon_url} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                        ) : (
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#1a1a1a] text-[9px] text-[#616161]">
+                            —
+                          </span>
+                        )}
+                        <span className="w-28 shrink-0 truncate text-[12px] text-white">{t.name}</span>
+                        <div className="flex-1">
+                          <ImagePickerField
+                            value={t.icon_url ?? ""}
+                            onChange={(v) => setToolIcon(t.id, v)}
+                            folder="tools/icons"
+                            previewClassName="hidden"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>

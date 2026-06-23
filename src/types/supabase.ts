@@ -221,6 +221,7 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
+          icon_url: string | null
           id: string
           name: string
           slug: string | null
@@ -228,6 +229,7 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string
+          icon_url?: string | null
           id?: string
           name: string
           slug?: string | null
@@ -235,6 +237,7 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string
+          icon_url?: string | null
           id?: string
           name?: string
           slug?: string | null
@@ -319,10 +322,15 @@ export type Database = {
           period: string | null
           role: string | null
           sections: Json | null
-          stakeholders: Json | null
-          timeline: Json | null
+          site_thumbnail_url: string | null
+          site_title: string | null
+          site_url: string | null
           sort_order: number | null
+          stakeholder_breakdown: string | null
+          stakeholders: Json | null
+          summary: string | null
           thumbnail_url: string | null
+          timeline: Json | null
           title: string
         }
         Insert: {
@@ -336,10 +344,15 @@ export type Database = {
           period?: string | null
           role?: string | null
           sections?: Json | null
-          stakeholders?: Json | null
-          timeline?: Json | null
+          site_thumbnail_url?: string | null
+          site_title?: string | null
+          site_url?: string | null
           sort_order?: number | null
+          stakeholder_breakdown?: string | null
+          stakeholders?: Json | null
+          summary?: string | null
           thumbnail_url?: string | null
+          timeline?: Json | null
           title: string
         }
         Update: {
@@ -353,10 +366,15 @@ export type Database = {
           period?: string | null
           role?: string | null
           sections?: Json | null
-          stakeholders?: Json | null
-          timeline?: Json | null
+          site_thumbnail_url?: string | null
+          site_title?: string | null
+          site_url?: string | null
           sort_order?: number | null
+          stakeholder_breakdown?: string | null
+          stakeholders?: Json | null
+          summary?: string | null
           thumbnail_url?: string | null
+          timeline?: Json | null
           title?: string
         }
         Relationships: [

@@ -2,14 +2,12 @@
 
 import type { FC } from "react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables, TablesInsert } from "@/src/types/supabase";
 import WorkCard from "@/components/WorkCard";
-import Modal from "@/components/Modal";
-import WorkModalContent from "@/components/WorkModalContent";
 
-type Work             = Tables<"works">;
-type SkillExperience  = Tables<"skill_experience">;
+type Work = Tables<"works">;
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
@@ -63,50 +61,27 @@ const SEED_WORKS: TablesInsert<"works">[] = [
   },
 ];
 
-export type WorksListProps = {
-  /** サイドバー折りたたみ時は true。Modal のオフセット計算に使用 */
-  sidebarCollapsed?: boolean;
-};
-
-export const WorksList: FC<WorksListProps> = ({ sidebarCollapsed = false }) => {
+export const WorksList: FC = () => {
+  const router = useRouter();
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [skillExperienceRows, setSkillExperienceRows] = useState<SkillExperience[]>([]);
   const [workSkillsMap, setWorkSkillsMap] = useState<Record<string, string[]>>({});
-  const [workToolsMap, setWorkToolsMap] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const fetchWorks = async () => {
       setLoading(true);
       setError(null);
 
-      const [
-        { data, error: fetchError },
-        { data: skillExperience },
-        { data: workSkillsRows },
-        { data: workToolsRows },
-      ] = await Promise.all([
-        supabase
-          .from("works")
-          .select("*")
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("skill_experience")
-          .select("*")
-          .order("sort_order", { ascending: true }),
+      const [{ data, error: fetchError }, { data: workSkillsRows }] = await Promise.all([
+        supabase.from("works").select("*").order("sort_order", { ascending: true }),
         supabase
           .from("work_skills")
           .select("work_id, sort_order, skills_vocab(label)")
           .order("sort_order"),
-        supabase
-          .from("work_tools")
-          .select("work_id, sort_order, tools_vocab(name)")
-          .order("sort_order"),
       ]);
 
-      // Build per-work maps
+      // Build per-work skills map（カードのタグ表示用）
       const skillsMap: Record<string, string[]> = {};
       for (const row of workSkillsRows ?? []) {
         const label = (row.skills_vocab as { label: string } | null)?.label;
@@ -116,15 +91,6 @@ export const WorksList: FC<WorksListProps> = ({ sidebarCollapsed = false }) => {
       }
       setWorkSkillsMap(skillsMap);
 
-      const toolsMap: Record<string, string[]> = {};
-      for (const row of workToolsRows ?? []) {
-        const name = (row.tools_vocab as { name: string } | null)?.name;
-        if (name) {
-          toolsMap[row.work_id] = [...(toolsMap[row.work_id] ?? []), name];
-        }
-      }
-      setWorkToolsMap(toolsMap);
-
       if (fetchError) {
         console.error("Failed to fetch works:", fetchError);
         setError(fetchError.message);
@@ -133,9 +99,7 @@ export const WorksList: FC<WorksListProps> = ({ sidebarCollapsed = false }) => {
       }
 
       if (!data || data.length === 0) {
-        const { error: insertError } = await supabase
-          .from("works")
-          .insert(SEED_WORKS);
+        const { error: insertError } = await supabase.from("works").insert(SEED_WORKS);
 
         if (insertError) {
           console.error("Failed to seed works:", insertError);
@@ -151,40 +115,23 @@ export const WorksList: FC<WorksListProps> = ({ sidebarCollapsed = false }) => {
         setWorks(data);
       }
 
-      setSkillExperienceRows((skillExperience ?? []) as SkillExperience[]);
-
       setLoading(false);
     };
 
     fetchWorks();
   }, []);
 
-  // Career カードの Works リンクから発火される遷移イベントを受け、
-  // 該当 Works のモーダルを開く（works ロード後に再バインド）。
+  const openWork = (workId: string) => router.push(`/works?id=${workId}`);
+
+  // Career カードの Works リンクから発火される遷移イベントを受け、該当 Works 詳細へ遷移する。
   useEffect(() => {
     const handler = (e: Event) => {
       const id = (e as CustomEvent<{ workId?: string }>).detail?.workId;
-      if (!id) return;
-      const idx = works.findIndex((w) => w.id === id);
-      if (idx >= 0) setSelectedIndex(idx);
+      if (id) router.push(`/works?id=${id}`);
     };
     window.addEventListener("portfolio:open-work", handler);
     return () => window.removeEventListener("portfolio:open-work", handler);
-  }, [works]);
-
-  const handleClose = () => setSelectedIndex(null);
-
-  const handlePrev = () => {
-    setSelectedIndex((prev) =>
-      prev === null ? null : (prev - 1 + works.length) % works.length
-    );
-  };
-
-  const handleNext = () => {
-    setSelectedIndex((prev) =>
-      prev === null ? null : (prev + 1) % works.length
-    );
-  };
+  }, [router]);
 
   if (loading) {
     return (
@@ -210,41 +157,18 @@ export const WorksList: FC<WorksListProps> = ({ sidebarCollapsed = false }) => {
     );
   }
 
-  const selectedWork =
-    selectedIndex !== null ? works[selectedIndex] : null;
-
   return (
-    <>
-      <div className="flex flex-wrap gap-[16px]">
-        {works.map((work, i) => (
-          <WorkCard
-            key={work.id}
-            category={work.category ?? "カテゴリなし"}
-            title={work.title}
-            tags={workSkillsMap[work.id] ?? []}
-            image={work.thumbnail_url ?? DEFAULT_IMAGE}
-            onClick={() => setSelectedIndex(i)}
-          />
-        ))}
-      </div>
-
-      {selectedWork && (
-        <Modal
-          onClose={handleClose}
-          sidebarOffset={sidebarCollapsed ? 88 : 256}
-          carousel
-          onPrev={handlePrev}
-          onNext={handleNext}
-          currentIndex={selectedIndex ?? 0}
-          total={works.length}
-        >
-          <WorkModalContent
-            work={selectedWork}
-            skills={workSkillsMap[selectedWork.id] ?? []}
-            tools={workToolsMap[selectedWork.id] ?? []}
-          />
-        </Modal>
-      )}
-    </>
+    <div className="flex flex-wrap gap-[16px]">
+      {works.map((work) => (
+        <WorkCard
+          key={work.id}
+          category={work.category ?? "カテゴリなし"}
+          title={work.title}
+          tags={workSkillsMap[work.id] ?? []}
+          image={work.thumbnail_url ?? DEFAULT_IMAGE}
+          onClick={() => openWork(work.id)}
+        />
+      ))}
+    </div>
   );
 };

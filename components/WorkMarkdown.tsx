@@ -543,36 +543,59 @@ export const MarkdownBody: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz })
   );
 };
 
+/** セクション（見出し＋本文 markdown）。公開ページ / admin プレビューで共有 */
+export type WorkSection = { heading: string; md: string };
+
+/**
+ * 見出し＋本文セクションの並びを描画する共有レンダラ。
+ * 公開ページ（WorkDetailContent）と admin プレビュー（WorkMarkdownDocument）が
+ * 同じ「Headline + MarkdownBody」ループを共有し、片方だけ崩れる乖離を防ぐ。
+ */
+export const WorkSections: FC<{
+  sections: WorkSection[];
+  viz?: WorkVizData;
+  /** 見出しの体裁: section=34px / markdown-h1=24px */
+  headingVariant?: "section" | "markdown-h1";
+  /** セクション間の余白クラス */
+  gapClass?: string;
+  /** セクション間に横罫線を挿入する */
+  withDividers?: boolean;
+}> = ({ sections, viz, headingVariant = "section", gapClass = "gap-[120px]", withDividers = false }) => (
+  <div className={`flex flex-col ${gapClass}`}>
+    {sections.map((sec, i) => (
+      <React.Fragment key={i}>
+        {withDividers && i > 0 && <div className="h-px w-full bg-[#424242]" aria-hidden />}
+        <section className="flex w-full flex-col gap-10">
+          {sec.heading && <Headline title={sec.heading} variant={headingVariant} />}
+          <MarkdownBody md={sec.md} viz={viz} />
+        </section>
+      </React.Fragment>
+    ))}
+  </div>
+);
+
 /**
  * `# 見出し` でセクション分割された markdown ドキュメント全体を描画する
  * （admin の本文プレビュー用。公開側と同じ Section 見出し 34px + 本文の見た目）。
  */
 export const WorkMarkdownDocument: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz }) => {
-  type Section = { heading: string; body: string[] };
-  const sections: Section[] = [];
-  let current: Section | null = null;
+  const sections: WorkSection[] = [];
+  let current: { heading: string; body: string[] } | null = null;
+  const flush = () => {
+    if (current) sections.push({ heading: current.heading, md: current.body.join("\n").trim() });
+  };
   for (const line of md.split("\n")) {
     if (line.startsWith("# ")) {
+      flush();
       current = { heading: line.slice(2).trim(), body: [] };
-      sections.push(current);
-    } else if (current) {
-      current.body.push(line);
     } else {
-      current = { heading: "", body: [line] };
-      sections.push(current);
+      if (!current) current = { heading: "", body: [] };
+      current.body.push(line);
     }
   }
+  flush();
   if (sections.length === 0) {
     return <p className="text-[13px] text-[#616161]">本文がありません</p>;
   }
-  return (
-    <div className="flex flex-col gap-[120px]">
-      {sections.map((sec, i) => (
-        <section key={i} className="flex flex-col gap-10">
-          {sec.heading && <Headline title={sec.heading} variant="section" />}
-          <MarkdownBody md={sec.body.join("\n").trim()} viz={viz} />
-        </section>
-      ))}
-    </div>
-  );
+  return <WorkSections sections={sections} viz={viz} headingVariant="section" />;
 };

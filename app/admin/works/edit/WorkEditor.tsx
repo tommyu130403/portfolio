@@ -26,6 +26,8 @@ import {
   deleteWork,
   saveWorkSkillsByLabels,
   saveWorkToolsByNames,
+  addToolNameFromWorks,
+  saveToolIconUrl,
 } from "@/app/admin/actions";
 import { supabase } from "@/src/lib/supabase";
 import type { Json, Tables } from "@/src/types/supabase";
@@ -51,6 +53,11 @@ function emptyWork(id: string): Work {
     hero_screenshots: [] as unknown as Json,
     hero_bg_color: null,
     sections: [] as unknown as Json,
+    summary: null,
+    site_url: null,
+    site_title: null,
+    site_thumbnail_url: null,
+    stakeholder_breakdown: null,
     career_item_id: null,
     sort_order: 0,
     created_at: null,
@@ -99,6 +106,7 @@ function formatPeriod(p: PeriodInputs): string | null {
 }
 
 type CareerOption = Pick<Tables<"career_items">, "id" | "role" | "company" | "period">;
+type ToolOption = { id: string; name: string; icon_url: string | null };
 
 export default function WorkEditor({ workId }: { workId: string }) {
   const router = useRouter();
@@ -111,7 +119,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
   const [skills, setSkills] = useState<string[]>([]);
   const [tools, setTools] = useState<string[]>([]);
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
-  const [toolOptions, setToolOptions] = useState<string[]>([]);
+  const [toolOptions, setToolOptions] = useState<ToolOption[]>([]);
   const [newToolName, setNewToolName] = useState("");
   const [careerOptions, setCareerOptions] = useState<CareerOption[]>([]);
   const [tab, setTab] = useState<"content" | "settings">("content");
@@ -151,7 +159,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
         // Work タグ用のスキル語彙は専用マスタ skills_vocab を単一ソースとする
         // （スキルセクションの skill_experience とは疎結合）
         supabase.from("skills_vocab").select("label").order("label"),
-        supabase.from("tools_vocab").select("name").order("name"),
+        supabase.from("tools_vocab").select("id, name, icon_url").order("name"),
       ]);
 
       if (!isNew) {
@@ -178,7 +186,11 @@ export default function WorkEditor({ workId }: { workId: string }) {
       setSkillOptions(
         ((skillVocabRes.data ?? []) as { label: string }[]).map((r) => r.label)
       );
-      setToolOptions(((toolVocabRes.data ?? []) as { name: string }[]).map((r) => r.name));
+      setToolOptions(
+        ((toolVocabRes.data ?? []) as { id: string; name: string; icon_url: string | null }[]).map(
+          (r) => ({ id: r.id, name: r.name, icon_url: r.icon_url })
+        )
+      );
     };
     fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -203,6 +215,25 @@ export default function WorkEditor({ workId }: { workId: string }) {
       ? list.filter((s) => s.toLowerCase() !== value.toLowerCase())
       : [...list, value]);
     markDirty();
+  };
+
+  // ツールアイコン（tools_vocab.icon_url）は共有語彙のため work 保存とは独立に保存する。
+  // テキスト入力は1文字ごとに onChange が発火するため、ローカル状態は即時更新しつつ
+  // DB 書き込みは debounce（最後の値のみ）し、書き込み競合と UPDATE 連打を防ぐ。
+  const iconSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const setToolIcon = (toolId: string, url: string) => {
+    const next = url.trim() || null;
+    const prevVal = toolOptions.find((t) => t.id === toolId)?.icon_url ?? null;
+    setToolOptions((prev) => prev.map((t) => (t.id === toolId ? { ...t, icon_url: next } : t)));
+    if (iconSaveTimers.current[toolId]) clearTimeout(iconSaveTimers.current[toolId]);
+    iconSaveTimers.current[toolId] = setTimeout(async () => {
+      const { error } = await saveToolIconUrl(toolId, next);
+      if (error) {
+        setSaveError(error);
+        // 保存失敗時は楽観更新をロールバック（ローカルと DB の乖離を防ぐ）
+        setToolOptions((prev) => prev.map((t) => (t.id === toolId ? { ...t, icon_url: prevVal } : t)));
+      }
+    }, 600);
   };
 
   const handleSave = async () => {
@@ -392,25 +423,11 @@ export default function WorkEditor({ workId }: { workId: string }) {
               </div>
             </div>
 
-            <FormGroupHeader>Hero エリア設定</FormGroupHeader>
-            <div>
-              <FieldLabel>ブランド名（Hero 左上のワードマーク）</FieldLabel>
-              <Input value={work.hero_brand ?? ""} onChange={(v) => setField("hero_brand", v || null)} placeholder="Bistecca" />
-            </div>
-            <div>
-              <FieldLabel>Hero 背景色（空欄でデフォルト緑）</FieldLabel>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={work.hero_bg_color ?? "#48f4be"}
-                  onChange={(e) => setField("hero_bg_color", e.target.value)}
-                  className="h-9 w-12 shrink-0 rounded-[6px] border border-[#424242] bg-[#1a1a1a]"
-                />
-                <Input value={work.hero_bg_color ?? ""} onChange={(v) => setField("hero_bg_color", v || null)} placeholder="#48f4be" />
-              </div>
-            </div>
+            <FormGroupHeader>デバイスモックアップ</FormGroupHeader>
+            {/* 旧 Hero の hero_brand / hero_bg_color は新詳細ページ（/works）で未使用のため入力を撤去。
+                カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
             <div className="col-span-2">
-              <FieldLabel>Hero スクリーンショット（デバイスモックアップ）</FieldLabel>
+              <FieldLabel>スクリーンショット（左パネルのデバイスモックアップ・先頭2枚を表示）</FieldLabel>
               <HeroScreenshotsEditor
                 value={(work.hero_screenshots ?? []) as string[]}
                 onChange={(v) => setField("hero_screenshots", v as unknown as Json)}
@@ -453,20 +470,23 @@ export default function WorkEditor({ workId }: { workId: string }) {
             <div className="col-span-2">
               <FieldLabel>ツール</FieldLabel>
               <div className="flex flex-wrap gap-2">
-                {toolOptions.map((name) => {
-                  const selected = tools.some((t) => t.toLowerCase() === name.toLowerCase());
+                {toolOptions.map((opt) => {
+                  const selected = tools.some((t) => t.toLowerCase() === opt.name.toLowerCase());
                   return (
                     <button
-                      key={name}
+                      key={opt.id}
                       type="button"
-                      onClick={() => toggle(tools, setTools, name)}
-                      className={`rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${
+                      onClick={() => toggle(tools, setTools, opt.name)}
+                      className={`flex items-center gap-1.5 rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${
                         selected
                           ? "border-[#48f4be] bg-[#48f4be]/10 text-[#48f4be]"
                           : "border-[#424242] bg-[#1a1a1a] text-[#9e9e9e] hover:text-white"
                       }`}
                     >
-                      {name}
+                      {opt.icon_url && (
+                        <img src={opt.icon_url} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />
+                      )}
+                      {opt.name}
                     </button>
                   );
                 })}
@@ -475,11 +495,17 @@ export default function WorkEditor({ workId }: { workId: string }) {
                 <Input value={newToolName} onChange={setNewToolName} placeholder="新しいツール名" className="!w-56" />
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     const name = newToolName.trim();
                     if (!name) return;
-                    if (!toolOptions.some((t) => t.toLowerCase() === name.toLowerCase())) {
-                      setToolOptions((prev) => [...prev, name]);
+                    if (!toolOptions.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+                      // 即時に tools_vocab へ登録して id を得る（アイコン設定を直後から可能にする）
+                      const res = await addToolNameFromWorks(name);
+                      if (res.error || !res.id) {
+                        setSaveError(res.error ?? "ツールの追加に失敗しました");
+                        return;
+                      }
+                      setToolOptions((prev) => [...prev, { id: res.id!, name, icon_url: null }]);
                     }
                     toggle(tools, setTools, name);
                     setNewToolName("");
@@ -489,12 +515,84 @@ export default function WorkEditor({ workId }: { workId: string }) {
                   追加
                 </button>
               </div>
+
+              {/* ツールアイコン（共有語彙・任意。未設定時は詳細ページでテキスト表示） */}
+              {(() => {
+                const selectedTools = toolOptions.filter((t) =>
+                  tools.some((n) => n.toLowerCase() === t.name.toLowerCase())
+                );
+                if (selectedTools.length === 0) return null;
+                return (
+                  <div className="mt-3 flex flex-col gap-2 border-t border-[#2a2a2a] pt-3">
+                    <p className="text-[11px] text-[#9e9e9e]">
+                      ツールアイコン（共有・任意。未設定なら詳細ページでテキスト表示）
+                    </p>
+                    {selectedTools.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2">
+                        {t.icon_url ? (
+                          <img src={t.icon_url} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                        ) : (
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#1a1a1a] text-[9px] text-[#616161]">
+                            —
+                          </span>
+                        )}
+                        <span className="w-28 shrink-0 truncate text-[12px] text-white">{t.name}</span>
+                        <div className="flex-1">
+                          <ImagePickerField
+                            value={t.icon_url ?? ""}
+                            onChange={(v) => setToolIcon(t.id, v)}
+                            folder="tools/icons"
+                            previewClassName="hidden"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>
+            <div className="col-span-2">
+              <FieldLabel>サマリー本文（タイトル下の説明）</FieldLabel>
+              <textarea
+                value={work.summary ?? ""}
+                onChange={(e) => setField("summary", e.target.value || null)}
+                placeholder="プロジェクトの概要を簡潔に説明します。"
+                rows={3}
+                className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-[1.6] text-white outline-none transition-colors placeholder-[#616161] focus:border-[#48f4be]"
+              />
+            </div>
+            <div className="col-span-2">
+              <FieldLabel>体制内訳（例: 事業責任者(1) | PM(1) | デザイナー(2) | エンジニア(4)）</FieldLabel>
+              <Input
+                value={work.stakeholder_breakdown ?? ""}
+                onChange={(v) => setField("stakeholder_breakdown", v || null)}
+                placeholder="事業責任者(1) | PM(1) | デザイナー(2) | エンジニア(4)"
+              />
+            </div>
+            <div>
+              <FieldLabel>サイトリンク・タイトル</FieldLabel>
+              <Input value={work.site_title ?? ""} onChange={(v) => setField("site_title", v || null)} placeholder="サイトタイトル" />
+            </div>
+            <div>
+              <FieldLabel>サイトリンク・URL</FieldLabel>
+              <Input value={work.site_url ?? ""} onChange={(v) => setField("site_url", v || null)} placeholder="https://example.com" />
+            </div>
+            <div className="col-span-2">
+              <FieldLabel>サイトリンク・サムネイル</FieldLabel>
+              <ImagePickerField
+                value={work.site_thumbnail_url ?? ""}
+                onChange={(v) => setField("site_thumbnail_url", v || null)}
+                folder="projects/site-links"
+                previewClassName="mt-2 h-16 w-20 rounded-[6px] object-cover"
+              />
             </div>
 
             <FormGroupHeader>Timeline（本文の「::: timeline」位置に描画）</FormGroupHeader>
             <div className="col-span-2">
               <TimelineForm
-                value={parsedTimeline ?? { totalUnits: 12, phases: [] }}
+                value={parsedTimeline ?? DEFAULT_TIMELINE}
                 onChange={(v) => setField("timeline", (v.phases.length ? v : null) as unknown as Work["timeline"])}
               />
             </div>
@@ -528,6 +626,24 @@ const vizBtn =
   "rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white";
 const vizDel = "rounded px-2 py-1 text-[11px] text-[#616161] hover:text-[#f4487e]";
 const RACI_KEYS: RaciKey[] = ["R", "A", "C", "I"];
+
+/**
+ * 新規タイムラインの既定フェーズ一式。
+ * ラベル・週数・バー位置は Figma マスター（Master / _Process, W1〜W12）のデフォルト構成に準拠。
+ * start/span は各 _ProcessBar の位置・幅（週幅 = 694/12px）から算出。
+ * raci/progress は編集前提の中立値（既存「＋フェーズを追加」と同じ）で投入する。
+ */
+const DEFAULT_TIMELINE: TimelineData = {
+  totalUnits: 12,
+  phases: [
+    { label: "UX Research", start: 1, span: 4, raci: ["R"], progress: 0 },
+    { label: "Ideation", start: 1, span: 2, raci: ["R"], progress: 0 },
+    { label: "UI Design", start: 3, span: 5, raci: ["R"], progress: 0 },
+    { label: "Development / FE", start: 7, span: 4, raci: ["R"], progress: 0 },
+    { label: "QA / Launch", start: 9, span: 3, raci: ["R"], progress: 0 },
+    { label: "Optimization", start: 11, span: 2, raci: ["R"], progress: 0 },
+  ],
+};
 
 /**
  * 数値入力を整数へ。空欄・非数値・min 未満は min に丸める

@@ -189,7 +189,7 @@ export default function Home() {
           {/* Works */}
           <section id="works" className="w-full max-w-main">
             <Headline label="Works" title="制作・企画" />
-            <WorksList sidebarCollapsed={sidebarCollapsed} />
+            <WorksList />
           </section>
 
           {/* Skills */}

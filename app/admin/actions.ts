@@ -5,6 +5,7 @@ import {
   setWorkSkills,
   setWorkTools,
   setExperienceTools,
+  setToolIconUrl,
   listSkillVocab,
   listToolVocab,
 } from "@/src/lib/skills-tools-client";
@@ -101,6 +102,11 @@ export async function saveWork(
           hero_screenshots: payload.hero_screenshots ?? [],
           hero_bg_color: payload.hero_bg_color ?? null,
           sections: payload.sections ?? null,
+          summary: payload.summary ?? null,
+          site_url: payload.site_url ?? null,
+          site_title: payload.site_title ?? null,
+          site_thumbnail_url: payload.site_thumbnail_url ?? null,
+          stakeholder_breakdown: payload.stakeholder_breakdown ?? null,
           sort_order: payload.sort_order,
           career_item_id: payload.career_item_id ?? null,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
@@ -163,6 +169,22 @@ export async function addToolNameFromWorks(
   try {
     const vocab = await upsertToolVocab(name);
     return { error: null, id: vocab.id };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg };
+  }
+}
+
+/**
+ * ツールのアイコン（tools_vocab.icon_url）を更新（共有語彙のロゴ。空で消去）。
+ */
+export async function saveToolIconUrl(
+  toolId: string,
+  iconUrl: string | null
+): Promise<{ error: string | null }> {
+  try {
+    await setToolIconUrl(toolId, iconUrl);
+    return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { error: msg };

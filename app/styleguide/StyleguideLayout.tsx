@@ -11,10 +11,43 @@ import { ButtonFunction } from "@/components/ButtonFunction";
 import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
 import WorkCard from "@/components/WorkCard";
+import WorkDetailLeftPanel from "@/components/WorkDetailLeftPanel";
+import WorkDetailContent from "@/components/WorkDetailContent";
 import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
 import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
+import type { Tables } from "@/src/types/supabase";
+
+// Works 詳細ページのプレビュー用サンプルデータ
+const SAMPLE_WORK_DETAIL = {
+  id: "sample",
+  title: "キャリアチケットスカウトサービスの立ち上げ",
+  category: "プラットフォーム開発",
+  thumbnail_url: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80",
+  role: "リードUI/UXデザイナー・プロジェクトマネージャー",
+  period: "2023年4月 - 2023年9月（6ヶ月）",
+  timeline: null,
+  stakeholders: null,
+  hero_brand: null,
+  hero_screenshots: [
+    "https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=400&q=80",
+    "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80",
+  ],
+  hero_bg_color: null,
+  sections: [
+    { heading: "概要", body: "### 背景\n市場のニーズに応えるため、新規スカウトサービスを立ち上げました。\n\n### 課題\n既存フローでは候補者と企業のマッチング精度に課題がありました。" },
+    { heading: "見出し01", body: "本文テキスト Body01。プロジェクトで取り組んだ施策の詳細を記載します。" },
+  ],
+  summary: "求職者と企業をつなぐ新しいスカウト体験を、立ち上げからベータ版リリースまで一貫して設計・推進しました。",
+  site_url: "https://example.com",
+  site_title: "サイトタイトル",
+  site_thumbnail_url: "https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?auto=format&fit=crop&w=200&q=80",
+  stakeholder_breakdown: "事業責任者(1) | プロジェクトマネージャー(1) | デザイナー(2) | エンジニア(4)",
+  career_item_id: null,
+  sort_order: 0,
+  created_at: null,
+} as Tables<"works">;
 
 // ─── 型 ───────────────────────────────────────────────
 export type IconSetData = { name: string; icons: string[] };
@@ -580,7 +613,7 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="WorkCard" description="制作・企画（Works）一覧カード。クリックでモーダルを開く">
+        <ComponentPreview title="WorkCard" description="制作・企画（Works）一覧カード。クリックで詳細ページ（/works?id=）へ遷移">
           <WorkCard
             category="プラットフォーム開発"
             title="キャリアチケットスカウトサービス"
@@ -631,6 +664,30 @@ function ComponentsSection() {
                 { label: "Designer", icon: "Edit/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
               ] }}
             />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkDetailLeftPanel"
+          description="Works 詳細ページの左パネル（Figma 787:9916）。戻りリンク / デバイスモック / カテゴリ・タイトル / サマリー / メタ（期間・役割・体制内訳）/ Skills・Tools / サイトリンクカード"
+        >
+          <div className="rounded-[12px] border border-[#424242] bg-[#212121] px-6">
+            <WorkDetailLeftPanel
+              work={SAMPLE_WORK_DETAIL}
+              skills={["UI Design", "UX Research", "PJ Management"]}
+              tools={[{ name: "Figma", icon_url: null }, { name: "React", icon_url: null }]}
+              screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
+              onBack={() => {}}
+            />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkDetailContent"
+          description="Works 詳細ページの右カラム（本文）。見出し01 + 本文 markdown のセクションを横罫線で区切って描画"
+        >
+          <div className="w-full rounded-[12px] border border-[#424242] bg-[#212121] px-6">
+            <WorkDetailContent work={SAMPLE_WORK_DETAIL} />
           </div>
         </ComponentPreview>
       </div>

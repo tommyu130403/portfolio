@@ -71,6 +71,7 @@ export const color = {
     "700": "#616161",
     "800": "#424242",
     "900": "#212121",
+    "1000": "#1A1A1A", // Figma System/1000（Background/Dark の参照元）
     black: "#000000",
     white: "#FFFFFF",
   },
@@ -78,6 +79,45 @@ export const color = {
 
 export type ColorGroup = keyof typeof color;
 export type ColorScale<G extends ColorGroup> = keyof (typeof color)[G];
+
+// ─── Semantic Color（Figma Semantic コレクション）─────────────────────────────
+// primitive を意味ベースで参照するエイリアス層。
+// キー名は Tailwind ユーティリティとして自然に読める形へ調整（エルゴノミック命名）。
+// 右側コメントに対応する Figma の semantic 名を併記する。
+
+export const semantic = {
+  /** Main/Primary — ブランドアクセント */
+  primary: color.main.base, //                       Figma: Main/Primary
+  /** Text/Body/Main — 本文の主要テキスト */
+  fg: color.system.white, //                          Figma: Text/Body/Main
+  /** Text/Body/Sub — 補助・弱めテキスト */
+  fgMuted: color.system["500"], //                    Figma: Text/Body/Sub
+  /** Background/Default — 標準サーフェス（カード等） */
+  surface: color.system["900"], //                    Figma: Background/Default
+  /** Background/Dark — 一段暗いサーフェス */
+  surfaceDark: color.system["1000"], //               Figma: Background/Dark
+  /** Border/Default — 標準ボーダー */
+  border: color.system["800"], //                     Figma: Border/Default
+  /** Border/Light — コントラストの高い（目立つ）ボーダー */
+  borderStrong: color.system["500"], //               Figma: Border/Light
+  /** Background/Light-α5 — 白5%の半透明オーバーレイ */
+  overlayLight: "rgba(255, 255, 255, 0.05)", //       Figma: Background/Light-α5
+  /** Background/Dark-α25 — 黒25%の半透明オーバーレイ */
+  overlayDark: "rgba(0, 0, 0, 0.25)", //              Figma: Background/Dark-α25
+} as const;
+
+export type SemanticKey = keyof typeof semantic;
+
+// ─── Shadow（Figma Effect トークン）──────────────────────────────────────────
+
+export const shadow = {
+  /** Figma: shadow-wisper（淡い影） */
+  wisper: "0 1px 3px 0 rgba(0, 0, 0, 0.10)",
+  /** Figma: shadow（標準のドロップシャドウ） */
+  base: "1px 1px 16px 2px rgba(0, 0, 0, 0.25)",
+} as const;
+
+export type ShadowKey = keyof typeof shadow;
 
 // ─── Radius ───────────────────────────────────────────────────────────────────
 
@@ -184,6 +224,27 @@ export const typo = {
   },
 } as const;
 
+// ─── Text Style（Figma Typo コレクションの命名済み text style）────────────────
+// size: px / weight: font-weight / lineHeight: 倍率（Figma の 100% → 1, 150% → 1.5）
+// letterSpacing: em（Figma の % 表記 3 → 0.03em, 5 → 0.05em）/ lang: 想定言語のフォント
+//   lang "jp" → typo.body.jp (Noto Sans JP) / "en" → typo.body.en (Avenir)
+
+export const textStyle = {
+  "title-pj":       { figma: "Title/PJ",          lang: "jp", size: 40, weight: 700, lineHeight: 1.0, letterSpacing: 0.03 },
+  "headline-01-jp": { figma: "Headline/01/JP",    lang: "jp", size: 24, weight: 700, lineHeight: 1.5, letterSpacing: 0.05 },
+  "headline-02-jp": { figma: "Headline/02/JP",    lang: "jp", size: 20, weight: 700, lineHeight: 1.5, letterSpacing: 0.05 },
+  "headline-02-en": { figma: "Headline/02/EN",    lang: "en", size: 20, weight: 800, lineHeight: 1.0, letterSpacing: 0.05 },
+  "headline-03-jp": { figma: "Headline/03/JP",    lang: "jp", size: 17, weight: 700, lineHeight: 1.0, letterSpacing: 0.05 },
+  "body-01-jp":     { figma: "Body/01/JP/Regular", lang: "jp", size: 15, weight: 400, lineHeight: 1.5, letterSpacing: 0.03 },
+  "body-02-jp":     { figma: "Body/02/JP/Regular", lang: "jp", size: 13, weight: 400, lineHeight: 1.5, letterSpacing: 0.03 },
+  "body-02-jp-bold":{ figma: "Body/02/JP/Bold",    lang: "jp", size: 13, weight: 700, lineHeight: 1.5, letterSpacing: 0.03 },
+  "body-03-jp":     { figma: "Body/03/JP/Regular", lang: "jp", size: 11, weight: 400, lineHeight: 1.5, letterSpacing: 0.03 },
+  "body-03-en":     { figma: "Body/03/EN/Regular", lang: "en", size: 13, weight: 400, lineHeight: 1.0, letterSpacing: 0 },
+  "caption-01-jp":  { figma: "Caption/01/JP",      lang: "jp", size: 10, weight: 400, lineHeight: 1.0, letterSpacing: 0.03 },
+} as const;
+
+export type TextStyleKey = keyof typeof textStyle;
+
 // ─── Breakpoints ──────────────────────────────────────────────────────────────
 
 /** Tailwind responsive prefix reference: lg = tablet, xl = desktop（Device/Breakpoints と同期） */
@@ -198,5 +259,5 @@ export const breakpoint = {
 
 // ─── Aggregate export ─────────────────────────────────────────────────────────
 
-export const tokens = { color, radius, size, container, typo, breakpoint } as const;
+export const tokens = { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } as const;
 export type Tokens = typeof tokens;

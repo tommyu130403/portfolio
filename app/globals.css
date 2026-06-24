@@ -77,8 +77,27 @@ html {
   --color-system-700: #616161;
   --color-system-800: #424242;
   --color-system-900: #212121;
+  --color-system-1000: #1A1A1A;
   --color-system-black: #000000;
   --color-system-white: #FFFFFF;
+
+  /* Semantic（Figma Semantic コレクション）: primitive を意味ベースで参照するエイリアス層。
+     エルゴノミック命名。生成ユーティリティ例: bg-primary / text-fg / text-fg-muted /
+     bg-surface / bg-surface-dark / border-border / border-border-strong /
+     bg-overlay-light / bg-overlay-dark。右コメントは対応する Figma semantic 名。 */
+  --color-primary:       var(--color-main-base);    /* Main/Primary */
+  --color-fg:            var(--color-system-white);  /* Text/Body/Main */
+  --color-fg-muted:      var(--color-system-500);    /* Text/Body/Sub */
+  --color-surface:       var(--color-system-900);    /* Background/Default */
+  --color-surface-dark:  var(--color-system-1000);   /* Background/Dark */
+  --color-border:        var(--color-system-800);    /* Border/Default */
+  --color-border-strong: var(--color-system-500);    /* Border/Light */
+  --color-overlay-light: rgba(255, 255, 255, 0.05);  /* Background/Light-α5 */
+  --color-overlay-dark:  rgba(0, 0, 0, 0.25);        /* Background/Dark-α25 */
+
+  /* Shadow（Figma Effect トークン）。生成ユーティリティ: shadow-base / shadow-wisper */
+  --shadow-wisper: 0 1px 3px 0 rgba(0, 0, 0, 0.10); /* Figma: shadow-wisper */
+  --shadow-base:   1px 1px 16px 2px rgba(0, 0, 0, 0.25); /* Figma: shadow */
 
   /* Container: メインコンテンツの最大表示幅（Figma Device/desktop Main.Max と同期）
      生成ユーティリティ: max-w-main（lib/design-tokens.ts container.desktop.width.mainMax と同値） */

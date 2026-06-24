@@ -643,7 +643,7 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / section / コンテンツ見出し 01・02・03（Library 305:265）">
-          <div className="w-full"><Headline label="Works" title="制作・企画" /></div>
+          <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
           <div className="w-full"><Headline title="見出し 01（24px 白）" variant="markdown-h1" /></div>

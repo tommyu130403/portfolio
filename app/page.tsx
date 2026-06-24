@@ -107,64 +107,24 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-              <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">
-                {loading ? (
-                  <span className="inline-block h-20 w-full animate-pulse rounded bg-[#424242]" />
-                ) : profile?.bio}
-              </p>
             </div>
           </section>
 
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
-            <Headline label="Introduction" title="自己紹介" />
+            <Headline label="自己紹介" title="Introduction" />
             <div className="flex flex-col gap-10 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
               {/* Opening paragraphs */}
               <div className="flex flex-col gap-4">
                 <p>こんにちは。プロダクトデザイナーの山田太郎です。 大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
                 <p>デザインは問題解決の手段であると考えており、 常にユーザーの課題とビジネスの目標の両方を意識しながらデザイン制作を行ってきました。 開発チームやセールスチームといったあらゆる専門性との密なコミュニケーションを通じて、「最適解」を徹底的に模索することを心がけています。</p>
               </div>
-
-              {/* My Philosophy */}
-              <div className="flex flex-col gap-6">
-                <div className="flex items-start gap-2 w-full">
-                  <div className="flex items-center self-stretch py-2">
-                    <div className="w-[3px] h-full rounded-[2px] bg-[#48f4be]" />
-                  </div>
-                  <p className="flex-1 font-bold leading-none tracking-[1.2px] text-white">
-                    <span className="text-[24px] leading-[1.5]">My Philosophy </span>
-                    <span className="font-mplus text-[12px] leading-[1.5] tracking-[0.6px]">大事にしていること</span>
-                  </p>
-                </div>
-                <ul className="list-disc leading-none pl-[22.5px] flex flex-col gap-0">
-                  <li><span className="leading-[1.5]">説明責任を果たす (透明性)</span></li>
-                  <li><span className="leading-[1.5]">あらゆる専門性によって最適解を模索する (異能の掛け算)</span></li>
-                  <li><span className="leading-[1.5]">ビジネスを作る (UXの証明)</span></li>
-                </ul>
-              </div>
-
-              {/* My Aspirations */}
-              <div className="flex flex-col gap-6">
-                <div className="flex items-start gap-2 w-full">
-                  <div className="flex items-center self-stretch py-2">
-                    <div className="w-[3px] h-full rounded-[2px] bg-[#48f4be]" />
-                  </div>
-                  <p className="flex-1 font-bold leading-none tracking-[1.2px] text-white">
-                    <span className="text-[24px] leading-[1.5]">My Aspirations </span>
-                    <span className="font-mplus text-[12px] leading-[1.5] tracking-[0.6px]">挑戦したいこと</span>
-                  </p>
-                </div>
-                <div className="flex flex-col gap-4">
-                  <p>キャリアのほとんどを「キャリアチケット」プロダクトに貢献してきました。立ち上げからグロースに至るまで自ら志願して関わり続けてきたのは、この事業が持つ価値に深く共感し、市場の課題を解決できるプロダクトだと信じることができていたからです。何より、その価値を自分たちで定義し高め合おうとする組織の文化に非常に誇りをもっていました。</p>
-                  <p>どのようなステージやプロダクトであっても、常に「開拓者」であり続け、プロダクトの真の価値を問い続け、関係者全員が同じ方向を向いていけるようなチームを築いていくことが私の使命であると考えています。</p>
-                </div>
-              </div>
             </div>
           </section>
 
           {/* Career */}
           <section id="career" className="w-full max-w-main">
-            <Headline label="Career" title="経歴" />
+            <Headline label="経歴" title="Career" />
             <div className="flex flex-col gap-6">
               {/* careerLead — デザインソース (sections.jsx) 準拠スタイル */}
               {loading ? (
@@ -188,7 +148,7 @@ export default function Home() {
 
           {/* Works */}
           <section id="works" className="w-full max-w-main">
-            <Headline label="Works" title="制作・企画" />
+            <Headline label="制作・企画" title="Works" />
             <WorksList />
           </section>
 
@@ -196,7 +156,7 @@ export default function Home() {
           <section id="skills" className="mb-10 w-full">
             {/* 見出し+タブ: 他セクションと同じ最大幅・中央寄せ */}
             <div className="mx-auto w-full max-w-main">
-              <Headline label="Skills" title="スキル" />
+              <Headline label="スキル" title="Skills" />
             </div>
             <div className="w-full max-w-main mx-auto">
               <SkillsCardGrid />

@@ -16,7 +16,7 @@ import WorkDetailContent from "@/components/WorkDetailContent";
 import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
-import { color, radius, size, container, typo, breakpoint } from "@/lib/design-tokens";
+import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
 import type { Tables } from "@/src/types/supabase";
 
 // Works 詳細ページのプレビュー用サンプルデータ
@@ -63,23 +63,29 @@ const NAV_SECTIONS = [
   { id: "components", label: "Components",  labelJa: "コンポーネント" },
 ] as const;
 
-// ─── タイポグラフィスケール ───────────────────────────────
-const TYPOGRAPHY_SCALE = [
-  { size: "34", weight: "800", tracking: "0px",    sample: "Title EN Bold",          usage: "Library Title/EN/Bold" },
-  { size: "34", weight: "400", tracking: "0px",    sample: "Title EN Regular",       usage: "Library Title/EN/Regular" },
-  { size: "32", weight: "700", tracking: "0.96px", sample: "Title JP Bold",          usage: "Library Title/JP/Bold" },
-  { size: "32", weight: "400", tracking: "0.96px", sample: "Title JP Regular",       usage: "Library Title/JP/Regular" },
-  { size: "17", weight: "800", tracking: "0.2px",  sample: "Body-1 EN Bold",         usage: "Library Body-1/EN/Bold" },
-  { size: "17", weight: "400", tracking: "0px",    sample: "Body-1 EN Regular",      usage: "Library Body-1/EN/Regular" },
-  { size: "15", weight: "700", tracking: "0px",    sample: "Body-1 JP Bold",         usage: "Library Body-1/JP/Bold" },
-  { size: "15", weight: "400", tracking: "0px",    sample: "Body-1 JP Regular",      usage: "Library Body-1/JP/Regular" },
-  { size: "13", weight: "800", tracking: "0.2px",  sample: "Body-3 EN Bold",         usage: "Library Body-3/EN/Bold" },
-  { size: "13", weight: "400", tracking: "0px",    sample: "Body-3 EN Regular",      usage: "Library Body-3/EN/Regular" },
-  { size: "11", weight: "700", tracking: "0.33px", sample: "Body-3 JP Bold",         usage: "Library Body-3/JP/Bold" },
-  { size: "11", weight: "400", tracking: "0.33px", sample: "Body-3 JP Regular",      usage: "Library Body-3/JP/Regular" },
-  { size: "10", weight: "700", tracking: "0px",    sample: "Caption JP Bold",        usage: "Library Caption/JP/Bold" },
-  { size: "9",  weight: "400", tracking: "0px",    sample: "Caption JP Regular",     usage: "Library Caption/JP/Regular" },
+// ─── Semantic カラー（Figma Semantic コレクション → primitive 参照）─────────
+// label = エルゴノミック命名のキー / twExample = 代表的な Tailwind ユーティリティ
+// figma = 対応する Figma semantic 名 / ref = 参照先 primitive の説明
+// cls は実際にスウォッチへ適用する literal な Tailwind ユーティリティ（v4 の生成検出 = source 内の
+// literal 文字列が対象。これにより semantic 変数が tree-shake されず実際に出力・動作する）。
+const SEMANTIC_SWATCHES = [
+  { kind: "bg",     cls: "bg-primary",           token: "semantic.primary",      value: semantic.primary,      figma: "Main/Primary",        ref: "main-base" },
+  { kind: "text",   cls: "text-fg",              token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Main",      ref: "system-white" },
+  { kind: "text",   cls: "text-fg-muted",        token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Sub",       ref: "system-500" },
+  { kind: "bg",     cls: "bg-surface",           token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default",  ref: "system-900" },
+  { kind: "bg",     cls: "bg-surface-dark",      token: "semantic.surfaceDark",  value: semantic.surfaceDark,  figma: "Background/Dark",     ref: "system-1000" },
+  { kind: "border", cls: "border-border",        token: "semantic.border",       value: semantic.border,       figma: "Border/Default",      ref: "system-800" },
+  { kind: "border", cls: "border-border-strong", token: "semantic.borderStrong", value: semantic.borderStrong, figma: "Border/Light",        ref: "system-500" },
+  { kind: "bg",     cls: "bg-overlay-light",     token: "semantic.overlayLight", value: semantic.overlayLight, figma: "Background/Light-α5", ref: "white 5%" },
+  { kind: "bg",     cls: "bg-overlay-dark",      token: "semantic.overlayDark",  value: semantic.overlayDark,  figma: "Background/Dark-α25", ref: "black 25%" },
 ] as const;
+
+// ─── タイポグラフィ（textStyle トークンから生成）────────────────────────────
+// lang → フォントファミリー（CSS 変数経由で next/font を当てる）とサンプル文字
+const TYPO_LANG = {
+  jp: { cssVar: "--font-noto-sans-jp", sample: "本文テキスト サンプル" },
+  en: { cssVar: undefined as string | undefined, family: typo.body.en, sample: "Body Text Sample" },
+} as const;
 
 // ─── 共通サブコンポーネント ────────────────────────────
 function SectionTitle({ label, title }: { label: string; title: string }) {
@@ -207,6 +213,52 @@ function ColorsSection() {
             </div>
           </div>
         ))}
+
+        {/* Semantic（primitive を意味ベースで参照するエイリアス層） */}
+        <div>
+          <div className="mb-4 flex items-baseline gap-3">
+            <SubHeading>Semantic</SubHeading>
+            <p className="text-[11px] text-[#616161]">
+              意味ベースのエイリアス（Figma Semantic コレクション）。値は primitive を参照
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {SEMANTIC_SWATCHES.map(({ kind, cls, token, value, figma, ref }) => (
+              <button
+                key={token}
+                type="button"
+                onClick={() => copy(value)}
+                title={`${token}\n${value}\nFigma: ${figma}`}
+                className="group flex items-center gap-3 rounded-[8px] border border-transparent p-2 text-left transition-colors hover:border-[#424242] hover:bg-[#1a1a1a]"
+              >
+                {/* チェッカーボード背景（半透明色を可視化）の上に literal ユーティリティで実描画 */}
+                <div
+                  className="h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-white/10 bg-[length:8px_8px]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(45deg,#333 25%,transparent 25%),linear-gradient(-45deg,#333 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#333 75%),linear-gradient(-45deg,transparent 75%,#333 75%)",
+                    backgroundPosition: "0 0,0 4px,4px -4px,-4px 0",
+                  }}
+                >
+                  {kind === "bg" && <div className={`h-full w-full ${cls}`} />}
+                  {kind === "text" && (
+                    <div className={`flex h-full w-full items-center justify-center bg-surface text-[16px] font-bold ${cls}`}>
+                      Ag
+                    </div>
+                  )}
+                  {kind === "border" && <div className={`h-full w-full border-2 bg-surface ${cls}`} />}
+                </div>
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="truncate text-[12px] font-medium text-white">{figma}</p>
+                  <p className="font-mono text-[10px] text-[#616161]">
+                    {copied === value ? "✓ コピー" : `${value} → ${ref}`}
+                  </p>
+                  <TokenBadge>{cls}</TokenBadge>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -252,28 +304,45 @@ function TypographySection() {
         ))}
       </div>
 
-      {/* タイプスケール */}
-      <SubHeading>Type Scale</SubHeading>
+      {/* タイプスケール（Figma Typo コレクションの命名済み text style） */}
+      <SubHeading>Text Styles</SubHeading>
+      <p className="mb-4 text-[12px] text-[#616161]">
+        Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge> で参照。
+        lineHeight は倍率（Figma 100% → 1）、letterSpacing は em（Figma 3% → 0.03em）。
+      </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
-        {TYPOGRAPHY_SCALE.map(({ size: fs, weight, tracking, sample, usage }) => (
-          <div key={usage} className="flex flex-col gap-2 py-5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-baseline gap-3">
-                <p className="font-mono text-[16px] text-white">{fs}px</p>
-                <p className="font-mono text-[10px] text-[#616161]">
-                  weight:{weight} · tracking:{tracking}
+        {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
+          ([key, ts]) => {
+            const langInfo = TYPO_LANG[ts.lang];
+            const fontFamily =
+              langInfo.cssVar ? `var(${langInfo.cssVar})` : "family" in langInfo ? langInfo.family : undefined;
+            return (
+              <div key={key} className="flex flex-col gap-2 py-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-baseline gap-3">
+                    <p className="font-mono text-[16px] text-white">{ts.size}px</p>
+                    <p className="font-mono text-[10px] text-[#616161]">
+                      weight:{ts.weight} · lh:{ts.lineHeight} · tracking:{ts.letterSpacing}em · {ts.lang.toUpperCase()}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-[11px] text-[#616161]">{ts.figma}</p>
+                </div>
+                <p
+                  className="truncate text-white"
+                  style={{
+                    fontFamily,
+                    fontSize: `${ts.size}px`,
+                    fontWeight: ts.weight,
+                    letterSpacing: `${ts.letterSpacing}em`,
+                    lineHeight: ts.lineHeight,
+                  }}
+                >
+                  {langInfo.sample}
                 </p>
               </div>
-              <p className="shrink-0 text-[11px] text-[#616161]">{usage}</p>
-            </div>
-            <p
-              className="truncate text-white"
-              style={{ fontSize: `${fs}px`, fontWeight: weight, letterSpacing: tracking, lineHeight: 1.4 }}
-            >
-              {sample}
-            </p>
-          </div>
-        ))}
+            );
+          },
+        )}
       </div>
     </section>
   );
@@ -326,6 +395,27 @@ function TokensSection() {
               className="h-[6px] rounded-full bg-[#48f4be]/60"
               style={{ width: Math.min(val, 720) }}
             />
+          </div>
+        ))}
+      </div>
+
+      {/* ── Shadow（Figma Effect トークン） ── */}
+      <SubHeading>Shadow</SubHeading>
+      <p className="mb-4 text-[12px] text-[#616161]">
+        Tailwind クラス例: <TokenBadge>shadow-base</TokenBadge>{" "}
+        <TokenBadge>shadow-wisper</TokenBadge>
+      </p>
+      <div className="mb-12 flex flex-wrap gap-6">
+        {(Object.entries(shadow) as [string, string][]).map(([key, val]) => (
+          <div key={key} className="flex flex-col items-center gap-3">
+            <div
+              className="h-20 w-32 rounded-[8px] border border-[#2a2a2a] bg-[#212121]"
+              style={{ boxShadow: val }}
+            />
+            <div className="text-center">
+              <TokenBadge>shadow-{key}</TokenBadge>
+              <p className="mt-1 max-w-[160px] font-mono text-[9px] leading-tight text-[#616161]">{val}</p>
+            </div>
           </div>
         ))}
       </div>

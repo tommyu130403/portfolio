@@ -205,10 +205,6 @@ export default function WorkEditor({ workId }: { workId: string }) {
   // jsonb のパースは work の該当カラムが変わったときだけ（毎レンダー・毎キーストロークの再パースを防ぐ）
   const parsedTimeline = useMemo(() => parseTimeline(work?.timeline), [work?.timeline]);
   const parsedStakeholders = useMemo(() => parseStakeholders(work?.stakeholders), [work?.stakeholders]);
-  const viz = useMemo(
-    () => ({ timeline: parsedTimeline, stakeholders: parsedStakeholders }),
-    [parsedTimeline, parsedStakeholders]
-  );
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setList(list.some((s) => s.toLowerCase() === value.toLowerCase())
@@ -365,7 +361,6 @@ export default function WorkEditor({ workId }: { workId: string }) {
           }}
           onPickImage={pickImage}
           className="min-h-0 flex-1"
-          viz={viz}
         />
       )}
 
@@ -589,7 +584,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
               />
             </div>
 
-            <FormGroupHeader>Timeline（本文の「::: timeline」位置に描画）</FormGroupHeader>
+            <FormGroupHeader>Timeline（左パネルの「全画面」ボタン → モーダルに表示）</FormGroupHeader>
             <div className="col-span-2">
               <TimelineForm
                 value={parsedTimeline ?? DEFAULT_TIMELINE}
@@ -597,7 +592,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
               />
             </div>
 
-            <FormGroupHeader>Stakeholders（本文の「::: stakeholders」位置に描画）</FormGroupHeader>
+            <FormGroupHeader>Stakeholders（左パネルの「全画面」ボタン → モーダルに表示）</FormGroupHeader>
             <div className="col-span-2">
               <StakeholdersForm
                 value={parsedStakeholders ?? { groups: [] }}

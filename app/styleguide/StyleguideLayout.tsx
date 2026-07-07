@@ -16,6 +16,7 @@ import WorkDetailContent from "@/components/WorkDetailContent";
 import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
+import WorkVizModal from "@/components/WorkVizModal";
 import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
 import type { Tables } from "@/src/types/supabase";
 
@@ -620,6 +621,43 @@ function MarkdownEditorDemo() {
   );
 }
 
+function WorkVizModalDemo() {
+  const [kind, setKind] = useState<"timeline" | "stakeholders" | null>(null);
+  return (
+    <div className="flex w-full flex-wrap gap-3">
+      <button
+        type="button"
+        onClick={() => setKind("timeline")}
+        className="rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#616161] hover:text-white"
+      >
+        Timeline モーダルを開く
+      </button>
+      <button
+        type="button"
+        onClick={() => setKind("stakeholders")}
+        className="rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#616161] hover:text-white"
+      >
+        Stakeholder モーダルを開く
+      </button>
+      {kind && (
+        <WorkVizModal
+          kind={kind}
+          timeline={{ totalUnits: 8, phases: [
+            { label: "Research", start: 1, span: 3, raci: ["R"], progress: 90 },
+            { label: "Design", start: 3, span: 3, raci: ["R", "A"], progress: 100 },
+            { label: "QA", start: 6, span: 3, raci: ["C"], progress: 40 },
+          ] }}
+          stakeholders={{ groups: [
+            { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
+            { label: "Designer", icon: "Edit/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
+          ] }}
+          onClose={() => setKind(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 function ComponentsSection() {
   return (
     <section id="components" className="scroll-mt-8">
@@ -730,7 +768,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkProcessChart"
-          description="Work 詳細の Timeline（Figma _Process）。本文の「::: timeline」位置に works.timeline を描画"
+          description="Work 詳細の Timeline（Figma _Process）。左パネルの全画面ボタン → WorkVizModal 内に works.timeline を描画"
         >
           <div className="w-full">
             <WorkProcessChart
@@ -745,7 +783,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkStakeholderDiagram"
-          description="Work 詳細の Stakeholders（Figma _Stakeholder）。本文の「::: stakeholders」位置に works.stakeholders を描画"
+          description="Work 詳細の Stakeholders（Figma _Stakeholder）。左パネルの全画面ボタン → WorkVizModal 内に works.stakeholders を描画"
         >
           <div className="w-full">
             <WorkStakeholderDiagram
@@ -758,8 +796,15 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview
+          title="WorkVizModal"
+          description="左パネルの全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画"
+        >
+          <WorkVizModalDemo />
+        </ComponentPreview>
+
+        <ComponentPreview
           title="WorkDetailLeftPanel"
-          description="Works 詳細ページの左パネル（Figma 787:9916）。戻りリンク / デバイスモック / カテゴリ・タイトル / サマリー / メタ（期間・役割・体制内訳）/ Skills・Tools / サイトリンクカード"
+          description="Works 詳細ページの左パネル（Figma 787:9916）。戻りリンク / デバイスモック / カテゴリ・タイトル / サマリー / メタ（期間・役割・体制内訳・Timeline/Stakeholder 全画面ボタン）/ Skills・Tools / サイトリンクカード"
         >
           <div className="rounded-[12px] border border-[#424242] bg-[#212121] px-6">
             <WorkDetailLeftPanel

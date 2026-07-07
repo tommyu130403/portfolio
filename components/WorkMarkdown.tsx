@@ -6,18 +6,6 @@ import {
   widthToCss,
   type ImageAlign,
 } from "@/lib/image-layout";
-import {
-  WorkProcessChart,
-  WorkStakeholderDiagram,
-  type TimelineData,
-  type StakeholdersData,
-} from "./WorkViz";
-
-/** 構造化ビジュアルのデータ（::: timeline / ::: stakeholders ディレクティブで参照） */
-export type WorkVizData = {
-  timeline?: TimelineData | null;
-  stakeholders?: StakeholdersData | null;
-};
 
 /**
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
@@ -232,8 +220,7 @@ type Block =
   | { type: "ol"; items: string[] }
   | { type: "hr" }
   | { type: "code"; lang: string; content: string }
-  | { type: "grid"; cols: number; gap: number; cells: string[] }
-  | { type: "viz"; kind: "timeline" | "stakeholders" };
+  | { type: "grid"; cols: number; gap: number; cells: string[] };
 
 function parseBlocks(src: string): Block[] {
   const lines = src.split("\n");
@@ -246,17 +233,17 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     /^```/.test(line) ||
-    /^:::\s*(timeline|stakeholders|grid)\b/.test(line) ||
+    /^:::\s*(grid|timeline|stakeholders)\b/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
 
   while (i < lines.length) {
     const line = lines[i].trimEnd();
 
-    // 構造化ビジュアル: ::: timeline / ::: stakeholders（単独行ディレクティブ）
-    const viz = line.match(/^:::\s*(timeline|stakeholders)\s*$/);
-    if (viz) {
-      blocks.push({ type: "viz", kind: viz[1] as "timeline" | "stakeholders" });
+    // 旧 ::: timeline / ::: stakeholders ディレクティブは廃止（モーダル表示へ移行）。
+    // 既存本文に残る行は何も描画せず読み飛ばす（isBlockStart と同じ \b 判定で、
+    // 後続テキスト付きの行もリテラル露出させない）。
+    if (/^:::\s*(timeline|stakeholders)\b/.test(line)) {
       i++;
       continue;
     }
@@ -412,12 +399,10 @@ const bodyTypo = (level: BodyLevel) =>
 function RenderBlock({
   block,
   idx,
-  viz,
   bodyLevel = "01",
 }: {
   block: Block;
   idx: number;
-  viz?: WorkVizData;
   bodyLevel?: BodyLevel;
 }) {
   const k = `b-${idx}`;
@@ -507,23 +492,16 @@ function RenderBlock({
         >
           {block.cells.map((cell, i) => (
             <div key={i} className="min-w-0">
-              <MarkdownBody md={cell} viz={viz} />
+              <MarkdownBody md={cell} />
             </div>
           ))}
         </div>
       );
-    case "viz": {
-      // データ未設定時は何も描画しない（公開側で空のまま安全に省略）
-      if (block.kind === "timeline") {
-        return viz?.timeline ? <div className="mb-4 mt-10"><WorkProcessChart data={viz.timeline} /></div> : null;
-      }
-      return viz?.stakeholders ? <div className="mb-4 mt-10"><WorkStakeholderDiagram data={viz.stakeholders} /></div> : null;
-    }
   }
 }
 
 /** 本文 markdown を描画する（flow-root で float 画像を内包し回り込みを成立させる） */
-export const MarkdownBody: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz }) => {
+export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
   const blocks = parseBlocks(md);
   // 各ブロックの本文サイズを直前の見出しから事前算出（セクションタイトル / 見出し01 配下=Body01、見出し02・03 配下=Body02）
   const bodyLevels: BodyLevel[] = [];
@@ -537,7 +515,7 @@ export const MarkdownBody: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz })
   return (
     <div style={{ display: "flow-root" }} className="[&>*:first-child]:mt-0">
       {blocks.map((b, i) => (
-        <RenderBlock key={i} block={b} idx={i} viz={viz} bodyLevel={bodyLevels[i]} />
+        <RenderBlock key={i} block={b} idx={i} bodyLevel={bodyLevels[i]} />
       ))}
     </div>
   );
@@ -553,21 +531,20 @@ export type WorkSection = { heading: string; md: string };
  */
 export const WorkSections: FC<{
   sections: WorkSection[];
-  viz?: WorkVizData;
   /** 見出しの体裁: section=34px / markdown-h1=24px */
   headingVariant?: "section" | "markdown-h1";
   /** セクション間の余白クラス */
   gapClass?: string;
   /** セクション間に横罫線を挿入する */
   withDividers?: boolean;
-}> = ({ sections, viz, headingVariant = "section", gapClass = "gap-[120px]", withDividers = false }) => (
+}> = ({ sections, headingVariant = "section", gapClass = "gap-[120px]", withDividers = false }) => (
   <div className={`flex flex-col ${gapClass}`}>
     {sections.map((sec, i) => (
       <React.Fragment key={i}>
         {withDividers && i > 0 && <div className="h-px w-full bg-[#424242]" aria-hidden />}
         <section className="flex w-full flex-col gap-10">
           {sec.heading && <Headline title={sec.heading} variant={headingVariant} />}
-          <MarkdownBody md={sec.md} viz={viz} />
+          <MarkdownBody md={sec.md} />
         </section>
       </React.Fragment>
     ))}
@@ -578,7 +555,7 @@ export const WorkSections: FC<{
  * `# 見出し` でセクション分割された markdown ドキュメント全体を描画する
  * （admin の本文プレビュー用。公開側と同じ Section 見出し 34px + 本文の見た目）。
  */
-export const WorkMarkdownDocument: FC<{ md: string; viz?: WorkVizData }> = ({ md, viz }) => {
+export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   const sections: WorkSection[] = [];
   let current: { heading: string; body: string[] } | null = null;
   const flush = () => {
@@ -597,5 +574,5 @@ export const WorkMarkdownDocument: FC<{ md: string; viz?: WorkVizData }> = ({ md
   if (sections.length === 0) {
     return <p className="text-[13px] text-[#616161]">本文がありません</p>;
   }
-  return <WorkSections sections={sections} viz={viz} headingVariant="section" />;
+  return <WorkSections sections={sections} headingVariant="section" />;
 };

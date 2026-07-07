@@ -1,8 +1,10 @@
 "use client";
 
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useMemo, useState } from "react";
 import Icon from "./Icon";
 import Tag from "./Tag";
+import WorkVizModal from "./WorkVizModal";
+import { parseTimeline, parseStakeholders } from "./WorkViz";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
@@ -25,10 +27,15 @@ const META_TEXT =
  * デバイスモック（iPhone 風 CSS フレーム・最大2枚を横並び）
  * ------------------------------------------------------------------ */
 
-const DeviceMock: FC<{ src: string }> = ({ src }) => (
-  <div className="aspect-[159/323] w-[159px] max-w-full shrink overflow-hidden rounded-[24px] border-[3px] border-[#0a0a0a] bg-[#0a0a0a] shadow-xl">
+const DeviceMock: FC<{ src: string; onClick?: () => void }> = ({ src, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label="スクリーンショットを拡大表示"
+    className="aspect-[159/323] w-[159px] max-w-full shrink cursor-zoom-in overflow-hidden rounded-[24px] border-[3px] border-[#0a0a0a] bg-[#0a0a0a] shadow-xl"
+  >
     <img src={src} alt="" className="h-full w-full object-cover" />
-  </div>
+  </button>
 );
 
 /* ------------------------------------------------------------------ *
@@ -76,9 +83,14 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
   onBack,
 }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [vizModal, setVizModal] = useState<"timeline" | "stakeholders" | null>(null);
   // icon_url が読み込み失敗したツールはテキスト Tag へフォールバックする
   const [brokenIcons, setBrokenIcons] = useState<Record<string, boolean>>({});
   const shots = screenshots.length > 0 ? screenshots : work.thumbnail_url ? [work.thumbnail_url] : [];
+  // 「全画面」ボタンで開く構造化ビジュアル（データが無ければボタン自体を非表示）。
+  // jsonb のパースは該当カラムが変わったときだけ（WorkEditor と同じ useMemo 規約）
+  const timeline = useMemo(() => parseTimeline(work.timeline), [work.timeline]);
+  const stakeholders = useMemo(() => parseStakeholders(work.stakeholders), [work.stakeholders]);
 
   return (
     <div className="flex w-full shrink-0 flex-col items-start gap-10 py-10 lg:w-[416px]">
@@ -97,7 +109,7 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
       {shots.length > 0 && (
         <div className="flex w-full items-start justify-center gap-6">
           {shots.slice(0, 2).map((src, i) => (
-            <DeviceMock key={i} src={src} />
+            <DeviceMock key={i} src={src} onClick={() => setLightboxOpen(true)} />
           ))}
         </div>
       )}
@@ -123,16 +135,16 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
 
         {/* メタ群 */}
         <div className="flex w-full flex-col gap-4">
-          {/* 期間 + 全画面ボタン */}
-          {work.period && (
+          {/* 期間 + Timeline モーダルを開く全画面ボタン（期間が空でも timeline があれば表示） */}
+          {(work.period || timeline) && (
             <div className="flex w-full items-center gap-2">
               <Icon set="Time" name="calendar-three" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" aria-hidden />
-              <span className={META_TEXT}>{work.period}</span>
-              {shots.length > 0 && (
+              {work.period && <span className={META_TEXT}>{work.period}</span>}
+              {timeline && (
                 <button
                   type="button"
-                  onClick={() => setLightboxOpen(true)}
-                  aria-label="スクリーンショットを拡大表示"
+                  onClick={() => setVizModal("timeline")}
+                  aria-label="タイムライン（RACI）を表示"
                   className="flex size-6 shrink-0 items-center justify-center rounded-[8px] border border-system-800 bg-system-900 p-[6px] transition-colors hover:border-system-500"
                 >
                   <Icon set="Arrows" name="full-screen-two" tintColor="#9e9e9e" className="h-full w-full" aria-hidden />
@@ -149,11 +161,23 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
             </div>
           )}
 
-          {/* 体制内訳 */}
-          {work.stakeholder_breakdown && (
+          {/* 体制内訳 + Stakeholder モーダルを開く全画面ボタン（右端。内訳が空でも stakeholders があれば表示） */}
+          {(work.stakeholder_breakdown || stakeholders) && (
             <div className="flex w-full items-start gap-2">
               <Icon set="Peoples" name="every-user" tintColor="#9e9e9e" className="h-[22px] w-[22px] shrink-0" aria-hidden />
-              <span className={`flex-1 ${META_TEXT}`}>{work.stakeholder_breakdown}</span>
+              {work.stakeholder_breakdown && (
+                <span className={`flex-1 ${META_TEXT}`}>{work.stakeholder_breakdown}</span>
+              )}
+              {stakeholders && (
+                <button
+                  type="button"
+                  onClick={() => setVizModal("stakeholders")}
+                  aria-label="ステークホルダー体制を表示"
+                  className="ml-auto flex size-6 shrink-0 items-center justify-center rounded-[8px] border border-system-800 bg-system-900 p-[6px] transition-colors hover:border-system-500"
+                >
+                  <Icon set="Arrows" name="full-screen-two" tintColor="#9e9e9e" className="h-full w-full" aria-hidden />
+                </button>
+              )}
             </div>
           )}
 
@@ -216,6 +240,15 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
       )}
 
       {lightboxOpen && <ScreenshotLightbox shots={shots} onClose={() => setLightboxOpen(false)} />}
+
+      {vizModal && (
+        <WorkVizModal
+          kind={vizModal}
+          timeline={timeline}
+          stakeholders={stakeholders}
+          onClose={() => setVizModal(null)}
+        />
+      )}
     </div>
   );
 };

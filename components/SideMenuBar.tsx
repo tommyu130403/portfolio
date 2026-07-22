@@ -137,12 +137,15 @@ type SideMenuBarProps = {
   /** サイドバー折りたたみ状態（省略時は内部で管理） */
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  /** 折りたたみトグルボタンの表示（既定 true）。モバイルのオーバーレイ表示では false にする */
+  showCollapseToggle?: boolean;
 };
 
 export const SideMenuBar: FC<SideMenuBarProps> = ({
   activeSection,
   collapsed: controlledCollapsed,
   onCollapsedChange,
+  showCollapseToggle = true,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = controlledCollapsed ?? internalCollapsed;
@@ -162,14 +165,16 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
       ].join(" ")}
     >
       {/* Collapse / Expand button — absolute inside aside (no overflow on aside = not clipped) */}
-      <div className="absolute right-[-18px] top-[34px] z-10">
-        <ButtonFunction
-          direction={collapsed ? "right" : "left"}
-          border="on"
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        />
-      </div>
+      {showCollapseToggle && (
+        <div className="absolute right-[-18px] top-[34px] z-10">
+          <ButtonFunction
+            direction={collapsed ? "right" : "left"}
+            border="on"
+            onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          />
+        </div>
+      )}
 
       {/* Inner scrollable content — overflow-y here doesn't clip the absolute button above */}
       <div className="flex flex-col gap-6 p-6 items-start w-full h-full min-h-0 overflow-y-auto">

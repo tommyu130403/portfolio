@@ -572,7 +572,7 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   }
   flush();
   if (sections.length === 0) {
-    return <p className="text-[13px] text-[#616161]">本文がありません</p>;
+    return <p className="text-[13px] text-fg-muted">本文がありません</p>;
   }
   return <WorkSections sections={sections} headingVariant="section" />;
 };

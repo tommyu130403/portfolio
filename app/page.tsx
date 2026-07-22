@@ -22,11 +22,28 @@ type CareerItem = Tables<"career_items">;
 export default function Home() {
   const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // lg 未満のモバイルナビ（ハンバーガー → オーバーレイ）の開閉状態
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // SSR との不一致を防ぐため、ウィンドウ幅による初期値はハイドレーション後に設定する
   useEffect(() => {
     setSidebarCollapsed(window.innerWidth < 1024);
   }, []);
+
+  // オーバーレイ表示中は Esc で閉じ、背面スクロールをロックする
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileMenuOpen]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [career, setCareer] = useState<CareerItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,9 +86,9 @@ export default function Home() {
   return (
     <AuthGate>
       <div className="flex min-h-screen items-start bg-[#212121] text-white">
-        {/* Side Menu */}
+        {/* Side Menu（lg 以上のみ表示） */}
         <div
-          className="sticky top-0 shrink-0 z-[2]"
+          className="sticky top-0 shrink-0 z-[2] hidden lg:block"
           style={{ width: sidebarCollapsed ? 96 : 256, transition: "width 300ms ease-in-out" }}
         >
           <SideMenuBar
@@ -80,6 +97,59 @@ export default function Home() {
             onCollapsedChange={setSidebarCollapsed}
           />
         </div>
+
+        {/* モバイル: ハンバーガー（lg 未満のみ表示） */}
+        <button
+          type="button"
+          aria-label="メニューを開く"
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen(true)}
+          className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-dark lg:hidden"
+        >
+          <span className="flex flex-col gap-[4px]">
+            <span className="block h-[2px] w-4 rounded bg-white" />
+            <span className="block h-[2px] w-4 rounded bg-white" />
+            <span className="block h-[2px] w-4 rounded bg-white" />
+          </span>
+        </button>
+
+        {/* モバイル: オーバーレイ（lg 未満のみ表示） */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-[60] lg:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="ナビゲーション"
+          >
+            {/* 背景（クリックで閉じる） */}
+            <div
+              className="absolute inset-0 bg-overlay-dark"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            {/* パネル: 既存 SideMenuBar を展開状態で再利用。ナビリンククリックで閉じる */}
+            <div
+              className="absolute inset-y-0 left-0 w-[256px]"
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest("a")) setMobileMenuOpen(false);
+              }}
+            >
+              <SideMenuBar
+                activeSection={activeSection}
+                collapsed={false}
+                showCollapseToggle={false}
+              />
+            </div>
+            {/* 閉じるボタン */}
+            <button
+              type="button"
+              aria-label="メニューを閉じる"
+              onClick={() => setMobileMenuOpen(false)}
+              className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-dark text-[18px] text-white"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
       {/* Main content */}
       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">

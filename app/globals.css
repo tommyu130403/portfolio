@@ -4,6 +4,15 @@ html {
   scroll-behavior: smooth;
 }
 
+/* キーボード操作時のフォーカスリング（全体の既定）。
+   独自に focus-visible を定義する要素（例: lib/figma-variants.ts の ITEM_FOCUS が
+   outline-none + ring を指定）は、より高い詳細度でこの既定を上書きする。 */
+:focus-visible {
+  outline: 2px solid var(--color-main-100);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 @keyframes card-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }

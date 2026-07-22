@@ -157,14 +157,32 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
         <WorkDetailContent work={work} />
       </div>
 
-      {/* 前後ナビ（画面端・固定） */}
+      {/* 前後ナビ（デスクトップ＝画面端に固定・マウス操作前提。lg 未満では本文に重なるため非表示） */}
       {showNav && (
         <>
-          <div className="fixed left-2 top-1/2 z-40 -translate-y-1/2">
+          <div className="fixed left-2 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
             <ButtonFunction direction="left" onClick={() => goTo(-1)} aria-label="前のWork" />
           </div>
-          <div className="fixed right-2 top-1/2 z-40 -translate-y-1/2">
+          <div className="fixed right-2 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
             <ButtonFunction direction="right" onClick={() => goTo(1)} aria-label="次のWork" />
+          </div>
+
+          {/* 前後ナビ（モバイル／タブレット＝本文末尾・タップ44px以上・ラベル付き） */}
+          <div className="mx-auto flex w-full max-w-[1520px] gap-3 px-6 pb-16 lg:hidden">
+            <button
+              type="button"
+              onClick={() => goTo(-1)}
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+            >
+              ‹ 前のWork
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo(1)}
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+            >
+              次のWork ›
+            </button>
           </div>
         </>
       )}

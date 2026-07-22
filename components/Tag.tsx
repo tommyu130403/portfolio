@@ -40,7 +40,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
         className={
           isSmall
             ? "text-[11px] leading-none text-system-white whitespace-nowrap"
-            : "text-[12px] leading-4 text-[#1e765a]"
+            : "text-[12px] leading-4 text-main-200"
         }
       >
         {label}

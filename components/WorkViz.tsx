@@ -118,10 +118,10 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
     <div className="rounded-[14px] bg-[#1a1a1a] p-5">
       {/* 列ヘッダー（Phase + W1..Wn） */}
       <div className="flex items-center gap-3">
-        <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-[#616161]">Phase</p>
+        <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-muted">Phase</p>
         <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${totalUnits}, minmax(0,1fr))` }}>
           {Array.from({ length: totalUnits }, (_, i) => (
-            <p key={i} className="text-center text-[11px] font-extrabold tracking-[0.44px] text-[#616161]">
+            <p key={i} className="text-center text-[11px] font-extrabold tracking-[0.44px] text-fg-muted">
               W{i + 1}
             </p>
           ))}

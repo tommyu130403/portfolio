@@ -38,9 +38,9 @@ const C = {
   currentBorderOpen: "#48f4be", // Main/base（展開 current）
   period: "#b3ffe7", // Main/050
   role: "#48f4be", // Main/base
-  company: "#616161", // System/700
+  company: "#9e9e9e", // System/500（AA 対応: 旧 #616161 System/700 はコントラスト不足）
   desc: "#9e9e9e", // System/500
-  worksLabel: "#616161", // System/700
+  worksLabel: "#9e9e9e", // System/500（AA 対応: 旧 #616161 System/700 はコントラスト不足）
   worksLink: "#b3ffe7", // Main/050
   worksLinkHover: "#39c89b", // Main/200
   iconArrow: "#9e9e9e",

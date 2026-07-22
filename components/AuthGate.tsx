@@ -66,7 +66,7 @@ function LoginForm({
         <p className="mb-2 font-mplus text-[36px] leading-tight tracking-[1.8px] text-white">
           Yu Tomita
         </p>
-        <p className="mb-10 text-[14px] text-[#616161]">
+        <p className="mb-10 text-[14px] text-fg-muted">
           アクセスするにはパスワードが必要です
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">

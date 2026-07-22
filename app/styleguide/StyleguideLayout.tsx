@@ -752,10 +752,16 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="SideMenuBar"
-          description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成（アコーディオン形式は廃止）"
+          description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成（アコーディオン形式は廃止）。showCollapseToggle=false で折りたたみトグルを隠す（モバイルのオーバーレイ表示用）"
         >
-          <div className="overflow-hidden rounded-[12px] border border-[#424242]">
-            <SideMenuBar activeSection="works" collapsed={false} />
+          <div className="flex flex-wrap gap-8">
+            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
+              <SideMenuBar activeSection="works" collapsed={false} />
+            </div>
+            {/* モバイルオーバーレイ用: トグル非表示 */}
+            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
+              <SideMenuBar activeSection="works" collapsed={false} showCollapseToggle={false} />
+            </div>
           </div>
         </ComponentPreview>
 

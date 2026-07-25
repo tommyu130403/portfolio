@@ -23,6 +23,10 @@ type WorkDetailLeftPanelProps = {
 const META_TEXT =
   "text-[11px] leading-[1.5] tracking-[0.33px] text-system-500 [word-break:break-word]";
 
+// 役割は採用担当が最初に拾う情報のため、他メタ(11px gray)より一段強調（13px・明るめ）
+const ROLE_TEXT =
+  "text-[13px] leading-[1.6] tracking-[0.39px] text-white/80 [word-break:break-word]";
+
 /* ------------------------------------------------------------------ *
  * デバイスモック（iPhone 風 CSS フレーム・最大2枚を横並び）
  * ------------------------------------------------------------------ */
@@ -93,8 +97,12 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
   const stakeholders = useMemo(() => parseStakeholders(work.stakeholders), [work.stakeholders]);
 
   return (
-    <div className="flex w-full shrink-0 flex-col items-start gap-10 py-10 lg:w-[416px]">
-      {/* 戻りリンク */}
+    // overflow を持つ親（スクロール領域）＝サイドエリアを境界線まで占める幅。横 padding は取らない。
+    // lg:w-[456px] = 416px（コンテンツ幅・不変）+ 40px（gutter＝旧 gap）。
+    <div className="w-full shrink-0 lg:sticky lg:top-0 lg:max-h-screen lg:w-[456px] lg:self-start lg:overflow-y-auto">
+      {/* 内側コンテンツ層：右 padding でスクロールバーを境界側の余白へ逃がす（コンテンツ幅は 416px のまま） */}
+      <div className="flex w-full flex-col items-start gap-10 py-10 lg:pr-10">
+        {/* 戻りリンク */}
       <button
         type="button"
         onClick={onBack}
@@ -122,7 +130,7 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
               {work.category}
             </p>
           )}
-          <p className="font-body text-[40px] font-bold leading-[1.1] tracking-[1.2px] text-white">
+          <p className="font-body text-[28px] font-bold leading-[1.15] tracking-[1.2px] text-white sm:text-[32px] lg:text-[40px] lg:leading-[1.1]">
             {work.title}
           </p>
         </div>
@@ -138,16 +146,19 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
           {/* 期間 + Timeline モーダルを開く全画面ボタン（期間が空でも timeline があれば表示） */}
           {(work.period || timeline) && (
             <div className="flex w-full items-center gap-2">
-              <Icon set="Time" name="calendar-three" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" aria-hidden />
-              {work.period && <span className={META_TEXT}>{work.period}</span>}
+              <Icon set="Time" name="calendar-three" tintColor="var(--color-system-500)" className="h-5 w-5 shrink-0" aria-hidden />
+              {/* 期間が空でも、ボタンが開く対象を可視ラベルで明示する */}
+              <span className={META_TEXT}>{work.period || "タイムライン（RACI）"}</span>
               {timeline && (
                 <button
                   type="button"
                   onClick={() => setVizModal("timeline")}
                   aria-label="タイムライン（RACI）を表示"
-                  className="flex size-6 shrink-0 items-center justify-center rounded-[8px] border border-system-800 bg-system-900 p-[6px] transition-colors hover:border-system-500"
+                  className="group ml-auto flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
                 >
-                  <Icon set="Arrows" name="full-screen-two" tintColor="#9e9e9e" className="h-full w-full" aria-hidden />
+                  <span className="flex size-6 items-center justify-center rounded-[8px] border border-system-800 bg-system-900 p-[6px] transition-colors group-hover:border-system-500">
+                    <Icon set="Arrows" name="full-screen-two" tintColor="var(--color-system-500)" className="h-full w-full" aria-hidden />
+                  </span>
                 </button>
               )}
             </div>
@@ -156,26 +167,27 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
           {/* 役割 */}
           {work.role && (
             <div className="flex w-full items-start gap-2">
-              <Icon set="Peoples" name="people" tintColor="#9e9e9e" className="h-5 w-5 shrink-0" aria-hidden />
-              <span className={META_TEXT}>{work.role}</span>
+              <Icon set="Peoples" name="people" tintColor="var(--color-system-500)" className="h-5 w-5 shrink-0" aria-hidden />
+              <span className={ROLE_TEXT}>{work.role}</span>
             </div>
           )}
 
           {/* 体制内訳 + Stakeholder モーダルを開く全画面ボタン（右端。内訳が空でも stakeholders があれば表示） */}
           {(work.stakeholder_breakdown || stakeholders) && (
-            <div className="flex w-full items-start gap-2">
-              <Icon set="Peoples" name="every-user" tintColor="#9e9e9e" className="h-[22px] w-[22px] shrink-0" aria-hidden />
-              {work.stakeholder_breakdown && (
-                <span className={`flex-1 ${META_TEXT}`}>{work.stakeholder_breakdown}</span>
-              )}
+            <div className="flex w-full items-center gap-2">
+              <Icon set="Peoples" name="every-user" tintColor="var(--color-system-500)" className="h-[22px] w-[22px] shrink-0" aria-hidden />
+              {/* 内訳が空でも、ボタンが開く対象を可視ラベルで明示する */}
+              <span className={`flex-1 ${META_TEXT}`}>{work.stakeholder_breakdown || "体制図"}</span>
               {stakeholders && (
                 <button
                   type="button"
                   onClick={() => setVizModal("stakeholders")}
                   aria-label="ステークホルダー体制を表示"
-                  className="ml-auto flex size-6 shrink-0 items-center justify-center rounded-[8px] border border-system-800 bg-system-900 p-[6px] transition-colors hover:border-system-500"
+                  className="group ml-auto flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center"
                 >
-                  <Icon set="Arrows" name="full-screen-two" tintColor="#9e9e9e" className="h-full w-full" aria-hidden />
+                  <span className="flex size-6 items-center justify-center rounded-[8px] border border-system-800 bg-system-900 p-[6px] transition-colors group-hover:border-system-500">
+                    <Icon set="Arrows" name="full-screen-two" tintColor="var(--color-system-500)" className="h-full w-full" aria-hidden />
+                  </span>
                 </button>
               )}
             </div>
@@ -230,11 +242,11 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
               <p className="truncate text-[13px] leading-[1.5] tracking-[0.39px] text-system-500">
                 {work.site_title || work.site_url}
               </p>
-              <p className="truncate text-[10px] leading-[normal] tracking-[0.3px] text-[#757575]">
+              <p className="truncate text-[10px] leading-[normal] tracking-[0.3px] text-system-600">
                 {work.site_url}
               </p>
             </div>
-            <Icon set="Arrows" name="efferent-four" tintColor="#9e9e9e" className="h-4 w-4 shrink-0" aria-hidden />
+            <Icon set="Arrows" name="efferent-four" tintColor="var(--color-system-500)" className="h-4 w-4 shrink-0" aria-hidden />
           </div>
         </a>
       )}
@@ -249,6 +261,7 @@ const WorkDetailLeftPanel: FC<WorkDetailLeftPanelProps> = ({
           onClose={() => setVizModal(null)}
         />
       )}
+      </div>
     </div>
   );
 };

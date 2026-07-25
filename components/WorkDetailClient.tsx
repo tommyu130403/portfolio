@@ -142,7 +142,9 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
   return (
     <div className="relative min-h-screen bg-system-900 text-white">
-      <div className="mx-auto flex w-full max-w-[1520px] flex-col items-start justify-center gap-10 px-6 lg:flex-row lg:items-stretch lg:px-10">
+      {/* lg:gap-0 … 左レール(overflow親)が旧 gap 40px を内部 gutter として内包するため、
+          コンテナ側の gap は 0 にし、罫線→本文の間隔だけ罫線の lg:mr-10 で復元する */}
+      <div className="mx-auto flex w-full max-w-[1520px] flex-col items-start justify-center gap-6 px-6 lg:flex-row lg:items-start lg:gap-0 lg:px-10">
         <WorkDetailLeftPanel
           work={work}
           skills={skills}
@@ -151,8 +153,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           onBack={handleBack}
         />
 
-        {/* 縦罫線 */}
-        <div className="hidden w-px shrink-0 self-stretch bg-system-800 lg:block" aria-hidden />
+        {/* 縦罫線（左レールの gutter が左側の間隔を担うため、右側=本文への間隔のみ mr-10 で確保） */}
+        <div className="hidden w-px shrink-0 self-stretch bg-system-800 lg:mr-10 lg:block" aria-hidden />
 
         <WorkDetailContent work={work} />
       </div>

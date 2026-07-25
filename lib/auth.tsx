@@ -22,16 +22,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (IS_DEV) return;
-    try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (!raw) return;
-      const state = JSON.parse(raw) as AuthState;
-      if (state && state.expires > Date.now()) {
-        setRole(state.role);
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return;
+        const state = JSON.parse(raw) as AuthState;
+        if (state && state.expires > Date.now()) {
+          setRole(state.role);
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const login = IS_DEV

@@ -73,15 +73,18 @@ export function ImagePickerModal({
 
   useEffect(() => {
     if (!open) return;
-    setLoading(true);
-    setSelected(null);
-    setQuery("");
-    setAlt("");
-    setUploadError("");
-    listStorageImages().then(({ data }) => {
-      setImages(data);
-      setLoading(false);
-    });
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setSelected(null);
+      setQuery("");
+      setAlt("");
+      setUploadError("");
+      listStorageImages().then(({ data }) => {
+        setImages(data);
+        setLoading(false);
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
   if (!open) return null;

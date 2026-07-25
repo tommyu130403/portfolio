@@ -21,7 +21,7 @@ const WorkDetailContent: FC<WorkDetailContentProps> = ({ work }) => {
   if (sections.length === 0) return null;
 
   return (
-    <div className="w-full max-w-[1024px] py-20">
+    <div className="w-full max-w-[896px] py-10 lg:py-20">
       <WorkSections
         sections={sections}
         headingVariant="markdown-h1"

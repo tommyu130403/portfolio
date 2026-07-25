@@ -142,7 +142,9 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
   return (
     <div className="relative min-h-screen bg-system-900 text-white">
-      <div className="mx-auto flex w-full max-w-[1520px] flex-col items-start justify-center gap-10 px-6 lg:flex-row lg:items-stretch lg:px-10">
+      {/* lg:gap-0 … 左レール(overflow親)が旧 gap 40px を内部 gutter として内包するため、
+          コンテナ側の gap は 0 にし、罫線→本文の間隔だけ罫線の lg:mr-10 で復元する */}
+      <div className="mx-auto flex w-full max-w-[1520px] flex-col items-start justify-center gap-6 px-6 lg:flex-row lg:items-start lg:gap-0 lg:px-10">
         <WorkDetailLeftPanel
           work={work}
           skills={skills}
@@ -151,20 +153,38 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           onBack={handleBack}
         />
 
-        {/* 縦罫線 */}
-        <div className="hidden w-px shrink-0 self-stretch bg-system-800 lg:block" aria-hidden />
+        {/* 縦罫線（左レールの gutter が左側の間隔を担うため、右側=本文への間隔のみ mr-10 で確保） */}
+        <div className="hidden w-px shrink-0 self-stretch bg-system-800 lg:mr-10 lg:block" aria-hidden />
 
         <WorkDetailContent work={work} />
       </div>
 
-      {/* 前後ナビ（画面端・固定） */}
+      {/* 前後ナビ（デスクトップ＝画面端に固定・マウス操作前提。lg 未満では本文に重なるため非表示） */}
       {showNav && (
         <>
-          <div className="fixed left-2 top-1/2 z-40 -translate-y-1/2">
+          <div className="fixed left-2 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
             <ButtonFunction direction="left" onClick={() => goTo(-1)} aria-label="前のWork" />
           </div>
-          <div className="fixed right-2 top-1/2 z-40 -translate-y-1/2">
+          <div className="fixed right-2 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
             <ButtonFunction direction="right" onClick={() => goTo(1)} aria-label="次のWork" />
+          </div>
+
+          {/* 前後ナビ（モバイル／タブレット＝本文末尾・タップ44px以上・ラベル付き） */}
+          <div className="mx-auto flex w-full max-w-[1520px] gap-3 px-6 pb-16 lg:hidden">
+            <button
+              type="button"
+              onClick={() => goTo(-1)}
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+            >
+              ‹ 前のWork
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo(1)}
+              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+            >
+              次のWork ›
+            </button>
           </div>
         </>
       )}

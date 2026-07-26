@@ -8,6 +8,7 @@ import {
   FieldLabel,
   FormGroupHeader,
   HeroScreenshotsEditor,
+  FlowchartPickerModal,
   ImagePickerField,
   ImagePickerModal,
   Input,
@@ -141,6 +142,24 @@ export default function WorkEditor({ workId }: { workId: string }) {
     pickerResolve.current?.(result);
     pickerResolve.current = null;
     setPickerOpen(false);
+  };
+
+  // フローチャートピッカー（RichMarkdownEditor から Promise で選択結果を受け取る）
+  const [flowchartPickerOpen, setFlowchartPickerOpen] = useState(false);
+  const flowchartResolve = useRef<
+    ((v: { id: string; title: string } | null) => void) | null
+  >(null);
+  const pickFlowchart = () =>
+    new Promise<{ id: string; title: string } | null>((resolve) => {
+      flowchartResolve.current = resolve;
+      setFlowchartPickerOpen(true);
+    });
+  const closeFlowchartPicker = (
+    result: { id: string; title: string } | null,
+  ) => {
+    flowchartResolve.current?.(result);
+    flowchartResolve.current = null;
+    setFlowchartPickerOpen(false);
   };
 
   useEffect(() => {
@@ -360,6 +379,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
             markDirty();
           }}
           onPickImage={pickImage}
+          onPickFlowchart={pickFlowchart}
           className="min-h-0 flex-1"
         />
       )}
@@ -610,6 +630,11 @@ export default function WorkEditor({ workId }: { workId: string }) {
         onSelect={(url, alt) => closePicker({ url, alt })}
         folder="projects/sections"
         showAlt
+      />
+      <FlowchartPickerModal
+        open={flowchartPickerOpen}
+        onClose={() => closeFlowchartPicker(null)}
+        onSelect={closeFlowchartPicker}
       />
     </AdminShell>
   );

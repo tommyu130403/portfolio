@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      flowcharts: {
+        Row: {
+          created_at: string | null
+          data: Json
+          description: string | null
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profile: {
         Row: {
           bio: string

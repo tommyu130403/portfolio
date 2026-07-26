@@ -27,6 +27,11 @@ export type RichMarkdownEditorProps = {
   placeholder?: string;
   /** ストレージから画像を選ぶ（resolve した URL を画像ダイアログに反映する） */
   onPickImage?: () => Promise<{ url: string; alt?: string } | null>;
+  /** 保存済みフローチャートを選び、参照ディレクティブとして挿入する */
+  onPickFlowchart?: () => Promise<{
+    id: string;
+    title: string;
+  } | null>;
   /** ルート要素の追加クラス（高さは親から指定する） */
   className?: string;
 };
@@ -160,6 +165,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   onChange,
   placeholder,
   onPickImage,
+  onPickFlowchart,
   className,
 }) => {
   const [mode, setMode] = useState<Mode>("split");
@@ -231,6 +237,18 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         <TBtn label="リンク" title="リンクを挿入" onClick={() => setDialog("link")} />
         <TBtn label="画像" title="画像を挿入（幅 / 配置 / 倍率 / キャプション）" onClick={() => setDialog("image")} />
         <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
+        {onPickFlowchart && (
+          <TBtn
+            label="フローチャート"
+            title="フローチャートを挿入"
+            onClick={async () => {
+              const picked = await onPickFlowchart();
+              if (picked) {
+                insertLine(`::: flowchart id=${picked.id}`);
+              }
+            }}
+          />
+        )}
 
         {/* デバイス幅切替（プレビュー表示時のみ。Device コレクション = container トークン参照） */}
         <div className="ml-auto flex items-center gap-2">

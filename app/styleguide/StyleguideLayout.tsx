@@ -17,7 +17,9 @@ import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
 import WorkVizModal from "@/components/WorkVizModal";
+import FlowchartView from "@/components/FlowchartView";
 import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
+import type { FlowchartData } from "@/lib/flowchart";
 import type { Tables } from "@/src/types/supabase";
 
 // Works 詳細ページのプレビュー用サンプルデータ
@@ -49,6 +51,65 @@ const SAMPLE_WORK_DETAIL = {
   sort_order: 0,
   created_at: null,
 } as Tables<"works">;
+
+const SAMPLE_FLOWCHART: FlowchartData = {
+  nodes: [
+    { id: "start", kind: "start", label: "開始", x: 20, y: 145 },
+    {
+      id: "card",
+      kind: "card",
+      label: "リサーチ結果",
+      sublabel: "ユーザーの課題を整理し、\n優先度をカードで可視化",
+      x: 245,
+      y: 35,
+      w: 320,
+      h: 160,
+      fontSize: 18,
+      textAlign: "left",
+      verticalAlign: "top",
+      divider: "vertical",
+      color: "primary",
+    },
+    {
+      id: "step",
+      kind: "step",
+      label: "ユーザー調査",
+      sublabel: "課題と期待を整理",
+      x: 285,
+      y: 245,
+      fontSize: 12,
+      textAlign: "right",
+      color: "secondary",
+    },
+    { id: "end", kind: "end", label: "方針決定", x: 620, y: 145 },
+  ],
+  edges: [
+    {
+      id: "start-card",
+      source: "start",
+      sourceHandle: "right",
+      target: "card",
+      targetHandle: "left",
+      sourceMarker: "circle",
+      targetMarker: "arrow",
+    },
+    {
+      id: "card-step",
+      source: "card",
+      sourceHandle: "bottom",
+      target: "step",
+      targetHandle: "top",
+      targetMarker: "circle",
+    },
+    {
+      id: "step-end",
+      source: "step",
+      sourceHandle: "right",
+      target: "end",
+      targetHandle: "left",
+    },
+  ],
+};
 
 // ─── 型 ───────────────────────────────────────────────
 export type IconSetData = { name: string; icons: string[] };
@@ -770,6 +831,15 @@ function ComponentsSection() {
           description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画"
         >
           <MarkdownEditorDemo />
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="FlowchartView"
+          description="React Flowを使った読み取り専用ダイアグラム。全オブジェクト共通の標準・Primary（ミント塗り）・Secondary（ミント枠＋濃緑背景）配色、文字サイズ・整列・カード仕切り・線端マーカー・可変サイズに対応"
+        >
+          <div className="h-[420px] w-full overflow-hidden rounded-[14px] bg-[#1a1a1a] p-2">
+            <FlowchartView data={SAMPLE_FLOWCHART} />
+          </div>
         </ComponentPreview>
 
         <ComponentPreview

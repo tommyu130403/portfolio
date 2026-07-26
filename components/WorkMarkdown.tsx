@@ -6,6 +6,7 @@ import {
   widthToCss,
   type ImageAlign,
 } from "@/lib/image-layout";
+import FlowchartEmbed from "./FlowchartEmbed";
 
 /**
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
@@ -220,6 +221,7 @@ type Block =
   | { type: "ol"; items: string[] }
   | { type: "hr" }
   | { type: "code"; lang: string; content: string }
+  | { type: "flowchart"; id: string }
   | { type: "grid"; cols: number; gap: number; cells: string[] };
 
 function parseBlocks(src: string): Block[] {
@@ -233,7 +235,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     /^```/.test(line) ||
-    /^:::\s*(grid|timeline|stakeholders)\b/.test(line) ||
+    /^:::\s*(grid|timeline|stakeholders|flowchart)\b/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
 
@@ -244,6 +246,16 @@ function parseBlocks(src: string): Block[] {
     // 既存本文に残る行は何も描画せず読み飛ばす（isBlockStart と同じ \b 判定で、
     // 後続テキスト付きの行もリテラル露出させない）。
     if (/^:::\s*(timeline|stakeholders)\b/.test(line)) {
+      i++;
+      continue;
+    }
+
+    // フローチャートは1行完結。既存の数値属性パーサはUUIDに使えないため専用正規表現で読む。
+    const flowchart = line.match(
+      /^:::\s*flowchart\s+id\s*=\s*([0-9a-fA-F-]{36})\s*$/,
+    );
+    if (flowchart) {
+      blocks.push({ type: "flowchart", id: flowchart[1] });
       i++;
       continue;
     }
@@ -481,6 +493,8 @@ function RenderBlock({
           <code>{block.content}</code>
         </pre>
       );
+    case "flowchart":
+      return <FlowchartEmbed id={block.id} />;
     case "grid":
       return (
         <div

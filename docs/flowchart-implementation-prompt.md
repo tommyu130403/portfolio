@@ -46,7 +46,7 @@
 - 本文の保存形式は `works.sections`（jsonb）＝ `[{ heading, body /* markdown */ }]`。`lib/work-sections.ts` / `lib/work-content.ts` が変換を担う。
 - 実行時依存は現状 `next` / `react` / `react-dom` / `@supabase/supabase-js` の4つだけ。図表（`WorkViz.tsx` の RACI ガントとステークホルダー図）は全て CSS grid/flex の自作で、**SVG すら使っていない**。
 - パスエイリアスは `@/*` → リポジトリルート。`src/` と ルート直下の `lib/` `components/` の**2系統が併存**している（両方 active）。
-- **無視すべきディレクトリ**: `/Users/tommyu/Dev/portfolio/portfolio/`（リポジトリの古い完全コピー、git 未追跡・tsconfig で除外済み）、`_to_delete/`、`out/`。検索結果が二重に出るので注意。
+- **無視すべきディレクトリ**: `_to_delete/`、`out/`。検索結果が二重に出るので注意。
 
 ---
 

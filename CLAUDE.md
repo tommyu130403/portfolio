@@ -27,7 +27,7 @@
 ### 0-4. 新しい作業依頼を受けたときの入口
 - **新しい作業依頼を受けたら、着手前に必ず `.claude/skills/director`（受付席）を通す。** §0-1 / §2-2 / §3-3・§3-4 / §4 / §5 / §6-2 の各ゲートを、director が着手前に一括判定し依頼書にまとめる（§6 参照）。
 - ただし各ゲートは director を通さない場面（合意済み依頼への追加指示など）でも常に有効である。director はその判定を着手前に前倒しするだけで、ゲートの適用範囲を狭めるものではない。
-- `.claude/agents/` と `.claude/skills/` はチーム共有のため追跡する。`.claude/settings.local.json`・`.claude/launch.json`・`.claude/worktrees/` はローカル設定として追跡しない。director を読み込めない場合は、その旨を報告し、上記ゲートを着手前に手動で通すこと。
+- `.claude/agents/`・`.claude/skills/`・`.claude/settings.json`（hook 定義）はチーム共有のため追跡する。`.claude/settings.local.json`・`.claude/launch.json`・`.claude/worktrees/` はローカル設定として追跡しない。director を読み込めない場合は、その旨を報告し、上記ゲートを着手前に手動で通すこと。
 
 ---
 
@@ -103,7 +103,7 @@ public/         - 静的アセット
 例: `feat/20260310-project-card-component` / `fix/20260310-icon-path`
 
 - **作業内容が指示に含まれていない場合**は、作業内容を確認せず `temp/<yyyymmdd>-work` の命名でブランチを作成する。
-- `temp/` ブランチではコミットが hook（`.claude/settings.local.json` の PreToolUse）で機械的にブロックされる。コミット前に `git branch -m <type>/<yyyymmdd>-<description>` でリネームすること。
+- `temp/` ブランチでは、対話セッションに限りコミットが hook（`.claude/settings.json` の PreToolUse・追跡対象）でブロックされる。**`-p` などの非対話セッションでは hook が読み込まれず効かない**（VERIFIED 2026-09-07）。hook の有無に依存せず、コミット前に必ず `git branch -m <type>/<yyyymmdd>-<description>` でリネームすること。
 
 ### 3-3. ブランチ作成フロー
 新しい作業指示を受けたとき、以下の分岐で判断する。
@@ -124,8 +124,10 @@ public/         - 静的アセット
 │    └─ 同一タスクの続きなら現ブランチで継続する
 │         別タスクなら「新しいブランチを切るか」を必ず確認する
 │
-└─ 現ブランチが進行中（同一タスクの続き・差分あり）
-     └─ 勝手に切り直さず、そのまま現ブランチで作業を継続する
+└─ 現ブランチに差分あり（進行中）
+     ├─ 同一タスクの続き → 勝手に切り直さず、そのまま現ブランチで作業を継続する
+     └─ 別タスク → 差分の扱い（コミット / stash / 持ち越し）と
+                   新しいブランチを切るかを必ず確認する
 ```
 
 ### 3-4. 原則禁止事項

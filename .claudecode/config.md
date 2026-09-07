@@ -1,27 +1,14 @@
 # Claude Code Development Guidelines
 
-## 1. Branching Strategy
+**ルールは `CLAUDE.md` を正とする。** このファイルには独自ルールを書かない。差分が出たら CLAUDE.md 側へ寄せる。
 
-- **No direct commits to `main` or `develop`**: 必ず `feat/`, `fix/`, `refactor/`, `chore/`, `temp/` プレフィックスをつけた新規ブランチで作業すること。
-  - ブランチ命名フォーマットは `CLAUDE.md` の Branch Rules に従う: `<type>/<yyyymmdd>-<description>`
-- **Fresh Start**: 作業開始前に必ず以下を実行し、最新の状態からブランチを切ること。
-  ```bash
-  git checkout main
-  git pull origin main
-  git checkout -b <type>/<yyyymmdd>-<description>
-  ```
+門（機械判定）が止めるもの:
 
-## 2. Coding & Testing Workflow
+| 規約 | 門 |
+|------|-----|
+| コミット形式 | commitlint（`.husky/commit-msg`） |
+| ブランチ名 `<type>/<yyyymmdd>-<description>` | `.husky/pre-push` |
+| `temp/` でのコミット | `.claude/hooks/block-temp-commit.sh` |
+| 型 / lint / ビルド | `npm run check`（`.github/workflows/check.yml` と Stop hook から同じコマンドが走る） |
 
-- **Pre-commit Checks**: コミット前に必ず `npm test`（またはプロジェクト標準のテスト）と lint を実行し、エラーがないことを確認すること。
-- **Atomic Commits**: 1つのブランチで複数の無関係な修正を行わない。
-- **Cleanup**: `console.log` や一時的なデバッグコードはコミット前に必ず削除すること。
-
-## 3. Pull Request Protocol
-
-- **Draft PRs**: 作業完了後は `gh pr create --draft` を使用してプルリクエストを作成すること。
-- **Conventional Commits**: コミットメッセージは `CLAUDE.md` の Commit Rules に定めた形式（`feat:`, `fix:`, `chore:`, `docs:` 等）に従うこと。
-
-## 4. Environment & Safety
-
-- 環境変数が含まれるファイル（`.env` 等）をコミットに含めないよう、常に `git status` で確認すること。
+コミット前に走らせるのは `npm run check` の1コマンド。テストスイートは存在しないので `npm test` は使わない。

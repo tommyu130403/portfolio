@@ -28,7 +28,7 @@ description: このリポジトリでコードを書く・直す・レビュー�
    → **正しい一手**: `npm run update-types`（`supabase gen types` → `src/types/supabase.ts`）で再生成
 4. **症状**: コミットが commitlint で弾かれる
    → **誤り**: メッセージを推測で直して再試行
-   → **正しい一手**: `<type>: <説明>`（type = feat/fix/refactor/style/chore/docs）に整形（CLAUDE.md §3-1）
+   → **正しい一手**: `<type>: <説明>`（type = feat/fix/refactor/style/chore/docs）に整形（CLAUDE.md §3。commitlint が止める）
 5. **症状**: 「軽微な修正」のつもりが複数コンポーネントに波及
    → **誤り**: そのまま自動実行で進める
    → **正しい一手**: §2-2 の破壊的変更として扱い、サマリー提示 → 承認を得る

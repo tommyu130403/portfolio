@@ -1,14 +1,11 @@
 // Cursor rules for this portfolio project.
 
-# 開発ワークフロー（.claudecode 準拠）
-- ブランチ・コミット・PR の手順は `.cursor/rules/claudecode-workflow.mdc`（≒ `.claudecode/config.md`）に従うこと。main への直接コミット禁止。コミット前はテスト・lint 実行、Draft PR は `gh pr create --draft`。
-- mainブランチで作業指示を受けた場合は、そのまま続行してよいか必ず確認すること。mainへの直接pushも禁止。
-- PR済みブランチで差分・追跡ファイルがない状態で新作業を開始しようとした場合は、新規ブランチ作成が必要か必ず確認すること。
+# ルールの正
+- ブランチ・コミット・PR・実行ポリシーは `CLAUDE.md` を正とする。ここに独自ルールを書かない。
+- 検証は `npm run check` の1コマンド（型 → lint → ビルド）。コミット形式・ブランチ名・temp/ での
+  コミットは commitlint / .husky/pre-push / .claude/hooks/block-temp-commit.sh が機械的に止める。
 
 # プロジェクトの基本ルール
-- すべての新規ファイル生成は、このディレクトリ（portfolio/）配下の適切なフォルダ（app, components, lib等）に行うこと。
-- 絶対に親ディレクトリ（Site/等）にファイルを作らないこと。
-- インポートパスは常に `@/`（エイリアス）を使用すること。
-- Supabaseを使用する際は、常に @src/lib/supabase.ts のクライアントを使用すること。
-- 型定義は常に @src/types/supabase.ts を参照し、Database 型に基づいて実装すること。
-- 新しいデータ取得コードを書く際は、この2つのファイルを前提とした型安全なコードを書くこと。
+- 新規ファイルは portfolio/ 配下の適切なフォルダ（app, components, lib 等）に作る。親ディレクトリには作らない。
+- インポートパスは常に `@/`（エイリアス）を使う。
+- Supabase は常に @src/lib/supabase.ts のクライアントを使い、型は @src/types/supabase.ts の Database 型に基づく。

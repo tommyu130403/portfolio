@@ -18,6 +18,7 @@ import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
 import WorkVizModal from "@/components/WorkVizModal";
 import FlowchartView from "@/components/FlowchartView";
+import Modal from "@/components/Modal";
 import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
 import type { FlowchartData } from "@/lib/flowchart";
 import type { Tables } from "@/src/types/supabase";
@@ -82,6 +83,16 @@ const SAMPLE_FLOWCHART: FlowchartData = {
       color: "secondary",
     },
     { id: "end", kind: "end", label: "方針決定", x: 620, y: 145 },
+    {
+      id: "note",
+      kind: "note",
+      label: "補足メモ（note）",
+      sublabel: "破線枠・Background/Light",
+      x: 20,
+      y: 245,
+      fontSize: 12,
+      textAlign: "left",
+    },
   ],
   edges: [
     {
@@ -131,15 +142,17 @@ const NAV_SECTIONS = [
 // cls は実際にスウォッチへ適用する literal な Tailwind ユーティリティ（v4 の生成検出 = source 内の
 // literal 文字列が対象。これにより semantic 変数が tree-shake されず実際に出力・動作する）。
 const SEMANTIC_SWATCHES = [
-  { kind: "bg",     cls: "bg-primary",           token: "semantic.primary",      value: semantic.primary,      figma: "Main/Primary",        ref: "main-base" },
-  { kind: "text",   cls: "text-fg",              token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Main",      ref: "system-white" },
-  { kind: "text",   cls: "text-fg-muted",        token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Sub",       ref: "system-500" },
-  { kind: "bg",     cls: "bg-surface",           token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default",  ref: "system-900" },
-  { kind: "bg",     cls: "bg-surface-dark",      token: "semantic.surfaceDark",  value: semantic.surfaceDark,  figma: "Background/Dark",     ref: "system-1000" },
-  { kind: "border", cls: "border-border",        token: "semantic.border",       value: semantic.border,       figma: "Border/Default",      ref: "system-800" },
-  { kind: "border", cls: "border-border-strong", token: "semantic.borderStrong", value: semantic.borderStrong, figma: "Border/Light",        ref: "system-500" },
-  { kind: "bg",     cls: "bg-overlay-light",     token: "semantic.overlayLight", value: semantic.overlayLight, figma: "Background/Light-α5", ref: "white 5%" },
-  { kind: "bg",     cls: "bg-overlay-dark",      token: "semantic.overlayDark",  value: semantic.overlayDark,  figma: "Background/Dark-α25", ref: "black 25%" },
+  { kind: "bg",     cls: "bg-primary",          token: "semantic.primary",      value: semantic.primary,      figma: "Main/Primary",       ref: "main-base" },
+  { kind: "bg",     cls: "bg-secondary",        token: "semantic.secondary",    value: semantic.secondary,    figma: "Main/Secondary",     ref: "main-300" },
+  { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Main",     ref: "system-white" },
+  { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Sub",      ref: "system-500" },
+  { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",       ref: "system-400" },
+  { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "system-900" },
+  { kind: "bg",     cls: "bg-surface-light",    token: "semantic.surfaceLight", value: semantic.surfaceLight, figma: "Background/Light",   ref: "system-875" },
+  { kind: "border", cls: "border-border",       token: "semantic.border",       value: semantic.border,       figma: "Border/Default",     ref: "system-825" },
+  { kind: "border", cls: "border-border-light", token: "semantic.borderLight",  value: semantic.borderLight,  figma: "Border/Light",       ref: "system-800" },
+  { kind: "border", cls: "border-border-main",  token: "semantic.borderMain",   value: semantic.borderMain,   figma: "Border/Main",        ref: "main-100 40%" },
+  { kind: "bg",     cls: "bg-action-hover",     token: "semantic.actionHover",  value: semantic.actionHover,  figma: "Action/hover",       ref: "white 5%" },
 ] as const;
 
 // ─── タイポグラフィ（textStyle トークンから生成）────────────────────────────
@@ -147,6 +160,7 @@ const SEMANTIC_SWATCHES = [
 const TYPO_LANG = {
   jp: { cssVar: "--font-noto-sans-jp", sample: "本文テキスト サンプル" },
   en: { cssVar: undefined as string | undefined, family: typo.body.en, sample: "Body Text Sample" },
+  "special-en": { cssVar: "--font-afacad", sample: "Special Heading" },
 } as const;
 
 // ─── 共通サブコンポーネント ────────────────────────────
@@ -186,34 +200,47 @@ function TokenBadge({ children }: { children: React.ReactNode }) {
 
 // ─── セクション: Colors ────────────────────────────────
 
+/**
+ * スウォッチの並び順を数値の明度順に揃える。
+ * Object.entries は "025" のような先頭ゼロ付きキーを整数扱いしないため、
+ * そのまま渡すと 100…1000 の後ろに 025 / 050 / 075 が回ってしまう。
+ * 数値キーは昇順、base / black / white などの非数値キーは定義順のまま末尾へ置く。
+ */
+function orderedShades(group: Record<string, string>): [string, string][] {
+  const entries = Object.entries(group) as [string, string][];
+  const numeric = entries.filter(([k]) => /^\d+$/.test(k)).sort((a, b) => Number(a[0]) - Number(b[0]));
+  const named = entries.filter(([k]) => !/^\d+$/.test(k));
+  return [...numeric, ...named];
+}
+
 const COLOR_GROUPS = [
   {
     key: "main" as const,
     label: "Main",
     desc: "ブランドアクセントカラー（グリーン系）",
     tailwindPrefix: "main",
-    shades: Object.entries(color.main) as [string, string][],
+    shades: orderedShades(color.main),
   },
   {
     key: "danger" as const,
     label: "Danger",
     desc: "エラー・破壊的アクション（赤ピンク系）",
     tailwindPrefix: "danger",
-    shades: Object.entries(color.danger) as [string, string][],
+    shades: orderedShades(color.danger),
   },
   {
     key: "warning" as const,
     label: "Warning",
     desc: "警告・注意（黄緑系）",
     tailwindPrefix: "warning",
-    shades: Object.entries(color.warning) as [string, string][],
+    shades: orderedShades(color.warning),
   },
   {
     key: "system" as const,
     label: "System",
     desc: "ニュートラルグレースケール",
     tailwindPrefix: "system",
-    shades: Object.entries(color.system) as [string, string][],
+    shades: orderedShades(color.system),
   },
 ] as const;
 
@@ -334,17 +361,24 @@ function TypographySection() {
       <SectionTitle label="Typography" title="タイポグラフィ" />
 
       {/* フォントファミリー（Typo トークン） */}
+      <p className="mb-3 text-[12px] text-[#616161]">
+        Figma Typo コレクションの3変数（Special/EN・Body/JP・Body/EN）+ Figma に対応変数が無い実装ローカルの
+        フォント2件。実装ローカルの2件は Figma と同期されないので、デザイン側の正としては扱わない。
+      </p>
       <div className="mb-10 grid grid-cols-2 gap-4">
         {(
           [
-            { role: "Guide / JP", family: typo.guide.jp, token: "typo.guide.jp", cssVar: "--font-mplus-1p",     sample: "見出しガイド" },
-            { role: "Guide / EN", family: typo.guide.en, token: "typo.guide.en", cssVar: "--font-afacad",       sample: "Heading Guide" },
-            { role: "Body / JP",  family: typo.body.jp,  token: "typo.body.jp",  cssVar: "--font-noto-sans-jp", sample: "本文テキスト" },
-            { role: "Body / EN",  family: typo.body.en,  token: "typo.body.en",  cssVar: undefined,             sample: "Body Text" },
+            { role: "Special / EN", family: typo.special.en, token: "typo.special.en", cssVar: "--font-afacad",       cls: "",           sample: "Special Heading" },
+            { role: "Body / JP",    family: typo.body.jp,    token: "typo.body.jp",    cssVar: "--font-noto-sans-jp", cls: "",           sample: "本文テキスト" },
+            { role: "Body / EN",    family: typo.body.en,    token: "typo.body.en",    cssVar: undefined,             cls: "",           sample: "Body Text" },
+            { role: "実装ローカル / JP（font-mplus）",   family: "M PLUS 1p",           token: "—（Figma 変数なし）", cssVar: "--font-mplus-1p", cls: "",  sample: "見出しガイド" },
+            // font-guide は @theme inline 定義のため CSS 変数として出力されない（ユーティリティにインライン展開される）。
+            // そのためこの1件だけは class 経由で当てる。
+            { role: "実装ローカル / Guide（font-guide）", family: "Afacad → M PLUS 1p", token: "—（Figma 変数なし）", cssVar: undefined, cls: "font-guide", sample: "Guide ガイド" },
           ] as const
-        ).map(({ role, family, token, cssVar, sample }) => (
+        ).map(({ role, family, token, cssVar, cls, sample }) => (
           <div
-            key={token}
+            key={role}
             className="flex flex-col gap-3 rounded-[10px] border border-[#424242] bg-[#212121] p-4"
           >
             <div className="flex items-center justify-between">
@@ -353,14 +387,15 @@ function TypographySection() {
             </div>
             {/* CSS変数経由で参照することでnext/fontのローカルフォントが正しく当たる */}
             <p
-              className="truncate text-[22px] text-white"
-              style={{ fontFamily: cssVar ? `var(${cssVar})` : family }}
+              className={`truncate text-[22px] text-white ${cls}`}
+              style={cls ? undefined : { fontFamily: cssVar ? `var(${cssVar})` : family }}
             >
               {sample}
             </p>
             <div className="flex items-center gap-2">
               <p className="text-[12px] text-[#616161]">{family}</p>
               {cssVar && <TokenBadge>{cssVar}</TokenBadge>}
+              {cls && <TokenBadge>{cls}</TokenBadge>}
             </div>
           </div>
         ))}
@@ -370,7 +405,7 @@ function TypographySection() {
       <SubHeading>Text Styles</SubHeading>
       <p className="mb-4 text-[12px] text-[#616161]">
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge> で参照。
-        lineHeight は倍率（Figma 100% → 1）、letterSpacing は em（Figma 3% → 0.03em）。
+        lineHeight は倍率（Figma 100% → 1）。行間 AUTO は <TokenBadge>normal</TokenBadge>。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
@@ -682,6 +717,73 @@ function MarkdownEditorDemo() {
   );
 }
 
+function FigmaOnlyPreview({ title, figma, description }: {
+  title: string;
+  figma: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-[17px] font-semibold text-white">{title}</p>
+        {description && <p className="mt-0.5 text-[13px] text-fg-muted">{description}</p>}
+      </div>
+      <div className="rounded-[12px] border border-dashed border-border p-6">
+        <p className="text-[13px] text-fg-muted">
+          Figma Library にはあるが実装が無い（Figma: {figma}）
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ModalDemo() {
+  const [open, setOpen] = useState(false);
+  const [carousel, setCarousel] = useState(false);
+  const [index, setIndex] = useState(0);
+  const total = 3;
+  return (
+    <div className="flex w-full flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="rounded-[8px] border border-border px-3 py-1.5 text-[13px] text-fg-muted transition-colors hover:border-[#616161] hover:text-white"
+        >
+          Modal を開く
+        </button>
+        <label className="flex items-center gap-2 text-[13px] text-fg-muted">
+          <input
+            type="checkbox"
+            checked={carousel}
+            onChange={(e) => setCarousel(e.target.checked)}
+          />
+          carousel バリアント
+        </label>
+      </div>
+      {open && (
+        <Modal
+          onClose={() => setOpen(false)}
+          carousel={carousel}
+          currentIndex={index}
+          total={total}
+          onPrev={carousel ? () => setIndex((i) => (i - 1 + total) % total) : undefined}
+          onNext={carousel ? () => setIndex((i) => (i + 1) % total) : undefined}
+        >
+          <div className="p-8 text-white">
+            <p className="text-[17px] font-semibold">
+              Modal コンテンツ（{index + 1} / {total}）
+            </p>
+            <p className="mt-2 text-[13px] text-fg-muted">
+              children にコンテンツを差し込む全画面オーバーレイ。carousel=true で prev/next とドット表示が付く。
+            </p>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 function WorkVizModalDemo() {
   const [kind, setKind] = useState<"timeline" | "stakeholders" | null>(null);
   return (
@@ -724,23 +826,6 @@ function ComponentsSection() {
     <section id="components" className="scroll-mt-8">
       <SectionTitle label="Components" title="コンポーネント" />
       <div className="flex flex-col gap-12">
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small（Figma Tag/Small: プロジェクトカード用）/ tool（Slot-Tool: スキル展開パネル用・border付き・アイコン前置）">
-          <div className="flex flex-wrap gap-2 items-center">
-            <Tag label="UI Design" />
-            <Tag label="UX Research" />
-            <Tag label="Project Management" />
-          </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
-            <Tag label="UI Design" variant="small" />
-            <Tag label="UX Research" variant="small" />
-          </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
-            <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
-            <Tag label="GitHub" variant="tool" prefix={<ServiceLogo name="github" className="w-4 h-4 shrink-0 object-contain" />} />
-            <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />} />
-          </div>
-        </ComponentPreview>
-
         <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / section / コンテンツ見出し 01・02・03（Library 305:265）">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
@@ -780,6 +865,44 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small（Figma Tag/Small: プロジェクトカード用）/ tool（Slot-Tool: スキル展開パネル用・border付き・アイコン前置）">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Tag label="UI Design" />
+            <Tag label="UX Research" />
+            <Tag label="Project Management" />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            <Tag label="UI Design" variant="small" />
+            <Tag label="UX Research" variant="small" />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
+            <Tag label="GitHub" variant="tool" prefix={<ServiceLogo name="github" className="w-4 h-4 shrink-0 object-contain" />} />
+            <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />} />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="SideMenuBar"
+          description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成(アコーディオン形式は廃止)。showCollapseToggle=false で折りたたみトグルを隠す(モバイルのオーバーレイ表示用)"
+        >
+          <div className="flex flex-wrap gap-8">
+            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
+              <SideMenuBar activeSection="works" collapsed={false} />
+            </div>
+            {/* モバイルオーバーレイ用: トグル非表示 */}
+            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
+              <SideMenuBar activeSection="works" collapsed={false} showCollapseToggle={false} />
+            </div>
+          </div>
+        </ComponentPreview>
+
+        <FigmaOnlyPreview
+          title="Tooltip"
+          figma="Tooltip(slot)"
+          description="ホバー時の補足表示コンポーネント。Figma Component ページには存在するが実装が無い"
+        />
+
         <ComponentPreview title="TabBar" description="タブ切り替えコンポーネント">
           <TabBar
             tabs={[
@@ -791,18 +914,20 @@ function ComponentsSection() {
           />
         </ComponentPreview>
 
-        <ComponentPreview title="HistoryItem" description="職歴・学歴タイムラインアイテム">
-          <div className="w-full">
-            <HistoryItem
-              role="Senior Product Designer"
-              company="株式会社サンプル"
-              period="2022.04 - 現在"
-              description="プロダクトデザインリードとして、UX 戦略の立案からプロトタイプ制作まで一貫して担当。デザインシステムの構築を主導し、開発効率を 30% 改善。"
-            />
-          </div>
+        <FigmaOnlyPreview
+          title="Chart"
+          figma="RadarChart / Legend"
+          description="スキルレーダーチャートと凡例。Figma Component ページには存在するが styleguide 未掲載"
+        />
+
+        <ComponentPreview
+          title="Modal"
+          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能"
+        >
+          <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="WorkCard" description="制作・企画（Works）一覧カード。クリックで詳細ページ（/works?id=）へ遷移">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移">
           <WorkCard
             category="プラットフォーム開発"
             title="キャリアチケットスカウトサービス"
@@ -811,18 +936,22 @@ function ComponentsSection() {
           />
         </ComponentPreview>
 
-        <ComponentPreview
-          title="SideMenuBar"
-          description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成（アコーディオン形式は廃止）。showCollapseToggle=false で折りたたみトグルを隠す（モバイルのオーバーレイ表示用）"
-        >
-          <div className="flex flex-wrap gap-8">
-            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
-              <SideMenuBar activeSection="works" collapsed={false} />
-            </div>
-            {/* モバイルオーバーレイ用: トグル非表示 */}
-            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
-              <SideMenuBar activeSection="works" collapsed={false} showCollapseToggle={false} />
-            </div>
+        <FigmaOnlyPreview
+          title="Table"
+          figma="_Table/CellLabel・_Table/CellContent"
+          description="テーブルのセルコンポーネント。Figma Component ページには存在するが実装が無い"
+        />
+
+        <SubHeading>実装のみ(Figma に対応コンポーネントなし)</SubHeading>
+
+        <ComponentPreview title="HistoryItem" description="職歴・学歴タイムラインアイテム">
+          <div className="w-full">
+            <HistoryItem
+              role="Senior Product Designer"
+              company="株式会社サンプル"
+              period="2022.04 - 現在"
+              description="プロダクトデザインリードとして、UX 戦略の立案からプロトタイプ制作まで一貫して担当。デザインシステムの構築を主導し、開発効率を 30% 改善。"
+            />
           </div>
         </ComponentPreview>
 

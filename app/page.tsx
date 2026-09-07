@@ -104,7 +104,7 @@ export default function Home() {
           aria-label="メニューを開く"
           aria-expanded={mobileMenuOpen}
           onClick={() => setMobileMenuOpen(true)}
-          className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-dark lg:hidden"
+          className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-light lg:hidden"
         >
           <span className="flex flex-col gap-[4px]">
             <span className="block h-[2px] w-4 rounded bg-white" />
@@ -123,7 +123,7 @@ export default function Home() {
           >
             {/* 背景（クリックで閉じる） */}
             <div
-              className="absolute inset-0 bg-overlay-dark"
+              className="absolute inset-0 bg-black/25"
               onClick={() => setMobileMenuOpen(false)}
             />
             {/* パネル: 既存 SideMenuBar を展開状態で再利用。ナビリンククリックで閉じる */}
@@ -144,7 +144,7 @@ export default function Home() {
               type="button"
               aria-label="メニューを閉じる"
               onClick={() => setMobileMenuOpen(false)}
-              className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-dark text-[18px] text-white"
+              className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-light text-[18px] text-white"
             >
               ✕
             </button>

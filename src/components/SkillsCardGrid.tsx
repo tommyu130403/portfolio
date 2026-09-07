@@ -212,7 +212,6 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
   const panelId = useId();
   const level = segmentsToLevel(skill.segments);
   const levelInfo = SKILL_LEVELS[level - 1];
-  const isExpert = level === 4;
 
   return (
     <div
@@ -243,14 +242,11 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 
         {/* 右: レベル + chevron */}
         <span className="flex shrink-0 items-center gap-2">
+          {/* Figma _SkilllItem (Master 502:1344) はセグメントバーのみでレベルを表す。
+              文字表記は視覚的には出さず、読み上げ用にだけ残す。 */}
           <span className="flex items-center gap-2">
             <SegBar level={level} />
-            <span
-              className="font-guide w-20 text-right text-[12px] whitespace-nowrap"
-              style={{ color: isExpert ? "#48F4BE" : "#9E9E9E", fontWeight: isExpert ? 700 : 400 }}
-            >
-              {levelInfo.en}
-            </span>
+            <span className="sr-only">{levelInfo.en}</span>
           </span>
           {/* Button/Function — default では不可視、hover/active で表示 */}
           <span
@@ -334,8 +330,11 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
         </div>
       </div>
 
-      {/* items 容器 */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 24 }}>
+      {/* items 容器 — Figma (Master 502:1344) は 1 カード内をスキル項目 2 列（352px × gap 16）で並べる。
+          items-start で、片方を展開してももう片方の高さに影響しない。
+          2 列にするのは本文幅が 800px に達する xl (1280px) 以上のときだけ。
+          それ未満で 2 列にするとカードの左右パディング 40px が効いてスキル名が潰れる。 */}
+      <div className="grid grid-cols-1 items-start gap-4 pt-6 xl:grid-cols-2">
         {card.skills.map((skill) => (
           <SkillRow key={skill.id} skill={skill} />
         ))}
@@ -360,32 +359,20 @@ export default function SkillsCardGrid() {
 
   if (loading) {
     return (
-      <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start">
-        {[0, 1].map((col) => (
-          <div key={col} className="flex min-w-0 flex-1 flex-col gap-6">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-[300px] animate-pulse rounded-[14px] bg-[#1a1a1a]" />
-            ))}
-          </div>
+      <div className="flex w-full flex-col gap-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[274px] animate-pulse rounded-[14px] bg-[#1a1a1a]" />
         ))}
       </div>
     );
   }
 
-  // Figma 同様、2 列をそれぞれ独立した縦スタックとして配置する。
-  // こうすることで一方のカードを展開しても、もう一方の列のカード高さに影響しない。
-  // （CSS grid だと同一行のカードが高さを揃えてしまうため不可）
-  const mid = Math.ceil(cards.length / 2);
-  const columns = [cards.slice(0, mid), cards.slice(mid)];
-
+  // Figma (Master 502:1344) はカテゴリカードを本文幅 800px の 1 列で縦積みし、
+  // カード内のスキル項目を 2 列に並べる。カードを 2 列にするとスキル名が潰れる。
   return (
-    <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start">
-      {columns.map((col, i) => (
-        <div key={i} className="flex min-w-0 flex-1 flex-col gap-6">
-          {col.map((card) => (
-            <SkillCard key={card.id} card={card} />
-          ))}
-        </div>
+    <div className="flex w-full flex-col gap-6">
+      {cards.map((card) => (
+        <SkillCard key={card.id} card={card} />
       ))}
     </div>
   );

@@ -5,7 +5,7 @@ if echo "$branch" | grep -qE '^(main|master|develop|claude\/.+)$'; then
   exit 0
 fi
 
-# 許可するプレフィックス + <yyyymmdd> の日付部分（CLAUDE.md §3-2）
+# 許可するプレフィックス + <yyyymmdd> の日付部分（CLAUDE.md §3）
 # temp/ は意図的に許可しない。push 前に <type>/<yyyymmdd>-<description> へリネームする。
 if ! echo "$branch" | grep -qE '^(feat|fix|docs|style|refactor|test|chore)/[0-9]{8}-.+'; then
   echo "Error: ブランチ名が規則に合っていません。"

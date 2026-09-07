@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./.claude/hooks/block-temp-commit.sh",
+            "command": "S=\"$(git rev-parse --show-toplevel 2>/dev/null)/.claude/hooks/block-temp-commit.sh\"; if [ -x \"$S\" ]; then exec \"$S\"; fi; cat >/dev/null; printf \"%s\" \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"temp/阻止hook (.claude/hooks/block-temp-commit.sh) を解決できませんでした。安全側に倒してコミットをブロックします。\\\"}}\"",
             "timeout": 10,
             "statusMessage": "ブランチ名を確認中..."
           }

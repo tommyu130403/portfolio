@@ -1,14 +1,11 @@
-name: Deploy to GitHub Pages
+name: Check
 on:
-  push:
-    branches: ["main"]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,19 +14,9 @@ jobs:
           node-version: "22"
           cache: 'npm'
       - run: npm ci
-      - run: npm run build
+      - run: npm run check
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_GUEST_PASSWORD_HASH: ${{ secrets.NEXT_PUBLIC_GUEST_PASSWORD_HASH }}
           NEXT_PUBLIC_OWNER_PASSWORD_HASH: ${{ secrets.NEXT_PUBLIC_OWNER_PASSWORD_HASH }}
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
-  deploy:
-    environment:
-      name: github-pages
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/deploy-pages@v4

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat)\nCMD=$(printf '%s' \"$INPUT\" | jq -r '.tool_input.command // \"\"')\nprintf '%s' \"$CMD\" | grep -qE '(^|[[:space:];&|(])git([[:space:]]+[^[:space:]]+)*[[:space:]]+commit([[:space:]]|$)' || exit 0\nBRANCH=$(git -C \"${CLAUDE_PROJECT_DIR:-.}\" branch --show-current 2>/dev/null)\nprintf '%s' \"$BRANCH\" | grep -q '^temp/' || exit 0\njq -n --arg b \"$BRANCH\" '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:(\"現在のブランチが temp/ で始まっています(\" + $b + \")。CLAUDE.md §3-2 に従い、git branch -m <type>/<yyyymmdd>-<description> でリネームしてからコミットしてください。\")}}'\n",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-temp-commit.sh",
             "statusMessage": "ブランチ名を確認中..."
           }
         ]

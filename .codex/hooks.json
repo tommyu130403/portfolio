@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | jq -r '.tool_input.command // \"\"'); echo \"$CMD\" | grep -qE '^git commit' || exit 0; BRANCH=$(git branch --show-current 2>/dev/null); echo \"$BRANCH\" | grep -q '^temp/' || exit 0; echo \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"temp/ブランチでのコミットをブロックしました。AGENTS.md に従い、先に作業内容に合ったブランチ名へリネームしてください。\\\"}}\"",
+            "command": "./.claude/hooks/block-temp-commit.sh",
             "timeout": 10,
             "statusMessage": "ブランチ名を確認中..."
           }

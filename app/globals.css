@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Tailwind v4 の自動ソース検出は .gitignore 対象を除く全ファイルを走査するため、
+   Markdown 内に書かれたクラス名まで拾って未使用 CSS を生成してしまう。
+   ドキュメント類を走査対象から外す（`@source not` は Tailwind v4.1+）。
+   _to_delete/ はリポジトリ未追跡だが、ローカルに存在する環境のために残す。 */
+@source not "../docs";
+@source not "../learnings";
+@source not "../_to_delete";
+
 /* 入力欄のヒント文字（placeholder）の既定色。preflight の
    `color-mix(currentcolor 50%)` を上書きし、各要素に placeholder-* を付けなくても
    fg-muted（Text/Body/Sub、#141414〜#212121 上で 6.0〜6.9:1）で揃える。 */

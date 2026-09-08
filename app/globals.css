@@ -100,6 +100,8 @@ html {
   --color-system-900: #212121;
   --color-system-925: #191919;
   --color-system-950: #111111;
+  /* 1000 と black は同値だが役割が違う（lib/design-tokens.ts の system を参照）。
+     1000 = グレースケール最終段（Figma System/1000 に追従） / black = 純黒の固定値 */
   --color-system-1000: #000000;
   --color-system-black: #000000;
   --color-system-white: #FFFFFF;
@@ -117,7 +119,7 @@ html {
   --color-surface-light: var(--color-system-875);      /* Background/Light */
   --color-border:        var(--color-system-825);      /* Border/Default */
   --color-border-light:  var(--color-system-800);      /* Border/Light */
-  --color-border-main:   rgba(72, 244, 190, 0.4);      /* Border/Main */
+  --color-border-main:   color-mix(in srgb, var(--color-main-100) 40%, transparent); /* Border/Main = main-100 40% */
   --color-action-hover:  rgba(255, 255, 255, 0.05);    /* Action/hover */
 
   /* Shadow（Figma Effect トークン）。生成ユーティリティ: shadow-base / shadow-wisper */

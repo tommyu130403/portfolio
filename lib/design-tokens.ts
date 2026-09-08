@@ -59,7 +59,15 @@ export const color = {
     "700": "#101402",
     base: "#D4F448", // alias for warning.100
   },
-  /** Neutral grayscale + pure black / white */
+  /**
+   * Neutral grayscale + pure black / white
+   *
+   * `1000` と `black` はどちらも #000000 だが役割が違う。Figma の Color コレクションに
+   * System/1000 と System/Black が別々に存在するため、実装でも別キーとして持つ。
+   *   - `1000`  グレースケールの最終段。Figma の System/1000 に追従する（将来値が変わりうる）
+   *   - `black` 純黒の固定値。段階の一部ではなく、黒であること自体に意味がある場面で使う
+   * 迷ったらグレースケールの延長として `1000` を使う。
+   */
   system: {
     "025": "#FDFDFD",
     "050": "#FAFAFA",
@@ -85,11 +93,21 @@ export const color = {
     "900": "#212121",
     "925": "#191919",
     "950": "#111111",
-    "1000": "#000000",
-    black: "#000000",
+    "1000": "#000000", // グレースケール最終段（Figma System/1000 に追従）
+    black: "#000000",  // 純黒の固定値（Figma System/Black）
     white: "#FFFFFF",
   },
 } as const;
+
+/**
+ * HEX（#RRGGBB）に不透明度を付けた 8 桁 HEX を返す。
+ * 受け取るもの: primitive の HEX と 0〜1 の不透明度 / 返すもの: `#RRGGBBAA`
+ * Figma の α 付き semantic を primitive の参照のまま書くために使う。
+ * リテラルで rgba(...) を書くと、参照元の primitive を変えてもここだけ旧色が残る。
+ */
+function withAlpha(hex: string, alpha: number): string {
+  return `${hex}${Math.round(alpha * 255).toString(16).padStart(2, "0").toUpperCase()}`;
+}
 
 export type ColorGroup = keyof typeof color;
 export type ColorScale<G extends ColorGroup> = keyof (typeof color)[G];
@@ -119,7 +137,7 @@ export const semantic = {
   /** Border/Light — コントラストの高い（目立つ）ボーダー */
   borderLight: color.system["800"], //                Figma: Border/Light
   /** Border/Main — ブランドカラーのボーダー */
-  borderMain: "rgba(72, 244, 190, 0.4)", //           Figma: Border/Main
+  borderMain: withAlpha(color.main["100"], 0.4), //   Figma: Border/Main（main-100 の 40%）
   /** Action/hover — 白5%の半透明オーバーレイ */
   actionHover: "rgba(255, 255, 255, 0.05)", //        Figma: Action/hover
 } as const;

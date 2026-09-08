@@ -238,7 +238,7 @@ const COLOR_GROUPS = [
   {
     key: "system" as const,
     label: "System",
-    desc: "ニュートラルグレースケール",
+    desc: "ニュートラルグレースケール（1000 と black は同値。1000 はグレースケール最終段で Figma System/1000 に追従、black は純黒の固定値）",
     tailwindPrefix: "system",
     shades: orderedShades(color.system),
   },

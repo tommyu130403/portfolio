@@ -309,3 +309,26 @@ Effect shadow・shadow-wisper
 ### 再検証（修正後・VERIFIED）
 - `npm run check` **exit 0**（0 errors / 20 warnings）
 - ヘッドレス Chrome の実描画で: ButtonFunction **36×36**、`markdown-h2` = 17px / 700 / `rgb(158,158,158)`、`markdown-h3` = 17px / 800 / `rgb(158,158,158)`、サイドバーの `aria-current="page"` が Introduction のみ
+
+### 追補 — TabBar / Modal（ユーザーから node URL を受領して完了）
+`TabBar` = `70:441`（`_TabBarItem` は `70:392`）、`Modal` = `120:383`（いずれも Library）。
+
+| コンポーネント | Figma 実値 | 実装（変更前） | 対応 |
+|---|---|---|---|
+| TabBar 外枠 | `Background/Light` #292929 / radius 8 / 枠線なし | `bg-[rgba(255,255,255,0.05)]` | `bg-surface-light` へ |
+| TabBar item | h40 / gap12 / **pl16 pr24** / radius 8 / 14px Avenir / tracking 0.7px | `px-6`（左右とも 24） | `pl-4 pr-6` へ |
+| TabBar Active | `Background/Default` #212121 + `Border/Default` #3A3A3A / 白 / **Avenir Heavy = 800** | `border-border-light` #424242 + 白5% / `font-semibold` = 600 | 3点とも Figma へ |
+| TabBar hover | `rgba(255,255,255,0.02)` | **未実装** | `hover:bg-action-hover`（5%トークン。2% は §6-6） |
+| Modal scrim | `rgba(0,0,0,.25)` + blur8 / **padding 40 一様** | `px-20`（80）`py-10`（40） | `p-10` へ |
+| Modal Container | `Background/Default` + `Border/Default` / **radius 16** / max-w 800 / min-h 400 / drop-shadow `0 1px 1.5px .1, 0 1px 1px .1` | `border-border-light` / **radius 14** / shadow なし | `rounded-r16` `border-border` `shadow-wisper` へ |
+| Modal 閉じるボタン | **right -45 / top -1**・border=off | `-right-[52px]` `top-0` | Figma へ |
+| Modal 前後ボタン | left/right -53 / top 1/2 / border=on | 同左 | **一致・変更なし** |
+| Modal ドット | gap **4** / w40 h4 radius 2 / active `Main/base` / 非active `rgba(255,255,255,0.02)` | `gap-2`（8）/ `rounded-sm` / `bg-white/5` | gap を `gap-1`・radius を `rounded-r2` へ。非active の色は 2% のトークンが無いため 5% のまま |
+
+**ついでに直したもの**: `/styleguide` の TabBar プレビューが存在しないアイコン（`Edit/pencil` と `Build/code`）を参照しており、**2つとも壊れた画像として表示されていた**（`naturalWidth: 0` で確認）。`Edit/writing-fluently`（Figma の _TabBarItem が使っているものと同じ）と `Edit/code` に差し替え。本 Phase 起因ではない既存の不具合。
+
+**検証（実描画・VERIFIED）**
+- TabBar: `paddingLeft 16px` / `paddingRight 24px` / Active の `fontWeight 800` / `background rgb(33,33,33)` / `borderColor rgb(58,58,58)` / `height 40`
+- Modal: `borderRadius 16px` / `borderColor rgb(58,58,58)` / `boxShadow rgba(0,0,0,0.1) 0 1px 3px`（shadow-wisper）/ scrim `padding 40px` / 閉じるボタンの右余白 **9px**・上オフセット **-1px**（Figma の right -45px と一致）
+- TabBar アイコン3つとも `naturalWidth: 24`（差し替え後）
+- `npm run check` **exit 0**（0 errors / 20 warnings）

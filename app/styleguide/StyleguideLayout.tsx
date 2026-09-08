@@ -923,12 +923,12 @@ function ComponentsSection() {
           description="ホバー時の補足表示コンポーネント。Figma Component ページには存在するが実装が無い"
         />
 
-        <ComponentPreview title="TabBar" description="タブ切り替えコンポーネント">
+        <ComponentPreview title="TabBar" description="タブ切り替えコンポーネント（Figma 70:441）">
           <TabBar
             tabs={[
               { id: "all",    label: "すべて",   icon: { set: "Base",  name: "all-application" } },
-              { id: "design", label: "デザイン", icon: { set: "Edit",  name: "pencil" } },
-              { id: "dev",    label: "開発",     icon: { set: "Build", name: "code" } },
+              { id: "design", label: "デザイン", icon: { set: "Edit",  name: "writing-fluently" } },
+              { id: "dev",    label: "開発",     icon: { set: "Edit",  name: "code" } },
             ]}
             defaultActiveId="all"
           />
@@ -942,7 +942,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="Modal"
-          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能"
+          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）"
         >
           <ModalDemo />
         </ComponentPreview>

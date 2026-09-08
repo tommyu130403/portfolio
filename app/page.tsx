@@ -163,7 +163,7 @@ export default function Home() {
                 <img src={profile?.hero_image_url} alt="Profile" className="h-full w-full object-cover" />
               )}
             </div>
-            <div className="flex flex-1 flex-col gap-6">
+            <div className="flex flex-1 flex-col">
               <div className="flex flex-col gap-2">
                 <p className="text-[16px] leading-6 text-fg-muted">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}

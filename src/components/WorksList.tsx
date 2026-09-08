@@ -157,8 +157,10 @@ export const WorksList: FC = () => {
     );
   }
 
+  // Figma (Master 50:174) は本文幅 800px を 2 列（カード 392px・gap 16）で並べる。
+  // 800px に届かない幅では 1 列に落とす。
   return (
-    <div className="flex flex-wrap gap-[16px]">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {works.map((work) => (
         <WorkCard
           key={work.id}

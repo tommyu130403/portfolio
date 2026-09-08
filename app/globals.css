@@ -29,7 +29,7 @@ html {
   /* Special フォント: 指定箇所のみ使用 (typo.special)。英数字/日本語の自動切替は対象外 */
   --font-guide: var(--font-afacad), var(--font-mplus-1p); /* EN: Afacad / JP: M PLUS 1p */
   --font-sans:  var(--font-afacad);       /* Special 英字のみ: Afacad     (typo.special.en) */
-  --font-mplus: var(--font-mplus-1p);     /* Special 日本語のみ: M PLUS 1p (typo.special.jp) */
+  --font-mplus: var(--font-mplus-1p);     /* Special 日本語のみ: M PLUS 1p（実装ローカル・Figma 変数なし） */
   /* Body フォント: 全要素のデフォルト (typo.body)。
      英数字は EN(Avenir)、日本語は JP(Noto Sans JP) へ自動で切り替わる
      （Avenir に日本語グリフが無いため Noto へフォールバックする仕組み）。 */
@@ -76,33 +76,51 @@ html {
   --color-warning-base: #D4F448;
 
   /* Color / System */
+  --color-system-025: #FDFDFD;
   --color-system-050: #FAFAFA;
+  --color-system-075: #F8F8F8;
   --color-system-100: #F5F5F5;
+  --color-system-150: #F2F2F2;
   --color-system-200: #EEEEEE;
+  --color-system-250: #E7E7E7;
   --color-system-300: #E0E0E0;
+  --color-system-350: #CFCFCF;
   --color-system-400: #BDBDBD;
+  --color-system-450: #AEAEAE;
   --color-system-500: #9E9E9E;
+  --color-system-550: #8A8A8A;
   --color-system-600: #757575;
+  --color-system-650: #6B6B6B;
   --color-system-700: #616161;
+  --color-system-750: #525252;
   --color-system-800: #424242;
+  --color-system-825: #3A3A3A;
+  --color-system-850: #323232;
+  --color-system-875: #292929;
   --color-system-900: #212121;
-  --color-system-1000: #1A1A1A;
+  --color-system-925: #191919;
+  --color-system-950: #111111;
+  /* 1000 と black は同値だが役割が違う（lib/design-tokens.ts の system を参照）。
+     1000 = グレースケール最終段（Figma System/1000 に追従） / black = 純黒の固定値 */
+  --color-system-1000: #000000;
   --color-system-black: #000000;
   --color-system-white: #FFFFFF;
 
   /* Semantic（Figma Semantic コレクション）: primitive を意味ベースで参照するエイリアス層。
-     エルゴノミック命名。生成ユーティリティ例: bg-primary / text-fg / text-fg-muted /
-     bg-surface / bg-surface-dark / border-border / border-border-strong /
-     bg-overlay-light / bg-overlay-dark。右コメントは対応する Figma semantic 名。 */
-  --color-primary:       var(--color-main-base);    /* Main/Primary */
-  --color-fg:            var(--color-system-white);  /* Text/Body/Main */
-  --color-fg-muted:      var(--color-system-500);    /* Text/Body/Sub */
-  --color-surface:       var(--color-system-900);    /* Background/Default */
-  --color-surface-dark:  var(--color-system-1000);   /* Background/Dark */
-  --color-border:        var(--color-system-800);    /* Border/Default */
-  --color-border-strong: var(--color-system-500);    /* Border/Light */
-  --color-overlay-light: rgba(255, 255, 255, 0.05);  /* Background/Light-α5 */
-  --color-overlay-dark:  rgba(0, 0, 0, 0.25);        /* Background/Dark-α25 */
+     エルゴノミック命名。生成ユーティリティ例: bg-primary / bg-secondary / text-fg /
+     text-fg-muted / text-fg-caption / bg-surface / bg-surface-light / border-border /
+     border-border-light / border-border-main / bg-action-hover。右コメントは対応する Figma semantic 名。 */
+  --color-primary:       var(--color-main-base);       /* Main/Primary */
+  --color-secondary:     var(--color-main-300);        /* Main/Secondary */
+  --color-fg:            var(--color-system-white);    /* Text/Body/Main */
+  --color-fg-muted:      var(--color-system-500);      /* Text/Body/Sub */
+  --color-fg-caption:    var(--color-system-400);      /* Text/Caption */
+  --color-surface:       var(--color-system-900);      /* Background/Default */
+  --color-surface-light: var(--color-system-875);      /* Background/Light */
+  --color-border:        var(--color-system-825);      /* Border/Default */
+  --color-border-light:  var(--color-system-800);      /* Border/Light */
+  --color-border-main:   color-mix(in srgb, var(--color-main-100) 40%, transparent); /* Border/Main = main-100 40% */
+  --color-action-hover:  rgba(255, 255, 255, 0.05);    /* Action/hover */
 
   /* Shadow（Figma Effect トークン）。生成ユーティリティ: shadow-base / shadow-wisper */
   --shadow-wisper: 0 1px 3px 0 rgba(0, 0, 0, 0.10); /* Figma: shadow-wisper */
@@ -110,7 +128,7 @@ html {
 
   /* Container: メインコンテンツの最大表示幅（Figma Device/desktop Main.Max と同期）
      生成ユーティリティ: max-w-main（lib/design-tokens.ts container.desktop.width.mainMax と同値） */
-  --container-main: 1024px;
+  --container-main: 800px;
 
   /* Radius (prefix "r" to avoid collision with Tailwind built-ins) */
   --radius-r2:  2px;

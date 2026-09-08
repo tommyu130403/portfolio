@@ -10,7 +10,7 @@ const afacad = Afacad({
   display: "swap",
 });
 
-// 日本語見出しフォント: M PLUS 1p (typo.guide.jp)
+// 日本語見出しフォント: M PLUS 1p（実装ローカル・Figma 変数なし）
 const mplusOnep = M_PLUS_1p({
   variable: "--font-mplus-1p",
   subsets: ["latin"],

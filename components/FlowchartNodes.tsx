@@ -525,7 +525,7 @@ const NoteNode = memo(function NoteNode({
       kind="note"
       selected={selected}
       shapeClassName="rounded-[12px] border border-dashed"
-      className="border-border bg-surface-dark text-fg-muted"
+      className="border-border bg-surface-light text-fg-muted"
     />
   );
 });

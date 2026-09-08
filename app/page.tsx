@@ -85,7 +85,7 @@ export default function Home() {
 
   return (
     <AuthGate>
-      <div className="flex min-h-screen items-start bg-[#212121] text-white">
+      <div className="flex min-h-screen items-start bg-surface text-white">
         {/* Side Menu（lg 以上のみ表示） */}
         <div
           className="sticky top-0 shrink-0 z-[2] hidden lg:block"
@@ -158,22 +158,22 @@ export default function Home() {
           <section className="flex w-full max-w-main items-center gap-16">
             <div className="relative aspect-square flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
               {loading ? (
-                <div className="h-full w-full animate-pulse bg-[#424242]" />
+                <div className="h-full w-full animate-pulse bg-system-800" />
               ) : (
                 <img src={profile?.hero_image_url} alt="Profile" className="h-full w-full object-cover" />
               )}
             </div>
             <div className="flex flex-1 flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <p className="text-[16px] leading-6 text-[#9e9e9e]">
-                  {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-[#424242]" /> : profile?.title}
+                <p className="text-[16px] leading-6 text-fg-muted">
+                  {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
                 </p>
-                <div className="flex items-end gap-2 text-[#b3ffe7]">
+                <div className="flex items-end gap-2 text-main-050">
                   <p className="font-mplus text-[46px] leading-[60px] tracking-[0.26px]">
-                    {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-[#424242]" /> : profile?.name_jp}
+                    {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-system-800" /> : profile?.name_jp}
                   </p>
                   <p className="text-[20px] leading-7 tracking-[-0.45px]">
-                    {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-[#424242]" /> : profile?.name_en}
+                    {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-system-800" /> : profile?.name_en}
                   </p>
                 </div>
               </div>
@@ -198,7 +198,7 @@ export default function Home() {
             <div className="flex flex-col gap-6">
               {/* careerLead — デザインソース (sections.jsx) 準拠スタイル */}
               {loading ? (
-                <span className="inline-block h-12 w-full animate-pulse rounded bg-[#424242]" />
+                <span className="inline-block h-12 w-full animate-pulse rounded bg-system-800" />
               ) : (
                 <p style={{ fontFamily: "Avenir, var(--font-noto-sans-jp), sans-serif", fontSize: 14.5, lineHeight: 1.9, letterSpacing: ".04em", color: "var(--color-fg-muted)", margin: 0, maxWidth: 640 }}>
                   {(profile?.career_lead ?? "").trim() || DEFAULT_CAREER_LEAD}
@@ -206,9 +206,9 @@ export default function Home() {
               )}
               {loading ? (
                 <div className="flex flex-col gap-3">
-                  <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-[#424242]" />
-                  <span className="inline-block h-16 w-2/3 animate-pulse rounded-[10px] bg-[#424242]" style={{ marginLeft: "20%" }} />
-                  <span className="inline-block h-16 w-1/2 animate-pulse rounded-[10px] bg-[#424242]" style={{ marginLeft: "40%" }} />
+                  <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-system-800" />
+                  <span className="inline-block h-16 w-2/3 animate-pulse rounded-[10px] bg-system-800" style={{ marginLeft: "20%" }} />
+                  <span className="inline-block h-16 w-1/2 animate-pulse rounded-[10px] bg-system-800" style={{ marginLeft: "40%" }} />
                 </div>
               ) : (
                 <CareerGanttChart career={career} />

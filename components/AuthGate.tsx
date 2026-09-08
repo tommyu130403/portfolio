@@ -77,7 +77,7 @@ function LoginForm({
             placeholder="パスワードを入力"
             autoFocus
             autoComplete="current-password"
-            className="w-full rounded-[10px] border border-border-light bg-[#1a1a1a] px-4 py-3.5 text-[15px] text-white placeholder-fg-muted outline-none transition-colors focus:border-primary"
+            className="w-full rounded-[10px] border border-border-light bg-[#1a1a1a] px-4 py-3.5 text-[15px] text-white outline-none transition-colors focus:border-primary"
           />
           {error && (
             <p className="text-[13px] text-danger-300">{error}</p>

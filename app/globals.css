@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* 入力欄のヒント文字（placeholder）の既定色。preflight の
+   `color-mix(currentcolor 50%)` を上書きし、各要素に placeholder-* を付けなくても
+   fg-muted（Text/Body/Sub、#141414〜#212121 上で 6.0〜6.9:1）で揃える。 */
+@layer base {
+  ::placeholder {
+    color: var(--color-fg-muted);
+  }
+}
+
 html {
   scroll-behavior: smooth;
 }

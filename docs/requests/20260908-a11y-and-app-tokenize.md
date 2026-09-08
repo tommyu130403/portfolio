@@ -1,9 +1,9 @@
 # 依頼書 — フォーカスリングのコントラスト是正 / プレースホルダ色の統一 / `app/` 配下のトークン化
 
 - 作成日: 2026-09-08
-- 状態: **未着手**（引き継ぎ元セッションは終了済み。着手要否の判断から委ねる）
+- 状態: **A・B・C1 完了（2026-09-08）** — A+B は PR #83（`fix/20260908-a11y-focus-placeholder`）、C1（`app/styleguide` 70 + `app/page.tsx` 11）は PR #84（`refactor/20260908-tokenize-app-styleguide`、base は #83）。**残りは C2（`app/admin/AdminLayout.tsx` 176）と C3（`WorkEditor` 54 / `FlowchartEditor` 33）で未着手**
 - 種別: A = `fix` / B = `fix` / C = `refactor`
-- 前提 PR: #78・#80（マージ済み）、#81（`refactor/20260908-tokenize-component-colors`・未マージ）
+- 前提 PR: #78・#80・#81（いずれもマージ済み）
 - 関連依頼書: `docs/requests/20260908-styleguide-figma-sync.md`、`docs/requests/20260908-pr78-review-and-tokenize.md`
 
 ---
@@ -222,7 +222,7 @@ PR #81 では色スロット 4326件が完全一致し、差分は `lab()`→`ok
 - [ ] 置換前後で**描画色が変わっていない**ことを実測で示す
 - [ ] 独自色 112箇所が1件も減っていない
 - [ ] 置換先ユーティリティが生成 CSS に実在することを確認する（Tailwind v4 は literal 文字列からしか生成しない）
-- [ ] `.design-system-context.yml` の `border-[#424242]` 残数を再計測して更新する（現在 75 → `app/` 完了で 0 になるはず）
+- [ ] `.design-system-context.yml` の `border-[#424242]` 残数を再計測して更新する（C1 完了時点で 61・すべて `app/admin` → `app/admin` 完了で 0 になるはず）
 - [ ] `npm run check` が exit 0
 
 ---

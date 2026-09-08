@@ -27,6 +27,12 @@
 - 各ゲートは director を通さない場面（合意済み依頼への追加指示など）でも常に有効。director は判定を前倒しするだけで、適用範囲を狭めない。director を読み込めない場合はその旨を報告し、各ゲートを手動で通す。
 - 追跡する: `.claude/agents/` `.claude/skills/` `.claude/hooks/` `.claude/settings.json`。追跡しない: `.claude/settings.local.json` `.claude/launch.json` `.claude/worktrees/`。
 
+### 0-5. 応答の閉じ方（クラウドセッションでも適用）
+`~/.claude/CLAUDE.md` はこの Mac のローカルセッションにしか届かない。claude.ai/code のクラウドセッション（ブランチ `claude/…`）はリポジトリ内の設定しか読まないため、閉じ方のルールをここにも置く。
+- **本文の最後は必ず `**完了**`（何が終わったか1行）か `**次のアクション**`（誰が何をするか1つ）で閉じる。** 判断がユーザーの手にあるときだけ AskUserQuestion で1問聞く。
+- 禁止: 「必要でしたら作ります」「どうしますか?」のような申し出・問いかけで終える。前置き・結び・謝罪を書かない。実行結果と「未確認」の明記は省かない。
+- 判定は `.claude/hooks/close-gate.sh`（Stop hook）が機械的に行い、閉じていなければ差し戻す。
+
 ---
 
 ## 1. プロジェクト概要

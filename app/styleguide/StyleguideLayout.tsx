@@ -167,16 +167,16 @@ const TYPO_LANG = {
 function SectionTitle({ label, title }: { label: string; title: string }) {
   return (
     <div className="mb-8">
-      <p className="mb-1 text-[12px] tracking-[0.6px] text-[#48f4be]">{label}</p>
+      <p className="mb-1 text-[12px] tracking-[0.6px] text-primary">{label}</p>
       <p className="text-[32px] leading-[1.5] tracking-[1.6px] text-white">{title}</p>
-      <div className="mt-3 h-[2px] w-10 rounded bg-[#424242]" />
+      <div className="mt-3 h-[2px] w-10 rounded bg-border-light" />
     </div>
   );
 }
 
 function SubHeading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-3 text-[13px] font-semibold tracking-[0.65px] text-[#9e9e9e] uppercase">
+    <p className="mb-3 text-[13px] font-semibold tracking-[0.65px] text-fg-muted uppercase">
       {children}
     </p>
   );
@@ -184,7 +184,7 @@ function SubHeading({ children }: { children: React.ReactNode }) {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-[12px] border border-[#424242] bg-[#212121] p-6">
+    <div className="rounded-[12px] border border-border-light bg-surface p-6">
       {children}
     </div>
   );
@@ -192,7 +192,7 @@ function Card({ children }: { children: React.ReactNode }) {
 
 function TokenBadge({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded bg-[#1a1a1a] px-1.5 py-0.5 font-mono text-[10px] text-[#9e9e9e]">
+    <code className="rounded bg-[#1a1a1a] px-1.5 py-0.5 font-mono text-[10px] text-fg-muted">
       {children}
     </code>
   );
@@ -257,7 +257,7 @@ function ColorsSection() {
   return (
     <section id="colors" className="scroll-mt-8">
       <SectionTitle label="Colors" title="カラー" />
-      <p className="mb-8 text-[13px] text-[#616161]">
+      <p className="mb-8 text-[13px] text-system-700">
         Tailwind クラス例: <TokenBadge>bg-main-100</TokenBadge>{" "}
         <TokenBadge>text-system-500</TokenBadge>{" "}
         <TokenBadge>border-danger-base</TokenBadge>
@@ -269,7 +269,7 @@ function ColorsSection() {
           <div key={label}>
             <div className="mb-4 flex items-baseline gap-3">
               <SubHeading>{label}</SubHeading>
-              <p className="text-[11px] text-[#616161]">{desc}</p>
+              <p className="text-[11px] text-system-700">{desc}</p>
             </div>
 
             {/* スウォッチ横スクロール行 */}
@@ -284,7 +284,7 @@ function ColorsSection() {
                     type="button"
                     onClick={() => copy(hex)}
                     title={`${tokenKey}\n${hex}\n${twClass}`}
-                    className="group flex w-[90px] shrink-0 flex-col gap-2 rounded-[8px] border border-transparent p-2 text-left transition-colors hover:border-[#424242] hover:bg-[#1a1a1a]"
+                    className="group flex w-[90px] shrink-0 flex-col gap-2 rounded-[8px] border border-transparent p-2 text-left transition-colors hover:border-border-light hover:bg-[#1a1a1a]"
                   >
                     <div
                       className="h-10 w-full rounded-[6px] border border-white/10"
@@ -292,7 +292,7 @@ function ColorsSection() {
                     />
                     <div className="space-y-0.5">
                       <p className="text-[11px] font-medium text-white">{shade}</p>
-                      <p className="font-mono text-[10px] text-[#616161]">
+                      <p className="font-mono text-[10px] text-system-700">
                         {isCopied ? "✓ コピー" : hex.toUpperCase()}
                       </p>
                     </div>
@@ -307,7 +307,7 @@ function ColorsSection() {
         <div>
           <div className="mb-4 flex items-baseline gap-3">
             <SubHeading>Semantic</SubHeading>
-            <p className="text-[11px] text-[#616161]">
+            <p className="text-[11px] text-system-700">
               意味ベースのエイリアス（Figma Semantic コレクション）。値は primitive を参照
             </p>
           </div>
@@ -318,7 +318,7 @@ function ColorsSection() {
                 type="button"
                 onClick={() => copy(value)}
                 title={`${token}\n${value}\nFigma: ${figma}`}
-                className="group flex items-center gap-3 rounded-[8px] border border-transparent p-2 text-left transition-colors hover:border-[#424242] hover:bg-[#1a1a1a]"
+                className="group flex items-center gap-3 rounded-[8px] border border-transparent p-2 text-left transition-colors hover:border-border-light hover:bg-[#1a1a1a]"
               >
                 {/* チェッカーボード背景（半透明色を可視化）の上に literal ユーティリティで実描画 */}
                 <div
@@ -339,7 +339,7 @@ function ColorsSection() {
                 </div>
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <p className="truncate text-[12px] font-medium text-white">{figma}</p>
-                  <p className="font-mono text-[10px] text-[#616161]">
+                  <p className="font-mono text-[10px] text-system-700">
                     {copied === value ? "✓ コピー" : `${value} → ${ref}`}
                   </p>
                   <TokenBadge>{cls}</TokenBadge>
@@ -361,7 +361,7 @@ function TypographySection() {
       <SectionTitle label="Typography" title="タイポグラフィ" />
 
       {/* フォントファミリー（Typo トークン） */}
-      <p className="mb-3 text-[12px] text-[#616161]">
+      <p className="mb-3 text-[12px] text-system-700">
         Figma Typo コレクションの3変数（Special/EN・Body/JP・Body/EN）+ Figma に対応変数が無い実装ローカルの
         フォント2件。実装ローカルの2件は Figma と同期されないので、デザイン側の正としては扱わない。
       </p>
@@ -379,10 +379,10 @@ function TypographySection() {
         ).map(({ role, family, token, cssVar, cls, sample }) => (
           <div
             key={role}
-            className="flex flex-col gap-3 rounded-[10px] border border-[#424242] bg-[#212121] p-4"
+            className="flex flex-col gap-3 rounded-[10px] border border-border-light bg-surface p-4"
           >
             <div className="flex items-center justify-between">
-              <p className="text-[11px] text-[#9e9e9e]">{role}</p>
+              <p className="text-[11px] text-fg-muted">{role}</p>
               <TokenBadge>{token}</TokenBadge>
             </div>
             {/* CSS変数経由で参照することでnext/fontのローカルフォントが正しく当たる */}
@@ -393,7 +393,7 @@ function TypographySection() {
               {sample}
             </p>
             <div className="flex items-center gap-2">
-              <p className="text-[12px] text-[#616161]">{family}</p>
+              <p className="text-[12px] text-system-700">{family}</p>
               {cssVar && <TokenBadge>{cssVar}</TokenBadge>}
               {cls && <TokenBadge>{cls}</TokenBadge>}
             </div>
@@ -403,7 +403,7 @@ function TypographySection() {
 
       {/* タイプスケール（Figma Typo コレクションの命名済み text style） */}
       <SubHeading>Text Styles</SubHeading>
-      <p className="mb-4 text-[12px] text-[#616161]">
+      <p className="mb-4 text-[12px] text-system-700">
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge> で参照。
         lineHeight は倍率（Figma 100% → 1）。行間 AUTO は <TokenBadge>normal</TokenBadge>。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
@@ -418,11 +418,11 @@ function TypographySection() {
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-baseline gap-3">
                     <p className="font-mono text-[16px] text-white">{ts.size}px</p>
-                    <p className="font-mono text-[10px] text-[#616161]">
+                    <p className="font-mono text-[10px] text-system-700">
                       weight:{ts.weight} · lh:{ts.lineHeight} · tracking:{ts.letterSpacing}em · {ts.lang.toUpperCase()}
                     </p>
                   </div>
-                  <p className="shrink-0 text-[11px] text-[#616161]">{ts.figma}</p>
+                  <p className="shrink-0 text-[11px] text-system-700">{ts.figma}</p>
                 </div>
                 <p
                   className="truncate text-white"
@@ -454,7 +454,7 @@ function TokensSection() {
 
       {/* ── Radius ── */}
       <SubHeading>Radius</SubHeading>
-      <p className="mb-4 text-[12px] text-[#616161]">
+      <p className="mb-4 text-[12px] text-system-700">
         Tailwind クラス例: <TokenBadge>rounded-r8</TokenBadge>{" "}
         <TokenBadge>rounded-r40</TokenBadge>
       </p>
@@ -465,7 +465,7 @@ function TokensSection() {
             className="flex flex-col items-center gap-3"
           >
             <div
-              className="h-16 w-16 border-2 border-[#48f4be] bg-[#212121]"
+              className="h-16 w-16 border-2 border-primary bg-surface"
               style={{ borderRadius: val }}
             />
             <div className="text-center">
@@ -478,18 +478,18 @@ function TokensSection() {
 
       {/* ── Size ── */}
       <SubHeading>Size / Spacing Scale</SubHeading>
-      <p className="mb-4 text-[12px] text-[#616161]">
+      <p className="mb-4 text-[12px] text-system-700">
         スペーシングスケール（px）。Tailwind ではそのまま <TokenBadge>text-[16px]</TokenBadge>{" "}
         等の任意値で参照、または <TokenBadge>tokens.size[16]</TokenBadge> から JS 参照。
       </p>
       <div className="mb-12 flex flex-col gap-2">
         {(Object.entries(size) as [string, number][]).map(([key, val]) => (
           <div key={key} className="flex items-center gap-4">
-            <p className="w-[40px] shrink-0 text-right font-mono text-[12px] text-[#9e9e9e]">
+            <p className="w-[40px] shrink-0 text-right font-mono text-[12px] text-fg-muted">
               {val}px
             </p>
             <div
-              className="h-[6px] rounded-full bg-[#48f4be]/60"
+              className="h-[6px] rounded-full bg-primary/60"
               style={{ width: Math.min(val, 720) }}
             />
           </div>
@@ -498,7 +498,7 @@ function TokensSection() {
 
       {/* ── Shadow（Figma Effect トークン） ── */}
       <SubHeading>Shadow</SubHeading>
-      <p className="mb-4 text-[12px] text-[#616161]">
+      <p className="mb-4 text-[12px] text-system-700">
         Tailwind クラス例: <TokenBadge>shadow-base</TokenBadge>{" "}
         <TokenBadge>shadow-wisper</TokenBadge>
       </p>
@@ -506,12 +506,12 @@ function TokensSection() {
         {(Object.entries(shadow) as [string, string][]).map(([key, val]) => (
           <div key={key} className="flex flex-col items-center gap-3">
             <div
-              className="h-20 w-32 rounded-[8px] border border-[#2a2a2a] bg-[#212121]"
+              className="h-20 w-32 rounded-[8px] border border-[#2a2a2a] bg-surface"
               style={{ boxShadow: val }}
             />
             <div className="text-center">
               <TokenBadge>shadow-{key}</TokenBadge>
-              <p className="mt-1 max-w-[160px] font-mono text-[9px] leading-tight text-[#616161]">{val}</p>
+              <p className="mt-1 max-w-[160px] font-mono text-[9px] leading-tight text-system-700">{val}</p>
             </div>
           </div>
         ))}
@@ -519,7 +519,7 @@ function TokensSection() {
 
       {/* ── Container（Figma Variables「Device」コレクションと同期） ── */}
       <SubHeading>Container / Device</SubHeading>
-      <p className="mb-4 text-[12px] text-[#616161]">
+      <p className="mb-4 text-[12px] text-system-700">
         Figma の Device コレクション（desktop / tablet / Mobile モード）と同期。
         本文エディタのデバイス幅プレビューもこの値を参照する。
         サイトの最大表示幅は <TokenBadge>--container-main</TokenBadge>（globals.css）→
@@ -553,13 +553,13 @@ function TokensSection() {
               <p className="text-[12px] text-white">{label}</p>
               <TokenBadge>{token}</TokenBadge>
             </div>
-            <p className="font-mono text-[16px] font-semibold text-[#48f4be]">{value}px</p>
+            <p className="font-mono text-[16px] font-semibold text-primary">{value}px</p>
           </div>
         ))}
       </div>
       {/* ── Breakpoints ── */}
       <SubHeading>Breakpoints</SubHeading>
-      <p className="mb-4 text-[12px] text-[#616161]">
+      <p className="mb-4 text-[12px] text-system-700">
         Tailwind レスポンシブプレフィックス:
         {" "}<TokenBadge>lg:</TokenBadge> = tablet (1024px〜)
         {" "}<TokenBadge>xl:</TokenBadge> = desktop (1280px〜)
@@ -574,7 +574,7 @@ function TokensSection() {
               <p className="text-[12px] capitalize text-white">{key}</p>
               <TokenBadge>breakpoint.{key}</TokenBadge>
             </div>
-            <p className="font-mono text-[16px] font-semibold text-[#48f4be]">{val}px</p>
+            <p className="font-mono text-[16px] font-semibold text-primary">{val}px</p>
           </div>
         ))}
       </div>
@@ -604,7 +604,7 @@ function IconsSection({ iconSets }: { iconSets: IconSetData[] }) {
           placeholder="アイコン名で検索…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-[400px] rounded-[8px] border border-[#424242] bg-[#212121] px-4 py-2.5 text-[14px] text-white placeholder-[#616161] outline-none focus:border-[#48f4be]"
+          className="w-full max-w-[400px] rounded-[8px] border border-border-light bg-surface px-4 py-2.5 text-[14px] text-white outline-none focus:border-primary"
         />
       </div>
       <div className="flex flex-col gap-12">
@@ -617,7 +617,7 @@ function IconsSection({ iconSets }: { iconSets: IconSetData[] }) {
             <div key={setName}>
               <div className="mb-4 flex items-center gap-3">
                 <p className="text-[16px] font-semibold text-white">{setName}</p>
-                <span className="rounded-full bg-[#2a2a2a] px-2.5 py-0.5 text-[11px] text-[#9e9e9e]">
+                <span className="rounded-full bg-[#2a2a2a] px-2.5 py-0.5 text-[11px] text-fg-muted">
                   {filtered.length}
                 </span>
               </div>
@@ -628,10 +628,10 @@ function IconsSection({ iconSets }: { iconSets: IconSetData[] }) {
                     type="button"
                     onClick={() => copyIconName(iconName)}
                     title={iconName}
-                    className="group flex flex-col items-center gap-2 rounded-[8px] border border-transparent p-3 text-center transition-colors hover:border-[#424242] hover:bg-[#212121]"
+                    className="group flex flex-col items-center gap-2 rounded-[8px] border border-transparent p-3 text-center transition-colors hover:border-border-light hover:bg-surface"
                   >
                     <Icon set={setName as "Base"} name={iconName} className="h-6 w-6 shrink-0" />
-                    <p className="w-full truncate text-[10px] text-[#9e9e9e] group-hover:text-white">
+                    <p className="w-full truncate text-[10px] text-fg-muted group-hover:text-white">
                       {copiedIcon === iconName ? "✓" : iconName}
                     </p>
                   </button>
@@ -660,8 +660,8 @@ function ServiceLogosSection({ logos }: { logos: LogoData[] }) {
   return (
     <section id="logos" className="scroll-mt-8">
       <SectionTitle label="Logos" title="サービスロゴ" />
-      <p className="mb-6 text-[13px] text-[#616161]">
-        <code className="rounded bg-[#1a1a1a] px-1.5 py-0.5 font-mono text-[10px] text-[#9e9e9e]">
+      <p className="mb-6 text-[13px] text-system-700">
+        <code className="rounded bg-[#1a1a1a] px-1.5 py-0.5 font-mono text-[10px] text-fg-muted">
           {"<ServiceLogo name=\"figma\" className=\"h-8 w-8\" />"}
         </code>
         　　クリックで name をコピー
@@ -673,10 +673,10 @@ function ServiceLogosSection({ logos }: { logos: LogoData[] }) {
             type="button"
             onClick={() => copy(name)}
             title={name}
-            className="group flex flex-col items-center gap-3 rounded-[8px] border border-transparent p-4 text-center transition-colors hover:border-[#424242] hover:bg-[#212121]"
+            className="group flex flex-col items-center gap-3 rounded-[8px] border border-transparent p-4 text-center transition-colors hover:border-border-light hover:bg-surface"
           >
             <ServiceLogo name={name} className="h-8 w-8 shrink-0" />
-            <p className="w-full truncate text-[11px] text-[#9e9e9e] group-hover:text-white">
+            <p className="w-full truncate text-[11px] text-fg-muted group-hover:text-white">
               {copiedName === name ? "✓" : label}
             </p>
           </button>
@@ -697,7 +697,7 @@ function ComponentPreview({ title, description, children }: {
     <div className="flex flex-col gap-4">
       <div>
         <p className="text-[17px] font-semibold text-white">{title}</p>
-        {description && <p className="mt-0.5 text-[13px] text-[#9e9e9e]">{description}</p>}
+        {description && <p className="mt-0.5 text-[13px] text-fg-muted">{description}</p>}
       </div>
       <Card>
         <div className="flex flex-wrap items-start gap-4">{children}</div>
@@ -748,7 +748,7 @@ function ModalDemo() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-[8px] border border-border px-3 py-1.5 text-[13px] text-fg-muted transition-colors hover:border-[#616161] hover:text-white"
+          className="rounded-[8px] border border-border px-3 py-1.5 text-[13px] text-fg-muted transition-colors hover:border-system-700 hover:text-white"
         >
           Modal を開く
         </button>
@@ -791,14 +791,14 @@ function WorkVizModalDemo() {
       <button
         type="button"
         onClick={() => setKind("timeline")}
-        className="rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#616161] hover:text-white"
+        className="rounded-[8px] border border-border-light px-3 py-1.5 text-[13px] text-fg-muted transition-colors hover:border-system-700 hover:text-white"
       >
         Timeline モーダルを開く
       </button>
       <button
         type="button"
         onClick={() => setKind("stakeholders")}
-        className="rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#616161] hover:text-white"
+        className="rounded-[8px] border border-border-light px-3 py-1.5 text-[13px] text-fg-muted transition-colors hover:border-system-700 hover:text-white"
       >
         Stakeholder モーダルを開く
       </button>
@@ -840,11 +840,11 @@ function ComponentsSection() {
             <p className="text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
             <p className="font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">見出し01（## / Noto Bold 24px 白）</p>
             <p className="font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">見出し02（### / Noto Bold 20px mint）</p>
-            <p className="text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">見出し03（#### / Avenir Heavy 17px gray）</p>
+            <p className="text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
             <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
             <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
-            <p className="border-l-2 border-[#424242] pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
-            <p className="text-[10px] leading-[16px] tracking-[0.5px] text-[#9e9e9e]">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
+            <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
+            <p className="text-[10px] leading-[16px] tracking-[0.5px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
           </div>
         </ComponentPreview>
 
@@ -887,11 +887,11 @@ function ComponentsSection() {
           description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成(アコーディオン形式は廃止)。showCollapseToggle=false で折りたたみトグルを隠す(モバイルのオーバーレイ表示用)"
         >
           <div className="flex flex-wrap gap-8">
-            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
+            <div className="overflow-hidden rounded-[12px] border border-border-light">
               <SideMenuBar activeSection="works" collapsed={false} />
             </div>
             {/* モバイルオーバーレイ用: トグル非表示 */}
-            <div className="overflow-hidden rounded-[12px] border border-[#424242]">
+            <div className="overflow-hidden rounded-[12px] border border-border-light">
               <SideMenuBar activeSection="works" collapsed={false} showCollapseToggle={false} />
             </div>
           </div>
@@ -1011,7 +1011,7 @@ function ComponentsSection() {
           title="WorkDetailLeftPanel"
           description="Works 詳細ページの左パネル（Figma 787:9916）。戻りリンク / デバイスモック / カテゴリ・タイトル / サマリー / メタ（期間・役割・体制内訳・Timeline/Stakeholder 全画面ボタン）/ Skills・Tools / サイトリンクカード"
         >
-          <div className="rounded-[12px] border border-[#424242] bg-[#212121] px-6">
+          <div className="rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailLeftPanel
               work={SAMPLE_WORK_DETAIL}
               skills={["UI Design", "UX Research", "PJ Management"]}
@@ -1026,7 +1026,7 @@ function ComponentsSection() {
           title="WorkDetailContent"
           description="Works 詳細ページの右カラム（本文）。見出し01 + 本文 markdown のセクションを横罫線で区切って描画"
         >
-          <div className="w-full rounded-[12px] border border-[#424242] bg-[#212121] px-6">
+          <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />
           </div>
         </ComponentPreview>
@@ -1067,7 +1067,7 @@ export function StyleguideLayout({ iconSets, logos }: { iconSets: IconSetData[];
       {/* ─── サイドバー ─────────────────────────── */}
       <aside className="sticky top-0 flex h-screen w-[220px] shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0a0a0a] px-4 py-8">
         <div className="mb-8 px-2">
-          <Link href="/" className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline">
+          <Link href="/" className="mb-1 block text-[12px] tracking-[0.6px] text-primary hover:underline">
             ← Portfolio
           </Link>
           <p className="text-[20px] font-semibold text-white">Style Guide</p>
@@ -1084,13 +1084,13 @@ export function StyleguideLayout({ iconSets, logos }: { iconSets: IconSetData[];
                   "flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-left transition-colors",
                   isActive
                     ? "bg-[rgba(72,244,190,0.08)] text-white"
-                    : "text-[#9e9e9e] hover:bg-[#1a1a1a] hover:text-white",
+                    : "text-fg-muted hover:bg-[#1a1a1a] hover:text-white",
                 ].join(" ")}
               >
-                {isActive && <span className="h-4 w-[2px] shrink-0 rounded-full bg-[#48f4be]" />}
+                {isActive && <span className="h-4 w-[2px] shrink-0 rounded-full bg-primary" />}
                 <span className={["flex flex-col", isActive ? "" : "pl-[10px]"].join(" ")}>
                   <span className="text-[14px] leading-[1.4]">{label}</span>
-                  <span className="text-[11px] text-[#616161]">{labelJa}</span>
+                  <span className="text-[11px] text-system-700">{labelJa}</span>
                 </span>
               </button>
             );
@@ -1102,9 +1102,9 @@ export function StyleguideLayout({ iconSets, logos }: { iconSets: IconSetData[];
       <main ref={mainRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[900px] px-12 py-12">
           <div className="mb-16">
-            <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Design System</p>
+            <p className="text-[12px] tracking-[0.6px] text-primary">Design System</p>
             <p className="mt-1 text-[40px] font-bold tracking-[2px] text-white">Style Guide</p>
-            <p className="mt-3 text-[14px] text-[#9e9e9e]">
+            <p className="mt-3 text-[14px] text-fg-muted">
               カラー・タイポグラフィ・スペーシング・アイコン・コンポーネントのデザイントークンとUIパターンをまとめたリファレンスです。
             </p>
           </div>
@@ -1119,7 +1119,7 @@ export function StyleguideLayout({ iconSets, logos }: { iconSets: IconSetData[];
           </div>
 
           <div className="mt-24 border-t border-[#2a2a2a] pt-8">
-            <p className="text-[12px] text-[#424242]">Portfolio Style Guide</p>
+            <p className="text-[12px] text-system-800">Portfolio Style Guide</p>
           </div>
         </div>
       </main>

@@ -338,7 +338,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
           value={work.title}
           onChange={(e) => setField("title", e.target.value)}
           placeholder="プロジェクトタイトル"
-          className="min-w-0 flex-1 rounded-[8px] border border-transparent bg-transparent px-2 py-1 text-[20px] font-semibold text-white outline-none transition-colors placeholder-[#616161] hover:border-[#424242] focus:border-[#48f4be]"
+          className="min-w-0 flex-1 rounded-[8px] border border-transparent bg-transparent px-2 py-1 text-[20px] font-semibold text-white outline-none transition-colors hover:border-[#424242] focus:border-[#48f4be]"
         />
         {dirty && <span className="shrink-0 text-[11px] text-[#f4c248]">未保存の変更があります</span>}
         {savedAt && <span className="shrink-0 text-[12px] text-[#48f4be]">✓ 保存しました</span>}
@@ -575,7 +575,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
                 onChange={(e) => setField("summary", e.target.value || null)}
                 placeholder="プロジェクトの概要を簡潔に説明します。"
                 rows={3}
-                className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-[1.6] text-white outline-none transition-colors placeholder-[#616161] focus:border-[#48f4be]"
+                className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-[1.6] text-white outline-none transition-colors focus:border-[#48f4be]"
               />
             </div>
             <div className="col-span-2">

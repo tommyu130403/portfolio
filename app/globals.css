@@ -5,12 +5,17 @@ html {
 }
 
 /* キーボード操作時のフォーカスリング（全体の既定）。
-   独自に focus-visible を定義する要素（例: lib/figma-variants.ts の ITEM_FOCUS が
-   outline-none + ring を指定）は、より高い詳細度でこの既定を上書きする。 */
-:focus-visible {
-  outline: 2px solid var(--color-main-100);
-  outline-offset: 2px;
-  border-radius: 2px;
+   Tailwind v4 のレイヤー順は theme → base → components → utilities。
+   この既定を base レイヤーに置くことで、要素側のユーティリティ
+   （例: lib/figma-variants.ts の ITEM_FOCUS が指定する
+   focus-visible:outline-none + ring、および rounded-[8px]）が
+   詳細度に関わらず上書きできる。レイヤー外に置くと逆に既定が常に勝つので注意。 */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-main-100);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
 @keyframes card-fade-in {

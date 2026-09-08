@@ -217,3 +217,20 @@ Effect shadow・shadow-wisper
 | カテゴリ | 10px / `Main/base` / tracking 0.3px | 10px / `main-100` | 一致（main-100 = main-base 同値） |
 | Tag | border `System/825` / px10 py6 / 10px Avenir / `System/500` / rounded full | `tool` variant: border-border-light / bg-black/25 / px10 py4 / 11px | **差分** |
 | padding / gap / min-h / aspect | p16 / gap16 / min-h160 / 339:190.6875 | 同値 | 一致 |
+
+### qa-verifier の指摘と対応（同 Phase 内で修正済み）
+1. **`.design-system-context.yml` の散文から不正な CSS が本番バンドルに混入していた**（VERIFIED）。Tailwind v4 の自動ソース検出がリポジトリ直下の同ファイルを走査し、説明文中の `rounded-[Npx]` / `rounded-[16777200px]` からルールを生成。`border-radius: Npx` は不正な長さでブラウザが宣言を破棄する。コミット `c1a6f28` で一度潰した不具合の再発。
+   → `app/globals.css` の `@source not` に `.design-system-context.yml` と `README.md` を追加。`rm -rf .next` 後に再ビルドし、生成 CSS から両ルールが消え、19 ユーティリティは全数残ることを確認。
+2. **`TYPO_LANG` の `cssVar` / `family` が死んでいた**（VERIFIED）。inline style を廃止したことで `.sample` しか参照されなくなったが、未使用の「オブジェクトのプロパティ」は tsc も eslint も検出しない。
+   → 削除。
+
+### Phase 2 で必ず守ること（qa-verifier の指摘3・実害はまだ無いが踏むと静かに壊れる）
+コンパイル後の CSS で、19 個のカスタム `@utility` は組込みの `text-[Npx]` / `leading-*` より **前** に出る。同一レイヤー・同一詳細度なので **後に出る組込みが必ず勝つ**。
+つまり `className="text-body-01-jp text-[12px]"` は書き順に関係なく font-size が 12px になる。
+**Phase 2 で `text-[15px] leading-[1.5] tracking-[0.45px]` を text style へ置き換えるときは、古い指定を必ず全部消すこと。** 消し忘れても型エラーも lint 警告も出ず、text style が黙って無効化される。
+
+### 記録のみ（欠陥ではない）
+- `text-headline-02-en` の日本語フォールバックは `--font-noto-sans-jp`、既存の `--font-guide` は `--font-mplus-1p`。同じ Special 系で落とし先が分かれている（EN 用スタイルなので影響は混在文字列のみ）。
+- EN 系7ユーティリティは `Avenir` をリテラルで持つため `--font-body` の変更に追従しない。
+- スタイルガイドの EN サンプルは変更前 `fontFamily: "Avenir"`（フォールバック無し）→ 変更後 `Avenir, Noto Sans JP, sans-serif`。macOS 以外での描画が変わる（改善方向）。
+- `figma-skills-a-plan.js` / `.codex/config.toml` が gitignore されておらず Tailwind の走査対象に入っている。本 Phase 起因ではないが、上記1と同じ経路の穴。

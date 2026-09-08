@@ -157,10 +157,11 @@ const SEMANTIC_SWATCHES = [
 
 // ─── タイポグラフィ（textStyle トークンから生成）────────────────────────────
 // lang → フォントファミリー（CSS 変数経由で next/font を当てる）とサンプル文字
+// font-family は app/globals.css の @utility 側が持つ。ここはサンプル文字だけ。
 const TYPO_LANG = {
-  jp: { cssVar: "--font-noto-sans-jp", sample: "本文テキスト サンプル" },
-  en: { cssVar: undefined as string | undefined, family: typo.body.en, sample: "Body Text Sample" },
-  "special-en": { cssVar: "--font-afacad", sample: "Special Heading" },
+  jp: { sample: "本文テキスト サンプル" },
+  en: { sample: "Body Text Sample" },
+  "special-en": { sample: "Special Heading" },
 } as const;
 
 // textStyle のキー → app/globals.css の @utility クラス名。

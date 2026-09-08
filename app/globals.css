@@ -7,6 +7,11 @@
 @source not "../docs";
 @source not "../learnings";
 @source not "../_to_delete";
+/* 散文の中に書いたクラス名（例: `rounded-[Npx]` のような説明用のプレースホルダー）まで
+   拾ってしまうため、リポジトリ直下の説明ファイルも除外する。
+   `border-radius: Npx` のような不正な宣言が本番 CSS に混入していた。 */
+@source not "../.design-system-context.yml";
+@source not "../README.md";
 
 /* 入力欄のヒント文字（placeholder）の既定色。preflight の
    `color-mix(currentcolor 50%)` を上書きし、各要素に placeholder-* を付けなくても

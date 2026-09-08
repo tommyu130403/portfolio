@@ -29,12 +29,12 @@ platforms: [web]
 intentional_compromises:
   - item: >-
       標準の境界線が2色に分裂している。トークン --color-border は #3A3A3A だが、
-      クラスに直書きされた border-[#424242] が 75 箇所残っている
-      (app/admin 61 / app/styleguide 14)。
+      クラスに直書きされた border-[#424242] が 61 箇所残っている
+      (すべて app/admin: AdminLayout 35 / FlowchartEditor 17 / WorkEditor 9)。
       2026-09-08 のトークン化で components 26 件と lib 1 件
-      (lib/figma-button-variants.ts の Button/Function on バリアント) を解消し、
-      102 → 75 になった。app/styleguide の 14 件はパレット見本ではなくカード枠・入力欄の
-      実 UI なので置換可能だが、同ファイルの HEX を触らない方針で今回は見送っている。
+      (lib/figma-button-variants.ts の Button/Function on バリアント) を解消し
+      102 → 75 に、同日の app/styleguide + app/page.tsx のトークン化で
+      さらに 14 件を解消し 75 → 61 になった。
       数え直すときは .ts も含めること:
       grep -rnoi 'border-\[#424242\]' --include='*.ts' --include='*.tsx' . を使う。
     why: >-
@@ -54,9 +54,10 @@ intentional_compromises:
       差は小さいことを確認したが、知覚の程度は主観であり合否判定には使わない。
     trigger: >-
       解消の判定は border-[#424242] の残数がゼロになったとき。
-      2026-09-08 に components/lib のトークン化を実施し 102 → 75 に減った (再計測済み)。
-      残る 75 件は app/admin 61 と app/styleguide 14 で、どちらも当時のスコープ外。
-      次に app/ 側のトークン化を行うときに再計測し、ゼロになったらこの項目を削除する。
+      2026-09-08 に components/lib のトークン化を実施し 102 → 75 に減り、同日の
+      app/styleguide + app/page.tsx のトークン化で 75 → 61 に減った (再計測済み)。
+      残る 61 件はすべて app/admin (認証の内側) で、当時のスコープ外。
+      次に app/admin のトークン化を行うときに再計測し、ゼロになったらこの項目を削除する。
       なお解消時の置換先は border-border (#3A3A3A) ではなく border-border-light
       (#424242) が値を保つ選択肢である点に注意。#3A3A3A へ寄せるなら見た目が変わるので
       別途承認が要る。

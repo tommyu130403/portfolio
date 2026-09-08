@@ -57,3 +57,28 @@ intentional_compromises:
       (#424242) が値を保つ選択肢である点に注意。#3A3A3A へ寄せるなら見た目が変わるので
       別途承認が要る。
       あわせて Figma Master 側の Border/Default #424242 の付け替えが済んだかも確認する。
+
+  - item: >-
+      radius がトークン化されていない。実装は rounded-[Npx] の直書きが 177 箇所あり、
+      内訳は 8px 81 / 12px 34 / 6px 24 / 14px 12 / 10px 10 / 7px 4 / 2px 4 / 16px 3 /
+      999px 2 / 24px 2 / 36px 1 / 32px 1 (2026-09-08 計測)。
+      Figma の Radius コレクションは 2 / 4 / 8 / 16 / 40 / 80 の 6 値しかなく、
+      12 / 14 / 6 / 10 / 7 / 24 / 32 / 36 に対応する変数が存在しない。
+      トークン (rounded-r8 等) を使っている箇所は 2 箇所のみ。
+      数え直すコマンド:
+      grep -rnoE 'rounded-\[[^]]+\]' --include='*.tsx' components app src | sed 's/.*rounded/rounded/' | sort | uniq -c
+    why: >-
+      Figma 側も未トークン化であることを実値で確認した (VERIFIED 2026-09-08)。
+      Master の Card (node 494:1363) を get_design_context で取得したところ
+      rounded-[14px] の直書きで、Radius コレクションの変数にバインドされていない。
+      同じく Tag は rounded-[16777200px] (= full)。
+      したがって実装側だけをトークンへ寄せても「Library が正」(CLAUDE.md §5) の状態には
+      ならず、Figma 側に 12 / 14 等を追加してもらうのが先。
+      実装を最寄りのトークン (12→8 or 16 等) へ丸める案は、Figma の実デザイン (14px) と
+      ずれるため採らない。
+    trigger: >-
+      Figma の Radius コレクションに 12 / 14 (および必要なら 6 / 10 / 24 / 32 / 36) が
+      追加されたとき。追加されたら lib/design-tokens.ts の radius と
+      app/globals.css の --radius-r* を同期し、rounded-[Npx] の直書きを
+      rounded-r12 等へ一括置換する。
+      Figma 側の追加依頼は docs/requests/20260908-figma-master-sync.md §6 に列挙してある。

@@ -24,6 +24,36 @@
 
 // ─── Color ────────────────────────────────────────────────────────────────────
 
+/**
+ * Figma 実値との照合状況（Master「Design」ページ node 20:702 配下を get_variable_defs で取得）
+ *
+ * VERIFIED 2026-09-08（Master の実ノードが使用しており、値の一致を確認した）
+ *   System: 300 / 500 / 600 / 700 / 800 / 825 / 875 / 900 / White
+ *   Main:   base / 050 / 100 / 200 / 300 / 700
+ *   Semantic: Main/Primary・Text/Body/Main・Text/Body/Sub・Background/Default・
+ *             Background/Light・Border/Default・Border/Light
+ *   Container: Screen/Width 1440・Desktop/Height/Screen 1024・Main/Max 800・
+ *              Main/Min 728・Desktop/Width/Side 256
+ *   TextStyle: Title/PJ・Headline/01/JP・Headline/02/JP・Headline/02/EN・
+ *              Body/01/JP/Regular・Body/02/JP/Regular・Body/02/JP/Bold・
+ *              Body/03/JP/Regular・Body/03/EN/Regular・Caption/01/JP
+ *   Effect: shadow・shadow-wisper
+ *
+ * 未照合（Library には変数として存在するが Master のどのノードも使っていないため値が取れない）
+ *   System: 025 / 075 / 150 / 250 / 350 / 400 / 450 / 550 / 650 / 750 / 850 / 925 / 950 / 1000 / Black
+ *   Main:   400 / 500 / 600 ／ danger 全段 ／ warning 全段
+ *   Semantic: Text/Caption・Border/Main・Action/hover の不透明度
+ *             （Action/hover は get_variable_defs が #FFFFFF しか返さず α を持たない）
+ *   TextStyle: Title/EN・Headline/01/EN・Body/01/JP/Bold・Body/01/EN・Body/02/EN・
+ *              Body/03/JP/Bold・Caption/01/EN・Caption/02/JP・Caption/02/EN
+ *   これらの現在値は docs/requests/20260908-styleguide-figma-sync.md 付録 A の実測値が出所。
+ *   MCP からは列挙できないため、実際に使うときに個別確認する（2026-09-08 ユーザー合意）。
+ *
+ * 取得方法の注記: get_variable_defs は fileKey + nodeId を直接渡せば取れる。
+ * Figma デスクトップでの選択は不要（2026-09-08 に実証）。ただし返るのは
+ * 「そのノードが実際に使っている変数」だけなので、未使用のトークンは取得できない。
+ */
+
 export const color = {
   /** Primary brand green scale */
   main: {

@@ -156,6 +156,185 @@ html {
   --radius-r80: 80px;
 }
 
+/* ─── Text Style ユーティリティ ─────────────────────────────────────────────── */
+/* Source: lib/design-tokens.ts の textStyle（Figma Typo コレクションの命名済み text style）。
+   値を変えるときは必ず両方を同時に直す。1 クラスで font-family / font-size / font-weight /
+   line-height / letter-spacing の 5 プロパティをまとめて当てるため、@theme ではなく
+   @utility を使う（Tailwind v4）。
+   font-family の対応: lang jp → Noto Sans JP / en → Avenir→Noto / special-en → Afacad→Noto
+   Figma の行間 AUTO は CSS の normal、% 表記の文字間は em に変換している。 */
+
+@utility text-title-pj {
+  /* Figma: Title/PJ */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 0.03em;
+}
+
+@utility text-title-en {
+  /* Figma: Title/EN */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: normal;
+  letter-spacing: 0.03em;
+}
+
+@utility text-headline-01-jp {
+  /* Figma: Headline/01/JP */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.05em;
+}
+
+@utility text-headline-01-en {
+  /* Figma: Headline/01/EN */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: normal;
+  letter-spacing: 0.05em;
+}
+
+@utility text-headline-02-jp {
+  /* Figma: Headline/02/JP */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 0.05em;
+}
+
+@utility text-headline-02-en {
+  /* Figma: Headline/02/EN */
+  font-family: var(--font-afacad), var(--font-noto-sans-jp), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.05em;
+}
+
+@utility text-body-01-jp {
+  /* Figma: Body/01/JP/Regular */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+@utility text-body-01-jp-bold {
+  /* Figma: Body/01/JP/Bold */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+@utility text-body-01-en {
+  /* Figma: Body/01/EN/Regular */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0em;
+}
+
+@utility text-body-02-jp {
+  /* Figma: Body/02/JP/Regular */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+@utility text-body-02-jp-bold {
+  /* Figma: Body/02/JP/Bold */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+@utility text-body-02-en {
+  /* Figma: Body/02/EN/Regular */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0em;
+}
+
+@utility text-body-03-jp {
+  /* Figma: Body/03/JP/Regular */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+@utility text-body-03-jp-bold {
+  /* Figma: Body/03/JP/Bold */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+
+@utility text-body-03-en {
+  /* Figma: Body/03/EN/Regular */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0em;
+}
+
+@utility text-caption-01-jp {
+  /* Figma: Caption/01/JP */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0.03em;
+}
+
+@utility text-caption-01-en {
+  /* Figma: Caption/01/EN */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0em;
+}
+
+@utility text-caption-02-jp {
+  /* Figma: Caption/02/JP */
+  font-family: var(--font-noto-sans-jp), sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0.03em;
+}
+
+@utility text-caption-02-en {
+  /* Figma: Caption/02/EN */
+  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0em;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;

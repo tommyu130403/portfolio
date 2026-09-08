@@ -150,3 +150,70 @@ Figma Radius コレクションは 2 / 4 / 8 / 16 / 40 / 80 の 6 値。実装�
 - §3-1 の 19 値 — 前回から未照合のまま（前回実装記録に明記）
 - radius 12 / 14 px 等が Figma Master の実デザインに存在するか — 未確認（§3-2 の判断材料）
 - 実装セッションの `npm run check` — ローカルの `.env.local` があれば通る想定。無い環境では `NEXT_PUBLIC_SUPABASE_URL` / `ANON_KEY` の仮値で build 段が通ることを確認済み（VERIFIED 2026-09-08）
+
+---
+
+## 実装記録 — Phase 0 / Phase 1（2026-09-08 実装セッション・model opus）
+
+### 依頼書の前提のうち、実測で覆ったもの
+1. **`20:702` は1画面ではなく「Design」ページ（canvas）**。配下に4フレーム — `/`（45:128, 1440×1024, Content 4040px, 5 Section）・`/works/{id}`（787:9916, 2109px, 7ブロック）・`/works/{id}：timeline`（839:3499）・`/works/{id}：stakeholder`（848:2944）。
+   → **ユーザー合意: Phase 3 の対象は `/` と `/works/{id}` の2画面**。Modal 2画面は中身が詳細ページと同一で、差分は Modal コンポーネント（Phase 2 で照合）だけのため除外。
+2. **`get_variable_defs` は fileKey + nodeId を直接渡せば取れる**（VERIFIED 2026-09-08）。Figma デスクトップでの「Copy link to selection」は不要。依頼書 §0・§9 の記載は誤り。
+   ただし返るのは **そのノードが実際に使っている変数だけ**。この制約は残る。
+3. **`/figma-component-review` は存在する**（skill 一覧で確認）。依頼書 §9 の ASSUMED は解消。
+4. **Master / Library の page 一覧 API は不完全**。`get_metadata`（nodeId 省略）は Master で `WIRE` 1枚、Library で `_GuideTemplate` 1枚しか返さない。`Design` canvas には nodeId 直指定でのみ到達できる。
+
+### 再承認内容
+- ブランチ: 依頼書コミット 708e083 が main に無いため、**`claude/figma-implementation-strategy-o5mj5g` を base に** `style/20260908-figma-master-tokens` を切った（ユーザー選択）。
+- §3-2 radius: **選択肢 C**（今回は触らず `.design-system-context.yml` に trigger 付きで記録）。
+- §3-3 text style: **選択肢 A**（`app/globals.css` に `@utility` を19種定義）。
+
+### §3-1 の照合結果 — 値の変更ゼロ
+
+**VERIFIED 2026-09-08**（Master の実ノードが使用しており値の一致を確認）:
+System 300 `#e0e0e0` / 500 `#9e9e9e` / 600 `#757575` / 700 `#616161` / 800 `#424242` / 825 `#3a3a3a` / **875 `#292929`** / 900 `#212121` / White ・
+Main base・100 `#48f4be` / 050 `#b3ffe7` / 200 `#39c89b` / **300 `#2b9e7a`** / **700 `#02140d`** / Primary ・
+Semantic Text/Body/Main `#FFFFFF` / Text/Body/Sub `#9E9E9E` / Background/Default `#212121` / **Background/Light `#292929`** / Border/Default `#3A3A3A` / Border/Light `#424242` ・
+Container Screen 1440×1024 / Main/Max 800 / Main/Min 728 / Side 256 ・
+TextStyle 10種（Title/PJ・Headline/01/JP・Headline/02/JP・Headline/02/EN・Body/01/JP/Regular・Body/02/JP/Regular・Body/02/JP/Bold・Body/03/JP/Regular・Body/03/EN/Regular・Caption/01/JP）・
+Effect shadow・shadow-wisper
+
+太字は §3-1 で未照合だった19値のうち今回 VERIFIED になった4件。**すべて実装と一致し、値の修正は不要だった。**
+
+**照合不能が確定した15件**: System 025 / 075 / 150 / 250 / 350 / 450 / 550 / 650 / 750 / 850 / 925 / 950 / 1000、Text/Caption、Border/Main、Action/hover の不透明度。
+`search_design_system` で **Library の Color コレクションに変数として存在することは確認**したが、**名前しか返らず値は返らない**。`get_variable_defs` は使用中の変数しか返さず、Master のどのノードもこれらを使っていない。**MCP 経由の取得手段は尽きた。** 現在値の出所は `docs/requests/20260908-styleguide-figma-sync.md` 付録 A の実測値。実際に使うときに個別確認する（2026-09-08 ユーザー合意を継続）。
+
+照合状況は `lib/design-tokens.ts` の Color セクション冒頭にコメントとして記録した。
+
+### 実装中に決めたこと
+- **`@utility` の font-family マッピング**: `lang: jp` → `var(--font-noto-sans-jp), sans-serif` / `en` → `Avenir, var(--font-noto-sans-jp), sans-serif`（body と同じ自動切替スタック）/ `special-en` → `var(--font-afacad), var(--font-noto-sans-jp), sans-serif`。
+- **19種の定義は `lib/design-tokens.ts` の `textStyle` からスクリプトで生成**した。手で転記すると値がずれるため。
+- **スタイルガイドの Text Styles プレビューを inline `style` から `@utility` クラスへ切り替えた。** Tailwind v4 は未使用のユーティリティを CSS に出力しないため、スタイルガイドが実際にクラスを使うことで「19種が生成されている」ことの担保になる。`text-${key}` の連結はスキャナが検出しないので、`TEXT_STYLE_CLASS` に literal で19件並べている。**この配列を消すとユーティリティが CSS から消える。**
+
+### 検証（VERIFIED）
+- `npm run check` **exit 0**（tsc OK / eslint 0 errors 20 warnings — 着手前の基準線と同数 / build 15 routes）
+- ブラウザの `getComputedStyle` で **19種すべてを実測**し、`textStyle` の定義値と一致することを確認（例: `text-body-01-jp` → 15px / 400 / lh 22.5px（=1.5）/ ls 0.45px（=0.03em）/ Noto Sans JP、`text-headline-02-en` → 20px / 700 / lh 30px / Afacad）
+- `/styleguide` の Typography 節を**実プレビューで目視**。各行にクラス名バッジ（`text-title-pj` 等）が並び、サンプルがユーティリティ経由で正しく描画されている。
+- トップページを実プレビューで目視。崩れなし。
+- `.design-system-context.yml` は `npx js-yaml` でパース成功（intentional_compromises 2件）。
+
+### 未達・未確認
+- **`/works/{id}` の目視は未了**。ブラウザペインが非表示になり、ページが描画されずスクリーンショットが黒画像になったため。スクロール位置自体は正しく取得できており（`worksTop ≈ 0`）、ページ側の不具合ではない。なお本 Phase の差分は `@utility` の追加（どのコンポーネントも未使用）とスタイルガイド内部の描画方法変更のみで、既存ページの描画経路は変わらない。
+- `/works` は Work ID 必須のため単体では表示できず、トップページにも Work 詳細へのリンクが無かった（ローカルの Supabase データが空）。
+- `images/hero-placeholder.jpg` が 404。**本 Phase の変更とは無関係の既存の欠落**（CSS / JS の 404 は無し）。
+
+### §6 行き — Figma 側で直すもの（実装からは書き戻さない）
+1. **`Background/Dark-α25`（#000000）は残骸ではなく Modal（839:3764）が実使用中**。前回セッションで「Master のみのローカルスタイル・取り込まない」と判定した根拠と矛盾する。Library に昇格させるか、Modal 側を別トークンへ付け替えるかの判断が要る。実装 `components/Modal.tsx` は `rgba(0,0,0,.25)` を直書きしている。
+2. **`/works/{id}`（787:9916）に外部 UI キットの変数が混入**: `Device BG #121515` / `Screen Components #262C2D` / `fl-gray-1000 #121515` / `fl-gray-600 #636F73`。デバイスモックアップ（`Camera` 888:3231 / `Speaker` 888:3232）由来。自プロダクトのデザインシステムではないので分離が要る。
+3. **Card（494:1363）の shadow が `shadow` トークンと不一致**: インスタンスは `1px 1px 8px spread 0`、トークンは `1px 1px 16px spread 2`。
+4. **Radius コレクションに 12 / 14 が無い**。Master の Card は `rounded-[14px]`、Tag は `rounded-[16777200px]`（= full）を直書きしている。追加されるまで実装側のトークン化はできない（`.design-system-context.yml` に trigger 付きで記録済み）。
+
+### Phase 2 への引き継ぎ（Card 494:1363 の実測差分・先行取得ぶん）
+| 項目 | Figma 実値 | 実装（`components/WorkCard.tsx`） | 判定 |
+|---|---|---|---|
+| カード枠線 | `System/825` #3a3a3a | `border-system-800` #424242 | **差分** |
+| カード背景 | 指定なし（透明） | `bg-system-900` | **差分** |
+| タイトル | 13px / Bold / lh 1.5 / tracking 0.39px / white | 14px / bold / lh 1.5 | **差分** |
+| カテゴリ | 10px / `Main/base` / tracking 0.3px | 10px / `main-100` | 一致（main-100 = main-base 同値） |
+| Tag | border `System/825` / px10 py6 / 10px Avenir / `System/500` / rounded full | `tool` variant: border-border-light / bg-black/25 / px10 py4 / 11px | **差分** |
+| padding / gap / min-h / aspect | p16 / gap16 / min-h160 / 339:190.6875 | 同値 | 一致 |

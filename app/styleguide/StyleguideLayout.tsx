@@ -163,6 +163,31 @@ const TYPO_LANG = {
   "special-en": { cssVar: "--font-afacad", sample: "Special Heading" },
 } as const;
 
+// textStyle のキー → app/globals.css の @utility クラス名。
+// Tailwind v4 のスキャナは `text-${key}` のような連結を検出しないため、literal で持つ。
+// ここに並んでいること自体が「19 種のユーティリティが実際に生成されている」ことの担保になる。
+const TEXT_STYLE_CLASS: Record<keyof typeof textStyle, string> = {
+  "title-pj":        "text-title-pj",
+  "title-en":        "text-title-en",
+  "headline-01-jp":  "text-headline-01-jp",
+  "headline-01-en":  "text-headline-01-en",
+  "headline-02-jp":  "text-headline-02-jp",
+  "headline-02-en":  "text-headline-02-en",
+  "body-01-jp":      "text-body-01-jp",
+  "body-01-jp-bold": "text-body-01-jp-bold",
+  "body-01-en":      "text-body-01-en",
+  "body-02-jp":      "text-body-02-jp",
+  "body-02-jp-bold": "text-body-02-jp-bold",
+  "body-02-en":      "text-body-02-en",
+  "body-03-jp":      "text-body-03-jp",
+  "body-03-jp-bold": "text-body-03-jp-bold",
+  "body-03-en":      "text-body-03-en",
+  "caption-01-jp":   "text-caption-01-jp",
+  "caption-01-en":   "text-caption-01-en",
+  "caption-02-jp":   "text-caption-02-jp",
+  "caption-02-en":   "text-caption-02-en",
+};
+
 // ─── 共通サブコンポーネント ────────────────────────────
 function SectionTitle({ label, title }: { label: string; title: string }) {
   return (
@@ -404,15 +429,15 @@ function TypographySection() {
       {/* タイプスケール（Figma Typo コレクションの命名済み text style） */}
       <SubHeading>Text Styles</SubHeading>
       <p className="mb-4 text-[12px] text-system-700">
-        Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge> で参照。
+        Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge>、
+        クラスからは <TokenBadge>text-body-02-jp</TokenBadge>（app/globals.css の <TokenBadge>@utility</TokenBadge>）で参照。
         lineHeight は倍率（Figma 100% → 1）。行間 AUTO は <TokenBadge>normal</TokenBadge>。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
           ([key, ts]) => {
+            // font-family は @utility 側が持つため、ここではサンプル文字だけ使う
             const langInfo = TYPO_LANG[ts.lang];
-            const fontFamily =
-              langInfo.cssVar ? `var(${langInfo.cssVar})` : "family" in langInfo ? langInfo.family : undefined;
             return (
               <div key={key} className="flex flex-col gap-2 py-5">
                 <div className="flex items-center justify-between gap-4">
@@ -422,18 +447,12 @@ function TypographySection() {
                       weight:{ts.weight} · lh:{ts.lineHeight} · tracking:{ts.letterSpacing}em · {ts.lang.toUpperCase()}
                     </p>
                   </div>
-                  <p className="shrink-0 text-[11px] text-system-700">{ts.figma}</p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <TokenBadge>{TEXT_STYLE_CLASS[key as keyof typeof textStyle]}</TokenBadge>
+                    <p className="text-[11px] text-system-700">{ts.figma}</p>
+                  </div>
                 </div>
-                <p
-                  className="truncate text-white"
-                  style={{
-                    fontFamily,
-                    fontSize: `${ts.size}px`,
-                    fontWeight: ts.weight,
-                    letterSpacing: `${ts.letterSpacing}em`,
-                    lineHeight: ts.lineHeight,
-                  }}
-                >
+                <p className={`truncate text-white ${TEXT_STYLE_CLASS[key as keyof typeof textStyle]}`}>
                   {langInfo.sample}
                 </p>
               </div>

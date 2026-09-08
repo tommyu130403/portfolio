@@ -171,5 +171,8 @@ Phase 2 の4件（System/1000 → #000000 / Border/Default → #3A3A3A / Border/
 
 ### 完了条件の未達・未確認
 - **`npm run check` は本ブランチに存在しない**（`package.json` の scripts は dev / build / start / lint / update-types / prepare）。`check` は未マージの PR #76 で追加されるもの。代替として `npx tsc --noEmit`（exit 0）・`npm run lint`（ベースラインと同一：3 errors / 17 warnings、増減なし）・`npm run build`（成功・15ルート）を個別に実行した
-- **Figma の HEX 再取得は未実施**。`get_variable_defs` は Figma デスクトップ側でのレイヤー選択を要求し実行できなかった。`search_design_system` で Color コレクションに System 025 / 075 / 350 / 450 / 825 / 850 等の**変数が実在すること**は確認したが、**値そのものは付録 A（同日実測）のまま**
+- **Figma の実値照合は部分的に実施（VERIFIED 2026-09-08）**。`get_variable_defs` は「Figma で選択中のノードが使っている変数」しか返さないため、Library ファイル（canvas がテンプレート残骸のみで変数を使うノードが無い）からは取得できない。Master の Skills ノード `502:1344` を選択した状態で取得し、**23 件を突合してズレゼロ**を確認した。
+  - 裏取りできた重要項目: **Border/Default `#3A3A3A` / Border/Light `#424242` / Main/Max `800`**（＝見た目が変わる Phase 2 の3件）、System/825、Headline/02/EN（Afacad Bold 20 / lh 1.5 / ls 5%）、Body/02/JP/Regular、System/500・600・800・White、Main/050・100・base、Special/EN・Body/JP・Body/EN、Text/Body/Main・Sub、Main/Primary、Size 8種
+  - **行間 AUTO → CSS `normal` の判断も裏取り（REASONED）**: Body/03/EN と Caption/01/JP は `lineHeight: 100` と返る。同じ出力で 150% のスタイルは `1.5` と倍率で出るため、`100` は倍率ではなく AUTO の表現。依頼書の REASONED 判断は維持
+  - **未確認のまま**: System 新規14段のうち 825 以外の13段、System/1000、Action/hover の不透明度5%、新規 semantic 4種（Main/Secondary・Text/Caption・Background/Light・Border/Main）。いずれも Skills ノードが使っておらず取得範囲外。**現時点でコードからも使われていない**ため（`system-1000` を使う指定はゼロ）、値が違っても見た目への影響は無い。実際に使うときに個別確認する方針でユーザー合意済み
 - 390px（モバイル）でスキル名 3 件が `line-clamp-2` で切れる。**この変更以前から存在する切れ**で、レベル文字を削除した分むしろ改善している（カード内 `padding: 40` が固定値であることが原因）。本タスクでは扱わない

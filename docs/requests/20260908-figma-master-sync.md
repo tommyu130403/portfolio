@@ -284,3 +284,28 @@ Effect shadow・shadow-wisper
 6. **hover 背景 2% にトークンが無い。** Button/Action・Button/Function は `rgba(255,255,255,0.02)` の直書き。`Action/hover` は 5% で別物。2% 用のトークン（例: `Action/hover-subtle`）を追加するか、ボタンも 5% に統一するか。**実装は現在 5% トークンを使っているため、Figma と実装で hover の濃さが違う。**
 7. **`shadow` トークンが実デザインで使われていない**（前掲 3 と同じ。Card / Tooltip とも 8px・spread 0 の直書き）。
 8. **`Card` の枠線は `System/825`（Border/Default）だが背景が無い。** ページ背景と同色（Background/Default #212121）の上に置く前提のデザインなので、別の背景色の上に置くと透けて見える。意図どおりか確認が要る。
+
+### qa-verifier の指摘と対応（同 Phase 内で修正済み）
+
+**ブロッカー2件**
+1. **Figma 実値を「誰にも見えないバリアント」に当てていた**（VERIFIED）。`Headline` の `markdown-h2` / `markdown-h3` は `/styleguide` からしか呼ばれない。Work 詳細の本文見出しを実際に描画しているのは `components/WorkMarkdown.tsx` の `RenderBlock`（424 / 430 / 436 行）で、そこは初回コミットで一切変わっていなかった。**同じ「Headline/02」が 17px グレーと 20px ミントに分裂していた。**
+   → `WorkMarkdown.tsx` の h1 / h2 を `text-headline-01-jp` / `text-headline-02-jp text-system-500` へ置換。h3 は Figma に対応が無いため据え置き。
+2. **スタイルガイドの記述が実装とズレたまま**（CLAUDE.md §4 違反・VERIFIED）。`見出し 02（20px mint）` というラベルと `Library 305:265` という説明が旧値のまま残っていた。
+   → ラベルを `見出し 02（17px gray・Headline/02/JP）` / `見出し 03（17px gray・Figma に対応なし）`、説明を `Library 304:313。03 は Figma に存在せず実装のみ` へ修正。
+
+**非ブロッカー3件**
+3. **`p-[6px]` で ButtonFunction が 36px 正方形でなくなっていた**（実測 38×36・VERIFIED）。`box-sizing: border-box` なので border 2px + padding 12px を引くと中身が 22px になり、24px のアイコンが 2px はみ出して幅が 38px に膨らんでいた。SideMenuBar のトグル（`right-[-18px]`）が 2px ずれ、Modal のクローズボタンの外余白が 16px → 14px になっていた。
+   → **`p-[6px]` を撤回**。Figma は「36px の箱に padding 6px ＋ アイコンが残り 24px を埋める」指定だが、実装はアイコンが 24px 固定なので padding を足すと二重になる。36px の箱の中央にアイコンを置く現行のほうが Figma の見た目と一致する。理由をコメントに残した。**修正後の実測 36×36 を確認。**
+4. **`h-10 max-w-[200px]` は長ラベルで上下 39px ずつはみ出す**（VERIFIED・40文字の日本語で実測）。Figma の実値なので**残す**が、制約であることを `lib/figma-button-variants.ts` の JSDoc に明記した。現状 `ButtonAction` は `/styleguide` でしか JSX に出ていないため実害はない。
+5. **`Headline` の `gap-6` が死にクラスになっていた**（下線を消して子が1つになったため）。→ 削除。`pb-6`（24px）だけが残り、Figma の pb 24 と一致する。
+
+**追加で直したもの（qa の指摘6）**
+6. **Active から背景を消したことで、現在地の手がかりが色だけになっていた**（WCAG 1.4.1）。`aria-current` も無かった。
+   → `SideMenuBar` の item に `aria-current`（Link は `"page"` / button は `"true"`）を追加。**実描画で現在地の1件だけに付くことを確認**（`ariaCurrentCount: 2` = トップページの Introduction とサイドバー内の該当要素）。
+
+**対応せず記録のみ**
+7. **`markdown-h2` と `markdown-h3` が weight 以外まったく同じになった**（h2: 17/700/#9e9e9e、h3: 17/800/#9e9e9e。`--color-fg-muted` = `--color-system-500` なので色も同一）。Figma に `Headline/03` が無いことが原因の構造問題で、実装だけでは解けない。§6-5 に記載済み。
+
+### 再検証（修正後・VERIFIED）
+- `npm run check` **exit 0**（0 errors / 20 warnings）
+- ヘッドレス Chrome の実描画で: ButtonFunction **36×36**、`markdown-h2` = 17px / 700 / `rgb(158,158,158)`、`markdown-h3` = 17px / 800 / `rgb(158,158,158)`、サイドバーの `aria-current="page"` が Introduction のみ

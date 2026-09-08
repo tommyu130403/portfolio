@@ -421,13 +421,13 @@ function RenderBlock({
   switch (block.type) {
     case "h1":
       return (
-        <p className="mb-4 mt-10 font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
+        <p className="mb-4 mt-10 text-headline-01-jp text-white">
           {renderInline(block.content, k)}
         </p>
       );
     case "h2":
       return (
-        <p className="mb-4 mt-10 font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">
+        <p className="mb-4 mt-10 text-headline-02-jp text-system-500">
           {renderInline(block.content, k)}
         </p>
       );

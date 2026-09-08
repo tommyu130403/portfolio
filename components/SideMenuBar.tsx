@@ -211,7 +211,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-px w-full rounded-[2px] bg-system-800 shrink-0" />
+        <div className="h-px w-full rounded-[2px] bg-border-light shrink-0" />
 
         {/* Navigation */}
         {/* pl-[2px]: アイコン中心が collapsed 時の aside 幅 96px の中央に揃う
@@ -252,7 +252,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           />
 
           {/* Divider */}
-          <div className="my-2 h-px w-full rounded-[2px] bg-system-800 shrink-0" />
+          <div className="my-2 h-px w-full rounded-[2px] bg-border-light shrink-0" />
 
           {/* Social section */}
           <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
@@ -266,7 +266,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
 
           {role === "owner" && (
             <>
-              <div className="my-2 h-px w-full rounded-[2px] bg-system-800 shrink-0" />
+              <div className="my-2 h-px w-full rounded-[2px] bg-border-light shrink-0" />
               <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
                 Developer
               </p>

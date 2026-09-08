@@ -23,7 +23,7 @@ const HistoryItem: FC<HistoryItemProps> = ({
       <div
         className={[
           "h-6 w-[2px] shrink-0 rounded-b-[2px]",
-          timeline === "middle" || timeline === "start" ? "bg-system-800" : "",
+          timeline === "middle" || timeline === "start" ? "bg-border-light" : "",
         ].join(" ")}
       />
       <div
@@ -35,7 +35,7 @@ const HistoryItem: FC<HistoryItemProps> = ({
       <div
         className={[
           "flex-1 min-h-px w-[2px] rounded-t-[2px]",
-          timeline === "start" ? "" : "bg-system-800",
+          timeline === "start" ? "" : "bg-border-light",
         ].join(" ")}
       />
     </div>

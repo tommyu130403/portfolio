@@ -575,7 +575,7 @@ const CardNode = memo(function CardNode({
           <div className={`flex min-w-0 flex-col ${verticalClass}`}>
             {title}
           </div>
-          <div className="bg-system-800" aria-hidden />
+          <div className="bg-border-light" aria-hidden />
           <div className={`flex min-w-0 flex-col ${verticalClass}`}>
             {body}
           </div>
@@ -585,7 +585,7 @@ const CardNode = memo(function CardNode({
           <div className={`flex min-h-0 flex-1 flex-col ${verticalClass}`}>
             {title}
           </div>
-          <div className="my-3 h-px shrink-0 bg-system-800" aria-hidden />
+          <div className="my-3 h-px shrink-0 bg-border-light" aria-hidden />
           <div className={`flex min-h-0 flex-1 flex-col ${verticalClass}`}>
             {body}
           </div>

@@ -555,7 +555,7 @@ export const WorkSections: FC<{
   <div className={`flex flex-col ${gapClass}`}>
     {sections.map((sec, i) => (
       <React.Fragment key={i}>
-        {withDividers && i > 0 && <div className="h-px w-full bg-system-800" aria-hidden />}
+        {withDividers && i > 0 && <div className="h-px w-full bg-border-light" aria-hidden />}
         <section className="flex w-full flex-col gap-10">
           {sec.heading && <Headline title={sec.heading} variant={headingVariant} />}
           <MarkdownBody md={sec.md} />

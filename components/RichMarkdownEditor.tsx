@@ -64,7 +64,7 @@ function TBtn({ label, title, onClick }: { label: ReactNode; title: string; onCl
 }
 
 function TSep() {
-  return <span className="mx-1 h-5 w-px shrink-0 bg-system-800" />;
+  return <span className="mx-1 h-5 w-px shrink-0 bg-border-light" />;
 }
 
 function DialogShell({

@@ -34,7 +34,7 @@ export const ButtonFunction: FC<ButtonFunctionProps> = ({
       <Icon
         set="Arrows"
         name={direction}
-        className="h-6 w-6 min-h-6 min-w-6 shrink-0 text-[#9e9e9e]"
+        className="h-6 w-6 min-h-6 min-w-6 shrink-0 text-fg-muted"
         style={{ minWidth: 24, minHeight: 24 }}
         aria-hidden
       />

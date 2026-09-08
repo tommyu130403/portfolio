@@ -44,8 +44,8 @@ export default function FlowchartEmbed({ id }: { id: string }) {
 
   if (!data) {
     return (
-      <div className="mb-4 flex h-[clamp(260px,50vh,420px)] items-center justify-center rounded-[14px] border border-dashed border-[#424242] bg-[#1a1a1a] p-6">
-        <p className="text-[13px] tracking-[0.39px] text-[#9e9e9e]">
+      <div className="mb-4 flex h-[clamp(260px,50vh,420px)] items-center justify-center rounded-[14px] border border-dashed border-border-light bg-[#1a1a1a] p-6">
+        <p className="text-[13px] tracking-[0.39px] text-fg-muted">
           図が見つかりません
         </p>
       </div>
@@ -59,7 +59,7 @@ export default function FlowchartEmbed({ id }: { id: string }) {
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#424242] bg-[#0a0a0a]/90 text-white transition-colors hover:border-main-100 hover:text-main-100"
+          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border-light bg-[#0a0a0a]/90 text-white transition-colors hover:border-main-100 hover:text-main-100"
           aria-label="フローチャートを拡大"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>

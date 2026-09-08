@@ -17,10 +17,10 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
   if (variant === "tool") {
     return (
       <div
-        className={`flex gap-[4px] items-center rounded-full border border-[#424242] bg-[rgba(0,0,0,0.25)] px-[10px] py-[4px] shrink-0 ${className ?? ""}`}
+        className={`flex gap-[4px] items-center rounded-full border border-border-light bg-[rgba(0,0,0,0.25)] px-[10px] py-[4px] shrink-0 ${className ?? ""}`}
       >
         {prefix}
-        <p className="text-[11px] leading-none text-[#9E9E9E] whitespace-nowrap">{label}</p>
+        <p className="text-[11px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
         {suffix}
       </div>
     );
@@ -32,7 +32,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
       className={
         isSmall
           ? `bg-[rgba(0,0,0,0.25)] flex gap-2 items-center px-3 py-1 rounded-full shrink-0 ${className ?? ""}`
-          : `flex items-center justify-center rounded-full bg-[#02140d] px-3 py-[3px] ${className ?? ""}`
+          : `flex items-center justify-center rounded-full bg-main-700 px-3 py-[3px] ${className ?? ""}`
       }
     >
       {prefix}

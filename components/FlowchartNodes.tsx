@@ -325,13 +325,13 @@ function Ports() {
         id="top"
         type="source"
         position={Position.Top}
-        className="!h-2.5 !w-2.5 !border-[#161616] !bg-[#9e9e9e]"
+        className="!h-2.5 !w-2.5 !border-[#161616] !bg-system-500"
       />
       <Handle
         id="right"
         type="source"
         position={Position.Right}
-        className="!h-2.5 !w-2.5 !border-[#161616] !bg-[#9e9e9e]"
+        className="!h-2.5 !w-2.5 !border-[#161616] !bg-system-500"
       />
       <Handle
         id="bottom"
@@ -343,7 +343,7 @@ function Ports() {
         id="left"
         type="source"
         position={Position.Left}
-        className="!h-2.5 !w-2.5 !border-[#161616] !bg-[#9e9e9e]"
+        className="!h-2.5 !w-2.5 !border-[#161616] !bg-system-500"
       />
     </>
   );
@@ -415,7 +415,7 @@ function ResizeHandles({
 
 function NodeText({
   data,
-  mutedClassName = "text-[#9e9e9e]",
+  mutedClassName = "text-fg-muted",
 }: {
   data: FlowNodeData;
   mutedClassName?: string;
@@ -551,7 +551,7 @@ const CardNode = memo(function CardNode({
     <p
       className={`relative z-[1] whitespace-pre-wrap leading-[1.65] tracking-[0.03em] ${nodeMutedTextClass(
         data.color,
-        "text-[#bdbdbd]",
+        "text-fg-caption",
       )}`}
       style={{ ...alignStyle, fontSize: sublabelSize }}
     >
@@ -575,7 +575,7 @@ const CardNode = memo(function CardNode({
           <div className={`flex min-w-0 flex-col ${verticalClass}`}>
             {title}
           </div>
-          <div className="bg-[#424242]" aria-hidden />
+          <div className="bg-system-800" aria-hidden />
           <div className={`flex min-w-0 flex-col ${verticalClass}`}>
             {body}
           </div>
@@ -585,7 +585,7 @@ const CardNode = memo(function CardNode({
           <div className={`flex min-h-0 flex-1 flex-col ${verticalClass}`}>
             {title}
           </div>
-          <div className="my-3 h-px shrink-0 bg-[#424242]" aria-hidden />
+          <div className="my-3 h-px shrink-0 bg-system-800" aria-hidden />
           <div className={`flex min-h-0 flex-1 flex-col ${verticalClass}`}>
             {body}
           </div>

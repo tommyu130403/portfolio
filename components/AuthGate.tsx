@@ -60,9 +60,9 @@ function LoginForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#212121]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface">
       <div className="w-full max-w-[400px] px-8">
-        <p className="mb-1 text-[12px] tracking-[0.6px] text-[#48f4be]">Portfolio</p>
+        <p className="mb-1 text-[12px] tracking-[0.6px] text-primary">Portfolio</p>
         <p className="mb-2 font-mplus text-[36px] leading-tight tracking-[1.8px] text-white">
           Yu Tomita
         </p>
@@ -77,15 +77,15 @@ function LoginForm({
             placeholder="パスワードを入力"
             autoFocus
             autoComplete="current-password"
-            className="w-full rounded-[10px] border border-[#424242] bg-[#1a1a1a] px-4 py-3.5 text-[15px] text-white placeholder-[#424242] outline-none transition-colors focus:border-[#48f4be]"
+            className="w-full rounded-[10px] border border-border-light bg-[#1a1a1a] px-4 py-3.5 text-[15px] text-white placeholder-system-800 outline-none transition-colors focus:border-primary"
           />
           {error && (
-            <p className="text-[13px] text-[#f4487e]">{error}</p>
+            <p className="text-[13px] text-danger-300">{error}</p>
           )}
           <button
             type="submit"
             disabled={checking || !input}
-            className="mt-1 rounded-[10px] bg-[#48f4be] py-3.5 text-[15px] font-semibold text-[#0a0a0a] transition-opacity hover:opacity-80 disabled:opacity-40"
+            className="mt-1 rounded-[10px] bg-primary py-3.5 text-[15px] font-semibold text-[#0a0a0a] transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             {checking ? "確認中…" : "アクセス"}
           </button>

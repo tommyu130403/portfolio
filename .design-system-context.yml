@@ -29,11 +29,14 @@ platforms: [web]
 intentional_compromises:
   - item: >-
       標準の境界線が2色に分裂している。トークン --color-border は #3A3A3A だが、
-      クラスに直書きされた border-[#424242] が 102 箇所残っている
-      (app/admin 61 / components 26 / app/styleguide 14 / lib 1)。
-      lib の 1 件は lib/figma-button-variants.ts:39 の Button/Function on バリアント。
-      .ts にあるため .tsx だけを見る grep では拾えない。数え直すときは
-      grep -rno 'border-\[#424242\]' --include='*.ts' --include='*.tsx' . を使う。
+      クラスに直書きされた border-[#424242] が 75 箇所残っている
+      (app/admin 61 / app/styleguide 14)。
+      2026-09-08 のトークン化で components 26 件と lib 1 件
+      (lib/figma-button-variants.ts の Button/Function on バリアント) を解消し、
+      102 → 75 になった。app/styleguide の 14 件はパレット見本ではなくカード枠・入力欄の
+      実 UI なので置換可能だが、同ファイルの HEX を触らない方針で今回は見送っている。
+      数え直すときは .ts も含めること:
+      grep -rnoi 'border-\[#424242\]' --include='*.ts' --include='*.tsx' . を使う。
     why: >-
       Library の Border/Default が #3A3A3A であることは実値で確認済み (2026-09-08、
       Master ノード 502:1344 を選択して get_variable_defs で取得) で、CLAUDE.md §5 は
@@ -50,9 +53,11 @@ intentional_compromises:
       破線枠が border-border)。2026-09-08 に実プレビューで目視し、計測値どおり
       差は小さいことを確認したが、知覚の程度は主観であり合否判定には使わない。
     trigger: >-
-      解消の判定は「B に着手したとき」ではなく border-[#424242] の残数がゼロになったとき。
-      B (docs/requests/20260908-pr78-review-and-tokenize.md) は app/styleguide の 14 件を
-      置換禁止、app/admin の 61 件を範囲外としているため、B が完了してもこの分裂は
-      102 件中 26 件しか解消しない。B の完了時に必ず残数を再計測し、残っていれば
-      この項目を残数を更新したうえで維持する。
+      解消の判定は border-[#424242] の残数がゼロになったとき。
+      2026-09-08 に components/lib のトークン化を実施し 102 → 75 に減った (再計測済み)。
+      残る 75 件は app/admin 61 と app/styleguide 14 で、どちらも当時のスコープ外。
+      次に app/ 側のトークン化を行うときに再計測し、ゼロになったらこの項目を削除する。
+      なお解消時の置換先は border-border (#3A3A3A) ではなく border-border-light
+      (#424242) が値を保つ選択肢である点に注意。#3A3A3A へ寄せるなら見た目が変わるので
+      別途承認が要る。
       あわせて Figma Master 側の Border/Default #424242 の付け替えが済んだかも確認する。

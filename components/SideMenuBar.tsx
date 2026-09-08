@@ -81,7 +81,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
           <span
             className={[
               "pointer-events-none fixed z-[70] -translate-y-1/2",
-              "rounded-[14px] border border-[#424242] bg-[#212121] px-3 py-2",
+              "rounded-[14px] border border-border-light bg-surface px-3 py-2",
               "text-[12px] leading-[1.5] tracking-[0.36px] whitespace-nowrap text-[var(--color-white)]",
               "shadow-[1px_1px_16px_2px_rgba(0,0,0,0.25)]",
             ].join(" ")}
@@ -159,7 +159,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
   return (
     <aside
       className={[
-        "relative flex h-screen flex-col border-r border-[#424242] bg-[#212121] rounded-[12px]",
+        "relative flex h-screen flex-col border-r border-border-light bg-surface rounded-[12px]",
         "transition-[width] duration-300 ease-in-out",
         collapsed ? "w-[96px]" : "w-[256px]",
       ].join(" ")}
@@ -181,7 +181,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         {/* Title */}
         <p
           className={[
-            "font-guide font-normal leading-8 tracking-[0.07px] text-[#48F4BE] whitespace-nowrap transition-all duration-300",
+            "font-guide font-normal leading-8 tracking-[0.07px] text-primary whitespace-nowrap transition-all duration-300",
             collapsed ? "text-[12px]" : "text-[24px]",
           ].join(" ")}
         >
@@ -211,7 +211,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-px w-full rounded-[2px] bg-[#424242] shrink-0" />
+        <div className="h-px w-full rounded-[2px] bg-system-800 shrink-0" />
 
         {/* Navigation */}
         {/* pl-[2px]: アイコン中心が collapsed 時の aside 幅 96px の中央に揃う
@@ -252,7 +252,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           />
 
           {/* Divider */}
-          <div className="my-2 h-px w-full rounded-[2px] bg-[#424242] shrink-0" />
+          <div className="my-2 h-px w-full rounded-[2px] bg-system-800 shrink-0" />
 
           {/* Social section */}
           <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
@@ -266,7 +266,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
 
           {role === "owner" && (
             <>
-              <div className="my-2 h-px w-full rounded-[2px] bg-[#424242] shrink-0" />
+              <div className="my-2 h-px w-full rounded-[2px] bg-system-800 shrink-0" />
               <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
                 Developer
               </p>

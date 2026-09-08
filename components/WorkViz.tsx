@@ -94,8 +94,8 @@ const RefIcon: FC<{ icon?: string; tint: string; className: string }> = ({ icon,
 const RACI_STYLE: Record<RaciKey, string> = {
   R: "bg-main-100 text-[#0a0a0a]",
   A: "border border-main-100 bg-[#0a2218] text-main-100",
-  C: "bg-[#9e9e9e] text-[#0a0a0a]",
-  I: "bg-[#424242] text-[#bdbdbd]",
+  C: "bg-system-500 text-[#0a0a0a]",
+  I: "bg-system-800 text-fg-caption",
 };
 const RACI_LEGEND: { key: RaciKey; label: string }[] = [
   { key: "R", label: "Responsible / 実行責任" },
@@ -136,13 +136,13 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
           const width = (p.span / totalUnits) * 100;
           return (
             <div key={i} className="flex items-center gap-3">
-              <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-[#bdbdbd]">
+              <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-caption">
                 {p.label}
               </p>
               <div className="relative h-8 flex-1">
                 <div
                   className={`group absolute top-0 flex h-8 items-center gap-1.5 rounded-full border px-1.5 ${
-                    active ? "border-main-100 bg-[#0a2218]" : "border-[#616161] bg-[#242424]"
+                    active ? "border-main-100 bg-[#0a2218]" : "border-system-700 bg-[#242424]"
                   }`}
                   style={{ left: `${left}%`, width: `${width}%`, minWidth: 56 }}
                 >
@@ -152,14 +152,14 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
                     ))}
                   </span>
                   {p.progress != null && (
-                    <span className={`ml-auto pr-1 text-[11px] font-extrabold tracking-[0.44px] ${active ? "text-main-100" : "text-[#9e9e9e]"}`}>
+                    <span className={`ml-auto pr-1 text-[11px] font-extrabold tracking-[0.44px] ${active ? "text-main-100" : "text-fg-muted"}`}>
                       {p.progress}%
                     </span>
                   )}
                   {/* ツールチップ */}
                   {p.note && (p.note.title || p.note.body) && (
-                    <div className="pointer-events-none absolute left-2 top-full z-10 mt-1.5 hidden w-max max-w-[280px] rounded-[8px] border border-[#424242] bg-[#0a0a0a] px-3 py-2 group-hover:block">
-                      {p.note.title && <p className="text-[10px] tracking-[0.3px] text-[#9e9e9e]">{p.note.title}</p>}
+                    <div className="pointer-events-none absolute left-2 top-full z-10 mt-1.5 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-[#0a0a0a] px-3 py-2 group-hover:block">
+                      {p.note.title && <p className="text-[10px] tracking-[0.3px] text-fg-muted">{p.note.title}</p>}
                       {p.note.body && <p className="text-[12px] leading-[1.5] text-white">{p.note.body}</p>}
                     </div>
                   )}
@@ -173,7 +173,7 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
       {/* 凡例 */}
       <div className="mt-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5">
         {RACI_LEGEND.map(({ key, label }) => (
-          <span key={key} className="flex items-center gap-1.5 text-[10px] tracking-[0.3px] text-[#9e9e9e]">
+          <span key={key} className="flex items-center gap-1.5 text-[10px] tracking-[0.3px] text-fg-muted">
             <RaciBadge k={key} />
             {label}
           </span>
@@ -185,7 +185,7 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
 
 /* ─── Stakeholders（_Stakeholder）────────────────────── */
 
-const Connector: FC = () => <span className="h-px w-4 shrink-0 bg-[#424242]" />;
+const Connector: FC = () => <span className="h-px w-4 shrink-0 bg-system-800" />;
 
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
   <div className="flex flex-col gap-4">
@@ -194,7 +194,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
         {/* グループタイル */}
         <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-[12px] border border-[#2a2a2a] bg-[#161616]">
           <RefIcon icon={g.icon} tint="#bdbdbd" className="h-5 w-5" />
-          <p className="text-[10px] leading-none tracking-[0.3px] text-[#bdbdbd]">{g.label}</p>
+          <p className="text-[10px] leading-none tracking-[0.3px] text-fg-caption">{g.label}</p>
         </div>
         {/* メンバーピル連結 */}
         <div className="flex min-w-0 flex-wrap items-center gap-y-2">
@@ -203,7 +203,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
               <Connector />
               <span
                 className={`flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] tracking-[0.36px] ${
-                  m.me ? "border-main-100 text-main-100" : "border-[#424242] text-[#9e9e9e]"
+                  m.me ? "border-main-100 text-main-100" : "border-border-light text-fg-muted"
                 }`}
               >
                 <Icon set="Peoples" name="people" tintColor={m.me ? "var(--color-main-100)" : "#9e9e9e"} className="h-4 w-4 shrink-0" />

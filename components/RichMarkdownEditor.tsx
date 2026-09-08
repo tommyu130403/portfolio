@@ -56,7 +56,7 @@ function TBtn({ label, title, onClick }: { label: ReactNode; title: string; onCl
       type="button"
       title={title}
       onClick={onClick}
-      className="flex h-8 shrink-0 items-center rounded-[6px] border border-[#424242] px-2 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#616161] hover:text-white"
+      className="flex h-8 shrink-0 items-center rounded-[6px] border border-border-light px-2 text-[11px] text-fg-muted transition-colors hover:border-system-700 hover:text-white"
     >
       {label}
     </button>
@@ -64,7 +64,7 @@ function TBtn({ label, title, onClick }: { label: ReactNode; title: string; onCl
 }
 
 function TSep() {
-  return <span className="mx-1 h-5 w-px shrink-0 bg-[#424242]" />;
+  return <span className="mx-1 h-5 w-px shrink-0 bg-system-800" />;
 }
 
 function DialogShell({
@@ -84,7 +84,7 @@ function DialogShell({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[480px] rounded-[12px] border border-[#424242] bg-[#1a1a1a] p-5"
+        className="w-full max-w-[480px] rounded-[12px] border border-border-light bg-[#1a1a1a] p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-4 text-[14px] font-semibold text-white">{title}</p>
@@ -96,15 +96,15 @@ function DialogShell({
 }
 
 function DLabel({ children }: { children: ReactNode }) {
-  return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-[#9e9e9e]">{children}</p>;
+  return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-fg-muted">{children}</p>;
 }
 
 const dInput =
-  "w-full rounded-[8px] border border-[#424242] bg-[#141414] px-3 py-2 text-[13px] text-white placeholder-[#616161] outline-none transition-colors focus:border-[#48f4be]";
+  "w-full rounded-[8px] border border-border-light bg-[#141414] px-3 py-2 text-[13px] text-white placeholder-system-700 outline-none transition-colors focus:border-primary";
 const dBtnPrimary =
-  "rounded-[8px] bg-[#48f4be] px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40";
+  "rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40";
 const dBtnGhost =
-  "rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] hover:border-[#616161] hover:text-white";
+  "rounded-[8px] border border-border-light px-3 py-1.5 text-[13px] text-fg-muted hover:border-system-700 hover:text-white";
 
 /* ─── プレビューペイン（デバイス幅切替）────────────────── */
 
@@ -128,7 +128,7 @@ function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; 
 
   if (device === "full") {
     return (
-      <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#212121] p-6`}>
+      <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-surface p-6`}>
         <WorkMarkdownDocument md={md} />
       </div>
     );
@@ -140,14 +140,14 @@ function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; 
 
   return (
     <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#141414] p-3`}>
-      <p className="pb-2 text-center text-[11px] text-[#616161]">
+      <p className="pb-2 text-center text-[11px] text-system-700">
         {screenW}px × {container[device].height.screen}px
         {scale < 1 && `（${Math.round(scale * 100)}% 縮小表示）`}
       </p>
       {/* デバイスフレーム（Screen.Width 実寸。ペイン幅に収まらない場合は zoom で縮小） */}
       <div
         style={{ width: screenW, zoom: scale }}
-        className="mx-auto rounded-[8px] border border-[#2a2a2a] bg-[#212121] py-8"
+        className="mx-auto rounded-[8px] border border-[#2a2a2a] bg-surface py-8"
       >
         {/* メインコンテンツ幅（Main.Max）で中央寄せ */}
         <div style={{ maxWidth: mainMax }} className="mx-auto px-6">
@@ -214,10 +214,10 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
 
   return (
     <div
-      className={`flex min-h-0 flex-col overflow-hidden rounded-[8px] border border-[#424242] bg-[#1a1a1a] focus-within:border-[#48f4be] ${className ?? ""}`}
+      className={`flex min-h-0 flex-col overflow-hidden rounded-[8px] border border-border-light bg-[#1a1a1a] focus-within:border-primary ${className ?? ""}`}
     >
       {/* ツールバー */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-[#424242] bg-[#141414] px-3 py-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border-light bg-[#141414] px-3 py-2">
         <TBtn label="セクション" title="# セクション見出し（34px）" onClick={() => insertLine("# セクション見出し")} />
         <TBtn label="見出01" title="## 見出し01（24px 白）" onClick={() => insertLine("## 見出し")} />
         <TBtn label="見出02" title="### 見出し02（20px mint）" onClick={() => insertLine("### 見出し")} />
@@ -253,7 +253,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         {/* デバイス幅切替（プレビュー表示時のみ。Device コレクション = container トークン参照） */}
         <div className="ml-auto flex items-center gap-2">
           {mode !== "edit" && (
-            <div className="flex items-center gap-0.5 rounded-[8px] border border-[#424242] bg-[#1a1a1a] p-0.5">
+            <div className="flex items-center gap-0.5 rounded-[8px] border border-border-light bg-[#1a1a1a] p-0.5">
               {DEVICE_OPTIONS.map(({ key, label }) => (
                 <button
                   key={key}
@@ -265,7 +265,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
                   }
                   onClick={() => setDevice(key)}
                   className={`rounded-[6px] px-2.5 py-1 text-[11px] transition-colors ${
-                    device === key ? "bg-[#48f4be]/10 text-[#48f4be]" : "text-[#9e9e9e] hover:text-white"
+                    device === key ? "bg-primary/10 text-primary" : "text-fg-muted hover:text-white"
                   }`}
                 >
                   {label}
@@ -275,7 +275,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           )}
 
           {/* モード切替 */}
-          <div className="flex items-center gap-0.5 rounded-[8px] border border-[#424242] bg-[#1a1a1a] p-0.5">
+          <div className="flex items-center gap-0.5 rounded-[8px] border border-border-light bg-[#1a1a1a] p-0.5">
             {(
               [
                 ["edit", "編集"],
@@ -288,7 +288,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
                 type="button"
                 onClick={() => setMode(m)}
                 className={`rounded-[6px] px-2.5 py-1 text-[11px] transition-colors ${
-                  mode === m ? "bg-[#48f4be]/10 text-[#48f4be]" : "text-[#9e9e9e] hover:text-white"
+                  mode === m ? "bg-primary/10 text-primary" : "text-fg-muted hover:text-white"
                 }`}
               >
                 {label}
@@ -308,8 +308,8 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
             spellCheck={false}
             placeholder={placeholder ?? "# セクション見出し\n\n本文テキストをここに入力..."}
             className={`${
-              mode === "split" ? "w-1/2 border-r border-[#424242]" : "w-full"
-            } h-full min-h-[320px] resize-none bg-[#141414] p-5 font-mono text-[13px] leading-[1.7] text-white/90 outline-none placeholder-[#3a3a3a]`}
+              mode === "split" ? "w-1/2 border-r border-border-light" : "w-full"
+            } h-full min-h-[320px] resize-none bg-[#141414] p-5 font-mono text-[13px] leading-[1.7] text-white/90 outline-none placeholder-system-825`}
             onKeyDown={(e) => {
               if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
                 e.preventDefault();
@@ -445,8 +445,8 @@ function ImageDialog({
               onClick={() => setAlign(a)}
               className={`rounded-[6px] border px-2.5 py-1 text-[11px] transition-colors ${
                 align === a
-                  ? "border-[#48f4be] bg-[#48f4be]/10 text-[#48f4be]"
-                  : "border-[#424242] text-[#9e9e9e] hover:text-white"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border-light text-fg-muted hover:text-white"
               }`}
             >
               {label}
@@ -458,7 +458,7 @@ function ImageDialog({
         <div>
           <div className="flex items-center justify-between">
             <DLabel>横幅</DLabel>
-            <span className="text-[12px] text-[#9e9e9e]">{width}px</span>
+            <span className="text-[12px] text-fg-muted">{width}px</span>
           </div>
           <input
             type="range"
@@ -467,14 +467,14 @@ function ImageDialog({
             step={10}
             value={width}
             onChange={(e) => setWidth(Number(e.target.value))}
-            className="w-full accent-[#48f4be]"
+            className="w-full accent-primary"
           />
         </div>
       )}
       <div>
         <div className="flex items-center justify-between">
           <DLabel>表示倍率（scale）</DLabel>
-          <span className="text-[12px] text-[#9e9e9e]">×{scale}</span>
+          <span className="text-[12px] text-fg-muted">×{scale}</span>
         </div>
         <input
           type="range"
@@ -483,11 +483,11 @@ function ImageDialog({
           step={0.1}
           value={scale}
           onChange={(e) => setScale(Number(e.target.value))}
-          className="w-full accent-[#48f4be]"
+          className="w-full accent-primary"
         />
       </div>
       {url && (
-        <div className="rounded-[8px] border border-[#424242] bg-[#141414] p-2">
+        <div className="rounded-[8px] border border-border-light bg-[#141414] p-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={url}
@@ -525,25 +525,25 @@ function GridDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
       <div>
         <div className="flex items-center justify-between">
           <DLabel>カラム数</DLabel>
-          <span className="text-[12px] text-[#9e9e9e]">{cols}</span>
+          <span className="text-[12px] text-fg-muted">{cols}</span>
         </div>
-        <input type="range" min={2} max={4} step={1} value={cols} onChange={(e) => setCols(Number(e.target.value))} className="w-full accent-[#48f4be]" />
+        <input type="range" min={2} max={4} step={1} value={cols} onChange={(e) => setCols(Number(e.target.value))} className="w-full accent-primary" />
       </div>
       <div>
         <div className="flex items-center justify-between">
           <DLabel>ギャップ</DLabel>
-          <span className="text-[12px] text-[#9e9e9e]">{gap * 4}px</span>
+          <span className="text-[12px] text-fg-muted">{gap * 4}px</span>
         </div>
-        <input type="range" min={0} max={10} step={1} value={gap} onChange={(e) => setGap(Number(e.target.value))} className="w-full accent-[#48f4be]" />
+        <input type="range" min={0} max={10} step={1} value={gap} onChange={(e) => setGap(Number(e.target.value))} className="w-full accent-primary" />
       </div>
       <div
-        className="grid rounded-[8px] border border-[#424242] bg-[#141414] p-3"
+        className="grid rounded-[8px] border border-border-light bg-[#141414] p-3"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: `${gap * 4}px` }}
       >
         {Array.from({ length: cols }).map((_, i) => (
           <div
             key={i}
-            className="flex aspect-video items-center justify-center rounded border border-dashed border-[#424242] text-[11px] text-[#616161]"
+            className="flex aspect-video items-center justify-center rounded border border-dashed border-border-light text-[11px] text-system-700"
           >
             {i + 1}
           </div>

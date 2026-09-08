@@ -195,7 +195,7 @@ const ImageFigure: FC<{
       </div>
       {caption && (
         <figcaption
-          className={`mt-2 text-[10px] leading-[1.5] tracking-[0.3px] text-[#9e9e9e] ${align === "center" ? "text-center" : ""}`}
+          className={`mt-2 text-[10px] leading-[1.5] tracking-[0.3px] text-fg-muted ${align === "center" ? "text-center" : ""}`}
         >
           {caption}
         </figcaption>
@@ -433,7 +433,7 @@ function RenderBlock({
       );
     case "h3":
       return (
-        <p className="mb-4 mt-10 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
+        <p className="mb-4 mt-10 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
           {renderInline(block.content, k)}
         </p>
       );
@@ -451,7 +451,7 @@ function RenderBlock({
       );
     case "quote":
       return (
-        <div className="mb-3 border-l-2 border-[#424242] pl-3">
+        <div className="mb-3 border-l-2 border-border-light pl-3">
           {block.content.split("\n").map((l, i) => (
             <p key={i} className="text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">
               {renderInlineLine(l, `${k}-q${i}`)}
@@ -471,7 +471,7 @@ function RenderBlock({
       );
     case "ul":
       return (
-        <ul className={`mb-4 list-disc space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-[#9e9e9e]`}>
+        <ul className={`mb-4 list-disc space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-fg-muted`}>
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -479,17 +479,17 @@ function RenderBlock({
       );
     case "ol":
       return (
-        <ol className={`mb-4 list-decimal space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-[#9e9e9e]`}>
+        <ol className={`mb-4 list-decimal space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-fg-muted`}>
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
         </ol>
       );
     case "hr":
-      return <hr className="my-6 border-[#424242]" />;
+      return <hr className="my-6 border-border-light" />;
     case "code":
       return (
-        <pre className="mb-4 mt-10 overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-[#e0e0e0]">
+        <pre className="mb-4 mt-10 overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-system-300">
           <code>{block.content}</code>
         </pre>
       );
@@ -555,7 +555,7 @@ export const WorkSections: FC<{
   <div className={`flex flex-col ${gapClass}`}>
     {sections.map((sec, i) => (
       <React.Fragment key={i}>
-        {withDividers && i > 0 && <div className="h-px w-full bg-[#424242]" aria-hidden />}
+        {withDividers && i > 0 && <div className="h-px w-full bg-system-800" aria-hidden />}
         <section className="flex w-full flex-col gap-10">
           {sec.heading && <Headline title={sec.heading} variant={headingVariant} />}
           <MarkdownBody md={sec.md} />

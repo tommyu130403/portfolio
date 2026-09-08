@@ -604,7 +604,7 @@ function IconsSection({ iconSets }: { iconSets: IconSetData[] }) {
           placeholder="アイコン名で検索…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-[400px] rounded-[8px] border border-[#424242] bg-[#212121] px-4 py-2.5 text-[14px] text-white placeholder-[#616161] outline-none focus:border-[#48f4be]"
+          className="w-full max-w-[400px] rounded-[8px] border border-[#424242] bg-[#212121] px-4 py-2.5 text-[14px] text-white placeholder-fg-muted outline-none focus:border-[#48f4be]"
         />
       </div>
       <div className="flex flex-col gap-12">

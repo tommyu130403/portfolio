@@ -28,7 +28,7 @@ export const ITEM_BASE =
 
 /** フォーカス時のアクセシビリティ */
 export const ITEM_FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-light focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
 /**
  * _Item の Status を動作から解決

@@ -82,3 +82,23 @@ intentional_compromises:
       app/globals.css の --radius-r* を同期し、rounded-[Npx] の直書きを
       rounded-r12 等へ一括置換する。
       Figma 側の追加依頼は docs/requests/20260908-figma-master-sync.md §6 に列挙してある。
+
+  - item: >-
+      work.summary と site_url / site_title / site_thumbnail_url が admin から
+      入力できるのに公開側で表示されなくなった。
+    why: >-
+      Figma の _ProjectContents に席が無く（ブロック2の高さ 290 が
+      66+24+122+24+54 でぴったり閉じる）、ユーザーが「Figma に合わせて消す」を
+      選択した（2026-09-08）。
+    trigger: >-
+      Figma に summary / サイトリンクの枠が追加されたとき、または admin 側の
+      フィールドを削除するとき。
+
+  - item: >-
+      /works の SideMenuBar はモバイルのハンバーガー / オーバーレイを持たない
+      （lg 未満では非表示）。
+    why: >-
+      トップページのオーバーレイ実装を移植するとレイアウトの作り直しと
+      ナビゲーションの変更が 1PR に混ざるため。
+    trigger: >-
+      /works をモバイルで使う導線ができたとき。

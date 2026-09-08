@@ -11,7 +11,7 @@ import { ButtonFunction } from "@/components/ButtonFunction";
 import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
 import WorkCard from "@/components/WorkCard";
-import WorkDetailLeftPanel from "@/components/WorkDetailLeftPanel";
+import WorkDetailHeader from "@/components/WorkDetailHeader";
 import WorkDetailContent from "@/components/WorkDetailContent";
 import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
@@ -993,7 +993,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkProcessChart"
-          description="Work 詳細の Timeline（Figma _Process）。左パネルの全画面ボタン → WorkVizModal 内に works.timeline を描画"
+          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画"
         >
           <div className="w-full">
             <WorkProcessChart
@@ -1008,7 +1008,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkStakeholderDiagram"
-          description="Work 詳細の Stakeholders（Figma _Stakeholder）。左パネルの全画面ボタン → WorkVizModal 内に works.stakeholders を描画"
+          description="Work 詳細の Stakeholders（Figma _Stakeholder）。メタ表の全画面ボタン → WorkVizModal 内に works.stakeholders を描画"
         >
           <div className="w-full">
             <WorkStakeholderDiagram
@@ -1022,29 +1022,28 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkVizModal"
-          description="左パネルの全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画"
+          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画"
         >
           <WorkVizModalDemo />
         </ComponentPreview>
 
         <ComponentPreview
-          title="WorkDetailLeftPanel"
-          description="Works 詳細ページの左パネル（Figma 787:9916）。戻りリンク / デバイスモック / カテゴリ・タイトル / サマリー / メタ（期間・役割・体制内訳・Timeline/Stakeholder 全画面ボタン）/ Skills・Tools / サイトリンクカード"
+          title="WorkDetailHeader"
+          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック / カテゴリ・タイトル / メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)/ Skills・Tools"
         >
           <div className="rounded-[12px] border border-border-light bg-surface px-6">
-            <WorkDetailLeftPanel
+            <WorkDetailHeader
               work={SAMPLE_WORK_DETAIL}
               skills={["UI Design", "UX Research", "PJ Management"]}
               tools={[{ name: "Figma", icon_url: null }, { name: "React", icon_url: null }]}
               screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
-              onBack={() => {}}
             />
           </div>
         </ComponentPreview>
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの右カラム（本文）。見出し01 + 本文 markdown のセクションを横罫線で区切って描画"
+          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを横罫線で区切って描画"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

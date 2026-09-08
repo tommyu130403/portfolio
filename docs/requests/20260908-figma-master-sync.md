@@ -234,3 +234,53 @@ Effect shadow・shadow-wisper
 - EN 系7ユーティリティは `Avenir` をリテラルで持つため `--font-body` の変更に追従しない。
 - スタイルガイドの EN サンプルは変更前 `fontFamily: "Avenir"`（フォールバック無し）→ 変更後 `Avenir, Noto Sans JP, sans-serif`。macOS 以外での描画が変わる（改善方向）。
 - `figma-skills-a-plan.js` / `.codex/config.toml` が gitignore されておらず Tailwind の走査対象に入っている。本 Phase 起因ではないが、上記1と同じ経路の穴。
+
+---
+
+## 実装記録 — Phase 2 コンポーネント層（2026-09-08 実装セッション・model opus）
+
+### 依頼書 §4 の前提のうち、実測で覆ったもの
+1. **§4 の node ID はすべて Library ファイルのもので、Master には無い。** `15:276`（Button/Action の親フレーム）・`120:395`（Button/Function）・`55:296`（SideMenuBar）・`305:265`（Headline）はいずれも `KpNwkdFy1usaO1sBR0dycv` で解決する。Master に投げると "node not found" になる。
+2. **Library はページ一覧に出ないだけで、node ID 直指定なら全部読める。** `get_metadata`（nodeId 省略）が `_GuideTemplate` 1枚しか返さないので「Library には変数を使うノードが無い」と結論していたが、誤り。コンポーネント定義は別キャンバスに実在し、`get_design_context` でマスターの実値（Variant / Auto Layout / 色バインド）まで取れる。
+3. **hover 背景は `Action/hover`（白5%）ではない。** Button/Action・Button/Function の Figma 実値は **`rgba(255,255,255,0.02)`（2%）**。5% は SideMenuBar の `_Item` hover だけ。依頼書 §4 の「hover の bg-white/5 は bg-action-hover へ」という想定は成り立たない。
+4. **Headline セットは 01 / 02 の2バリアントだけで 03 は存在しない**（`304:313` で確認）。実装の `markdown-h3`（17px / 800 / System/500）は Figma の `Headline/02`（17px / **700** / System/500）とほぼ同じで、実装の `markdown-h2`（20px / main-050）は Figma に対応が無い。
+5. **`shadow` トークンが実デザインで使われていない。** Card も Tooltip も `1px 1px 8px rgba(0,0,0,0.25) spread 0` の直書き。トークンは `1px 1px 16px spread 2`。
+
+### 再承認内容（ユーザー選択）
+- **適用範囲: 見出しも含めて全部合わせる。**
+- **Figma 側に問題があるもの（shadow の不一致・hover 2%）は §6 に列挙し、実装はトークン側に寄せる。** したがって hover は `bg-action-hover`（5%）を使い 2% は直書きしない、shadow は `shadow-base` を使う。
+
+### 実装した差分
+
+| ファイル | 変更 |
+|---|---|
+| `components/Headline.tsx` | `default` 見出しを `text-title-pj`（34/700/AUTO/0.03em）へ・**下線を削除**（Figma に無い）/ `markdown-h1` → `text-headline-01-jp` / `markdown-h2` → `text-headline-02-jp text-system-500`（20px main-050 → 17px System/500）/ `markdown-h3` は据え置き＋Figma に対応が無い旨をコメント |
+| `lib/figma-button-variants.ts` | primary に `h-10 max-w-[200px]` / hover を `bg-action-hover` へ / Function に `p-[6px]` / border-on を `border-border`（#3a3a3a）＋hover で `border-border-light` へ（`#2c2c2c` を廃止） |
+| `lib/figma-variants.ts` | `_Item` の **Active から背景を削除**（Figma の Active は文字色だけ変わる）/ hover を `bg-action-hover` へ |
+| `components/Tag.tsx` | `tool` の**背景を削除**・枠線を `border-border` へ・py 4→6px・文字 11→10px |
+| `components/WorkCard.tsx` | **背景を削除**・枠線を `border-border` へ・shadow 直書きを `shadow-base` へ・タイトルを `text-body-02-jp-bold`（14→13px） |
+| `components/SideMenuBar.tsx` | Tooltip: rounded 14→`rounded-r4`・枠線を `border-border` へ・py 8→10px・文字 12→14px / lh 20px / `text-white/80`・shadow をトークンへ |
+
+`app/styleguide/StyleguideLayout.tsx` は変更なし。全 `<ComponentPreview>` が props 経由の描画で、値の直書きコピーは無かった（builder が確認）。
+
+### 検証（VERIFIED）
+- `npm run check` **exit 0**（0 errors / 20 warnings＝基準線と同数）
+- 生成 CSS に `text-title-pj` `text-headline-02-jp` `text-body-02-jp-bold` `rounded-r4` `shadow-base` が出力されていることを確認
+- `bg-white/5` と `rgba(255,255,255,0.05)` の残存ゼロを grep で確認
+- **ヘッドレス Chrome + CDP で実描画を撮って目視**（`scripts/shot.mjs`）。トップの Works セクション（下線なし・見出し34px・カード背景なし・Active に背景なし）と `/styleguide` の Components 節（ButtonAction 高さ40px・ButtonFunction の枠線と余白・Tag tool の背景削除）を確認。
+
+### 事故と対処
+**dev サーバー稼働中に `rm -rf .next` を実行し、Turbopack のキャッシュ DB を壊した。** `Failed to restore task data (corrupted database or bug)` で panic し、以後 `build-manifest.json` が見つからず全ページが 500 になった。サーバーを停止 → `.next` を削除 → 再起動で復旧。**`.next` を消すときは必ず先に dev サーバーを止めること。**
+
+### 未達・未確認
+- **TabBar と Modal は未着手。** Library に存在することは `search_design_system` で確認したが、**同ツールは componentKey しか返さず node ID を返さない**ため `get_design_context` を呼べない。Master の Design ページにも TabBar のインスタンスが無い（Modal は `839:3764` にあるが中身が Works 詳細そのもので、Modal 自体の定義値は取れない）。
+- `Headline` の `section` / `sub` variant は Figma の対応ノードが未特定のため据え置き。
+- `WorkCard` の hover（`hover:border-system-500 hover:bg-system-800`）は Figma の Card hover バリアントの実値が未取得のため据え置き。Card は component_set なので hover 定義は存在するはず。
+- `markdown-h2` を Figma の 02 に合わせた結果、**`markdown-h3` と weight 以外が同じになった**（h2: 17/700/System500、h3: 17/800/System500）。Figma に 03 が無いことが原因の構造問題で、実装だけでは解けない。§6 へ。
+- `app/page.tsx` が `ButtonAction` を import しているが JSX で使っていない（本 Phase 起因ではない既存の未使用 import）。
+
+### §6 追記 — Figma 側で直すもの
+5. **`Headline/03` が Library に無い。** 実装には markdown-h3 がある。01 / 02 だけでは本文の見出し階層が2段しか作れない。03 を追加するか、実装の h2 を廃止するかの方針決めが要る。
+6. **hover 背景 2% にトークンが無い。** Button/Action・Button/Function は `rgba(255,255,255,0.02)` の直書き。`Action/hover` は 5% で別物。2% 用のトークン（例: `Action/hover-subtle`）を追加するか、ボタンも 5% に統一するか。**実装は現在 5% トークンを使っているため、Figma と実装で hover の濃さが違う。**
+7. **`shadow` トークンが実デザインで使われていない**（前掲 3 と同じ。Card / Tooltip とも 8px・spread 0 の直書き）。
+8. **`Card` の枠線は `System/825`（Border/Default）だが背景が無い。** ページ背景と同色（Background/Default #212121）の上に置く前提のデザインなので、別の背景色の上に置くと透けて見える。意図どおりか確認が要る。

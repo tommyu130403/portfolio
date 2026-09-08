@@ -3,6 +3,8 @@
  * https://www.figma.com/design/KpNwkdFy1usaO1sBR0dycv/Library?node-id=55-296
  *
  * _Item: Size (default|small), Status (defalut|hover|Active), Width (default|short)
+ *
+ * _Item の実ノード: 59:24643（Library）。Active は背景なし・文字 System/300、hover は白5%＋System/300
  */
 
 export type ItemStatus = "defalut" | "hover" | "Active";
@@ -12,8 +14,8 @@ export type ItemSize = "default" | "small";
 /** _Item Status に応じたスタイル（CSS） */
 export const ITEM_STATUS_CLASSES: Record<ItemStatus, string> = {
   defalut: "text-white/50",
-  hover: "hover:bg-[rgba(255,255,255,0.05)] hover:text-system-300",
-  Active: "bg-[rgba(255,255,255,0.05)] text-system-300",
+  hover: "hover:bg-action-hover hover:text-system-300",
+  Active: "text-system-300",
 };
 
 /** _Item Width に応じたスタイル */

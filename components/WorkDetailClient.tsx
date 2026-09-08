@@ -154,7 +154,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
         />
 
         {/* 縦罫線（左レールの gutter が左側の間隔を担うため、右側=本文への間隔のみ mr-10 で確保） */}
-        <div className="hidden w-px shrink-0 self-stretch bg-system-800 lg:mr-10 lg:block" aria-hidden />
+        <div className="hidden w-px shrink-0 self-stretch bg-border-light lg:mr-10 lg:block" aria-hidden />
 
         <WorkDetailContent work={work} />
       </div>

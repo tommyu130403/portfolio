@@ -19,7 +19,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   if (variant === "sub") {
     return (
       <div className="flex items-center justify-center pb-3 w-full">
-        <p className="flex-1 text-[18px] font-bold leading-[1.5] tracking-[0.9px] text-[#9e9e9e]">
+        <p className="flex-1 text-[18px] font-bold leading-[1.5] tracking-[0.9px] text-fg-muted">
           {title}
         </p>
       </div>
@@ -38,7 +38,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   // Library 305:265 / 03: Avenir(Body/EN) Heavy 17px #9e9e9e
   if (variant === "markdown-h3") {
     return (
-      <p className="w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-[#9e9e9e]">
+      <p className="w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
         {title}
       </p>
     );

@@ -12,8 +12,8 @@ export type ItemSize = "default" | "small";
 /** _Item Status に応じたスタイル（CSS） */
 export const ITEM_STATUS_CLASSES: Record<ItemStatus, string> = {
   defalut: "text-white/50",
-  hover: "hover:bg-[rgba(255,255,255,0.05)] hover:text-[#E0E0E0]",
-  Active: "bg-[rgba(255,255,255,0.05)] text-[#E0E0E0]",
+  hover: "hover:bg-[rgba(255,255,255,0.05)] hover:text-system-300",
+  Active: "bg-[rgba(255,255,255,0.05)] text-system-300",
 };
 
 /** _Item Width に応じたスタイル */
@@ -28,7 +28,7 @@ export const ITEM_BASE =
 
 /** フォーカス時のアクセシビリティ */
 export const ITEM_FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#424242] focus-visible:ring-offset-2 focus-visible:ring-offset-[#212121]";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-light focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
 /**
  * _Item の Status を動作から解決

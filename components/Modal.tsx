@@ -79,7 +79,7 @@ const Modal: FC<ModalProps> = ({
         {/* Modal container + Close button wrapper (overflow-visible でボタンが切れないように) */}
         <div className="relative w-full max-w-main">
           <div
-            className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-[14px] border border-[#424242] bg-[#212121]"
+            className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-[14px] border border-border-light bg-surface"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex-1 overflow-y-auto">
@@ -122,7 +122,7 @@ const Modal: FC<ModalProps> = ({
                 className={[
                   "h-1 w-10 rounded-sm transition-colors",
                   i === currentIndex
-                    ? "bg-[#48f4be]"
+                    ? "bg-primary"
                     : "bg-white/5",
                 ].join(" ")}
               />

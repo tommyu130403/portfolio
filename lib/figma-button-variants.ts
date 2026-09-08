@@ -15,16 +15,16 @@ export const BUTTON_ACTION = {
   base: "inline-flex w-fit cursor-pointer items-center justify-center rounded-full px-6 py-2 text-[16px] font-bold leading-6 transition-colors",
   type: {
     primary: {
-      default: "bg-[#48F4BE] text-[#062D20]",
-      hover: "hover:bg-[#1E765A] hover:text-[#062D20]",
+      default: "bg-primary text-main-600",
+      hover: "hover:bg-main-400 hover:text-main-600",
     },
     secondary: {
-      default: "border border-[#48F4BE] text-[#48F4BE] bg-transparent",
-      hover: "hover:bg-white/5 hover:border-[#48F4BE] hover:text-[#48F4BE]",
+      default: "border border-primary text-primary bg-transparent",
+      hover: "hover:bg-white/5 hover:border-primary hover:text-primary",
     },
     ghost: {
-      default: "bg-transparent text-[#48F4BE]",
-      hover: "hover:bg-white/5 hover:text-[#48F4BE]",
+      default: "bg-transparent text-primary",
+      hover: "hover:bg-white/5 hover:text-primary",
     },
   },
 } as const;
@@ -36,7 +36,7 @@ export type ButtonFunctionStatus = "default" | "hover";
 export const BUTTON_FUNCTION = {
   base: "flex h-[36px] min-w-[36px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] transition-colors",
   border: {
-    on: "border border-[#424242] bg-[#212121] hover:bg-[#2c2c2c]",
+    on: "border border-border-light bg-surface hover:bg-[#2c2c2c]",
     off: "border border-transparent bg-transparent hover:bg-white/5",
   },
   status: {

@@ -35,8 +35,8 @@ const TabBar: FC<TabBarProps> = ({ tabs, defaultActiveId, onChange }) => {
             className={[
               "flex h-[40px] cursor-pointer items-center justify-center gap-3 rounded-[8px] px-6 text-[14px] tracking-[0.7px] transition-colors whitespace-nowrap",
               isActive
-                ? "border border-[#424242] bg-[rgba(255,255,255,0.05)] font-semibold text-white"
-                : "text-[#9e9e9e]",
+                ? "border border-border-light bg-[rgba(255,255,255,0.05)] font-semibold text-white"
+                : "text-fg-muted",
             ].join(" ")}
           >
             <Icon set={tab.icon.set} name={tab.icon.name} className="h-[18px] w-[18px] shrink-0" />

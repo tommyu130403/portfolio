@@ -23,19 +23,19 @@ const HistoryItem: FC<HistoryItemProps> = ({
       <div
         className={[
           "h-6 w-[2px] shrink-0 rounded-b-[2px]",
-          timeline === "middle" || timeline === "start" ? "bg-[#424242]" : "",
+          timeline === "middle" || timeline === "start" ? "bg-border-light" : "",
         ].join(" ")}
       />
       <div
         className={[
           "size-3 border-2 rounded-full shrink-0",
-          timeline === "start" ? "border-[#424242]" : "border-[#48f4be]",
+          timeline === "start" ? "border-border-light" : "border-primary",
         ].join(" ")}
       />
       <div
         className={[
           "flex-1 min-h-px w-[2px] rounded-t-[2px]",
-          timeline === "start" ? "" : "bg-[#424242]",
+          timeline === "start" ? "" : "bg-border-light",
         ].join(" ")}
       />
     </div>
@@ -47,14 +47,14 @@ const HistoryItem: FC<HistoryItemProps> = ({
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <Icon set="Time" name="calendar-three-mint" className="h-4 w-4 shrink-0" />
-              <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-[#b3ffe7] whitespace-nowrap">
+              <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-main-050 whitespace-nowrap">
                 {period}
               </p>
             </div>
-            <p className="text-[17px] font-bold leading-[1.5] tracking-[0.51px] text-[#48f4be]">
+            <p className="text-[17px] font-bold leading-[1.5] tracking-[0.51px] text-primary">
               {role}
             </p>
-            <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-[#9e9e9e]">
+            <p className="text-[11px] leading-[1.5] tracking-[0.33px] text-fg-muted">
               {company}
             </p>
           </div>

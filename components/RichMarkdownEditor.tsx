@@ -100,7 +100,7 @@ function DLabel({ children }: { children: ReactNode }) {
 }
 
 const dInput =
-  "w-full rounded-[8px] border border-border-light bg-[#141414] px-3 py-2 text-[13px] text-white placeholder-system-700 outline-none transition-colors focus:border-primary";
+  "w-full rounded-[8px] border border-border-light bg-[#141414] px-3 py-2 text-[13px] text-white outline-none transition-colors focus:border-primary";
 const dBtnPrimary =
   "rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40";
 const dBtnGhost =
@@ -306,10 +306,10 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             spellCheck={false}
-            placeholder={placeholder ?? "# セクション見出し\n\n本文テキストをここに入力..."}
+            placeholder={placeholder ?? "Markdown で本文を入力..."}
             className={`${
               mode === "split" ? "w-1/2 border-r border-border-light" : "w-full"
-            } h-full min-h-[320px] resize-none bg-[#141414] p-5 font-mono text-[13px] leading-[1.7] text-white/90 outline-none placeholder-system-825`}
+            } h-full min-h-[320px] resize-none bg-[#141414] p-5 font-mono text-[13px] leading-[1.7] text-white/90 outline-none`}
             onKeyDown={(e) => {
               if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
                 e.preventDefault();

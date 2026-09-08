@@ -144,7 +144,7 @@ git show --stat ed8e9fb
 ## 前セッションで踏んだ落とし穴（同じ轍を避けるため）
 
 - **コメント文中・JS の色定数オブジェクト・SVG の `fill=`/`stroke=` 属性・`style=` 内の HEX は置換対象外。** `<接頭辞>-[#hex]` の完全一致で置換すればクラス以外にはマッチしないが、事前に確認すること。`CareerGanttChart.tsx` は色定数オブジェクトで HEX を持っており、クラス置換とは別方式（`design-tokens.ts` からの import）になる
-- **`app/styleguide/StyleguideLayout.tsx` の HEX は置換禁止。** パレット見本として意図的に literal を書いている
+- ~~**`app/styleguide/StyleguideLayout.tsx` の HEX は置換禁止。** パレット見本として意図的に literal を書いている~~ → **撤回（2026-09-08）**: パレット見本は `style={{ backgroundColor: hex }}` で描画されており、クラス形式の HEX はカード枠・入力欄などの通常 UI。PR #84 で置換済み。触ってはいけないのは `COLOR_GROUPS` / `SEMANTIC_SWATCHES` の値と表示用の HEX 文字列だけ
 - **`#48F4BE` は `main-100` と `main-base` の両方に一致する。** エイリアスではなく数値スケール側を採る
 - **不透明度修飾子付き（`bg-[#48f4be]/10`）は生成CSSの機構が変わる**（`lab()` 直書き → `@supports` + `color-mix(in oklab)`）。解決後の色は同一だが「CSSが同一」ではない
 - **セマンティック層に寄せる場合、同じ primitive が用途で別名になる。** 例えば `system-500` はテキストなら `fg-muted`、境界なら `border-strong`（#78 後は名前が変わる）。機械置換ではなく用途判断が要る
@@ -152,7 +152,7 @@ git show --stat ed8e9fb
 
 ## スコープの目安
 
-`components/` だけでも195件ある。`app/admin/` 系は313件と規模が大きく、`app/styleguide/` の77件は置換禁止。**一度に全部やらず、`components/` に閉じるのが現実的**というのが前セッションの判断だった。
+`components/` だけでも195件ある。`app/admin/` 系は313件と規模が大きく、`app/styleguide/` の77件は置換禁止（→ 撤回。PR #84 で置換済み）。**一度に全部やらず、`components/` に閉じるのが現実的**というのが前セッションの判断だった。
 
 ---
 ---

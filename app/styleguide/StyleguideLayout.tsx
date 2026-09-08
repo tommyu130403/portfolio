@@ -169,7 +169,7 @@ function SectionTitle({ label, title }: { label: string; title: string }) {
     <div className="mb-8">
       <p className="mb-1 text-[12px] tracking-[0.6px] text-primary">{label}</p>
       <p className="text-[32px] leading-[1.5] tracking-[1.6px] text-white">{title}</p>
-      <div className="mt-3 h-[2px] w-10 rounded bg-system-800" />
+      <div className="mt-3 h-[2px] w-10 rounded bg-border-light" />
     </div>
   );
 }
@@ -604,7 +604,7 @@ function IconsSection({ iconSets }: { iconSets: IconSetData[] }) {
           placeholder="アイコン名で検索…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-[400px] rounded-[8px] border border-border-light bg-surface px-4 py-2.5 text-[14px] text-white placeholder-fg-muted outline-none focus:border-primary"
+          className="w-full max-w-[400px] rounded-[8px] border border-border-light bg-surface px-4 py-2.5 text-[14px] text-white outline-none focus:border-primary"
         />
       </div>
       <div className="flex flex-col gap-12">

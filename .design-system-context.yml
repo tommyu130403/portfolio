@@ -30,13 +30,10 @@ intentional_compromises:
   - item: >-
       標準の境界線が2色に分裂している。トークン --color-border は #3A3A3A だが、
       クラスに直書きされた border-[#424242] が 61 箇所残っている
-      (すべて app/admin: AdminLayout 35 / FlowchartEditor 17 / WorkEditor 9)。
-      2026-09-08 のトークン化で components 26 件と lib 1 件
-      (lib/figma-button-variants.ts の Button/Function on バリアント) を解消し
-      102 → 75 に、同日の app/styleguide + app/page.tsx のトークン化で
-      さらに 14 件を解消し 75 → 61 になった。
+      (2026-09-08 計測。すべて app/admin: AdminLayout 35 / FlowchartEditor 17 / WorkEditor 9)。
       数え直すときは .ts も含めること:
       grep -rnoi 'border-\[#424242\]' --include='*.ts' --include='*.tsx' . を使う。
+      減った経緯は git log と docs/requests/20260908-*.md を見る (ここには書かない)。
     why: >-
       Library の Border/Default が #3A3A3A であることは実値で確認済み (2026-09-08、
       Master ノード 502:1344 を選択して get_variable_defs で取得) で、CLAUDE.md §5 は
@@ -49,14 +46,12 @@ intentional_compromises:
       一括処理するほうが漏れも過剰置換も出にくい。
       色差は 8bit グレー値で 58 (#3A3A3A) 対 66 (#424242)、WCAG コントラスト比 1.13:1。
       /styleguide の Components 節では両者が隣接する
-      (StyleguideLayout.tsx:187 のカード枠が #424242、その内側の FigmaOnlyPreview の
-      破線枠が border-border)。2026-09-08 に実プレビューで目視し、計測値どおり
+      (StyleguideLayout.tsx の Card() の枠が border-border-light = #424242、
+      その内側の FigmaOnlyPreview の破線枠が border-border = #3A3A3A)。2026-09-08 に実プレビューで目視し、計測値どおり
       差は小さいことを確認したが、知覚の程度は主観であり合否判定には使わない。
     trigger: >-
       解消の判定は border-[#424242] の残数がゼロになったとき。
-      2026-09-08 に components/lib のトークン化を実施し 102 → 75 に減り、同日の
-      app/styleguide + app/page.tsx のトークン化で 75 → 61 に減った (再計測済み)。
-      残る 61 件はすべて app/admin (認証の内側) で、当時のスコープ外。
+      残る 61 件はすべて app/admin (認証の内側)。
       次に app/admin のトークン化を行うときに再計測し、ゼロになったらこの項目を削除する。
       なお解消時の置換先は border-border (#3A3A3A) ではなく border-border-light
       (#424242) が値を保つ選択肢である点に注意。#3A3A3A へ寄せるなら見た目が変わるので

@@ -194,7 +194,7 @@ export function ImagePickerModal({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ファイル名 / パスで検索…"
-            className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-[#616161] outline-none focus:border-[#48f4be]"
+            className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-fg-muted outline-none focus:border-[#48f4be]"
           />
         </div>
 
@@ -238,7 +238,7 @@ export function ImagePickerModal({
               value={alt}
               onChange={(e) => setAlt(e.target.value)}
               placeholder="画像の説明（任意）"
-              className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-[#616161] outline-none focus:border-[#48f4be]"
+              className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-fg-muted outline-none focus:border-[#48f4be]"
             />
           </div>
         )}
@@ -340,7 +340,7 @@ export function FlowchartPickerModal({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="タイトル・説明で検索…"
-            className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-[#616161] outline-none focus:border-main-100"
+            className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white placeholder-fg-muted outline-none focus:border-main-100"
           />
         </div>
         <div className="flex-1 overflow-y-auto p-5">
@@ -450,7 +450,7 @@ export function ImagePickerField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="https://…"
-          className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white placeholder-[#616161] outline-none transition-colors focus:border-[#48f4be]"
+          className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white placeholder-fg-muted outline-none transition-colors focus:border-[#48f4be]"
         />
         <button
           type="button"
@@ -506,7 +506,7 @@ export function Input({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       list={list}
-      className={`w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white placeholder-[#616161] outline-none transition-colors focus:border-[#48f4be] ${className}`}
+      className={`w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white placeholder-fg-muted outline-none transition-colors focus:border-[#48f4be] ${className}`}
     />
   );
 }
@@ -520,7 +520,7 @@ export function Textarea({
       onChange={(e) => onChange(e.target.value)}
       rows={rows}
       placeholder={placeholder}
-      className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-relaxed text-white placeholder-[#616161] outline-none transition-colors focus:border-[#48f4be]"
+      className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-relaxed text-white placeholder-fg-muted outline-none transition-colors focus:border-[#48f4be]"
     />
   );
 }

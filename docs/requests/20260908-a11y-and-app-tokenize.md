@@ -236,15 +236,23 @@ PR #81 では色スロット 4326件が完全一致し、差分は `lab()`→`ok
 - 門は `npm run check`（`tsc --noEmit` → `eslint` → `next build`）。CI と Stop hook からも同じコマンドが走る
 - **見た目の確認は必ず実プレビューで目視する。** 数値・JS 計測だけで済ませない（メモリのルール）
 
-## 開発サーバーの扱い（実際に2回止めた）
+## 開発サーバーの扱い（実際に3回止めた）
 
-`rm -rf .next` は **必ず dev サーバーを停止してから**実行する。稼働中に消すと `next dev` がその場で固まり、以後どのページも応答しなくなる（HTTP 000）。自力では復帰しない。
+**`.next` に触る操作は、必ず dev サーバーを停止してから行う。** 稼働中にやると `next dev` がその場で固まり、以後どのページも応答しなくなる（HTTP 000）。自力では復帰しない。
+
+止まる操作は2種類あり、**どちらも実際に踏んだ**。
+
+1. `rm -rf .next`（キャッシュ削除）
+2. **`npm run check` / `next build`** — 門を回すだけでも固まる。build と dev が同じ `.next` を奪い合うため
+
+つまり「キャッシュを消すときだけ気をつける」では足りない。**門を回す前にも止める。**
 
 ```
-preview_stop → lsof -ti:3000 | xargs kill -9 → preview_start
+preview_stop → lsof -ti:3000 | xargs -r kill -9 → （ここで .next 操作や npm run check）→ preview_start
 ```
 
-`npm run check` など build を含むコマンドと同じブロックに `rm -rf .next` を書くと止め忘れるので、必ず分けること。
+`rm -rf .next` を `npm run check` と同じコマンドブロックに書くと止め忘れるので、必ず分けること。
+停止したかどうかは `lsof -i:3000` で確認してから次へ進む。
 
 また Turbopack は `app/globals.css` の `@theme` 変更を配信し損ねることがある。**レイアウトや色を数値で計測する前に、必ず「今配信されている値」を1つ確認する**こと。
 

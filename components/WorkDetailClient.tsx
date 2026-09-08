@@ -173,37 +173,45 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
           <WorkDetailContent work={work} />
         </div>
+
+        {/* 前後ナビ（xl 未満＝本文末尾・タップ44px以上・ラベル付き）。
+            ルートが flex 行なので、ここは必ず <main> の内側に置く。外に出すと
+            サイドバーと横並びの兄弟になり、lg 未満で <main> が幅 0 に潰れる */}
+        {showNav && (
+        <div className="mx-auto flex w-full max-w-main gap-3 px-6 pb-16 xl:hidden">
+          <button
+            type="button"
+            onClick={() => goTo(-1)}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+          >
+            ‹ 前のWork
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo(1)}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+          >
+            次のWork ›
+          </button>
+        </div>
+        )}
       </main>
 
-      {/* 前後ナビ（デスクトップ＝画面端に固定・マウス操作前提。lg 未満では本文に重なるため非表示） */}
+      {/* 前後ナビ（デスクトップ＝画面端に固定・マウス操作前提。xl 未満では本文に重なるため非表示） */}
       {showNav && (
         <>
-          {/* left-[264px] = サイドバー 256px + 8px。lg 以上ではサイドバーが常時出るので
-              left-2 だとナビ項目の上に重なる（2026-09-08 に実描画で確認） */}
-          <div className="fixed left-[264px] top-1/2 z-40 hidden -translate-y-1/2 lg:block">
+          {/* left-[264px] = サイドバー 256px + 8px。
+              xl(1280px) 未満では本文カラムの左端が 300px を下回って矢印と重なるため、
+              xl 以上でだけ出す。それ未満は本文末尾のラベル付きボタンが担当する
+              （2026-09-08 に 1024/1090/1096/1100px で実測） */}
+          <div className="fixed left-[264px] top-1/2 z-40 hidden -translate-y-1/2 xl:block">
             <ButtonFunction direction="left" onClick={() => goTo(-1)} aria-label="前のWork" />
           </div>
-          <div className="fixed right-2 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
+          <div className="fixed right-2 top-1/2 z-40 hidden -translate-y-1/2 xl:block">
             <ButtonFunction direction="right" onClick={() => goTo(1)} aria-label="次のWork" />
           </div>
 
-          {/* 前後ナビ（モバイル／タブレット＝本文末尾・タップ44px以上・ラベル付き） */}
-          <div className="mx-auto flex w-full max-w-main gap-3 px-6 pb-16 lg:hidden">
-            <button
-              type="button"
-              onClick={() => goTo(-1)}
-              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
-            >
-              ‹ 前のWork
-            </button>
-            <button
-              type="button"
-              onClick={() => goTo(1)}
-              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
-            >
-              次のWork ›
-            </button>
-          </div>
+
         </>
       )}
     </div>

@@ -115,8 +115,11 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
             </span>
           </div>
           <div className="flex h-10 items-center gap-2 border-b border-border border-l bg-surface-light px-4">
-            <span className="min-w-0 truncate text-body-03-jp text-fg-muted">
-              {work.period || "タイムライン（RACI）"}
+            {/* 値が無い行も表として残す。フォールバックは "—" に統一する
+                （旧実装は "タイムライン（RACI）" と出していたが、期間データのように読めてしまう。
+                  ボタンが何を開くかは aria-label が担う） */}
+            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.period ?? undefined}>
+              {work.period || "—"}
             </span>
             {timeline && (
               <button
@@ -150,7 +153,9 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
             </span>
           </div>
           <div className="flex h-10 items-center gap-2 border-b border-border border-l bg-surface-light px-4">
-            <span className="min-w-0 truncate text-body-03-jp text-fg-muted">{work.role || "—"}</span>
+            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.role ?? undefined}>
+              {work.role || "—"}
+            </span>
           </div>
 
           {/* 関係者 */}
@@ -167,8 +172,8 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
             </span>
           </div>
           <div className="flex h-10 items-center gap-2 border-l border-border bg-surface-light px-4">
-            <span className="min-w-0 truncate text-body-03-jp text-fg-muted">
-              {work.stakeholder_breakdown || "体制図"}
+            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
+              {work.stakeholder_breakdown || "—"}
             </span>
             {stakeholders && (
               <button

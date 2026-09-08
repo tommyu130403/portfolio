@@ -947,13 +947,16 @@ function ComponentsSection() {
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 2 列）と同じ 392px を与えている">
+          {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
+          <div className="w-[392px] max-w-full">
           <WorkCard
             category="プラットフォーム開発"
             title="キャリアチケットスカウトサービス"
             tags={["UI Design", "UX Research", "Figma"]}
             image="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80"
           />
+          </div>
         </ComponentPreview>
 
         <FigmaOnlyPreview
@@ -1043,7 +1046,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを横罫線で区切って描画"
+          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを gap 48 で並べる。横罫線は上部ブロックとの境界に 1 本だけ（Figma 900:9189）"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

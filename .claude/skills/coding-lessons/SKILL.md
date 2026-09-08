@@ -28,7 +28,7 @@ description: このリポジトリでコードを書く・直す・レビュー�
    → **正しい一手**: `npm run update-types`（`supabase gen types` → `src/types/supabase.ts`）で再生成
 4. **症状**: コミットが commitlint で弾かれる
    → **誤り**: メッセージを推測で直して再試行
-   → **正しい一手**: `<type>: <説明>`（type = feat/fix/refactor/style/chore/docs）に整形（CLAUDE.md §3-1）
+   → **正しい一手**: `<type>: <説明>`（type = feat/fix/refactor/style/chore/docs）に整形（CLAUDE.md §3。commitlint が止める）
 5. **症状**: 「軽微な修正」のつもりが複数コンポーネントに波及
    → **誤り**: そのまま自動実行で進める
    → **正しい一手**: §2-2 の破壊的変更として扱い、サマリー提示 → 承認を得る
@@ -38,14 +38,14 @@ description: このリポジトリでコードを書く・直す・レビュー�
 - **fable を呼ぶか**: CLAUDE.md §6-2 の3条件（設計の山場 / 失敗コスト大 / 未知構造）に該当するときだけ。該当しなければ opus/qa-verifier で足りる。
 - **要承認か自動実行か**（CLAUDE.md §2）: 依存変更・スキーマ・認証・環境変数・ビルド設定・破壊的変更 → 要承認。迷ったら §0-3 で承認側に倒す。
 
-## 4. 検証コマンド列（このリポジトリの実コマンド）
-順に実行し、各段の実 stdout / exit code を観測する（「通るはず」で飛ばさない）:
+## 4. 検証コマンド（このリポジトリの門）
+1コマンドで実行し、実 stdout / exit code を観測する（「通るはず」で飛ばさない）:
 ```
-npx tsc --noEmit    # 型
-npm run lint         # eslint
-npm run build        # next build（本番ビルドの通り確認、重い変更時）
+npm run check    # tsc --noEmit → eslint → next build（約10秒・exit 0 が緑）
 ```
-> テストスイートは現状なし（VERIFIED 2026-07-21）。テストが追加されたらこの列に足す。
+> 段を個別に走らせない。門は二値であることに意味がある（VERIFIED 2026-09-07: exit 0 / 10s / lint 0 errors）。
+> 同じコマンドが CI（`.github/workflows/check.yml`）と Stop hook からも走る。
+> テストスイートは現状なし（VERIFIED 2026-07-21）。テストが追加されたら `check` に `test` 段を足す。
 > UI変更はプレビューで観測（`/preview` skill / preview_start）。
 
 ## 5. 学習ループ

@@ -1,6 +1,10 @@
 # Portfolio Project - Codex Guidelines
 
-This file is the durable instruction source for Codex work in this repository. Follow it together with the global Codex guidance; when they differ, the more specific safety rule applies.
+**This file is a copy of `CLAUDE.md` for Codex.** `CLAUDE.md` is the source of truth; when the two diverge, fix `CLAUDE.md` first and mirror the change here. Do not add rules that exist only in this file.
+
+Follow it together with the global Codex guidance; when they differ, the more specific safety rule applies.
+
+The gate is one command: `npm run check` (types → lint → build). Commit format, branch naming, and `temp/` commits are enforced mechanically by commitlint, `.husky/pre-push`, and `.claude/hooks/block-temp-commit.sh`.
 
 ## 0. Safety and evidence
 
@@ -90,7 +94,7 @@ For any design or Figma-driven work, inspect the [Library file](https://www.figm
 
 ## 5. Verification and learning
 
-- For code work, run relevant checks in this order when applicable and report their actual exit status: `npx tsc --noEmit`, `npm run lint`, then `npm run build` for significant changes. The repository currently has no test suite; add its command here when one is introduced.
+- For code work, run the gate and report its actual exit status: `npm run check` (types → lint → build, ~10s). Do not run the stages separately — the gate is binary. The same command runs in CI (`.github/workflows/check.yml`) and from the Stop hook. The repository currently has no test suite; add a `test` stage to `check` when one is introduced.
 - Verify UI changes visually with the local preview when feasible. Do not start a duplicate development server when one is already running.
 - For substantive completed work, perform an independent, fresh-context review when the user requests verification or when the change is high-risk. Check the original request, diff, empty/boundary/error cases, and unintended changes. Keep verified facts distinct from reasoned conclusions and assumptions.
 - When a delegated builder implements a change, a fresh-context QA verifier must review it before completion is declared.

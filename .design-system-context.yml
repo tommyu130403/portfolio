@@ -1,0 +1,29 @@
+# デザインシステムの前提（figma-component-review skill の Phase 0 が読む）
+#
+# skill はこのファイルが無いと同じ5問を毎回聞く。値は判定に実際に効く:
+#   ssot: both      → 「どちらを正とするか決める」を最優先の指摘として追加
+#   phase: launch   → 破壊的変更を伴う指摘を「意図的な妥協」へ降格
+#   phase: mature   → 同じ指摘を「移行計画」へ昇格
+#   i18n: true      → 幅・オーバーフローの指摘を昇格（英語は日本語の1.5〜2倍）
+#   dark_mode: true → ハードコード色の指摘を昇格
+#
+# 観測日: 2026-09-08 / 実測にもとづく。推測で埋めないこと。
+
+phase: growth
+strategy: scratch        # Tailwind + 自前 variant map（lib/figma-button-variants.ts）。MUI 等の汎用ライブラリは不使用
+generic_level: 2         # 同一プロダクト内でドメインをまたいで使えるレベルを「汎用」と呼ぶ
+ssot: figma              # CLAUDE.md §5 が Figma を Design Source of Truth と宣言している
+split_approach: flat     # components/ は階層なし24件。30件が階層化の検討目安
+naming_grammar: ""       # 未定。語順ルール（[カテゴリ]/[コンポーネント]/[バリアント]/[状態] 等）は未合意
+figma_only_prefix: "_"   # Figma 専用プロパティの接頭辞規約
+i18n: false              # i18n / locale / messages のいずれも存在しない
+dark_mode: true          # app/globals.css に prefers-color-scheme: dark のブロックがある
+platforms: [web]
+
+# 既知の意図的な妥協。「やらない」ではなく「理由と再検討トリガーを残して着手しない」もの。
+# トリガーの無い先送りは風化して既成事実になるため、必ず trigger を書く。
+#
+#   - item: ""      何を妥協しているか
+#     why: ""       なぜ今それでよいか
+#     trigger: ""   何が起きたら着手するか
+intentional_compromises: []

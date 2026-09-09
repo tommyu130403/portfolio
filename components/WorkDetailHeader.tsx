@@ -99,10 +99,12 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           <p className="text-title-pj text-white">{work.title}</p>
         </div>
 
-        {/* メタ表 */}
-        {/* ラベル列は Figma（902:9343）の 93px 固定。auto にすると Web フォントの
-              読み込み前後でラベル幅が変わり、内容列の幅が動いてレイアウトがずれる */}
-          <div className="grid w-full grid-cols-[93px_minmax(0,1fr)] overflow-hidden rounded-r8 border border-border">
+        {/* メタ表。ラベル列の下限は Figma（902:9343）の 93px。
+            93px 固定にすると、ブラウザの既定フォントサイズを上げたとき
+            アイコン(h-4)・gap(gap-2)・padding(px-4) だけが rem で拡大して
+            ラベル文字(12px 固定)が収まらなくなり、「関係者」が仕切り線を越える
+            （root 24px で実測）。minmax にして下限だけ固定する。 */}
+        <div className="grid w-full grid-cols-[minmax(93px,auto)_minmax(0,1fr)] overflow-hidden rounded-r8 border border-border">
           {/* 期間 */}
           <div className="flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4">
             <Icon

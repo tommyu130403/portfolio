@@ -100,7 +100,9 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
         </div>
 
         {/* メタ表 */}
-        <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] overflow-hidden rounded-r8 border border-border">
+        {/* ラベル列は Figma（902:9343）の 93px 固定。auto にすると Web フォントの
+              読み込み前後でラベル幅が変わり、内容列の幅が動いてレイアウトがずれる */}
+          <div className="grid w-full grid-cols-[93px_minmax(0,1fr)] overflow-hidden rounded-r8 border border-border">
           {/* 期間 */}
           <div className="flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4">
             <Icon

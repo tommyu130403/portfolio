@@ -223,14 +223,12 @@ export default function Home() {
           </section>
 
           {/* Skills */}
-          <section id="skills" className="mb-10 w-full">
-            {/* 見出し+タブ: 他セクションと同じ最大幅・中央寄せ */}
-            <div className="mx-auto w-full max-w-main">
-              <Headline label="スキル" title="Skills" />
-            </div>
-            <div className="w-full max-w-main mx-auto">
-              <SkillsCardGrid />
-            </div>
+          {/* 他の4セクションと同じく section 自体に max-w-main を持たせる。
+              内側の div で幅を作ると section の実幅が親いっぱい（1104px）になり、
+              セクションの境界とコンテンツの境界がずれる */}
+          <section id="skills" className="mb-10 w-full max-w-main">
+            <Headline label="スキル" title="Skills" />
+            <SkillsCardGrid />
           </section>
         </div>
       </main>

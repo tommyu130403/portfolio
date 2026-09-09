@@ -230,7 +230,7 @@ JSON.stringify(out)
 | W-9 | フォールバック | 値が無い行の内容セルが **`—`**。「タイムライン（RACI）」「体制図」と出たら不合格 |
 | W-10 | ラベル | 上から **期間 / 役割 / 関係者**。アイコンは 16×16 |
 | W-11 | 全画面ボタン | 期間行と関係者行の右端に **24×24**。`timeline` / `stakeholders` が無い Work では**出ない** |
-| W-12 | 長い値 | 40文字以上の `role` で `scrollWidth === clientWidth`（横に溢れない）。`title` 属性に全文が入っている |
+| W-12 | 長い値 | 54文字の `role` を入れ、**セル・表・ドキュメントのいずれも `scrollWidth - clientWidth` が 0**。`title` 属性に全文が入っている。<br>※ **`span.scrollWidth === span.clientWidth` を判定に使わない。** truncate は `overflow:hidden` なので、文字が入りきらない限りこの等式は成立しない（成立するのは「収まったとき」であって「溢れていないとき」ではない）。実測では役割行は 768px 以上、全画面ボタンを持つ期間・関係者行は 1280px 以上でのみ成立し、それ未満では成立しないが**実際の溢れはどの幅でも 0** |
 
 ### 7-3. レスポンシブ（**ブロッカー2件の回帰テスト。最重要**）
 
@@ -264,7 +264,7 @@ JSON.stringify(out)
 | R-6 | 本文が空の Work | `sections` が空 | `WorkDetailContent` が null を返し、**罫線だけが浮かない** |
 | R-7 | スクショ 0 / 1 / 3枚以上 | 各パターン | 端末モックの行が崩れない（ページは最大2枚表示） |
 | R-8 | ツールアイコン破損 | `icon_url` が 404 の Work | テキスト Tag にフォールバックする |
-| R-9 | admin プレビュー | `/admin/works/edit` の本文プレビュー | **見た目が変わっていない**。`components/WorkMarkdown.tsx` の `WorkSections` のデフォルト値（`gap-[120px]` / `withDividers=false`）が変わっていないことをコードでも確認 |
+| R-9 | admin プレビュー | `/admin/works/edit` の textarea に markdown を入れ、プレビューの見出しを変更前（port 3001）と比較 | **`WorkSections` のデフォルト値（`gap-[120px]` / `withDividers=false`）が変わっていない**こと。<br>※ **「見た目が変わっていない」を期待値にしない。** admin プレビューは公開側と `RenderBlock` を共有しているため、Phase 2 の見出し変更は**設計どおり admin にも及ぶ**。実測では文字サイズ・太さ・行間・字間・色は変更前と同一だが、**書体が Avenir → Noto Sans JP に変わる**（英字のみ。日本語は元から Noto にフォールバックしていたため不変）。§9-13 参照 |
 | R-10 | `/works` を id 無しで開く | `http://localhost:3000/works` | エラー表示が新レイアウトで崩れない |
 | R-11 | `/styleguide` の Card プレビュー | カードの rect | **392px**（754px に伸びていたら不合格） |
 | R-12 | `.design-system-context.yml` | `npx --yes js-yaml .design-system-context.yml` | exit 0。`intentional_compromises` が **4件**（border色 / radius / summary+サイトリンク / モバイルサイドバー） |
@@ -288,6 +288,8 @@ JSON.stringify(out)
 10. **`work.summary` とサイトリンクカードが admin から入力できるのに公開側に出ない**。ユーザー判断で削除した。`.design-system-context.yml` に trigger 付きで記録済み。別タスクで整理予定。
 11. **`images/hero-placeholder.jpg` が 404**。本作業と無関係の既存の欠落。
 12. **System 025〜950 の 12 段・1000・Text/Caption・Border/Main・Action/hover の α が未照合**。Master のどのノードも使っておらず MCP から値が取れない（`search_design_system` は名前しか返さない）。
+13. **英字の見出しの書体が Avenir → Noto Sans JP に変わった**（2026-09-10 に実測）。`text-title-pj` / `text-headline-01-jp` / `text-headline-02-jp` は Figma の `Body/JP` バインドに従い Noto 単独を指定するため、変更前の `font-body`（Avenir → Noto の自動切替）と違い英字も Noto で描画される。日本語は元から Noto にフォールバックしていたため不変。影響範囲はトップの「Introduction / Career / Skills」、Works 詳細のタイトル、本文の見出し、admin プレビュー。Figma の `Title/PJ` は `Body/JP` バインドなので**実装は Figma どおり**だが、Figma 側に `Title/EN`（Avenir）も存在するため、英字見出しにどちらを当てるかは未決。
+14. **`section#skills` にだけ `mb-10` が残っている**。コンテナの `gap-[120px]` と `py-20` に加算され、**最終セクション下の余白が 120px**（Figma は 80px）になる。2026-09-10 に実測して確認済み。判断待ちのため未対応。
 
 ---
 

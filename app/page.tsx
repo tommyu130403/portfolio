@@ -226,7 +226,7 @@ export default function Home() {
           {/* 他の4セクションと同じく section 自体に max-w-main を持たせる。
               内側の div で幅を作ると section の実幅が親いっぱい（1104px）になり、
               セクションの境界とコンテンツの境界がずれる */}
-          <section id="skills" className="mb-10 w-full max-w-main">
+          <section id="skills" className="w-full max-w-main">
             <Headline label="スキル" title="Skills" />
             <SkillsCardGrid />
           </section>

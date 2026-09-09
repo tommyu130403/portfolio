@@ -288,8 +288,8 @@ JSON.stringify(out)
 10. **`work.summary` とサイトリンクカードが admin から入力できるのに公開側に出ない**。ユーザー判断で削除した。`.design-system-context.yml` に trigger 付きで記録済み。別タスクで整理予定。
 11. **`images/hero-placeholder.jpg` が 404**。本作業と無関係の既存の欠落。
 12. **System 025〜950 の 12 段・1000・Text/Caption・Border/Main・Action/hover の α が未照合**。Master のどのノードも使っておらず MCP から値が取れない（`search_design_system` は名前しか返さない）。
-13. **英字の見出しの書体が Avenir → Noto Sans JP に変わった**（2026-09-10 に実測）。`text-title-pj` / `text-headline-01-jp` / `text-headline-02-jp` は Figma の `Body/JP` バインドに従い Noto 単独を指定するため、変更前の `font-body`（Avenir → Noto の自動切替）と違い英字も Noto で描画される。日本語は元から Noto にフォールバックしていたため不変。影響範囲はトップの「Introduction / Career / Skills」、Works 詳細のタイトル、本文の見出し、admin プレビュー。Figma の `Title/PJ` は `Body/JP` バインドなので**実装は Figma どおり**だが、Figma 側に `Title/EN`（Avenir）も存在するため、英字見出しにどちらを当てるかは未決。
-14. **`section#skills` にだけ `mb-10` が残っている**。コンテナの `gap-[120px]` と `py-20` に加算され、**最終セクション下の余白が 120px**（Figma は 80px）になる。2026-09-10 に実測して確認済み。判断待ちのため未対応。
+13. **英字の見出しの書体が Avenir → Noto Sans JP に変わった**（2026-09-10 に実測）。`text-title-pj` / `text-headline-01-jp` / `text-headline-02-jp` は Figma の `Body/JP` バインドに従い Noto 単独を指定するため、変更前の `font-body`（Avenir → Noto の自動切替）と違い英字も Noto で描画される。日本語は元から Noto にフォールバックしていたため不変。影響範囲はトップの「Introduction / Career / Skills」、Works 詳細のタイトル、本文の見出し、admin プレビュー。Figma の `Title/PJ` は `Body/JP` バインドなので**実装は Figma どおり**。**2026-09-10 にユーザー判断で現状維持（Noto）と決定した。** 英字を Avenir にしたい場合は Figma 側で `Title/EN` に付け替えるのが筋で、依頼書 §6 に列挙してある。
+14. ~~**`section#skills` にだけ `mb-10` が残っている**~~ → **2026-09-10 に解消済み**。`mb-10` を削除し、最終セクション下の余白が Figma どおり **80px** になったことを実測で確認（`lastSectionBottomGap: 80`）。
 
 ---
 

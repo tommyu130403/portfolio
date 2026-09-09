@@ -411,3 +411,12 @@ Works 詳細ページを Figma の単一カラム構成（Master `787:9916`）�
 - **Timeline / Stakeholder モーダルが Esc で閉じない**（`Modal.tsx` にキーハンドラが無い）。既存の欠落で本 Phase 起因ではない。
 - **ライトボックスがスクショ5枚で横に溢れる**（`justify-center` のため左側へスクロールで到達できない）。旧 `WorkDetailLeftPanel` にも同じコードがあり退行ではない。
 - **モーダルがサイドバーを覆い、パネル中心が本文カラム中心と 128px ずれる** → **Figma もそうなっている**（`839:3764` の Container は x=320 で 1440 の中央＝サイドバーを覆う）ので変更しない。
+
+### §6 追記 — 英字見出しの書体（2026-09-10）
+
+9. **英字の見出しが Avenir ではなく Noto Sans JP で描画される。** `Title/PJ` / `Headline/01/JP` / `Headline/02/JP` はいずれも `Body/JP`（Noto Sans JP）にバインドされているため、実装の `text-title-pj` などは Noto 単独を指定している。作業前の実装は `font-body`（Avenir → Noto の自動切替）だったため、英字は Avenir で描画されていた。
+
+- 影響範囲: トップの「Introduction / Career / Skills」、Works 詳細のタイトル、本文の見出し、admin プレビュー
+- 実測差: `"Overview Heading"` が Avenir 216.66px → Noto 223.56px（約3%）。日本語は元から Noto にフォールバックしていたため不変
+- **実装は Figma どおり**。2026-09-10 にユーザー判断で **現状維持（Noto）** と決定した
+- 英字見出しを Avenir に戻したい場合は、**Figma 側で `Title/EN`（Avenir 38/800）・`Headline/01/EN`（Avenir 24/800）に付け替える**のが筋。実装側だけ `font-body` に戻すと Figma のバインドと矛盾する

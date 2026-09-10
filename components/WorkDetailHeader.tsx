@@ -130,7 +130,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
                 type="button"
                 onClick={() => setVizModal("timeline")}
                 aria-label="タイムライン（RACI）を表示"
-                className="group ml-auto flex size-6 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface p-[6px] transition-colors hover:border-system-500"
+                className="relative ml-auto flex size-6 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface p-[6px] transition-colors hover:border-system-500 before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
               >
                 <Icon
                   set="Arrows"
@@ -184,7 +184,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
                 type="button"
                 onClick={() => setVizModal("stakeholders")}
                 aria-label="ステークホルダー体制を表示"
-                className="group ml-auto flex size-6 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface p-[6px] transition-colors hover:border-system-500"
+                className="relative ml-auto flex size-6 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface p-[6px] transition-colors hover:border-system-500 before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
               >
                 <Icon
                   set="Arrows"

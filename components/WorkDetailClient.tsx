@@ -148,7 +148,10 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
         <SideMenuBar hrefBase="/" showCollapseToggle={false} />
       </div>
 
-      <main className="relative z-[1] flex min-w-0 flex-1 flex-col items-center">
+      {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
+          WorkVizModal(z-50) / ScreenshotLightbox(z-60) がサイドバー(z-2)や
+          画面端の固定ナビ(z-40)より下に沈む（2026-09-11 に実測） */}
+      <main className="relative flex min-w-0 flex-1 flex-col items-center">
         {/* 戻りリンク */}
         <div className="mx-auto w-full max-w-main px-6 pt-6">
           <button

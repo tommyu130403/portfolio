@@ -32,6 +32,8 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
   active = false,
   collapsed = false,
 }) => {
+  // Figma の Active は背景を持たず文字色だけ変わる（node 59:24912）。
+  // 色だけが現在地の手がかりになるため aria-current を併せて出す（WCAG 1.4.1）。
   const status = resolveItemStatus(active);
   const width = collapsed ? "short" : "default";
   const className = getItemClasses(status, width);
@@ -81,9 +83,9 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
           <span
             className={[
               "pointer-events-none fixed z-[70] -translate-y-1/2",
-              "rounded-[14px] border border-border-light bg-surface px-3 py-2",
-              "text-[12px] leading-[1.5] tracking-[0.36px] whitespace-nowrap text-[var(--color-white)]",
-              "shadow-[1px_1px_16px_2px_rgba(0,0,0,0.25)]",
+              "rounded-r4 border border-border bg-surface px-3 py-[10px]",
+              "text-[14px] leading-[20px] whitespace-nowrap text-white/80",
+              "shadow-base",
             ].join(" ")}
             style={{ top: tooltipPos.top, left: tooltipPos.left }}
             role="tooltip"
@@ -104,7 +106,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
         onFocusCapture={() => setShowTooltip(true)}
         onBlurCapture={() => setShowTooltip(false)}
       >
-        <Link href={href} className={className}>
+        <Link href={href} className={className} aria-current={active ? "page" : undefined}>
           {content}
         </Link>
         {tooltip}
@@ -121,7 +123,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       onFocusCapture={() => setShowTooltip(true)}
       onBlurCapture={() => setShowTooltip(false)}
     >
-      <button type="button" className={className}>
+      <button type="button" className={className} aria-current={active ? "true" : undefined}>
         {content}
       </button>
       {tooltip}

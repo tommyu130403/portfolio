@@ -37,7 +37,7 @@ const Modal: FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed top-0 right-0 bottom-0 z-50 flex cursor-pointer items-center justify-center px-20 py-10 transition-[left] duration-300 ease-in-out"
+      className="fixed top-0 right-0 bottom-0 z-50 flex cursor-pointer items-center justify-center p-10 transition-[left] duration-300 ease-in-out"
       style={{
         left: sidebarOffset,
         backgroundColor: "rgba(0,0,0,0.25)",
@@ -79,15 +79,15 @@ const Modal: FC<ModalProps> = ({
         {/* Modal container + Close button wrapper (overflow-visible でボタンが切れないように) */}
         <div className="relative w-full max-w-main">
           <div
-            className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-[14px] border border-border-light bg-surface"
+            className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 border border-border bg-surface shadow-wisper"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex-1 overflow-y-auto">
               {children}
             </div>
           </div>
-          {/* Close button（Figma node 120-332: top 0, 右端から16px外側） */}
-          <div className="absolute top-0 -right-[52px]">
+          {/* Close button（Figma node 120:413: right -45px / top -1px・border=off） */}
+          <div className="absolute -top-px -right-[45px]">
             <ButtonFunction
               border="off"
               onClick={onClose}
@@ -115,15 +115,16 @@ const Modal: FC<ModalProps> = ({
 
         {/* Dot indicators */}
         {carousel && total > 1 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {Array.from({ length: total }).map((_, i) => (
               <div
                 key={i}
                 className={[
-                  "h-1 w-10 rounded-sm transition-colors",
+                  "h-1 w-10 rounded-r2 transition-colors",
                   i === currentIndex
                     ? "bg-primary"
-                    : "bg-white/5",
+                    : // Figma の非アクティブは rgba(255,255,255,0.02) だが 2% のトークンが無いため 5% のまま（依頼書 §6）
+                      "bg-white/5",
                 ].join(" ")}
               />
             ))}

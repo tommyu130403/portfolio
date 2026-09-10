@@ -6,7 +6,7 @@ type TagProps = {
   /**
    * default: 従来の main 系（プロジェクトカード等）
    * small:   Figma Tag/Small（bg black/25・12px white）
-   * tool:    Figma Slot-Tool（border付き・グレー文字・16pxアイコン前置。スキル展開パネル用）
+   * tool:    Figma Slot-Tool（border付き・グレー文字・16pxアイコン前置。スキル展開パネル用）（Figma Card 内の Tag 実値: border Border/Default・背景なし・px10 py6・10px・System/500）
    */
   variant?: "default" | "small" | "tool";
   prefix?: ReactNode;
@@ -17,10 +17,10 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
   if (variant === "tool") {
     return (
       <div
-        className={`flex gap-[4px] items-center rounded-full border border-border-light bg-[rgba(0,0,0,0.25)] px-[10px] py-[4px] shrink-0 ${className ?? ""}`}
+        className={`flex gap-[4px] items-center rounded-full border border-border px-[10px] py-[6px] shrink-0 ${className ?? ""}`}
       >
         {prefix}
-        <p className="text-[11px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
+        <p className="text-[10px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
         {suffix}
       </div>
     );

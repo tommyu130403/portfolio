@@ -7,10 +7,10 @@ type HeadlineProps = {
   title: string;
   /**
    * 見出しタイプ
-   * - default: ページ上部のセクション見出し（JP サブ + EN 32px + 緑下線。Figma SectionTitle 836:3312）
+   * - default: ページ上部のセクション見出し（JP サブ + EN 32px。Figma SectionTitle 836:3312）
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
-   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（Library 305:265 = 01/02/03）
+   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（Library 304:313 = 01/02（03 は Figma に無い））
    */
   variant?: "default" | "sub" | "section" | "markdown-h1" | "markdown-h2" | "markdown-h3";
 };
@@ -36,6 +36,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   }
 
   // Library 305:265 / 03: Avenir(Body/EN) Heavy 17px #9e9e9e
+  // ※ Figma の Headline セットは 01 / 02 の2バリアントのみで 03 は存在しない（Library 304:313 で確認・2026-09-08）。実装側のみの見出し。
   if (variant === "markdown-h3") {
     return (
       <p className="w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
@@ -44,10 +45,10 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Library 305:265 / 02: Noto Sans JP Bold 20px main-050(#b3ffe7)
+  // Library 304:312 / 02: Noto Sans JP Bold 17px 行間AUTO System/500(#9E9E9E)
   if (variant === "markdown-h2") {
     return (
-      <p className="w-full font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">
+      <p className="w-full text-headline-02-jp text-system-500">
         {title}
       </p>
     );
@@ -56,19 +57,18 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   // Library 305:265 / 01: Noto Sans JP Bold 24px white（装飾バー無し）
   if (variant === "markdown-h1") {
     return (
-      <p className="w-full font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">
+      <p className="w-full text-headline-01-jp text-white">
         {title}
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col items-start gap-6 pb-6 w-full">
+    <div className="flex flex-col items-start pb-6 w-full">
       <div className="flex flex-col gap-3 w-full [word-break:break-word]">
         <p className="font-body text-[12px] font-normal leading-normal tracking-[0.36px] text-system-500 w-full">{label ?? ""}</p>
-        <p className="font-body text-[32px] font-extrabold leading-[1.3] text-white w-full [text-box-trim:trim-both] [text-box-edge:cap_alphabetic]">{title}</p>
+        <p className="text-title-pj text-white w-full [text-box-trim:trim-both] [text-box-edge:cap_alphabetic]">{title}</p>
       </div>
-      <div className="h-[2px] w-6 rounded-[2px] bg-main-base" />
     </div>
   );
 };

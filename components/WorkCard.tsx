@@ -14,8 +14,8 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
     <div
       onClick={onClick}
       className={[
-        "flex w-[216px] flex-col overflow-hidden rounded-[14px] border border-system-800 bg-system-900 shrink-0",
-        "shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]",
+        "flex w-[216px] flex-col overflow-hidden rounded-[14px] border border-border shrink-0",
+        "shadow-base",
         onClick
           ? "hover:border-system-500 hover:bg-system-800 transition-colors cursor-pointer"
           : "",
@@ -33,7 +33,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
           <p className="text-[10px] leading-[normal] tracking-[0.3px] text-main-100">
             {category}
           </p>
-          <p className="font-bold text-[14px] leading-[1.5] tracking-[0.42px] text-system-white">
+          <p className="text-body-02-jp-bold text-system-white">
             {title}
           </p>
         </div>

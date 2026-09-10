@@ -10,7 +10,7 @@ import {
 } from "./WorkViz";
 
 /**
- * Work 詳細・左パネルの「全画面」ボタンで開く構造化ビジュアルのモーダル。
+ * Work 詳細・メタ表の「全画面」ボタンで開く構造化ビジュアルのモーダル。
  * Figma:
  *  - timeline    … `/works/{id}：timeline`（839:3499）見出し「Timeline / RACI」+ _Process
  *  - stakeholders… `/works/{id}：stakeholder`（848:2944）見出し「stakeholder」+ _Stakeholder

@@ -64,7 +64,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   }
 
   return (
-    <div className="flex flex-col items-start pb-6 w-full">
+    <div className="flex flex-col items-start pb-8 w-full">
       <div className="flex flex-col gap-3 w-full [word-break:break-word]">
         <p className="font-body text-[12px] font-normal leading-normal tracking-[0.36px] text-system-500 w-full">{label ?? ""}</p>
         <p className="text-title-pj text-white w-full [text-box-trim:trim-both] [text-box-edge:cap_alphabetic]">{title}</p>

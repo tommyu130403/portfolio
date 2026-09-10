@@ -332,3 +332,91 @@ Effect shadow・shadow-wisper
 - Modal: `borderRadius 16px` / `borderColor rgb(58,58,58)` / `boxShadow rgba(0,0,0,0.1) 0 1px 3px`（shadow-wisper）/ scrim `padding 40px` / 閉じるボタンの右余白 **9px**・上オフセット **-1px**（Figma の right -45px と一致）
 - TabBar アイコン3つとも `naturalWidth: 24`（差し替え後）
 - `npm run check` **exit 0**（0 errors / 20 warnings）
+
+---
+
+## 実装記録 — Phase 3 画面レイアウト層（2026-09-08 実装セッション・model sonnet／builder 席）
+
+Works 詳細ページを Figma の単一カラム構成（Master `787:9916`）へ作り直す。トップページぶんは Phase 2 に先立って別コミット（`3855716`）で先行実装済みのため、本記録は Works 詳細の差分に加えその実装内容も含めて Phase 3 全体としてまとめる。
+
+### 依頼書の前提のうち、実測で覆ったもの
+今回は事前に確定した設計どおりに実装する回で、着手前提の再測定・再交渉は無し。実装時に見つかった軽微な差分のみ記録する。
+- **メタ表の全画面ボタンの罠（新規発見）**: 指示どおり内側 `<span>` ラッパを外して `<Icon>` を直接ボタンの子にした。3行目「関係者」の内容セルは `border-l` のみで `border-b` を持たないため、色クラス `border-border` を書き忘れると罫線が透明色（黒）のまま描画される落とし穴があり、実装中に気付いて修正した（下表参照）。
+
+### 再承認内容
+無し（ユーザーの決定1〜3・手順どおり）。
+
+### 実装した差分
+
+| ファイル | 変更 |
+|---|---|
+| `components/SideMenuBar.tsx` | `hrefBase` prop を追加（既定 `""`）。Profile セクション4リンクの `href` を `` `${hrefBase}#xxx` `` へ。トップページは既定値で `#introduction` のまま不変 |
+| `components/WorkDetailLeftPanel.tsx` → `components/WorkDetailHeader.tsx`（`git mv`） | 型・コンポーネント名を改名。`onBack` を削除（戻りリンクは `WorkDetailClient` へ移動）。`DeviceMock` を 126×257（`aspect-[126/257]`）へ。外側ラッパを1層 `gap-12` に整理。戻りリンクの `<button>` を削除。カテゴリ／タイトルを `text-body-03-jp text-primary` / `text-title-pj text-white` へ（旧サイズ・行間・字間・weight・レスポンシブ指定を全削除）。`work.summary` ブロックを削除。期間・役割・体制内訳の縦並びを2列グリッドの「メタ表」に作り替え（3行固定描画・フォールバック文言・全画面ボタンをセル内24×24へ）。Skills / Tools を表の外の `gap-4` ブロックへ。サイトリンクカードを削除 |
+| `components/WorkDetailContent.tsx` | 外側を `flex flex-col gap-12` にし、先頭に横罫線1本を明示配置。`WorkSections` の `gapClass` を `gap-12` へ、`withDividers` を撤去（本文ブロック間の罫線は Figma に無い） |
+| `components/WorkDetailClient.tsx` | `WorkDetailHeader` / `SideMenuBar` を import。最外殻を `app/page.tsx` と同じサイドバー＋メインの横並びへ。戻りリンクの `<button>` を `WorkDetailHeader` から移植（`max-w-main` の行内）。カラムを `mx-auto max-w-main gap-12 px-6 pt-10 pb-20` に統一。旧・縦罫線（`bg-border-light` の区切り線）を削除。モバイル前後ナビの `max-w-[1520px]` を `max-w-main` へ |
+| `app/styleguide/StyleguideLayout.tsx` | import と `<ComponentPreview>` の `title` / `description` を新名称・新構造に合わせて更新。`onBack` prop の受け渡しを削除。「左パネル」表記をすべて「メタ表」へ置換 |
+| `components/WorkVizModal.tsx` | JSDoc の「左パネル」表記を「メタ表」へ置換 |
+| `.design-system-context.yml` | `intentional_compromises` に2件追加（summary / サイトリンクの非表示化、`/works` の SideMenuBar がモバイル非対応である旨） |
+
+### 検証（VERIFIED）
+- `npm run check` **exit 0**（0 errors / **19 warnings** ＝ 基準線 Step 0 の20から1減）
+  - **想定と違っていた箇所**: Step 0 の基準（20 warnings）に対し1件減った。原因は「サイトリンクカード」削除で `<img>`（`work.site_thumbnail_url`）が1つ消えたため（`@next/next/no-img-element` 警告）。設計どおり削除した結果の当然の副作用であり、他の警告種別・件数に変化は無いことを diff で確認済み。バグではない。
+- `npx tsc --noEmit` 通過。`grep -rn "WorkDetailLeftPanel" --include='*.tsx' components app src` **0件**
+- `npx --yes js-yaml .design-system-context.yml` exit 0（パース成功）。`app/globals.css` の `@source not` に `.design-system-context.yml` が入っていることを確認済み（既存）
+- **実描画（ヘッドレス Chrome + CDP、`scripts/shot.mjs`）で実測**。`/styleguide` のプレビューは `app/page.tsx` 相当の外殻コンテナ（`max-w-main` の実ページカラム）を持たないため、カラム寸法4項目は実際の `/works?id=...`（トップページの Works カードから遷移して取得した実データ）で測定し、メタ表行高とタイトルも同じ画面で確認した：
+  - カラム `maxWidth` = **800px**
+  - カラム `rowGap` = **48px**
+  - カラム `paddingTop` = **40px** / `paddingBottom` = **80px**（戻りリンク24px＋文字高16px相当＋gap-12の想定どおり）
+  - メタ表の行 `height` = **40px**
+  - タイトル `fontSize` = **34px** / `fontWeight` = **700**
+  - 5項目とも指示の期待値と完全一致
+- スクリーンショットで目視: サイドバー表示・単一カラム・端末モック2枚横並び・メタ表（アイコン＋ラベル＋内容＋全画面ボタン）・Skills / Tools タグ・区切り線→Overview 本文、いずれも Figma のブロック順と一致
+
+### 異常系（Step 38・`/styleguide` のサンプルデータを一時変更 → 撮影 → 復元、`git diff` で復元確認済み）
+1. `timeline` / `stakeholders` が null（既定サンプルデータのまま）→ 全画面ボタンは出ず、3行と外枠の角丸・罫線は崩れない（VERIFIED・スクリーンショット確認）
+2. `period` / `role` / `stakeholder_breakdown` を空文字に変更 → フォールバック文言「タイムライン（RACI）」「—」「体制図」が表示され、行は欠けない（VERIFIED）
+3. `sections: []` → `WorkDetailContent` が `null` を返し、プレビュー領域が空になる（罫線・本文とも描画されない。浮いた罫線なし）（VERIFIED）
+4. `role` を40文字超に変更 → 内容セルで `scrollWidth === clientWidth`（オーバーフロー無し）を実測、スクリーンショットでも省略記号付きで1行に収まることを確認（VERIFIED）
+
+### 未達・未確認
+- `/works` の SideMenuBar はモバイル（lg 未満）で非表示のまま。ハンバーガー／オーバーレイは未移植（設計どおり・`.design-system-context.yml` に記録済み）
+- `work.summary` / `site_url` 系フィールドは admin から入力可能なまま公開側で非表示（設計どおり・同ファイルに記録済み）
+- Step 37 の「メタ表の行の height が 40px」等の実測は `/works` の実データ1件（「サンプルプロジェクトA」）のみで行った。他の Work（`timeline` / `stakeholders` が実在するデータ）でも同じ寸法になることは同一 CSS クラスを使っているため理論上保証されるが、複数件の突き合わせは行っていない
+
+### §6 追記
+無し（本 Phase は Figma 側の未定義値に依存しない範囲の実装だったため、新規の Figma 側 TODO は発生していない）。
+
+### qa-verifier の指摘と対応（Phase 3・同 PR 内で修正済み）
+
+**ブロッカー2件**
+1. **lg 未満（<1024px）で Works 詳細の本文が幅 0 に潰れていた**（VERIFIED・実測 `main` の width = 0）。ルートを `flex` の横並びにしたため、モバイル用の前後ナビが `<main>` と**兄弟の flex アイテム**になり、`flex-1 min-w-0` の `main` を 0 まで押し潰していた。旧実装のルートは block だったので同居できていた。
+   → モバイル前後ナビを **`<main>` の内側**（カラムの直後）へ移動。理由をコメントに明記。**修正後の実測: 375px → main 375 / 768px → main 768。**
+2. **固定矢印 `left-[264px]` が 1024〜1095px で本文カラムに食い込んでいた**（VERIFIED・1024px で 20px 重なり）。カラムの左端は `256 + (vw-1056)/2 + 24` なので vw < 1096 で矢印の右端 300 を下回る。右矢印（`right-2`・既存）も 1024 で同じく重なっていた。
+   → 固定矢印を **`xl:block`（1280px 以上）**に限定し、ラベル付きの本文末尾ナビを **`xl:hidden`** にして 1024〜1279px の空白を埋めた。**修正後の実測: 1024/1090px は固定矢印が出ず本文末尾ナビが出る。1280/1440px は矢印の右端 300 に対しカラム左端 368/448 で重ならない。**
+
+**その他の対応**
+3. **メタ表のフォールバック文言がデータのように読めていた**（VERIFIED）。`period` が空の Work で「期間」行に **「タイムライン（RACI）」** と表示されており、全画面ボタンが無い Work では単なる誤情報だった。役割行だけ `"—"` で規約も揃っていなかった。
+   → 3行とも **`"—"`** に統一。ボタンが何を開くかは `aria-label` が担う。
+4. **長い `role` が truncate で読めなくなっていた**（VERIFIED・`scrollWidth 718 > clientWidth 624`）。
+   → 3行の内容セルに `title` 属性を付け、ホバーで全文が読めるようにした。
+5. **`/styleguide` の Card プレビューが実寸を表さなくなっていた**（VERIFIED・754px に伸びていた）。`WorkCard` の固定幅を外したため。
+   → プレビューを `w-[392px] max-w-full` で包み、実ページと同じ幅にした。
+6. `WorkDetailContent` の description が「横罫線で区切って描画」のままだった → 実態（gap 48・罫線は上部との境界に1本）へ修正。
+7. `WorksList` のコメントが「800px に届かない幅では 1 列」だったが実際は `sm`（640px）基準 → 実装に合わせて修正。
+
+**記録のみ（対応せず）**
+- **`git mv` の類似度が 43% で、既定の `-M50%` では改名として追跡されない**（`git log --follow components/WorkDetailHeader.tsx` の履歴が切れる）。中身を大きく書き換えたため。`git show -M10%` では `R043` として認識される。
+- **`/works` からサイドバーの「Works」を押すと着地が 327px ずれる**（VERIFIED）。遷移後に画像が読み込まれてトップページの高さが伸びるため。トップページ内のクリックは正常。フラグメント遷移全般の問題で、レイアウトの PR で直す範囲を超える。
+- **`/works` は xl 未満でサイドバーが出ない**（`hidden lg:block` ＋ ハンバーガー未移植）。戻りリンク「‹ Works」は常時出るので一覧へは戻れる。`.design-system-context.yml` に trigger 付きで記録済み。
+- **Timeline / Stakeholder モーダルが Esc で閉じない**（`Modal.tsx` にキーハンドラが無い）。既存の欠落で本 Phase 起因ではない。
+- **ライトボックスがスクショ5枚で横に溢れる**（`justify-center` のため左側へスクロールで到達できない）。旧 `WorkDetailLeftPanel` にも同じコードがあり退行ではない。
+- **モーダルがサイドバーを覆い、パネル中心が本文カラム中心と 128px ずれる** → **Figma もそうなっている**（`839:3764` の Container は x=320 で 1440 の中央＝サイドバーを覆う）ので変更しない。
+
+### §6 追記 — 英字見出しの書体（2026-09-10）
+
+9. **英字の見出しが Avenir ではなく Noto Sans JP で描画される。** `Title/PJ` / `Headline/01/JP` / `Headline/02/JP` はいずれも `Body/JP`（Noto Sans JP）にバインドされているため、実装の `text-title-pj` などは Noto 単独を指定している。作業前の実装は `font-body`（Avenir → Noto の自動切替）だったため、英字は Avenir で描画されていた。
+
+- 影響範囲: トップの「Introduction / Career / Skills」、Works 詳細のタイトル、本文の見出し、admin プレビュー
+- 実測差: `"Overview Heading"` が Avenir 216.66px → Noto 223.56px（約3%）。日本語は元から Noto にフォールバックしていたため不変
+- **実装は Figma どおり**。2026-09-10 にユーザー判断で **現状維持（Noto）** と決定した
+- 英字見出しを Avenir に戻したい場合は、**Figma 側で `Title/EN`（Avenir 38/800）・`Headline/01/EN`（Avenir 24/800）に付け替える**のが筋。実装側だけ `font-body` に戻すと Figma のバインドと矛盾する

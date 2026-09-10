@@ -163,7 +163,7 @@ export default function Home() {
                 <img src={profile?.hero_image_url} alt="Profile" className="h-full w-full object-cover" />
               )}
             </div>
-            <div className="flex flex-1 flex-col gap-6">
+            <div className="flex flex-1 flex-col">
               <div className="flex flex-col gap-2">
                 <p className="text-[16px] leading-6 text-fg-muted">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
@@ -223,14 +223,12 @@ export default function Home() {
           </section>
 
           {/* Skills */}
-          <section id="skills" className="mb-10 w-full">
-            {/* 見出し+タブ: 他セクションと同じ最大幅・中央寄せ */}
-            <div className="mx-auto w-full max-w-main">
-              <Headline label="スキル" title="Skills" />
-            </div>
-            <div className="w-full max-w-main mx-auto">
-              <SkillsCardGrid />
-            </div>
+          {/* 他の4セクションと同じく section 自体に max-w-main を持たせる。
+              内側の div で幅を作ると section の実幅が親いっぱい（1104px）になり、
+              セクションの境界とコンテンツの境界がずれる */}
+          <section id="skills" className="w-full max-w-main">
+            <Headline label="スキル" title="Skills" />
+            <SkillsCardGrid />
           </section>
         </div>
       </main>

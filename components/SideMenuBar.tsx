@@ -141,6 +141,9 @@ type SideMenuBarProps = {
   onCollapsedChange?: (collapsed: boolean) => void;
   /** 折りたたみトグルボタンの表示（既定 true）。モバイルのオーバーレイ表示では false にする */
   showCollapseToggle?: boolean;
+  /** セクションリンクの前置き。トップページは "" のまま(同一ページ内スクロール)、
+      別ページ(/works 等)からは "/" を渡して "/#introduction" にする */
+  hrefBase?: string;
 };
 
 export const SideMenuBar: FC<SideMenuBarProps> = ({
@@ -148,6 +151,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
   collapsed: controlledCollapsed,
   onCollapsedChange,
   showCollapseToggle = true,
+  hrefBase = "",
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = controlledCollapsed ?? internalCollapsed;
@@ -227,28 +231,28 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           <SideMenuItem
             icon={{ set: "Peoples", name: "user" }}
             label="Introduction"
-            href="#introduction"
+            href={`${hrefBase}#introduction`}
             active={activeSection === "introduction"}
             collapsed={collapsed}
           />
           <SideMenuItem
             icon={{ set: "Edit", name: "list-top" }}
             label="Career"
-            href="#career"
+            href={`${hrefBase}#career`}
             active={activeSection === "career"}
             collapsed={collapsed}
           />
           <SideMenuItem
             icon={{ set: "Charts", name: "ranking" }}
             label="Works"
-            href="#works"
+            href={`${hrefBase}#works`}
             active={activeSection === "works"}
             collapsed={collapsed}
           />
           <SideMenuItem
             icon={{ set: "Charts", name: "viencharts" }}
             label="Skills"
-            href="#skills"
+            href={`${hrefBase}#skills`}
             active={activeSection === "skills"}
             collapsed={collapsed}
           />

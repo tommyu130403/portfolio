@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 import { parseScreenshots } from "@/lib/work-content";
-import WorkDetailLeftPanel, { type WorkToolItem } from "./WorkDetailLeftPanel";
+import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
 import { ButtonFunction } from "./ButtonFunction";
+import Icon from "./Icon";
+import SideMenuBar from "./SideMenuBar";
 
 type Work = Tables<"works">;
 
@@ -141,51 +143,78 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const showNav = order.length > 1;
 
   return (
-    <div className="relative min-h-screen bg-system-900 text-white">
-      {/* lg:gap-0 … 左レール(overflow親)が旧 gap 40px を内部 gutter として内包するため、
-          コンテナ側の gap は 0 にし、罫線→本文の間隔だけ罫線の lg:mr-10 で復元する */}
-      <div className="mx-auto flex w-full max-w-[1520px] flex-col items-start justify-center gap-6 px-6 lg:flex-row lg:items-start lg:gap-0 lg:px-10">
-        <WorkDetailLeftPanel
-          work={work}
-          skills={skills}
-          tools={tools}
-          screenshots={screenshots}
-          onBack={handleBack}
-        />
-
-        {/* 縦罫線（左レールの gutter が左側の間隔を担うため、右側=本文への間隔のみ mr-10 で確保） */}
-        <div className="hidden w-px shrink-0 self-stretch bg-border-light lg:mr-10 lg:block" aria-hidden />
-
-        <WorkDetailContent work={work} />
+    <div className="relative flex min-h-screen items-start bg-surface text-white">
+      <div className="sticky top-0 shrink-0 z-[2] hidden lg:block">
+        <SideMenuBar hrefBase="/" showCollapseToggle={false} />
       </div>
 
-      {/* 前後ナビ（デスクトップ＝画面端に固定・マウス操作前提。lg 未満では本文に重なるため非表示） */}
+      {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
+          WorkVizModal(z-50) / ScreenshotLightbox(z-60) がサイドバー(z-2)や
+          画面端の固定ナビ(z-40)より下に沈む（2026-09-11 に実測） */}
+      <main className="relative flex min-w-0 flex-1 flex-col items-center">
+        {/* 戻りリンク */}
+        <div className="mx-auto w-full max-w-main px-6 pt-6">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="flex items-center gap-1 text-system-500 transition-colors hover:text-white"
+            aria-label="Works一覧へ戻る"
+          >
+            <Icon
+              set="Arrows"
+              name="left"
+              tintColor="currentColor"
+              className="h-2 w-2 shrink-0"
+              aria-hidden
+            />
+            <span className="font-guide text-[12px] leading-[1.3] tracking-[0.6px]">Works</span>
+          </button>
+        </div>
+
+        {/* カラム */}
+        <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-6 pt-10 pb-20">
+          <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
+          <WorkDetailContent work={work} />
+        </div>
+
+        {/* 前後ナビ（xl 未満＝本文末尾・タップ44px以上・ラベル付き）。
+            ルートが flex 行なので、ここは必ず <main> の内側に置く。外に出すと
+            サイドバーと横並びの兄弟になり、lg 未満で <main> が幅 0 に潰れる */}
+        {showNav && (
+        <div className="mx-auto flex w-full max-w-main gap-3 px-6 pb-16 xl:hidden">
+          <button
+            type="button"
+            onClick={() => goTo(-1)}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+          >
+            ‹ 前のWork
+          </button>
+          <button
+            type="button"
+            onClick={() => goTo(1)}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+          >
+            次のWork ›
+          </button>
+        </div>
+        )}
+      </main>
+
+      {/* 前後ナビ（デスクトップ＝画面端に固定・マウス操作前提。xl 未満では本文に重なるため非表示） */}
       {showNav && (
         <>
-          <div className="fixed left-2 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
+          {/* left-[264px] = サイドバー 256px + 8px。
+              xl(1280px) 未満では本文カラムの左端が 300px を下回って矢印と重なるため、
+              xl 以上でだけ出す。それ未満は本文末尾のラベル付きボタンが担当する
+              （2026-09-08 に 1024/1090/1096/1100px で実測） */}
+          <div className="fixed left-[264px] top-1/2 z-40 hidden -translate-y-1/2 xl:block">
             <ButtonFunction direction="left" onClick={() => goTo(-1)} aria-label="前のWork" />
           </div>
-          <div className="fixed right-2 top-1/2 z-40 hidden -translate-y-1/2 lg:block">
+          <div className="fixed right-2 top-1/2 z-40 hidden -translate-y-1/2 xl:block">
             <ButtonFunction direction="right" onClick={() => goTo(1)} aria-label="次のWork" />
           </div>
 
-          {/* 前後ナビ（モバイル／タブレット＝本文末尾・タップ44px以上・ラベル付き） */}
-          <div className="mx-auto flex w-full max-w-[1520px] gap-3 px-6 pb-16 lg:hidden">
-            <button
-              type="button"
-              onClick={() => goTo(-1)}
-              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
-            >
-              ‹ 前のWork
-            </button>
-            <button
-              type="button"
-              onClick={() => goTo(1)}
-              className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
-            >
-              次のWork ›
-            </button>
-          </div>
+
         </>
       )}
     </div>

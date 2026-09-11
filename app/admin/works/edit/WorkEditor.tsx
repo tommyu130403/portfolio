@@ -54,10 +54,6 @@ function emptyWork(id: string): Work {
     hero_screenshots: [] as unknown as Json,
     hero_bg_color: null,
     sections: [] as unknown as Json,
-    summary: null,
-    site_url: null,
-    site_title: null,
-    site_thumbnail_url: null,
     stakeholder_breakdown: null,
     career_item_id: null,
     sort_order: 0,
@@ -569,38 +565,11 @@ export default function WorkEditor({ workId }: { workId: string }) {
 
             <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>
             <div className="col-span-2">
-              <FieldLabel>サマリー本文（タイトル下の説明）</FieldLabel>
-              <textarea
-                value={work.summary ?? ""}
-                onChange={(e) => setField("summary", e.target.value || null)}
-                placeholder="プロジェクトの概要を簡潔に説明します。"
-                rows={3}
-                className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-[1.6] text-white outline-none transition-colors focus:border-[#48f4be]"
-              />
-            </div>
-            <div className="col-span-2">
               <FieldLabel>体制内訳（例: 事業責任者(1) | PM(1) | デザイナー(2) | エンジニア(4)）</FieldLabel>
               <Input
                 value={work.stakeholder_breakdown ?? ""}
                 onChange={(v) => setField("stakeholder_breakdown", v || null)}
                 placeholder="事業責任者(1) | PM(1) | デザイナー(2) | エンジニア(4)"
-              />
-            </div>
-            <div>
-              <FieldLabel>サイトリンク・タイトル</FieldLabel>
-              <Input value={work.site_title ?? ""} onChange={(v) => setField("site_title", v || null)} placeholder="サイトタイトル" />
-            </div>
-            <div>
-              <FieldLabel>サイトリンク・URL</FieldLabel>
-              <Input value={work.site_url ?? ""} onChange={(v) => setField("site_url", v || null)} placeholder="https://example.com" />
-            </div>
-            <div className="col-span-2">
-              <FieldLabel>サイトリンク・サムネイル</FieldLabel>
-              <ImagePickerField
-                value={work.site_thumbnail_url ?? ""}
-                onChange={(v) => setField("site_thumbnail_url", v || null)}
-                folder="projects/site-links"
-                previewClassName="mt-2 h-16 w-20 rounded-[6px] object-cover"
               />
             </div>
 

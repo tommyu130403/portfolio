@@ -1,0 +1,26 @@
+{
+  "note": "works の summary / site_url / site_title / site_thumbnail_url を DROP する前の退避。2026-09-11 取得。4カラムは全行 null のため復元対象データは無い。",
+  "captured_at": "2026-09-11",
+  "columns": ["summary", "site_url", "site_title", "site_thumbnail_url"],
+  "production": {
+    "project_id": "kljlxjlbetaxhtxqzrdc",
+    "row_count": 4,
+    "rows": [
+      { "id": "d0d7cc29-428f-4ee1-8765-155c5fb4a086", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null },
+      { "id": "ddbec926-8e8d-40f7-a705-e28ae6e05469", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null },
+      { "id": "ab150f48-3da7-47b6-ba3d-f0b624e8ff29", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null },
+      { "id": "29c6b6d0-a82c-40d3-94d0-8edef6fced74", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null }
+    ]
+  },
+  "development": {
+    "project_id": "aemqzbsofprgmwtpfndf",
+    "row_count": 5,
+    "rows": [
+      { "id": "c5b71719-c894-4678-9785-26887c0021b3", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null },
+      { "id": "794dc818-3005-4a5e-9b15-8e96d18c3ed3", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null },
+      { "id": "e12f302f-90ed-4d03-acfc-9f855654689c", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null },
+      { "id": "46ebe41d-cf8f-4be9-bd68-6d39e7713db6", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null },
+      { "id": "2c0fb531-6b4c-4ed1-99e7-2a8f614a76c0", "summary": null, "site_url": null, "site_title": null, "site_thumbnail_url": null }
+    ]
+  }
+}

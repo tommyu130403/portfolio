@@ -27,7 +27,10 @@ export default function Home() {
 
   // SSR との不一致を防ぐため、ウィンドウ幅による初期値はハイドレーション後に設定する
   useEffect(() => {
-    setSidebarCollapsed(window.innerWidth < 1024);
+    const frame = window.requestAnimationFrame(() => {
+      setSidebarCollapsed(window.innerWidth < 1024);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   // オーバーレイ表示中は Esc で閉じ、背面スクロールをロックする

@@ -31,6 +31,9 @@
 # .claudecode/config.md はブランチ・PR 等の開発ルールのため追跡する（チーム共有）
 # Cursor: .cursor/rules/ は共有のため追跡。.cursor/projects/ のみ無視
 .cursor/projects/
+# Codex: hooks.json は共有のため追跡し、ローカル設定は無視する（.claude/ と同じ方針）
+.codex/*
+!.codex/hooks.json
 *.pem
 
 # debug
@@ -45,6 +48,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# supabase CLI がリンク状態を書き出す作業用ディレクトリ（マシン固有）
+supabase/.temp/
 
 # typescript
 *.tsbuildinfo

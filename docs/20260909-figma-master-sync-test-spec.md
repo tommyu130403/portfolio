@@ -267,7 +267,7 @@ JSON.stringify(out)
 | R-9 | admin プレビュー | `/admin/works/edit` の textarea に markdown を入れ、プレビューの見出しを変更前（port 3001）と比較 | **`WorkSections` のデフォルト値（`gap-[120px]` / `withDividers=false`）が変わっていない**こと。<br>※ **「見た目が変わっていない」を期待値にしない。** admin プレビューは公開側と `RenderBlock` を共有しているため、Phase 2 の見出し変更は**設計どおり admin にも及ぶ**。実測では文字サイズ・太さ・行間・字間・色は変更前と同一だが、**書体が Avenir → Noto Sans JP に変わる**（英字のみ。日本語は元から Noto にフォールバックしていたため不変）。§9-13 参照 |
 | R-10 | `/works` を id 無しで開く | `http://localhost:3000/works` | エラー表示が新レイアウトで崩れない |
 | R-11 | `/styleguide` の Card プレビュー | カードの rect | **392px**（754px に伸びていたら不合格） |
-| R-12 | `.design-system-context.yml` | `npx --yes js-yaml .design-system-context.yml` | exit 0。`intentional_compromises` が **4件**（border色 / radius / summary+サイトリンク / モバイルサイドバー） |
+| R-12 | `.design-system-context.yml` | `npx --yes js-yaml .design-system-context.yml` | exit 0。`intentional_compromises` が **3件**（border色 / radius / モバイルサイドバー） |
 | R-13 | 未追跡ファイル | `git status --short` | セットアップ時と同一。検証中に作ったファイルは削除済み |
 
 ---
@@ -285,7 +285,7 @@ JSON.stringify(out)
 7. **ライトボックスがスクショ5枚で横に溢れる**。`justify-center` のため左側へスクロールで到達できない。旧実装にも同じコードがあり退行ではない。
 8. **モーダルがサイドバーを覆い、パネル中心が本文カラム中心と 128px ずれる**。**Figma もそうなっている**（`839:3764` の Container は 1440 の中央）ので仕様どおり。
 9. **`git mv` の類似度が 43% で、既定の `-M50%` では改名として追跡されない**。`git log --follow components/WorkDetailHeader.tsx` の履歴が切れる。
-10. **`work.summary` とサイトリンクカードが admin から入力できるのに公開側に出ない**。ユーザー判断で削除した。`.design-system-context.yml` に trigger 付きで記録済み。別タスクで整理予定。
+10. ~~**`work.summary` とサイトリンクカードが admin から入力できるのに公開側に出ない**~~ → **2026-09-11 に解消済み**。DB カラム・admin 入力欄・型定義をすべて削除し、`.design-system-context.yml` の該当記録も削除した（`supabase/migrations/20260911100000_drop_work_summary_site_columns.sql`）。
 11. **`images/hero-placeholder.jpg` が 404**。本作業と無関係の既存の欠落。
 12. **System 025〜950 の 12 段・1000・Text/Caption・Border/Main・Action/hover の α が未照合**。Master のどのノードも使っておらず MCP から値が取れない（`search_design_system` は名前しか返さない）。
 13. **英字の見出しの書体が Avenir → Noto Sans JP に変わった**（2026-09-10 に実測）。`text-title-pj` / `text-headline-01-jp` / `text-headline-02-jp` は Figma の `Body/JP` バインドに従い Noto 単独を指定するため、変更前の `font-body`（Avenir → Noto の自動切替）と違い英字も Noto で描画される。日本語は元から Noto にフォールバックしていたため不変。影響範囲はトップの「Introduction / Career / Skills」、Works 詳細のタイトル、本文の見出し、admin プレビュー。Figma の `Title/PJ` は `Body/JP` バインドなので**実装は Figma どおり**。**2026-09-10 にユーザー判断で現状維持（Noto）と決定した。** 英字を Avenir にしたい場合は Figma 側で `Title/EN` に付け替えるのが筋で、依頼書 §6 に列挙してある。

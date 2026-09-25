@@ -828,7 +828,7 @@ function WorkVizModalDemo() {
           ] }}
           stakeholders={{ groups: [
             { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
-            { label: "Designer", icon: "Edit/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
+            { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
           ] }}
           onClose={() => setKind(null)}
         />
@@ -1013,7 +1013,7 @@ function ComponentsSection() {
             <WorkStakeholderDiagram
               data={{ groups: [
                 { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
-                { label: "Designer", icon: "Edit/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
+                { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
               ] }}
             />
           </div>

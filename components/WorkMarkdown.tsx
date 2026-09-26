@@ -13,18 +13,19 @@ import FlowchartEmbed from "./FlowchartEmbed";
  *
  * タイポ体系（Figma 457:2366）:
  *  - `## `   → 見出し01（Noto Bold 24px white）
- *  - `### `  → 見出し02（Noto Bold 20px mint #b3ffe7）
+ *  - `### `  → 見出し02（Noto Bold 17px / 20px gray #9e9e9e）
  *  - `#### ` → 見出し03（Avenir Heavy 17px gray #9e9e9e）
  *  - `##### `→ 小本文 Body02（13px white）
  *  - `> `    → 引用（13px system-400 #BDBDBD・左ボーダー、連続行対応）
  *  - 段落・リスト → 直前の見出しに応じて本文サイズを切替
- *      ・セクションタイトル / 見出し01（`## `）の配下 → Body01（15px / 0.45px）
- *      ・見出し02（`### `）/ 見出し03（`#### `）の配下 → Body02（13px / 0.39px）
+ *      ・見出し01（`## `）配下 / 見出し02（`### `）配下 → Body01（15px / 0.45px）
+ *      ・見出し03（`#### `）配下 → Body02（13px / 0.39px）
  * 拡張記法:
  *  - **太字** / *斜体* / ~~取消線~~ / `インラインコード` / [リンク](url)（外部はアイコン付き）
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
- *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック）
+ *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
+ *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma 888:3181）
  */
 
 /* ------------------------------------------------------------------ *
@@ -205,9 +206,60 @@ const ImageFigure: FC<{
   );
 };
 
+/**
+ * align=left の画像＋右列（本文＋キャプション）の横並びブロック（Figma 888:3181）。
+ * 560px 未満は縦積みにする（@container クエリ）。
+ */
+const ImageTextRow: FC<{
+  url: string;
+  width: string;
+  scale: number;
+  caption?: string;
+  text: string | null;
+  keyBase: string;
+}> = ({ url, width, scale, caption, text, keyBase }) => (
+  <div className="@container mt-8 mb-8">
+    <div className="flex flex-col items-start gap-2 @min-[560px]:flex-row @min-[560px]:gap-10">
+      <div
+        className="shrink-0 overflow-hidden rounded-r16"
+        style={{ width: widthToCss(width) ?? "320px", maxWidth: "100%" }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={caption ?? ""}
+          className="block h-auto w-full"
+          style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "center" } : undefined}
+        />
+      </div>
+      {(text || caption) && (
+        <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:flex-1">
+          {text && (
+            <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">
+              {renderInline(text, `${keyBase}-t`)}
+            </p>
+          )}
+          {caption && (
+            <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">{caption}</p>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 /* ------------------------------------------------------------------ *
  * ブロックパース
  * ------------------------------------------------------------------ */
+
+type ImageBlock = {
+  type: "image";
+  caption: string;
+  url: string;
+  align: ImageAlign;
+  width: string;
+  scale: number;
+};
 
 type Block =
   | { type: "h1"; content: string }
@@ -216,7 +268,8 @@ type Block =
   | { type: "small"; content: string }
   | { type: "paragraph"; content: string }
   | { type: "quote"; content: string }
-  | { type: "image"; caption: string; url: string; align: ImageAlign; width: string; scale: number }
+  | ImageBlock
+  | { type: "imageText"; image: ImageBlock; text: string | null }
   | { type: "ul"; items: string[] }
   | { type: "ol"; items: string[] }
   | { type: "hr" }
@@ -397,11 +450,37 @@ function parseBlocks(src: string): Block[] {
   return blocks;
 }
 
+/**
+ * align=left の単独画像を直後の段落と束ねて「画像＋右列」の横並びブロックにする
+ * （Figma 888:3181）。直後が段落でなければテキスト無しの横並びとして扱う。
+ */
+function groupImageText(blocks: Block[]): Block[] {
+  const out: Block[] = [];
+  let i = 0;
+  while (i < blocks.length) {
+    const b = blocks[i];
+    if (b.type === "image" && b.align === "left") {
+      const next = blocks[i + 1];
+      if (next && next.type === "paragraph") {
+        out.push({ type: "imageText", image: b, text: next.content });
+        i += 2;
+        continue;
+      }
+      out.push({ type: "imageText", image: b, text: null });
+      i += 1;
+      continue;
+    }
+    out.push(b);
+    i += 1;
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ *
  * ブロック描画
  * ------------------------------------------------------------------ */
 
-/** 本文サイズ（直前の見出しレベルで決まる）。01=15px / 02=13px */
+/** 本文サイズ（直前の見出しレベルで決まる）。01=15px（見出し01・02 配下）/ 02=13px（見出し03 配下） */
 type BodyLevel = "01" | "02";
 
 /** 本文（段落・リスト）の Body01 / Body02 タイポクラス */
@@ -421,13 +500,13 @@ function RenderBlock({
   switch (block.type) {
     case "h1":
       return (
-        <p className="mb-4 mt-10 text-headline-01-jp text-white">
+        <p className="mb-8 mt-10 text-headline-01-jp text-white">
           {renderInline(block.content, k)}
         </p>
       );
     case "h2":
       return (
-        <p className="mb-4 mt-10 text-headline-02-jp text-system-500">
+        <p className="mb-2 mt-8 text-headline-02-jp text-system-500">
           {renderInline(block.content, k)}
         </p>
       );
@@ -467,6 +546,17 @@ function RenderBlock({
           width={block.width}
           scale={block.scale}
           caption={block.caption || undefined}
+        />
+      );
+    case "imageText":
+      return (
+        <ImageTextRow
+          url={block.image.url}
+          width={block.image.width}
+          scale={block.image.scale}
+          caption={block.image.caption || undefined}
+          text={block.text}
+          keyBase={k}
         />
       );
     case "ul":
@@ -516,18 +606,19 @@ function RenderBlock({
 
 /** 本文 markdown を描画する（flow-root で float 画像を内包し回り込みを成立させる） */
 export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
-  const blocks = parseBlocks(md);
-  // 各ブロックの本文サイズを直前の見出しから事前算出（セクションタイトル / 見出し01 配下=Body01、見出し02・03 配下=Body02）
+  const blocks = groupImageText(parseBlocks(md));
+  // 各ブロックの本文サイズを直前の見出しから事前算出（見出し01・02 配下=Body01、見出し03 配下=Body02）
   const bodyLevels: BodyLevel[] = [];
   let level: BodyLevel = "01";
   for (const b of blocks) {
-    if (b.type === "h1") level = "01";
-    else if (b.type === "h2" || b.type === "h3") level = "02";
+    if (b.type === "h1" || b.type === "h2") level = "01";
+    else if (b.type === "h3") level = "02";
     bodyLevels.push(level);
   }
-  // flow-root の先頭ブロックの mt（ブロック区切り 40）はセクション gap が担うため打ち消す
+  // flow-root の先頭ブロックの mt（ブロック区切り 40）はセクション gap が担うため打ち消す。
+  // 末尾ブロックの mb はセクション間 gap / カラム下端 padding が担うため打ち消す
   return (
-    <div style={{ display: "flow-root" }} className="[&>*:first-child]:mt-0">
+    <div style={{ display: "flow-root" }} className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       {blocks.map((b, i) => (
         <RenderBlock key={i} block={b} idx={i} bodyLevel={bodyLevels[i]} />
       ))}
@@ -556,7 +647,7 @@ export const WorkSections: FC<{
     {sections.map((sec, i) => (
       <React.Fragment key={i}>
         {withDividers && i > 0 && <div className="h-px w-full bg-border-light" aria-hidden />}
-        <section className="flex w-full flex-col gap-10">
+        <section className="flex w-full flex-col gap-8">
           {sec.heading && <Headline title={sec.heading} variant={headingVariant} />}
           <MarkdownBody md={sec.md} />
         </section>

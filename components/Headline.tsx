@@ -3,11 +3,11 @@ import type { FC } from "react";
 type HeadlineProps = {
   /** default の小見出し（日本語サブテキスト・グレー 12px）。SectionTitle のエピグラフ部分 */
   label?: string;
-  /** 見出し本文。default では英語見出し（32px Avenir Heavy 白）、その他 variant では各見出しテキスト */
+  /** 見出し本文。default では英語見出し（Title/EN 38px Avenir Heavy 白）、その他 variant では各見出しテキスト */
   title: string;
   /**
    * 見出しタイプ
-   * - default: ページ上部のセクション見出し（JP サブ + EN 32px。Figma SectionTitle 836:3312）
+   * - default: ページ上部のセクション見出し（JP サブ + Title/EN 38px Avenir Heavy。Figma SectionTitle 836:3312）
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
    * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（Library 304:313 = 01/02（03 は Figma に無い））
@@ -66,8 +66,8 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   return (
     <div className="flex flex-col items-start pb-8 w-full">
       <div className="flex flex-col gap-3 w-full [word-break:break-word]">
-        <p className="font-body text-[12px] font-normal leading-normal tracking-[0.36px] text-system-500 w-full">{label ?? ""}</p>
-        <p className="text-title-pj text-white w-full [text-box-trim:trim-both] [text-box-edge:cap_alphabetic]">{title}</p>
+        <p className="font-body text-[12px] font-normal leading-[14px] tracking-[0.36px] text-system-500 w-full">{label ?? ""}</p>
+        <p className="text-title-en text-white w-full">{title}</p>
       </div>
     </div>
   );

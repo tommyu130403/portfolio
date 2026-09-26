@@ -14,6 +14,12 @@ export type SideMenuSectionId = "introduction" | "career" | "works" | "skills";
 const AVATAR_URL =
   "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=88&q=80";
 
+// URL 未入手。入手後に href を足す
+const SOCIAL_LINKS: { label: string; icon: Pick<IconProps, "set" | "name">; href?: string }[] = [
+  { label: "GitHub", icon: { set: "Brand", name: "logo-github" } },
+  { label: "YOUTRUST", icon: { set: "Brand", name: "logo-youtrust" } },
+];
+
 // ─────────────────────────────────────────────
 // SideMenuItem（Figma _Item: Size, Status, Width）
 // ─────────────────────────────────────────────
@@ -23,6 +29,8 @@ type SideMenuItemProps = {
   href?: string;
   active?: boolean;
   collapsed?: boolean;
+  /** Figma の _Item width=short。ラベルを表示せず、aria-label とツールチップで示す */
+  iconOnly?: boolean;
 };
 
 const SideMenuItem: FC<SideMenuItemProps> = ({
@@ -31,11 +39,12 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
   href,
   active = false,
   collapsed = false,
+  iconOnly = false,
 }) => {
   // Figma の Active は背景を持たず文字色だけ変わる（node 59:24912）。
   // 色だけが現在地の手がかりになるため aria-current を併せて出す（WCAG 1.4.1）。
   const status = resolveItemStatus(active);
-  const width = collapsed ? "short" : "default";
+  const width = iconOnly ? "hug" : collapsed ? "short" : "default";
   const className = getItemClasses(status, width);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -46,13 +55,13 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
     if (!el) return;
     const rect = el.getBoundingClientRect();
     setTooltipPos({
-      top: rect.top + rect.height / 2,
-      left: rect.right + 8,
+      top: rect.top - 1,
+      left: rect.left + 36,
     });
   };
 
   useEffect(() => {
-    if (!collapsed || !showTooltip) return;
+    if (!(collapsed || iconOnly) || !showTooltip) return;
     updateTooltipPos();
     const handle = () => updateTooltipPos();
     window.addEventListener("resize", handle);
@@ -61,28 +70,30 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       window.removeEventListener("resize", handle);
       window.removeEventListener("scroll", handle, true);
     };
-  }, [collapsed, showTooltip]);
+  }, [collapsed, iconOnly, showTooltip]);
 
   const content = (
     <>
       <Icon set={icon.set} name={icon.name} className="h-[18px] w-[18px] shrink-0" aria-hidden />
-      <span
-        className={[
-          "font-en flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap overflow-hidden transition-all duration-300",
-          collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
-        ].join(" ")}
-      >
-        {label}
-      </span>
+      {!iconOnly && (
+        <span
+          className={[
+            "font-en flex-1 text-left text-[15px] leading-[20px] tracking-[0.75px] whitespace-nowrap overflow-hidden transition-all duration-300",
+            collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
+          ].join(" ")}
+        >
+          {label}
+        </span>
+      )}
     </>
   );
 
   const tooltip =
-    collapsed && showTooltip && tooltipPos
+    (collapsed || iconOnly) && showTooltip && tooltipPos
       ? createPortal(
           <span
             className={[
-              "font-en pointer-events-none fixed z-[70] -translate-y-1/2",
+              "font-en pointer-events-none fixed z-[70]",
               "rounded-r4 border border-border bg-surface px-3 py-[10px]",
               "text-[14px] leading-[20px] whitespace-nowrap text-white/80",
               "shadow-base",
@@ -100,13 +111,18 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
     return (
       <div
         ref={wrapperRef}
-        className="relative w-full"
+        className={iconOnly ? "relative" : "relative w-full"}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         onFocusCapture={() => setShowTooltip(true)}
         onBlurCapture={() => setShowTooltip(false)}
       >
-        <Link href={href} className={className} aria-current={active ? "page" : undefined}>
+        <Link
+          href={href}
+          className={className}
+          aria-current={active ? "page" : undefined}
+          aria-label={iconOnly ? label : undefined}
+        >
           {content}
         </Link>
         {tooltip}
@@ -117,13 +133,18 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
   return (
     <div
       ref={wrapperRef}
-      className="relative w-full"
+      className={iconOnly ? "relative" : "relative w-full"}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
       onFocusCapture={() => setShowTooltip(true)}
       onBlurCapture={() => setShowTooltip(false)}
     >
-      <button type="button" className={className} aria-current={active ? "true" : undefined}>
+      <button
+        type="button"
+        className={className}
+        aria-current={active ? "true" : undefined}
+        aria-label={iconOnly ? label : undefined}
+      >
         {content}
       </button>
       {tooltip}
@@ -165,7 +186,8 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
   return (
     <aside
       className={[
-        "relative flex h-screen flex-col border-r border-border bg-surface rounded-[12px]",
+        "relative flex h-screen flex-col bg-surface",
+        "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border after:content-['']",
         "transition-[width] duration-300 ease-in-out",
         collapsed ? "w-[96px]" : "w-[256px]",
       ].join(" ")}
@@ -187,7 +209,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         {/* Title */}
         <p
           className={[
-            "font-guide font-normal leading-8 tracking-[0.07px] text-primary whitespace-nowrap transition-all duration-300",
+            "font-guide font-normal leading-8 tracking-[0.0703px] text-primary whitespace-nowrap transition-all duration-300",
             collapsed ? "text-[12px]" : "text-[24px]",
           ].join(" ")}
         >
@@ -209,22 +231,24 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
             ].join(" ")}
           >
-            <span className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
+            <span className="font-en font-medium text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
               Product Designer
             </span>
-            <span className="font-en text-[14px] leading-5 text-white/80 whitespace-nowrap">Yu Tomita</span>
+            <span className="font-en font-medium text-[14px] leading-5 text-white/80 whitespace-nowrap">Yu Tomita</span>
           </div>
         </div>
 
         {/* Divider */}
         <div className="h-px w-full rounded-[2px] bg-border shrink-0" />
 
-        {/* Navigation */}
-        {/* pl-[2px]: アイコン中心が collapsed 時の aside 幅 96px の中央に揃う
+        {/* Profile section */}
+        {/* pl-[2px]: 折りたたみ時のみ。アイコン中心が collapsed 時の aside 幅 96px の中央に揃う
             計算: p-6(24) + pl(2) + item px-3(12) = 38px → icon center = 48px = 96/2 */}
-        <nav className="flex flex-1 flex-col gap-2 w-full items-start pl-[2px]">
-          {/* Profile section */}
-          <p className="font-en text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+        <nav
+          aria-label="Profile"
+          className={["flex flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
+        >
+          <p className="font-en font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
             Profile
           </p>
 
@@ -256,24 +280,41 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             active={activeSection === "skills"}
             collapsed={collapsed}
           />
+        </nav>
 
-          {/* Divider */}
-          <div className="my-2 h-px w-full rounded-[2px] bg-border shrink-0" />
+        {/* Divider */}
+        <div className="h-px w-full rounded-[2px] bg-border shrink-0" />
 
-          {/* Social section */}
-          <p className="font-en text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+        {/* Social section */}
+        <nav
+          aria-label="Social"
+          className={["flex flex-1 flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
+        >
+          <p className="font-en font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
             Social
           </p>
-          <SideMenuItem
-            icon={{ set: "Peoples", name: "user" }}
-            label="Profile"
-            collapsed={collapsed}
-          />
+          <div className={collapsed ? "flex flex-col gap-2" : "flex gap-2"}>
+            {SOCIAL_LINKS.map((l) => (
+              <SideMenuItem
+                key={l.label}
+                iconOnly
+                icon={l.icon}
+                label={l.label}
+                href={l.href}
+                collapsed={collapsed}
+              />
+            ))}
+          </div>
+        </nav>
 
-          {role === "owner" && (
-            <>
-              <div className="my-2 h-px w-full rounded-[2px] bg-border shrink-0" />
-              <p className="font-en text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+        {role === "owner" && (
+          <>
+            <div className="h-px w-full rounded-[2px] bg-border shrink-0" />
+            <nav
+              aria-label="Developer"
+              className={["flex flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
+            >
+              <p className="font-en font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
                 Developer
               </p>
               <SideMenuItem
@@ -288,9 +329,9 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
                 href="/styleguide"
                 collapsed={collapsed}
               />
-            </>
-          )}
-        </nav>
+            </nav>
+          </>
+        )}
 
         {/* Contact */}
         <SideMenuItem

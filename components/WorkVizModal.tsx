@@ -29,11 +29,11 @@ const HEADING: Record<WorkVizModalProps["kind"], string> = {
 };
 
 const WorkVizModal: FC<WorkVizModalProps> = ({ kind, timeline, stakeholders, onClose }) => (
-  <Modal onClose={onClose}>
+  <Modal onClose={onClose} width={kind === "stakeholders" ? "content" : "full"}>
     {/* Slot（Figma I839:3764;120:367）: gap-16 / p-40 */}
     <div className="flex flex-col gap-4 p-10">
-      {/* 見出し（Headline 03 = 17px Bold system-500） */}
-      <p className="font-body text-[17px] font-bold leading-[1.5] tracking-[0.85px] text-system-500">
+      {/* 見出し Headline/02/EN（Afacad Bold 20/30/1px）・色 #9E9E9E */}
+      <p className="text-headline-02-en text-system-500">
         {HEADING[kind]}
       </p>
       {kind === "timeline"

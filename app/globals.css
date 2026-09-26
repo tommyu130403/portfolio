@@ -354,6 +354,4 @@ body {
      ※ @theme inline の --font-body は CSS 変数として出力されない（font-body ユーティリティに
         インライン展開されるのみ）ため、ここでは実体スタックを直接指定する。 */
   font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
-  /* Body JP 文字間: 0.03em (3%) */
-  letter-spacing: 0.03em;
 }

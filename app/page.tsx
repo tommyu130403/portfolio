@@ -165,7 +165,7 @@ export default function Home() {
             </div>
             <div className="flex flex-1 flex-col">
               <div className="flex flex-col gap-2">
-                <p className="text-[16px] leading-6 text-fg-muted">
+                <p className="text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
                 </p>
                 <div className="flex items-end gap-2 text-main-050">

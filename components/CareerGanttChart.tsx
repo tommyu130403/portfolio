@@ -244,7 +244,7 @@ function CareerCard({
               {formatPeriod(item.period)}
             </span>
             {isCurrent && (
-              <span style={{ background: C.badgeBg, color: C.badgeText, fontSize: 9, lineHeight: 1, padding: "3px 7px", borderRadius: 9999, whiteSpace: "nowrap", flexShrink: 0 }}>
+              <span style={{ background: C.badgeBg, color: C.badgeText, fontSize: 9, lineHeight: 1, letterSpacing: "0.117px", padding: "3px 7px", borderRadius: 9999, whiteSpace: "nowrap", flexShrink: 0 }}>
                 現在
               </span>
             )}

@@ -221,7 +221,7 @@ const ImageTextRow: FC<{
   <div className="@container mt-8 mb-8">
     <div className="flex flex-col items-start gap-2 @min-[560px]:flex-row @min-[560px]:gap-10">
       <div
-        className="shrink-0 overflow-hidden rounded-r16"
+        className="min-w-0 shrink overflow-hidden rounded-r16"
         style={{ width: widthToCss(width) ?? "320px", maxWidth: "100%" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -233,7 +233,7 @@ const ImageTextRow: FC<{
         />
       </div>
       {(text || caption) && (
-        <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:flex-1">
+        <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
             <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">
               {renderInline(text, `${keyBase}-t`)}

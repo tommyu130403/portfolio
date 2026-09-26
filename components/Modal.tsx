@@ -33,11 +33,16 @@ const Modal: FC<ModalProps> = ({
   width = "full",
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  // ダイアログ本体 + 閉じるボタンをまとめて包むラッパー（フォーカストラップの境界）
+  const trapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 開く前の値を保存し、閉じるときに復元する（モーダルが重なった場合でも
+    // 下のモーダルが開いている間はロックが外れないように）
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevOverflow;
     };
   }, []);
 
@@ -55,7 +60,33 @@ const Modal: FC<ModalProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !e.isComposing) {
+        // モーダルが重なっている場合、最前面（DOM 上で最後）のものだけが閉じる
+        const dialogs = document.querySelectorAll('[role="dialog"]');
+        if (dialogs.length > 0 && dialogs[dialogs.length - 1] !== dialogRef.current) return;
         onClose();
+        return;
+      }
+      if (e.key === "Tab") {
+        const root = trapRef.current;
+        if (!root || !root.contains(document.activeElement)) return;
+        const focusables = Array.from(
+          root.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey) {
+          if (active === first || active === dialogRef.current) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -74,7 +105,7 @@ const Modal: FC<ModalProps> = ({
       }}
       onClick={onClose}
     >
-      <div className="relative flex w-full flex-col items-center gap-4">
+      <div ref={trapRef} className="relative flex w-full flex-col items-center gap-4">
         {/* Prev arrow */}
         {carousel && onPrev && (
           <div className="absolute left-[-53px] top-1/2 -translate-y-1/2">

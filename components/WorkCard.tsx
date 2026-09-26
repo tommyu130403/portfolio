@@ -14,10 +14,11 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
     <div
       onClick={onClick}
       className={[
-        "flex w-full min-w-0 flex-col overflow-hidden rounded-[14px] border border-border",
+        "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[14px]",
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-['']",
         "shadow-base",
         onClick
-          ? "hover:border-system-500 hover:bg-system-800 transition-colors cursor-pointer"
+          ? "hover:after:border-system-500 hover:bg-system-800 transition-colors cursor-pointer"
           : "",
       ].join(" ")}
     >

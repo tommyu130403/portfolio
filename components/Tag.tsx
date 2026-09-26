@@ -17,7 +17,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
   if (variant === "tool") {
     return (
       <div
-        className={`flex gap-[4px] items-center rounded-full border border-border px-[10px] py-[6px] shrink-0 ${className ?? ""}`}
+        className={`relative flex gap-[4px] items-center rounded-full px-[10px] py-[6px] shrink-0 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-[''] ${className ?? ""}`}
       >
         {prefix}
         <p className="font-en text-[10px] leading-none text-fg-muted whitespace-nowrap">{label}</p>

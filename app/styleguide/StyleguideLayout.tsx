@@ -392,7 +392,7 @@ function TypographySection() {
           [
             { role: "Special / EN", family: typo.special.en, token: "typo.special.en", cssVar: "--font-afacad",       cls: "",           sample: "Special Heading" },
             { role: "Body / JP",    family: typo.body.jp,    token: "typo.body.jp",    cssVar: "--font-noto-sans-jp", cls: "",           sample: "本文テキスト" },
-            { role: "Body / EN",    family: typo.body.en,    token: "typo.body.en",    cssVar: undefined,             cls: "",           sample: "Body Text" },
+            { role: "Body / EN",    family: typo.body.en,    token: "typo.body.en",    cssVar: undefined,             cls: "font-en",    sample: "Body Text" },
             { role: "実装ローカル / JP（font-mplus）",   family: "M PLUS 1p",           token: "—（Figma 変数なし）", cssVar: "--font-mplus-1p", cls: "",  sample: "見出しガイド" },
             // font-guide は @theme inline 定義のため CSS 変数として出力されない（ユーティリティにインライン展開される）。
             // そのためこの1件だけは class 経由で当てる。
@@ -428,7 +428,8 @@ function TypographySection() {
       <p className="mb-4 text-[12px] text-system-700">
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge>、
         クラスからは <TokenBadge>text-body-02-jp</TokenBadge>（app/globals.css の <TokenBadge>@utility</TokenBadge>）で参照。
-        lineHeight は倍率（Figma 100% → 1）。行間 AUTO は <TokenBadge>normal</TokenBadge>。letterSpacing は em（Figma 3% → 0.03em）。
+        lineHeight は倍率（Figma 100% → 1）。Noto の AUTO は Figma 実測 px（round(1.2×size)）、Avenir は
+        <TokenBadge>title-en</TokenBadge> の 52px 以外は <TokenBadge>normal</TokenBadge>。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
@@ -842,7 +843,7 @@ function ComponentsSection() {
     <section id="components" className="scroll-mt-8">
       <SectionTitle label="Components" title="コンポーネント" />
       <div className="flex flex-col gap-12">
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / section / コンテンツ見出し 01・02（Library 304:313）。03 は Figma に存在せず実装のみ">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Title/EN（Avenir Heavy 38px）。sub / section / コンテンツ見出し 01・02（Library 304:313）。03 は Figma に存在せず実装のみ">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
@@ -853,14 +854,14 @@ function ComponentsSection() {
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
-            <p className="text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
+            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
             <p className="font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">見出し01（## / Noto Bold 24px 白）</p>
             <p className="font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">見出し02（### / Noto Bold 20px mint）</p>
-            <p className="text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
+            <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
             <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
             <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
-            <p className="text-[10px] leading-[16px] tracking-[0.5px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
+            <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
           </div>
         </ComponentPreview>
 

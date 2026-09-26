@@ -42,6 +42,10 @@ const SAMPLE_WORK_DETAIL = {
   sections: [
     { heading: "概要", body: "### 背景\n市場のニーズに応えるため、新規スカウトサービスを立ち上げました。\n\n### 課題\n既存フローでは候補者と企業のマッチング精度に課題がありました。" },
     { heading: "見出し01", body: "本文テキスト Body01。プロジェクトで取り組んだ施策の詳細を記載します。" },
+    {
+      heading: "本文ブロック（検証用）",
+      body: "本文テキスト Body01。画像ブロックの直前の段落です。\n\n![補足テキスト（キャプション）](https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80){width=320 align=left}\n画像の右に並ぶ本文テキスト。Figma 888:3181 の画像ブロックに相当します。\n\n### 見出し02\n- 箇条書き1\n- 箇条書き2\n\n> 引用テキスト\n\n#### 見出し03\n見出し03配下の本文。\n\n---\n\n::: grid cols=2 gap=4\n左セル\n---\n右セル\n:::\n\n```ts\nconst example = true;\n```",
+    },
   ],
   stakeholder_breakdown: "事業責任者(1) | プロジェクトマネージャー(1) | デザイナー(2) | エンジニア(4)",
   career_item_id: null,
@@ -1043,7 +1047,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを gap 48 で並べる。横罫線は上部ブロックとの境界に 1 本だけ（Figma 900:9189）"
+          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを gap 48 で並べる。横罫線は上部ブロックとの境界に 1 本だけ（Figma 900:9189）。align=left の画像は画像 320・角丸 16＋右列（本文 13px → キャプション、gap 8）。見出し02→本文 8 / 本文→見出し02 32"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

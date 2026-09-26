@@ -273,7 +273,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
           <div className="flex flex-col gap-4 border-t border-white/5 px-8 pt-4 pb-3">
             <div className="flex flex-col gap-1">
               {skill.labelNote && (
-                <span className="font-body text-[10px] tracking-[0.3px]" style={{ color: "#757575" }}>
+                <span className="font-body text-[10px] leading-[12px] tracking-[0.3px]" style={{ color: "#757575" }}>
                   {skill.labelNote}
                 </span>
               )}

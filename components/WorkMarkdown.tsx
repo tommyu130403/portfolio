@@ -195,7 +195,7 @@ const ImageFigure: FC<{
       </div>
       {caption && (
         <figcaption
-          className={`mt-2 text-[10px] leading-[1.5] tracking-[0.3px] text-fg-muted ${align === "center" ? "text-center" : ""}`}
+          className={`mt-2 text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted ${align === "center" ? "text-center" : ""}`}
         >
           {caption}
         </figcaption>

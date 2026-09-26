@@ -133,7 +133,7 @@ function WorksLinks({
   if (works.length === 0) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <p style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: C.worksLabel, margin: 0 }}>
+      <p style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", lineHeight: "12px", color: C.worksLabel, margin: 0 }}>
         Works
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -165,9 +165,9 @@ function WorksLinks({
                 set="Arrows"
                 name="arrow-right"
                 tintColor={linkColor}
-                style={{ width: 12, height: 12, flexShrink: 0, marginTop: 1, transition: "background-color .15s ease" }}
+                style={{ width: 12, height: 12, flexShrink: 0, marginTop: 0, transition: "background-color .15s ease" }}
               />
-              <span style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: linkColor, lineHeight: 1.4, transition: "color .15s ease" }}>
+              <span style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: linkColor, lineHeight: "12px", transition: "color .15s ease" }}>
                 {w.title}
               </span>
             </button>

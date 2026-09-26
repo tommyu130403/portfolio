@@ -224,7 +224,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             計算: p-6(24) + pl(2) + item px-3(12) = 38px → icon center = 48px = 96/2 */}
         <nav className="flex flex-1 flex-col gap-2 w-full items-start pl-[2px]">
           {/* Profile section */}
-          <p className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-en text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
             Profile
           </p>
 
@@ -261,7 +261,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           <div className="my-2 h-px w-full rounded-[2px] bg-border-light shrink-0" />
 
           {/* Social section */}
-          <p className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-en text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
             Social
           </p>
           <SideMenuItem
@@ -273,7 +273,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           {role === "owner" && (
             <>
               <div className="my-2 h-px w-full rounded-[2px] bg-border-light shrink-0" />
-              <p className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
+              <p className="font-en text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
                 Developer
               </p>
               <SideMenuItem

@@ -178,9 +178,9 @@ function WorksLinks({
 
 /* ──────────────────────────────────────────────────────────────────────────
    CareerCard — デスクトップ（バー下）／モバイル（縦リスト）共通の小型カード
-   width: fit-content（min 180 / max 400）で role が 1 行に収まる幅へ。
+   width: 100%（Figma: w-full。幅は呼び出し側の包み div が min 180 / max 400 で決める）。
+   role/company は折り返し（nowrap/ellipsis は付けない）。
    開閉は親が制御（バー・レールのドット色と連動）。
-   multiline=true（モバイル）では role/company を折り返し、幅は利用可能域まで。
    ────────────────────────────────────────────────────────────────────────── */
 function CareerCard({
   item,
@@ -188,31 +188,26 @@ function CareerCard({
   onOpenWork,
   isOpen,
   onToggle,
-  multiline = false,
 }: {
   item: EnrichedItem;
   works: WorkLink[];
   onOpenWork: (workId: string) => void;
   isOpen: boolean;
   onToggle: () => void;
-  multiline?: boolean;
 }) {
   const isCurrent = item.isCurrent;
   const borderColor = isOpen ? C.cardBorderOpen : C.cardBorder;
   const hasAccordionContent = Boolean(item.description) || works.length > 0;
 
-  // role/company の 1 行クランプ（デスクトップ）／折り返し（モバイル）
-  const clampStyle = multiline
-    ? ({ whiteSpace: "normal", overflowWrap: "anywhere" } as const)
-    : ({ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const);
+  // role/company は折り返し（nowrap/ellipsis を付けない。右端切れの原因だったため廃止）
+  const clampStyle = { whiteSpace: "normal", overflowWrap: "anywhere" } as const;
 
   return (
     <div
       onClick={onToggle}
       style={{
-        width: "fit-content",
-        minWidth: "max(180px, 100%)",
-        maxWidth: 400,
+        width: "100%",
+        minWidth: 180,
         boxSizing: "border-box",
         borderRadius: 10,
         border: `1px solid ${borderColor}`,
@@ -339,14 +334,16 @@ function CareerRowDesktop({
   works,
   onOpenWork,
   isLast,
+  isOpen,
+  onToggle,
 }: {
   item: EnrichedItem;
   works: WorkLink[];
   onOpenWork: (workId: string) => void;
   isLast: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-
   // バー長 = 期間スパン（CHART_START 以前開始は左端でクランプ）
   const s = Math.max(0, Math.min(CHART_TOTAL, item.startVal));
   const e = item.isCurrent ? CHART_TOTAL : Math.max(0, Math.min(CHART_TOTAL, item.endVal));
@@ -358,25 +355,36 @@ function CareerRowDesktop({
   const hasStartDot = item.startYear >= CHART_START;
   const hasEndDot = !item.isCurrent;
 
+  // カード包み div の幅（Figma: min-w 200 / max-w 400 / w-full）。
+  // 下限は 228px(= カード自身の min-w 180 + px24×2) にして、包み div がチャート右端で
+  // 巻き戻った際にカードの min-width がその包み div からはみ出さないようにする
+  // （200px のままだと content 幅が 152px しか残らず、カードの min-w 180 が右端で 28px 突き抜けるため）。
+  // 左位置は「バーの開始位置」を基本にしつつ、右端がチャート右端をはみ出す場合は
+  // min() でチャート右端 − 包み div 幅 まで巻き戻す（範囲外の開始日・幅の狭いバーでも右端切れを防ぐ）。
+  const cardWrapWidth = `clamp(228px, ${width}%, 400px)`;
+  const cardWrapLeft = `min(${left}%, calc(100% - ${cardWrapWidth}))`;
+
   return (
-    <div style={{ position: "relative", width: "100%", height: isLast && isOpen ? "auto" : 112, zIndex: isOpen ? 2 : 1 }}>
-      <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", flexDirection: "column", gap: 11 }}>
-        {/* バー行 */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, width: "100%" }}>
-          {hasStartDot && <Dot color={item.isCurrent ? C.dotCurrent : isOpen ? C.dotOpen : C.dot} />}
-          <div style={{ flex: 1, minWidth: 0, height: 2, background: isOpen ? C.barOpen : C.bar, borderRadius: "2px 0 0 2px" }} />
-          {hasEndDot && <Dot color={isOpen ? C.dotOpen : C.dot} />}
-        </div>
-        {/* カード（バー左端に揃え、px-24 インセット） */}
-        <div style={{ paddingLeft: 24, paddingRight: 24, width: "100%", minWidth: 200, maxWidth: 400, boxSizing: "border-box" }}>
-          <CareerCard
-            item={item}
-            works={works}
-            onOpenWork={onOpenWork}
-            isOpen={isOpen}
-            onToggle={() => setIsOpen((o) => !o)}
-          />
-        </div>
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: isLast && isOpen ? "auto" : 112,
+        zIndex: isOpen ? 2 : 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: 11,
+      }}
+    >
+      {/* バー行（レール。位置・幅は Figma の期間バーのまま） */}
+      <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", alignItems: "center", gap: 4 }}>
+        {hasStartDot && <Dot color={item.isCurrent ? C.dotCurrent : isOpen ? C.dotOpen : C.dot} />}
+        <div style={{ flex: 1, minWidth: 0, height: 2, background: isOpen ? C.barOpen : C.bar, borderRadius: "2px 0 0 2px" }} />
+        {hasEndDot && <Dot color={isOpen ? C.dotOpen : C.dot} />}
+      </div>
+      {/* カード（行の直下・独立した左位置。バーの真下から始まるが右端では巻き戻る） */}
+      <div style={{ marginLeft: cardWrapLeft, width: cardWrapWidth, paddingLeft: 24, paddingRight: 24, boxSizing: "border-box" }}>
+        <CareerCard item={item} works={works} onOpenWork={onOpenWork} isOpen={isOpen} onToggle={onToggle} />
       </div>
     </div>
   );
@@ -415,7 +423,6 @@ function CareerItemMobile({
           onOpenWork={onOpenWork}
           isOpen={isOpen}
           onToggle={() => setIsOpen((o) => !o)}
-          multiline
         />
       </div>
     </div>
@@ -428,6 +435,8 @@ function CareerItemMobile({
 export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const [worksByCareer, setWorksByCareer] = useState<Record<string, WorkLink[]>>({});
   const isMobile = useIsMobile(728);
+  // デスクトップは同時に開けるカードを1枚に制限（別カードを開くと前のカードは閉じる）
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   // career_item_id で works をグルーピング → カード別 Works リンク
   useEffect(() => {
@@ -526,6 +535,8 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
                 works={worksByCareer[item.id] ?? []}
                 onOpenWork={handleOpenWork}
                 isLast={i === oldestFirst.length - 1}
+                isOpen={openIndex === i}
+                onToggle={() => setOpenIndex((o) => (o === i ? null : i))}
               />
             ))}
           </div>

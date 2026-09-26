@@ -30,7 +30,7 @@ const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
 const C = {
   outerBg: "#1a1a1a",
   cardBg: "#212121", // System/900
-  cardBorder: "#424242", // System/800（折りたたみ default）
+  cardBorder: "#3a3a3a", // Border/Default（System/825）
   cardBorderOpen: "#9e9e9e", // System/500（展開 default）
   currentBg: "#0f2a23",
   currentBorder: "rgba(72,244,190,0.4)", // 折りたたみ current
@@ -46,9 +46,9 @@ const C = {
   badgeBg: "#48f4be",
   badgeText: "#212121",
   divider: "rgba(255,255,255,0.05)", // Background/Light-α5
-  dot: "#424242", // System/800
+  dot: "#3a3a3a", // Border/Default（System/825）
   dotActive: "#48f4be", // Main/base
-  bar: "#424242", // System/800
+  bar: "#3a3a3a", // Border/Default（System/825）
   gridLine: "#2a2a2a",
   yearText: "#757575", // System/600
   yearCurrent: "#b3ffe7", // Main/050

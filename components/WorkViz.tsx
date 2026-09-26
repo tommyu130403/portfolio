@@ -185,7 +185,7 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
 
 /* ─── Stakeholders（_Stakeholder）────────────────────── */
 
-const Connector: FC = () => <span className="h-px w-4 shrink-0 bg-border-light" />;
+const Connector: FC = () => <span className="h-px w-4 shrink-0 bg-border" />;
 
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
   <div className="flex flex-col gap-4">
@@ -203,7 +203,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
               <Connector />
               <span
                 className={`font-en flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] tracking-[0.36px] ${
-                  m.me ? "border-main-100 text-main-100" : "border-border-light text-fg-muted"
+                  m.me ? "border-main-100 text-main-100" : "border-border text-fg-muted"
                 }`}
               >
                 <Icon set="Peoples" name="people" tintColor={m.me ? "var(--color-main-100)" : "var(--color-fg-muted)"} className="h-4 w-4 shrink-0" />

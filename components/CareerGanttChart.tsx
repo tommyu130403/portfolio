@@ -355,15 +355,6 @@ function CareerRowDesktop({
   const hasStartDot = item.startYear >= CHART_START;
   const hasEndDot = !item.isCurrent;
 
-  // カード包み div の幅（Figma: min-w 200 / max-w 400 / w-full）。
-  // 下限は 228px(= カード自身の min-w 180 + px24×2) にして、包み div がチャート右端で
-  // 巻き戻った際にカードの min-width がその包み div からはみ出さないようにする
-  // （200px のままだと content 幅が 152px しか残らず、カードの min-w 180 が右端で 28px 突き抜けるため）。
-  // 左位置は「バーの開始位置」を基本にしつつ、右端がチャート右端をはみ出す場合は
-  // min() でチャート右端 − 包み div 幅 まで巻き戻す（範囲外の開始日・幅の狭いバーでも右端切れを防ぐ）。
-  const cardWrapWidth = `clamp(228px, ${width}%, 400px)`;
-  const cardWrapLeft = `min(${left}%, calc(100% - ${cardWrapWidth}))`;
-
   return (
     <div
       style={{
@@ -382,9 +373,24 @@ function CareerRowDesktop({
         <div style={{ flex: 1, minWidth: 0, height: 2, background: isOpen ? C.barOpen : C.bar, borderRadius: "2px 0 0 2px" }} />
         {hasEndDot && <Dot color={isOpen ? C.dotOpen : C.dot} />}
       </div>
-      {/* カード（行の直下・独立した左位置。バーの真下から始まるが右端では巻き戻る） */}
-      <div style={{ marginLeft: cardWrapLeft, width: cardWrapWidth, paddingLeft: 24, paddingRight: 24, boxSizing: "border-box" }}>
-        <CareerCard item={item} works={works} onOpenWork={onOpenWork} isOpen={isOpen} onToggle={onToggle} />
+      {/* カード（行の直下）。[スペーサー][カード包み div] の2分割 flex にして、
+         カード幅は中身（役職・会社名）に合わせつつ、右端にはみ出す場合はスペーサーが縮んで
+         カードが左へ寄る（min-width/max-width の固定値ではなく、実際のテキスト幅で決まる）。 */}
+      <div style={{ display: "flex", width: "100%" }}>
+        <div style={{ flex: `0 1 ${left}%`, minWidth: 0 }} />
+        <div
+          style={{
+            flex: "0 0 auto",
+            width: "max-content",
+            minWidth: `max(228px, ${width}%)`,
+            maxWidth: 400,
+            paddingLeft: 24,
+            paddingRight: 24,
+            boxSizing: "border-box",
+          }}
+        >
+          <CareerCard item={item} works={works} onOpenWork={onOpenWork} isOpen={isOpen} onToggle={onToggle} />
+        </div>
       </div>
     </div>
   );

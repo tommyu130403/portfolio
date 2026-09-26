@@ -16,7 +16,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
       className={[
         "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[14px]",
         "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-['']",
-        "shadow-base",
+        // Figma: 影は内側 _ProjectCard に付くが外側 Card の clip で切れて画面に出ない → 影なし
         onClick
           ? "hover:after:border-system-500 hover:bg-system-800 transition-colors cursor-pointer"
           : "",
@@ -40,7 +40,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
         </div>
         <div className="flex flex-wrap gap-1">
           {tags.map((tag) => (
-            <Tag key={tag} label={tag} variant="small" />
+            <Tag key={tag} label={tag} variant="tool" />
           ))}
         </div>
       </div>

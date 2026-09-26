@@ -13,8 +13,6 @@ import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
 const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "works", "skills"];
-const DEFAULT_CAREER_LEAD =
-  "こんにちは。UI/UXデザイナーの山田太郎です。 東京を拠点に、Webサイト、モバイルアプリケーション、ブランディングなど、 幅広いデジタルプロダクトのデザインを手がけています。";
 
 type Profile = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
@@ -201,14 +199,6 @@ export default function Home() {
           <section id="career" className="w-full max-w-main">
             <Headline label="経歴" title="Career" />
             <div className="flex flex-col gap-6">
-              {/* careerLead — デザインソース (sections.jsx) 準拠スタイル */}
-              {loading ? (
-                <span className="inline-block h-12 w-full animate-pulse rounded bg-system-800" />
-              ) : (
-                <p style={{ fontFamily: "Avenir, var(--font-noto-sans-jp), sans-serif", fontSize: 14.5, lineHeight: 1.9, letterSpacing: ".04em", color: "var(--color-fg-muted)", margin: 0, maxWidth: 640 }}>
-                  {(profile?.career_lead ?? "").trim() || DEFAULT_CAREER_LEAD}
-                </p>
-              )}
               {loading ? (
                 <div className="flex flex-col gap-3">
                   <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-system-800" />

@@ -901,7 +901,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="SideMenuBar"
-          description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成(アコーディオン形式は廃止)。showCollapseToggle=false で折りたたみトグルを隠す(モバイルのオーバーレイ表示用)"
+          description="サイドナビゲーション。Figma Master 62:545 / Library 55-296 準拠。角丸なし・右境界線は inside stroke(after 疑似要素)。Social はロゴのみ(GitHub / YOUTRUST、リンク先未設定)。showCollapseToggle=false で折りたたみトグルを隠す(モバイルのオーバーレイ表示用)"
         >
           <div className="flex flex-wrap gap-8">
             <div className="overflow-hidden rounded-[12px] border border-border-light">

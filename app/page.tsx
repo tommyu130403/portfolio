@@ -169,10 +169,10 @@ export default function Home() {
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
                 </p>
                 <div className="flex items-end gap-2 text-main-050">
-                  <p className="font-mplus text-[46px] leading-[60px] tracking-[0.26px]">
+                  <p className="font-noto text-[46px] leading-[60px] tracking-[0.2637px]">
                     {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-system-800" /> : profile?.name_jp}
                   </p>
-                  <p className="font-en text-[20px] leading-7 tracking-[-0.45px]">
+                  <p className="font-en text-[20px] leading-7 tracking-[-0.4492px]">
                     {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-system-800" /> : profile?.name_en}
                   </p>
                 </div>
@@ -189,6 +189,11 @@ export default function Home() {
                 <p>こんにちは。プロダクトデザイナーの山田太郎です。 大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
                 <p>デザインは問題解決の手段であると考えており、 常にユーザーの課題とビジネスの目標の両方を意識しながらデザイン制作を行ってきました。 開発チームやセールスチームといったあらゆる専門性との密なコミュニケーションを通じて、「最適解」を徹底的に模索することを心がけています。</p>
               </div>
+              <ul className="list-disc text-[13px] leading-[1.5] tracking-[0.39px] text-fg-muted">
+                <li className="ms-[19.5px]">説明責任を果たす (透明性)</li>
+                <li className="ms-[19.5px]">あらゆる専門性によって最適解を模索する (異能の掛け算)</li>
+                <li className="ms-[19.5px]">ビジネスを作る (UXの証明)</li>
+              </ul>
             </div>
           </section>
 

@@ -305,10 +305,10 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 function SkillCard({ card }: { card: SkillCardConfig }) {
   return (
     <div
-      className="overflow-clip"
+      // 375/390 幅ではスキル名の折返し切れを防ぐため、640px 未満だけ左右余白を 40 → 16 に詰める（Figma にモバイル画面なし）
+      className="overflow-clip px-4 py-6 sm:px-10"
       style={{
         borderRadius: 16,
-        padding: "24px 40px",
         boxShadow: "0 1px 1.5px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.1)",
         display: "flex",
         flexDirection: "column",

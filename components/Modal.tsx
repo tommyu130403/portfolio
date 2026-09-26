@@ -1,7 +1,8 @@
 "use client";
 
-import { type FC, type ReactNode, useEffect } from "react";
+import { type FC, type ReactNode, useEffect, useRef } from "react";
 import { ButtonFunction } from "./ButtonFunction";
+import Icon from "./Icon";
 
 type ModalProps = {
   children: ReactNode;
@@ -16,6 +17,8 @@ type ModalProps = {
   currentIndex?: number;
   /** 総アイテム数（ドット表示用） */
   total?: number;
+  /** full = 常に最大 800px いっぱい / content = 中身の幅に合わせる（上限 800px）。既定 full */
+  width?: "full" | "content";
 };
 
 const Modal: FC<ModalProps> = ({
@@ -27,13 +30,39 @@ const Modal: FC<ModalProps> = ({
   onNext,
   currentIndex = 0,
   total = 1,
+  width = "full",
 }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
   }, []);
+
+  useEffect(() => {
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (previouslyFocused && previouslyFocused.isConnected) {
+        previouslyFocused.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.isComposing) {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   return (
     <div
@@ -77,13 +106,24 @@ const Modal: FC<ModalProps> = ({
         )}
 
         {/* Modal container + Close button wrapper (overflow-visible でボタンが切れないように) */}
-        <div className="relative w-full max-w-main">
+        <div
+          className={
+            width === "content"
+              ? "relative max-w-[min(var(--container-main),calc(100%_-_10px))]"
+              : "relative w-full max-w-[min(var(--container-main),calc(100%_-_10px))]"
+          }
+        >
           <div
-            className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 border border-border bg-surface shadow-wisper"
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
+            style={{ outline: "none" }}
+            className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 bg-surface shadow-[0_1px_1.5px_0_rgba(0,0,0,0.1),0_1px_1px_0_rgba(0,0,0,0.1)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex-1 overflow-y-auto">
-              {children}
+            <div className="flex flex-1 flex-col overflow-y-auto">
+              <div className="my-auto w-full">{children}</div>
             </div>
           </div>
           {/* Close button（Figma node 120:413: right -45px / top -1px・border=off） */}
@@ -93,22 +133,7 @@ const Modal: FC<ModalProps> = ({
               onClick={onClose}
               aria-label="Close"
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="shrink-0"
-                aria-hidden
-              >
-                <path
-                  d="M12 4L4 12M4 4L12 12"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <Icon set="Character" name="close" alt="" aria-hidden className="h-6 w-6 shrink-0" />
             </ButtonFunction>
           </div>
         </div>

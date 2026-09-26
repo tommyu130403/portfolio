@@ -136,13 +136,20 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
               const active = p.raci.includes("R") || p.raci.includes("A");
               const left = ((p.start - 1) / totalUnits) * 100;
               const width = (p.span / totalUnits) * 100;
+              // バーの最小幅（px）= pl(5) + バッジ幅(12px×個数 + gap4px×(個数-1)) + pr(13)。
+              // 短いバーでもRACIバッジがはみ出さないようにする（フェーズ名は最小幅では見えなくてよい）。
+              const badgeCount = p.raci.length;
+              const minBarWidth = 18 + (badgeCount > 0 ? badgeCount * 12 + (badgeCount - 1) * 4 : 0);
               return (
                 <div key={i} className="relative h-6 w-full" style={{ zIndex: phases.length - i }}>
                   <div
                     className={`group after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] absolute top-0 flex h-6 items-center justify-between gap-1 rounded-[48px] py-px pl-[5px] pr-[13px] ${
                       active ? "bg-main-700 after:border-border-main" : "bg-[rgba(0,0,0,0.25)] after:border-border"
                     }`}
-                    style={{ left: `${left}%`, width: `${width}%` }}
+                    style={{
+                      left: `min(${left}%, calc(100% - ${minBarWidth}px))`,
+                      width: `max(${width}%, ${minBarWidth}px)`,
+                    }}
                   >
                     <span className="flex shrink-0 items-center gap-1">
                       {p.raci.map((k, ki) => (
@@ -192,7 +199,7 @@ const Connector: FC = () => <span className="h-px w-4 shrink-0 rounded-full bg-b
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
   <div className="flex flex-col items-start gap-2 md:px-10">
     {data.groups.map((g, gi) => (
-      <div key={gi} className="flex items-center gap-1">
+      <div key={gi} className="flex max-w-full items-center gap-1">
         {/* グループタイル */}
         <div className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex size-16 shrink-0 flex-col items-center justify-center rounded-r16 bg-surface">
           <RefIcon icon={g.icon} tint="var(--color-system-white)" className="h-4 w-4" />
@@ -203,14 +210,14 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
           {g.members.map((m, mi) => {
             const memberTint = m.me ? "var(--color-main-050)" : "var(--color-system-500)";
             return (
-              <span key={mi} className="flex items-center gap-1">
+              <span key={mi} className="flex min-w-0 max-w-full items-center gap-1">
                 <Connector />
                 <span
-                  className={`after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] relative flex h-8 items-center gap-2 whitespace-nowrap rounded-[32px] px-2 py-px ${
+                  className={`after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] relative flex h-8 min-w-0 max-w-full items-center gap-2 whitespace-nowrap rounded-[32px] px-2 py-px ${
                     m.me ? "after:border-border-main" : "after:border-border"
                   }`}
                 >
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex min-w-0 max-w-full items-center gap-1.5">
                     <Icon
                       set="Peoples"
                       name={m.label ? "peoples-two" : "user"}
@@ -219,7 +226,8 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
                     />
                     {m.label && (
                       <span
-                        className={`font-en text-[11px] font-extrabold leading-none tracking-[0.44px] [text-box:trim-both_cap_alphabetic] ${
+                        title={m.label}
+                        className={`font-en max-md:truncate text-[11px] font-extrabold leading-none tracking-[0.44px] [text-box:trim-both_cap_alphabetic] ${
                           m.me ? "text-main-050" : "text-system-500"
                         }`}
                       >

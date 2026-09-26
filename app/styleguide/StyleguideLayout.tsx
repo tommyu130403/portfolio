@@ -882,7 +882,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small（Figma Tag/Small: プロジェクトカード用）/ tool（Slot-Tool: スキル展開パネル用・border付き・アイコン前置）">
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ tool(border付き・10px #9e9e9e。スキル展開パネルはアイコン前置、WorkCard はアイコンなし)">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -944,7 +944,7 @@ function ComponentsSection() {
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 2 列）と同じ 392px を与えている">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 2 列）と同じ 392px を与えている。影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。タグは Tag tool variant">
           {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
           <div className="w-[392px] max-w-full">
           <WorkCard

@@ -761,6 +761,7 @@ function FigmaOnlyPreview({ title, figma, description }: {
 function ModalDemo() {
   const [open, setOpen] = useState(false);
   const [carousel, setCarousel] = useState(false);
+  const [fit, setFit] = useState(false);
   const [index, setIndex] = useState(0);
   const total = 3;
   return (
@@ -781,6 +782,14 @@ function ModalDemo() {
           />
           carousel バリアント
         </label>
+        <label className="flex items-center gap-2 text-[13px] text-fg-muted">
+          <input
+            type="checkbox"
+            checked={fit}
+            onChange={(e) => setFit(e.target.checked)}
+          />
+          width=content
+        </label>
       </div>
       {open && (
         <Modal
@@ -788,6 +797,7 @@ function ModalDemo() {
           carousel={carousel}
           currentIndex={index}
           total={total}
+          width={fit ? "content" : "full"}
           onPrev={carousel ? () => setIndex((i) => (i - 1 + total) % total) : undefined}
           onNext={carousel ? () => setIndex((i) => (i + 1) % total) : undefined}
         >
@@ -826,14 +836,28 @@ function WorkVizModalDemo() {
       {kind && (
         <WorkVizModal
           kind={kind}
-          timeline={{ totalUnits: 8, phases: [
-            { label: "Research", start: 1, span: 3, raci: ["R"], progress: 90 },
-            { label: "Design", start: 3, span: 3, raci: ["R", "A"], progress: 100 },
-            { label: "QA", start: 6, span: 3, raci: ["C"], progress: 40 },
+          timeline={{ totalUnits: 16, phases: [
+            { label: "Research", start: 1, span: 3, raci: ["R", "A"] },
+            { label: "Design", start: 3, span: 4, raci: ["C"] },
+            { label: "Stakeholder Interview & Synthesis", start: 16, span: 1, raci: ["R", "A", "C"] },
+            { label: "Development", start: 7, span: 6, raci: ["I"] },
+            { label: "QA", start: 13, span: 3, raci: ["R"] },
           ] }}
           stakeholders={{ groups: [
             { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
             { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
+            {
+              label: "Engineering",
+              icon: "Edit/code",
+              members: [
+                { label: "Tech Lead" },
+                { label: "Frontend Engineer" },
+                { label: "Backend Engineer" },
+                { label: "QA Engineer" },
+                { label: "Site Reliability Engineer with a very long title" },
+                { label: "" },
+              ],
+            },
           ] }}
           onClose={() => setKind(null)}
         />
@@ -943,7 +967,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="Modal"
-          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）"
+          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）。Escape で閉じる／開くとモーダルへフォーカス、閉じると開いたボタンへ戻る／width=&quot;content&quot; で中身の幅（上限 800px）"
         >
           <ModalDemo />
         </ComponentPreview>
@@ -997,14 +1021,17 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkProcessChart"
-          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画"
+          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画。Phase 列なし・フェーズ名はバーの中の右端・RACI 12px"
         >
           <div className="w-full">
             <WorkProcessChart
-              data={{ totalUnits: 8, phases: [
-                { label: "Research", start: 1, span: 3, raci: ["R"], progress: 90, note: { title: "調査", body: "ヒアリングを実施" } },
-                { label: "Design", start: 3, span: 3, raci: ["R", "A"], progress: 100 },
-                { label: "QA", start: 6, span: 3, raci: ["C"], progress: 40 },
+              data={{ totalUnits: 12, phases: [
+                { label: "Research", start: 1, span: 3, raci: ["R", "A"], note: { title: "調査", body: "ヒアリングを実施" } },
+                { label: "Design", start: 3, span: 4, raci: ["C"] },
+                { label: "Development", start: 7, span: 4, raci: ["I"] },
+                { label: "QA", start: 9, span: 2, raci: ["R"] },
+                { label: "Launch Preparation", start: 11, span: 2, raci: ["A"] },
+                { label: "Release", start: 12, span: 1, raci: ["I"] },
               ] }}
             />
           </div>
@@ -1017,7 +1044,7 @@ function ComponentsSection() {
           <div className="w-full">
             <WorkStakeholderDiagram
               data={{ groups: [
-                { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
+                { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }, { label: "" }] },
                 { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
               ] }}
             />
@@ -1026,7 +1053,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkVizModal"
-          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画"
+          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画。stakeholder は中身の幅（width=&quot;content&quot;）"
         >
           <WorkVizModalDemo />
         </ComponentPreview>

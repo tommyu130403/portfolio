@@ -433,7 +433,7 @@ function RenderBlock({
       );
     case "h3":
       return (
-        <p className="mb-4 mt-10 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
+        <p className="font-en mb-4 mt-10 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
           {renderInline(block.content, k)}
         </p>
       );

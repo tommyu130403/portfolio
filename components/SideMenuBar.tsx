@@ -68,7 +68,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       <Icon set={icon.set} name={icon.name} className="h-[18px] w-[18px] shrink-0" aria-hidden />
       <span
         className={[
-          "flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap overflow-hidden transition-all duration-300",
+          "font-en flex-1 text-left text-[15px] leading-none tracking-[0.75px] whitespace-nowrap overflow-hidden transition-all duration-300",
           collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
         ].join(" ")}
       >
@@ -82,7 +82,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       ? createPortal(
           <span
             className={[
-              "pointer-events-none fixed z-[70] -translate-y-1/2",
+              "font-en pointer-events-none fixed z-[70] -translate-y-1/2",
               "rounded-r4 border border-border bg-surface px-3 py-[10px]",
               "text-[14px] leading-[20px] whitespace-nowrap text-white/80",
               "shadow-base",
@@ -209,10 +209,10 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
             ].join(" ")}
           >
-            <span className="text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
+            <span className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
               Product Designer
             </span>
-            <span className="text-[14px] leading-5 text-white/80 whitespace-nowrap">Yu Tomita</span>
+            <span className="font-en text-[14px] leading-5 text-white/80 whitespace-nowrap">Yu Tomita</span>
           </div>
         </div>
 
@@ -224,7 +224,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             計算: p-6(24) + pl(2) + item px-3(12) = 38px → icon center = 48px = 96/2 */}
         <nav className="flex flex-1 flex-col gap-2 w-full items-start pl-[2px]">
           {/* Profile section */}
-          <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
             Profile
           </p>
 
@@ -261,7 +261,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           <div className="my-2 h-px w-full rounded-[2px] bg-border-light shrink-0" />
 
           {/* Social section */}
-          <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
             Social
           </p>
           <SideMenuItem
@@ -273,7 +273,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           {role === "owner" && (
             <>
               <div className="my-2 h-px w-full rounded-[2px] bg-border-light shrink-0" />
-              <p className="text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
+              <p className="font-en text-[10px] uppercase tracking-[0.4px] text-white/50 whitespace-nowrap px-0">
                 Developer
               </p>
               <SideMenuItem

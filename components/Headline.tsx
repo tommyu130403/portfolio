@@ -29,7 +29,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   // Headline/Section（Work詳細セクションタイトル）: Avenir Heavy 34px white
   if (variant === "section") {
     return (
-      <p className="w-full text-[34px] font-extrabold leading-[1.2] text-white [word-break:break-word]">
+      <p className="font-en w-full text-[34px] font-extrabold leading-[1.2] text-white [word-break:break-word]">
         {title}
       </p>
     );
@@ -39,7 +39,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   // ※ Figma の Headline セットは 01 / 02 の2バリアントのみで 03 は存在しない（Library 304:313 で確認・2026-09-08）。実装側のみの見出し。
   if (variant === "markdown-h3") {
     return (
-      <p className="w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
+      <p className="font-en w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
         {title}
       </p>
     );

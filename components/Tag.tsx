@@ -20,7 +20,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
         className={`flex gap-[4px] items-center rounded-full border border-border px-[10px] py-[6px] shrink-0 ${className ?? ""}`}
       >
         {prefix}
-        <p className="text-[10px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
+        <p className="font-en text-[10px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
         {suffix}
       </div>
     );
@@ -39,8 +39,8 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
       <p
         className={
           isSmall
-            ? "text-[11px] leading-none text-system-white whitespace-nowrap"
-            : "text-[12px] leading-4 text-main-200"
+            ? "font-en text-[11px] leading-none text-system-white whitespace-nowrap"
+            : "font-en text-[12px] leading-4 text-main-200"
         }
       >
         {label}

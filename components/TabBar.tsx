@@ -44,7 +44,7 @@ const TabBar: FC<TabBarProps> = ({ tabs, defaultActiveId, onChange }) => {
             type="button"
             onClick={() => handleClick(tab.id)}
             className={[
-              "flex h-[40px] cursor-pointer items-center justify-center gap-3 rounded-[8px] pl-4 pr-6 text-[14px] tracking-[0.7px] transition-colors whitespace-nowrap hover:bg-action-hover",
+              "font-en flex h-[40px] cursor-pointer items-center justify-center gap-3 rounded-[8px] pl-4 pr-6 text-[14px] tracking-[0.7px] transition-colors whitespace-nowrap hover:bg-action-hover",
               isActive
                 ? "border border-border bg-surface font-extrabold text-white"
                 : "text-fg-muted",

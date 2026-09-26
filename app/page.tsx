@@ -165,14 +165,14 @@ export default function Home() {
             </div>
             <div className="flex flex-1 flex-col">
               <div className="flex flex-col gap-2">
-                <p className="text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
+                <p className="font-en text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
                 </p>
                 <div className="flex items-end gap-2 text-main-050">
                   <p className="font-mplus text-[46px] leading-[60px] tracking-[0.26px]">
                     {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-system-800" /> : profile?.name_jp}
                   </p>
-                  <p className="text-[20px] leading-7 tracking-[-0.45px]">
+                  <p className="font-en text-[20px] leading-7 tracking-[-0.45px]">
                     {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-system-800" /> : profile?.name_en}
                   </p>
                 </div>

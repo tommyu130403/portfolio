@@ -235,7 +235,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
             tintColor="#B3FFE7"
             className="w-4 h-4 shrink-0"
           />
-          <span className="flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-[1.4] text-white">
+          <span className="font-en flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-[1.4] text-white">
             {skill.label}
           </span>
         </span>

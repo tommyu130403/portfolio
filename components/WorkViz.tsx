@@ -106,7 +106,7 @@ const RACI_LEGEND: { key: RaciKey; label: string }[] = [
 
 function RaciBadge({ k }: { k: RaciKey }) {
   return (
-    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${RACI_STYLE[k]}`}>
+    <span className={`font-en flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${RACI_STYLE[k]}`}>
       {k}
     </span>
   );
@@ -118,10 +118,10 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
     <div className="rounded-[14px] bg-[#1a1a1a] p-5">
       {/* 列ヘッダー（Phase + W1..Wn） */}
       <div className="flex items-center gap-3">
-        <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-muted">Phase</p>
+        <p className="font-en w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-muted">Phase</p>
         <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${totalUnits}, minmax(0,1fr))` }}>
           {Array.from({ length: totalUnits }, (_, i) => (
-            <p key={i} className="text-center text-[11px] font-extrabold tracking-[0.44px] text-fg-muted">
+            <p key={i} className="font-en text-center text-[11px] font-extrabold tracking-[0.44px] text-fg-muted">
               W{i + 1}
             </p>
           ))}
@@ -136,7 +136,7 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
           const width = (p.span / totalUnits) * 100;
           return (
             <div key={i} className="flex items-center gap-3">
-              <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-caption">
+              <p className="font-en w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-caption">
                 {p.label}
               </p>
               <div className="relative h-8 flex-1">
@@ -152,7 +152,7 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
                     ))}
                   </span>
                   {p.progress != null && (
-                    <span className={`ml-auto pr-1 text-[11px] font-extrabold tracking-[0.44px] ${active ? "text-main-100" : "text-fg-muted"}`}>
+                    <span className={`font-en ml-auto pr-1 text-[11px] font-extrabold tracking-[0.44px] ${active ? "text-main-100" : "text-fg-muted"}`}>
                       {p.progress}%
                     </span>
                   )}
@@ -202,14 +202,14 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
             <span key={mi} className="flex items-center">
               <Connector />
               <span
-                className={`flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] tracking-[0.36px] ${
+                className={`font-en flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] tracking-[0.36px] ${
                   m.me ? "border-main-100 text-main-100" : "border-border-light text-fg-muted"
                 }`}
               >
                 <Icon set="Peoples" name="people" tintColor={m.me ? "var(--color-main-100)" : "var(--color-fg-muted)"} className="h-4 w-4 shrink-0" />
                 {m.label}
                 {m.me && (
-                  <span className="rounded-full bg-main-100 px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#0a0a0a]">me</span>
+                  <span className="font-en rounded-full bg-main-100 px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#0a0a0a]">me</span>
                 )}
               </span>
             </span>

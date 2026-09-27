@@ -38,7 +38,8 @@ const C = {
   worksLabel: "#616161", // System/700
   worksLink: "#b3ffe7", // Main/050
   worksLinkHover: "#39c89b", // Main/200
-  iconArrow: "#9e9e9e",
+  iconArrow: "#757575", // System/600
+  iconArrowCurrent: "#2b9e7a", // Main/300
   badgeBg: "#48f4be",
   badgeText: "#212121",
   divider: "#3a3a3a",
@@ -227,7 +228,7 @@ function CareerCard({
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <Icon set="Time" name="calendar-three-mint" style={{ width: 12, height: 12, flexShrink: 0 }} />
+              <Icon set="Time" name="calendar-line" tintColor="var(--color-system-500)" style={{ width: 12, height: 12, flexShrink: 0 }} />
               <span
                 style={{
                   fontFamily: FONT_EN,
@@ -265,13 +266,13 @@ function CareerCard({
           <Icon
             set="Arrows"
             name={isOpen ? "up" : "down"}
-            tintColor={C.iconArrow}
+            tintColor={isCurrent ? C.iconArrowCurrent : C.iconArrow}
             style={{ width: 12, height: 12, flexShrink: 0 }}
           />
         </div>
 
         {/* 役職 — Noto Sans JP Bold */}
-        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: 1.5, letterSpacing: ".39px", margin: 0, ...clampStyle }}>
+        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: "20px", letterSpacing: ".39px", margin: 0, ...clampStyle }}>
           {item.role}
         </p>
         {/* 会社 — Noto Sans JP Regular */}
@@ -297,7 +298,7 @@ function CareerCard({
           {hasAccordionContent && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 16px" }}>
               {item.description && (
-                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: 1.5, letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
+                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: "17px", letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
                   {item.description}
                 </p>
               )}

@@ -167,7 +167,8 @@ html {
    @utility を使う（Tailwind v4）。
    font-family の対応: lang jp → Noto Sans JP / en → Avenir→Noto / special-en → Afacad→Noto
    Noto の AUTO は Figma 実測 px（round(1.2×size)）。Avenir の AUTO は title-en の 52 だけ実測済みで他は normal。
-   % 表記の文字間は em に変換している。 */
+   % 表記の文字間は em に変換している。
+   倍率150%の style は、Figma が描く size×1.5 の端数切り上げ px（22.5→23 / 19.5→20 / 16.5→17）で持つ。 */
 
 @utility text-title-pj {
   /* Figma: Title/PJ */
@@ -192,7 +193,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 24px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 36px;
   letter-spacing: 0.05em;
 }
 
@@ -219,7 +220,7 @@ html {
   font-family: var(--font-afacad), var(--font-noto-sans-jp), sans-serif;
   font-size: 20px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 30px;
   letter-spacing: 0.05em;
 }
 
@@ -228,7 +229,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 23px;
   letter-spacing: 0.03em;
 }
 
@@ -237,7 +238,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 23px;
   letter-spacing: 0.03em;
 }
 
@@ -255,7 +256,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 20px;
   letter-spacing: 0.03em;
 }
 
@@ -264,7 +265,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 20px;
   letter-spacing: 0.03em;
 }
 
@@ -282,7 +283,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 17px;
   letter-spacing: 0.03em;
 }
 
@@ -291,7 +292,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 17px;
   letter-spacing: 0.03em;
 }
 

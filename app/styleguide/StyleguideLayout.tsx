@@ -433,7 +433,8 @@ function TypographySection() {
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge>、
         クラスからは <TokenBadge>text-body-02-jp</TokenBadge>（app/globals.css の <TokenBadge>@utility</TokenBadge>）で参照。
         lineHeight は倍率（Figma 100% → 1）。Noto の AUTO は Figma 実測 px（round(1.2×size)）、Avenir は
-        <TokenBadge>title-en</TokenBadge> の 52px 以外は <TokenBadge>normal</TokenBadge>。letterSpacing は em（Figma 3% → 0.03em）。
+        <TokenBadge>title-en</TokenBadge> の 52px 以外は <TokenBadge>normal</TokenBadge>。倍率150%の style は、Figma
+        が描く size×1.5 の端数切り上げ px（22.5→23 / 19.5→20 / 16.5→17）で持つ。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
@@ -886,9 +887,9 @@ function ComponentsSection() {
             <p className="font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">見出し01（## / Noto Bold 24px 白）</p>
             <p className="font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">見出し02（### / Noto Bold 20px mint）</p>
             <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
-            <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
-            <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
-            <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
+            <p className="text-[15px] leading-[23px] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
+            <p className="text-[13px] leading-[20px] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
+            <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[20px] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
             <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
           </div>
         </ComponentPreview>

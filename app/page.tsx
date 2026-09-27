@@ -181,13 +181,13 @@ export default function Home() {
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
             <Headline label="自己紹介" title="Introduction" />
-            <div className="flex flex-col gap-10 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
+            <div className="flex flex-col gap-10 text-[15px] leading-[23px] tracking-[0.45px] text-white">
               {/* Opening paragraphs */}
               <div className="flex flex-col gap-4">
-                <p>こんにちは。プロダクトデザイナーの山田太郎です。 大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
+                <p>こんにちは。プロダクトデザイナーの山田太郎です。<br />&nbsp;大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
                 <p>デザインは問題解決の手段であると考えており、 常にユーザーの課題とビジネスの目標の両方を意識しながらデザイン制作を行ってきました。 開発チームやセールスチームといったあらゆる専門性との密なコミュニケーションを通じて、「最適解」を徹底的に模索することを心がけています。</p>
               </div>
-              <ul className="list-disc text-[13px] leading-[1.5] tracking-[0.39px] text-fg-muted">
+              <ul className="list-disc text-[13px] leading-[20px] tracking-[0.39px] text-fg-muted">
                 <li className="ms-[19.5px]">説明責任を果たす (透明性)</li>
                 <li className="ms-[19.5px]">あらゆる専門性によって最適解を模索する (異能の掛け算)</li>
                 <li className="ms-[19.5px]">ビジネスを作る (UXの証明)</li>

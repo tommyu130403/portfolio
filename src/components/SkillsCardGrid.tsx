@@ -215,8 +215,8 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 
   return (
     <div
-      className={`flex min-h-16 flex-col justify-center rounded-[16px] border px-[1px] transition-colors duration-200 ${
-        open ? "border-border-light bg-white/5" : "border-border hover:bg-white/5"
+      className={`relative flex min-h-16 flex-col justify-center rounded-[16px] px-px transition-colors duration-200 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors after:duration-200 after:content-[''] ${
+        open ? "bg-white/5 after:border-border-light" : "hover:bg-white/5 after:border-border"
       }`}
     >
       {/* _SkillVaule — 常時表示。クリックで開閉 */}
@@ -268,8 +268,9 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
         }`}
       >
         <div className="overflow-hidden">
-          {/* mt 3 = 見出し行の下16 − ボタン下余白13。pb 13 + 外枠1 = Figma の下余白14 */}
-          <div className="mt-[3px] flex flex-col gap-4 border-t border-border px-8 pt-4 pb-[13px]">
+          {/* mt3 = 見出し行の下16 − ボタンの下余白13。上罫線は Figma では inside なので pt = 16−1。
+              pb13 = 項目の py13（外枠は ::after で位置に入らない）。Figma 733:2902: h162 / スロット y53 */}
+          <div className="mt-[3px] flex flex-col gap-4 border-t border-border px-8 pt-[15px] pb-[13px]">
             <div className="flex flex-col gap-1">
               {skill.labelNote && (
                 <span className="font-body text-[10px] leading-[12px] tracking-[0.3px]" style={{ color: "#757575" }}>
@@ -278,7 +279,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
               )}
               {skill.description && (
                 <p
-                  className="font-body text-[13px] leading-[1.5] tracking-[0.39px] whitespace-pre-line"
+                  className="font-body text-[13px] leading-[20px] tracking-[0.39px] whitespace-pre-line"
                   style={{ color: "#9E9E9E" }}
                 >
                   {skill.description}
@@ -309,7 +310,8 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
       className="overflow-clip px-4 py-6 sm:px-10"
       style={{
         borderRadius: 16,
-        boxShadow: "0 1px 1.5px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.1)",
+        // Figma は塗りなしの枠に drop-shadow → 中身の形に落ちる影。box-shadow だと箱の下辺に線が出る
+        filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.1)) drop-shadow(0 1px 1px rgba(0,0,0,0.1))",
         display: "flex",
         flexDirection: "column",
       }}
@@ -322,7 +324,7 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span className="text-headline-02-en text-white">{card.title}</span>
           <span
-            className="font-body text-[13px] leading-[1.5] tracking-[0.39px]"
+            className="font-body text-[13px] leading-[20px] tracking-[0.39px]"
             style={{ color: "#757575" }}
           >
             {card.titleJP}

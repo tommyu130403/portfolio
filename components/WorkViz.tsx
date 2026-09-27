@@ -213,7 +213,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
               <span key={mi} className="flex min-w-0 max-w-full items-center gap-1">
                 <Connector />
                 <span
-                  className={`after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] relative flex h-8 min-w-0 max-w-full items-center gap-2 whitespace-nowrap rounded-[32px] px-2 py-px ${
+                  className={`after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] relative flex h-8 min-w-0 max-w-full items-center gap-2 whitespace-nowrap rounded-[32px] px-[9px] py-px ${
                     m.me ? "after:border-border-main" : "after:border-border"
                   }`}
                 >

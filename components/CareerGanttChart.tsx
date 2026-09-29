@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Icon from "@/components/Icon";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
@@ -219,6 +219,7 @@ function CareerCard({
         flexDirection: "column",
         cursor: "pointer",
         position: "relative",
+        pointerEvents: "auto",
         transition: "border-color .2s ease, box-shadow .2s ease",
       }}
     >
@@ -358,6 +359,7 @@ function CareerRowDesktop({
 
   return (
     <div
+      // 行の透明部分は下の行へのクリックを素通りさせる。受けるのはレールとカード本体だけ
       style={{
         position: "relative",
         width: "100%",
@@ -366,10 +368,11 @@ function CareerRowDesktop({
         display: "flex",
         flexDirection: "column",
         gap: 11,
+        pointerEvents: "none",
       }}
     >
       {/* バー行（レール。位置・幅は Figma の期間バーのまま） */}
-      <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", alignItems: "center", gap: 4, pointerEvents: "auto" }}>
         {hasStartDot && <Dot color={item.isCurrent ? C.dotCurrent : isOpen ? C.dotOpen : C.dot} />}
         <div style={{ flex: 1, minWidth: 0, height: 2, background: isOpen ? C.barOpen : C.bar, borderRadius: "2px 0 0 2px" }} />
         {hasEndDot && <Dot color={isOpen ? C.dotOpen : C.dot} />}
@@ -380,6 +383,8 @@ function CareerRowDesktop({
       <div style={{ display: "flex", width: "100%" }}>
         <div style={{ flex: `0 1 ${left}%`, minWidth: 0 }} />
         <div
+          data-career-card=""
+          data-open={isOpen ? "" : undefined}
           style={{
             flex: "0 0 auto",
             width: "max-content",
@@ -444,6 +449,7 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const isMobile = useIsMobile(728);
   // デスクトップは同時に開けるカードを1枚に制限（別カードを開くと前のカードは閉じる）
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const rowsRef = useRef<HTMLDivElement>(null);
 
   // career_item_id で works をグルーピング → カード別 Works リンク
   useEffect(() => {
@@ -465,6 +471,40 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
       active = false;
     };
   }, []);
+
+  // 開いたカードがチャート下端を越えたぶんだけ行コンテナを伸ばす（縦の目盛り線も伸びる）。越えなければ何もしない
+  useEffect(() => {
+    if (isMobile) return;
+    const box = rowsRef.current;
+    if (!box) return;
+    const cards = box.querySelectorAll<HTMLElement>("[data-career-card]");
+    const lastRow = box.lastElementChild as HTMLElement | null;
+    const update = () => {
+      const top = box.getBoundingClientRect().top;
+      const natural = lastRow ? lastRow.getBoundingClientRect().bottom : top;
+      let maxBottom = natural;
+      cards.forEach((c) => {
+        // 既存の閉じたカードの微小なはみ出し（現職カードの高さ115.5 vs 行112など）を
+        // コンテナ拡張の対象に含めない。拡張は「開いている」カードの越え幅だけを見る。
+        if (c.hasAttribute("data-open")) {
+          maxBottom = Math.max(maxBottom, c.getBoundingClientRect().bottom);
+        }
+      });
+      const pb = parseFloat(getComputedStyle(box).paddingBottom);
+      if (maxBottom - natural > 0.5) {
+        box.style.minHeight = maxBottom - top + pb + "px";
+      } else {
+        box.style.minHeight = "";
+      }
+    };
+    const ro = new ResizeObserver(update);
+    cards.forEach((c) => ro.observe(c));
+    update();
+    return () => {
+      ro.disconnect();
+      box.style.minHeight = "";
+    };
+  }, [isMobile, career]);
 
   // Works リンククリック → Works セクションへスクロール＋モーダル展開イベント
   const handleOpenWork = (workId: string) => {
@@ -534,7 +574,7 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
           </div>
 
           {/* バー列 */}
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
+          <div ref={rowsRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
             {oldestFirst.map((item, i) => (
               <CareerRowDesktop
                 key={item.id}

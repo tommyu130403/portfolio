@@ -187,10 +187,20 @@ export default function Home() {
                 <p>こんにちは。プロダクトデザイナーの山田太郎です。<br />&nbsp;大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
                 <p>デザインは問題解決の手段であると考えており、 常にユーザーの課題とビジネスの目標の両方を意識しながらデザイン制作を行ってきました。 開発チームやセールスチームといったあらゆる専門性との密なコミュニケーションを通じて、「最適解」を徹底的に模索することを心がけています。</p>
               </div>
-              <ul className="list-disc text-[13px] leading-[20px] tracking-[0.39px] text-fg-muted">
-                <li className="ms-[19.5px]">説明責任を果たす (透明性)</li>
-                <li className="ms-[19.5px]">あらゆる専門性によって最適解を模索する (異能の掛け算)</li>
-                <li className="ms-[19.5px]">ビジネスを作る (UXの証明)</li>
+              {/* Figma の点は本文と同じ 13px の「•」を字下げ 19.5px の中央に置いたもの。list-disc は 5×5 の図形になるため不使用 */}
+              <ul className="list-none text-[13px] leading-[20px] tracking-[0.39px] text-fg-muted" role="list">
+                <li className="relative ms-[19.5px]">
+                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
+                  説明責任を果たす (透明性)
+                </li>
+                <li className="relative ms-[19.5px]">
+                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
+                  あらゆる専門性によって最適解を模索する (異能の掛け算)
+                </li>
+                <li className="relative ms-[19.5px]">
+                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
+                  ビジネスを作る (UXの証明)
+                </li>
               </ul>
             </div>
           </section>

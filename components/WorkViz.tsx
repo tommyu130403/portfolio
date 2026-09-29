@@ -194,7 +194,8 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
 
 /* ─── Stakeholders（_Stakeholder）────────────────────── */
 
-const Connector: FC = () => <span className="h-px w-4 shrink-0 rounded-full bg-border" />;
+// 行の中央 31.5 だと描画で 32 に丸まるため、下マージン1px で 31 ちょうどに（Figma 31）
+const Connector: FC = () => <span className="mb-px h-px w-4 shrink-0 rounded-full bg-border" />;
 
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
   <div className="flex flex-col items-start gap-2 md:px-10">

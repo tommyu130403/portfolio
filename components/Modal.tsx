@@ -157,8 +157,8 @@ const Modal: FC<ModalProps> = ({
               <div className="my-auto w-full">{children}</div>
             </div>
           </div>
-          {/* Close button（Figma node 120:413: right -45px / top -1px・border=off） */}
-          <div className="absolute -top-px -right-[45px]">
+          {/* Close button — Figma の描画位置: right -44px / top 0（node 120:413 の数値 -45/-1 ではなく実際の描画位置に合わせる）・border=off */}
+          <div className="absolute top-0 -right-[44px]">
             <ButtonFunction
               border="off"
               onClick={onClose}

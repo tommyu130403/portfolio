@@ -1,36 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/src/lib/supabase";
-
-type SessionState = "loading" | "signedOut" | "signedIn";
+import { useAuth } from "@/lib/auth";
 
 /**
  * 管理画面の書き込みは Supabase Auth のログイン済みユーザー (private.owners 登録者) だけが
  * DB 側で許可される。ここでセッションを確認し、未ログインならログインフォームを出す。
  */
 export function SupabaseSessionGate({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<SessionState>("loading");
+  const { supabaseSession } = useAuth();
 
-  useEffect(() => {
-    let active = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setState(data.session ? "signedIn" : "signedOut");
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState(session ? "signedIn" : "signedOut");
-    });
-
-    return () => {
-      active = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  if (state === "loading") return <div className="min-h-screen bg-surface" />;
-  if (state === "signedOut") return <LoginForm />;
+  if (supabaseSession === "loading") return <div className="min-h-screen bg-surface" />;
+  if (supabaseSession === "signedOut") return <LoginForm />;
   return <>{children}</>;
 }
 

@@ -3,44 +3,64 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 
-type AuthRole = "guest" | "owner";
-type AuthState = { role: AuthRole; expires: number } | null;
+// 旧形式 `{ role, expires }` も expires だけを見るので有効
+type StoredEntry = { expires: number } | null;
+export type SupabaseSessionState = "loading" | "signedOut" | "signedIn";
 
 const SESSION_KEY = "portfolio_auth";
 const SESSION_MS  = 24 * 60 * 60 * 1000;
 const IS_DEV      = process.env.NODE_ENV === "development";
 
 type AuthContextValue = {
-  role: AuthRole | null;
-  login:  (role: AuthRole) => void;
+  entered: boolean;
+  supabaseSession: SupabaseSessionState;
+  login:  () => void;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRole] = useState<AuthRole | null>(IS_DEV ? "owner" : null);
+  const [entered, setEntered] = useState(IS_DEV);
+  const [supabaseSession, setSupabaseSession] = useState<SupabaseSessionState>("loading");
 
   useEffect(() => {
     if (IS_DEV) return;
     try {
       const raw = localStorage.getItem(SESSION_KEY);
       if (!raw) return;
-      const state = JSON.parse(raw) as AuthState;
+      const state = JSON.parse(raw) as StoredEntry;
       if (state && state.expires > Date.now()) {
-        setRole(state.role);
+        setEntered(true);
       }
     } catch {
       // ignore
     }
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setSupabaseSession(data.session ? "signedIn" : "signedOut");
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSupabaseSession(session ? "signedIn" : "signedOut");
+    });
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
   const login = IS_DEV
     ? () => {}
-    : (newRole: AuthRole) => {
-        const state: AuthState = { role: newRole, expires: Date.now() + SESSION_MS };
+    : () => {
+        const state: StoredEntry = { expires: Date.now() + SESSION_MS };
         localStorage.setItem(SESSION_KEY, JSON.stringify(state));
-        setRole(newRole);
+        setEntered(true);
       };
 
   const logout = IS_DEV
@@ -58,6 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch {
             // ignore
           }
+          // 通信失敗時は SIGNED_OUT が通知されないので手動で更新する
+          setSupabaseSession("signedOut");
         };
         supabase.auth
           .signOut({ scope: "local" })
@@ -65,11 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) clearStoredSession();
           })
           .catch(clearStoredSession);
-        setRole(null);
+        setEntered(false);
       };
 
   return (
-    <AuthContext.Provider value={{ role, login, logout }}>
+    <AuthContext.Provider value={{ entered, supabaseSession, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

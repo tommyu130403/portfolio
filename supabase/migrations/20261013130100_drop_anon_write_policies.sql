@@ -12,27 +12,51 @@
 --
 -- ※ 破壊的変更 (anon の書き込み手段を失う)。
 --
--- ロールバック (厳密な復元は supabase/backups/ の適用前控えを正とする。以下は概略):
+-- ロールバック (2026-10-13 に観測した本番の適用前状態を再作成する。以下をコメント解除して流す):
+--   -- 本番の適用前ポリシー (pg_policies, 2026-10-13 観測) をそのまま再作成する。
+--   -- dev は本番と構成が異なる可能性があるので、dev には流さないこと。
+--   -- 本番適用直前に supabase/backups/20261013_policies_pre_owner_lock.json へ適用前のポリシーを保存する
+--   -- (保存はメインセッションが行う)。差異があればそちらを正とする。
+--   -- 2本目で足した新ポリシー (select_public 等 4 本 x 11) は 1 本目のロールバックで消えるので、ここでは触らない。
+--   -- この後に 1 本目のロールバックを流す場合は、必ず本ロールバックを先に流すこと。
+--   -- 1 本目を先に流すと anon の SELECT ポリシーが消え、公開サイトの読み取りがエラーなしで 0 行になる。
 --   grant insert, update, delete, truncate on
 --     public.profile, public.career_items, public.works, public.skills_vocab, public.tools_vocab,
 --     public.skill_cards, public.work_skills, public.work_tools, public.skill_experience,
 --     public.skill_experience_tools, public.flowcharts
 --     to anon;
---   do $$
---   declare t text;
---   begin
---     foreach t in array array['profile','career_items','works','skills_vocab','tools_vocab',
---       'skill_cards','work_skills','work_tools','skill_experience','skill_experience_tools','flowcharts']
---     loop
---       execute format('drop policy if exists %I on public.%I', 'anon full access ' || t, t);
---       execute format('create policy %I on public.%I for all to anon using (true) with check (true)',
---         'anon full access ' || t, t);
---     end loop;
---   end $$;
---   create policy "anon can upload to Portfolio storage" on storage.objects
---     for insert to anon with check (bucket_id = 'Portfolio');
---   create policy "anon can read Portfolio storage" on storage.objects
---     for select to anon using (bucket_id = 'Portfolio');
+--   create policy "anon full access career_items" on public.career_items for all to anon using (true) with check (true);
+--   create policy "anon_all" on public.career_items for all to public using (true) with check (true);
+--   create policy "anon full access flowcharts" on public.flowcharts for all to anon using (true) with check (true);
+--   create policy "auth write flowcharts" on public.flowcharts for all to authenticated using (true) with check (true);
+--   create policy "public read flowcharts" on public.flowcharts for select to public using (true);
+--   create policy "anon can upsert profile" on public.profile for update to anon using (true) with check (true);
+--   create policy "anon_all" on public.profile for all to public using (true) with check (true);
+--   create policy "anon full access skill_cards" on public.skill_cards for all to anon using (true) with check (true);
+--   create policy "auth write skill_cards" on public.skill_cards for all to public using (auth.role() = 'authenticated');
+--   create policy "public read skill_cards" on public.skill_cards for select to public using (true);
+--   create policy "anon full access skill_experience" on public.skill_experience for all to anon using (true) with check (true);
+--   create policy "auth write skill_bars" on public.skill_experience for all to public using (auth.role() = 'authenticated');
+--   create policy "public read skill_bars" on public.skill_experience for select to public using (true);
+--   create policy "anon full access skill_experience_tools" on public.skill_experience_tools for all to anon using (true);
+--   create policy "auth write skill_experience_tools" on public.skill_experience_tools for all to public using (auth.role() = 'authenticated');
+--   create policy "public read skill_experience_tools" on public.skill_experience_tools for select to public using (true);
+--   create policy "anon full access skills_vocab" on public.skills_vocab for all to anon using (true) with check (true);
+--   create policy "auth write skills_vocab" on public.skills_vocab for all to authenticated using (true) with check (true);
+--   create policy "public read skills_vocab" on public.skills_vocab for select to public using (true);
+--   create policy "anon full access tools_vocab" on public.tools_vocab for all to anon using (true) with check (true);
+--   create policy "auth write tools_vocab" on public.tools_vocab for all to authenticated using (true) with check (true);
+--   create policy "public read tools_vocab" on public.tools_vocab for select to public using (true);
+--   create policy "anon full access work_skills" on public.work_skills for all to anon using (true) with check (true);
+--   create policy "auth write work_skills" on public.work_skills for all to authenticated using (true) with check (true);
+--   create policy "public read work_skills" on public.work_skills for select to public using (true);
+--   create policy "anon full access work_tools" on public.work_tools for all to anon using (true) with check (true);
+--   create policy "auth write work_tools" on public.work_tools for all to authenticated using (true) with check (true);
+--   create policy "public read work_tools" on public.work_tools for select to public using (true);
+--   create policy "anon full access works" on public.works for all to anon using (true) with check (true);
+--   create policy "works public read" on public.works for select to public using (true);
+--   create policy "anon can read Portfolio storage" on storage.objects for select to anon using (bucket_id = 'Portfolio');
+--   create policy "anon can upload to Portfolio storage" on storage.objects for insert to anon with check (bucket_id = 'Portfolio');
 
 do $$
 begin

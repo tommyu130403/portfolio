@@ -166,7 +166,7 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
                     </span>
                     {/* ツールチップ */}
                     {p.note && (p.note.title || p.note.body) && (
-                      <div className="pointer-events-none absolute left-2 top-full z-10 mt-1.5 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-[#0a0a0a] px-3 py-2 group-hover:block">
+                      <div className={`pointer-events-none absolute ${left >= 50 ? "right-2" : "left-2"} ${i >= Math.ceil(phases.length / 2) ? "bottom-full mb-1.5" : "top-full mt-1.5"} z-10 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-[#0a0a0a] px-3 py-2 group-hover:block`}>
                         {p.note.title && <p className="text-[10px] tracking-[0.3px] text-fg-muted">{p.note.title}</p>}
                         {p.note.body && <p className="text-[12px] leading-[1.5] text-white">{p.note.body}</p>}
                       </div>

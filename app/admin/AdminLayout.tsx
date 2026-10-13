@@ -636,12 +636,12 @@ export function ProofreadPanel({
 // ─── Profile セクション ────────────────────────────────
 
 // profile.introduction は jsonb カラムだが実体は string[] なのでローカル型で上書き
-type ProfileForm = Omit<Profile, "updated_at" | "introduction"> & { introduction: string[] };
+// career_lead は表示先がないためフォームから除外
+type ProfileForm = Omit<Profile, "updated_at" | "introduction" | "career_lead"> & { introduction: string[] };
 
 function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [form, setForm] = useState<ProfileForm>({
     id: 1, name_jp: "", name_en: "", title: "", bio: "", hero_image_url: "", introduction: [],
-    career_lead: null,
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -776,17 +776,6 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
             </div>
           ))}
         </div>
-      </div>
-
-      {/* 経歴リード文 */}
-      <div className="mb-8">
-        <FieldLabel>経歴セクション・リード文</FieldLabel>
-        <Textarea
-          value={form.career_lead ?? ""}
-          onChange={(v) => set("career_lead", v || null)}
-          rows={3}
-          placeholder="こんにちは。UI/UXデザイナーの〇〇です。東京を拠点に…"
-        />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

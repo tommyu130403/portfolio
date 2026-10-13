@@ -153,8 +153,8 @@ export default function Home() {
       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">
         <div className="flex w-full flex-col items-center gap-[120px] px-6 lg:px-8 xl:px-10 py-20">
           {/* Hero */}
-          <section className="flex w-full max-w-main items-center gap-16">
-            <div className="relative aspect-square flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
+          <section className="flex w-full max-w-main flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-16">
+            <div className="relative aspect-square w-[120px] flex-none sm:w-auto sm:flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-system-800" />
               ) : (
@@ -166,7 +166,7 @@ export default function Home() {
                 <p className="font-en text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
                 </p>
-                <div className="flex items-end gap-2 text-main-050">
+                <div className="flex flex-wrap items-end gap-x-2 gap-y-0 text-main-050">
                   <p className="font-noto text-[46px] leading-[60px] tracking-[0.2637px]">
                     {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-system-800" /> : profile?.name_jp}
                   </p>

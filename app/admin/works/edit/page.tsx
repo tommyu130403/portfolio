@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import WorkEditor from "./WorkEditor";
 import { OwnerGate } from "@/components/OwnerGate";
 import { AuthGate } from "@/components/AuthGate";
+import { SupabaseSessionGate } from "../../SupabaseSessionGate";
 
 /**
  * Work 1件の全画面編集ページ（/admin/works/edit?id=xxx、id 省略 or "new" で新規作成）。
@@ -16,7 +17,9 @@ function AdminWorkEditInner() {
   return (
     <AuthGate>
       <OwnerGate>
-        <WorkEditor workId={id} />
+        <SupabaseSessionGate>
+          <WorkEditor workId={id} />
+        </SupabaseSessionGate>
       </OwnerGate>
     </AuthGate>
   );

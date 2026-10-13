@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/src/lib/supabase";
 
 type AuthRole = "guest" | "owner";
 type AuthState = { role: AuthRole; expires: number } | null;
@@ -46,6 +47,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ? () => {}
     : () => {
         localStorage.removeItem(SESSION_KEY);
+        // 通信失敗時 signOut は { error } を返してセッションを消さないので、保存キーを直接消す
+        const clearStoredSession = () => {
+          try {
+            for (const key of Object.keys(localStorage)) {
+              if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+                localStorage.removeItem(key);
+              }
+            }
+          } catch {
+            // ignore
+          }
+        };
+        supabase.auth
+          .signOut({ scope: "local" })
+          .then(({ error }) => {
+            if (error) clearStoredSession();
+          })
+          .catch(clearStoredSession);
         setRole(null);
       };
 

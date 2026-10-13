@@ -141,7 +141,7 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
               const badgeCount = p.raci.length;
               const minBarWidth = 18 + (badgeCount > 0 ? badgeCount * 12 + (badgeCount - 1) * 4 : 0);
               return (
-                <div key={i} className="relative h-6 w-full" style={{ zIndex: phases.length - i }}>
+                <div key={i} className="relative h-6 w-full hover:z-[100]! focus-within:z-[100]!" style={{ zIndex: phases.length - i }}>
                   <div
                     className={`group after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] absolute top-0 flex h-6 items-center justify-between gap-1 rounded-[48px] py-px pl-[5px] pr-[13px] ${
                       active ? "bg-main-700 after:border-border-main" : "bg-[rgba(0,0,0,0.25)] after:border-border"

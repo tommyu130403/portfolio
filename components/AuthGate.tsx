@@ -14,25 +14,22 @@ async function sha256hex(text: string): Promise<string> {
 }
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { role, login } = useAuth();
-  const ownerHash = process.env.NEXT_PUBLIC_OWNER_PASSWORD_HASH ?? "";
+  const { entered, supabaseSession, login } = useAuth();
   const guestHash = process.env.NEXT_PUBLIC_GUEST_PASSWORD_HASH ?? "";
 
-  if (!ownerHash && !guestHash) return <>{children}</>;
+  if (!guestHash) return <>{children}</>;
 
-  if (role !== null) return <>{children}</>;
+  if (entered || supabaseSession === "signedIn") return <>{children}</>;
 
-  return <LoginForm ownerHash={ownerHash} guestHash={guestHash} login={login} />;
+  return <LoginForm guestHash={guestHash} login={login} />;
 }
 
 function LoginForm({
-  ownerHash,
   guestHash,
   login,
 }: {
-  ownerHash: string;
   guestHash: string;
-  login: (role: "guest" | "owner") => void;
+  login: () => void;
 }) {
   const [input, setInput]       = useState("");
   const [error, setError]       = useState("");
@@ -45,10 +42,8 @@ function LoginForm({
     setError("");
     try {
       const hash = await sha256hex(input);
-      if (ownerHash && hash === ownerHash) {
-        login("owner");
-      } else if (guestHash && hash === guestHash) {
-        login("guest");
+      if (hash === guestHash) {
+        login();
       } else {
         setError("パスワードが正しくありません");
       }

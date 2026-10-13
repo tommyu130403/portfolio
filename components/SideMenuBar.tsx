@@ -181,7 +181,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         onCollapsedChange(typeof v === "function" ? v(collapsed) : v)
     : setInternalCollapsed;
 
-  const { role, logout } = useAuth();
+  const { entered, supabaseSession, logout } = useAuth();
 
   return (
     <aside
@@ -307,7 +307,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           </div>
         </nav>
 
-        {role === "owner" && (
+        {(process.env.NODE_ENV === "development" || supabaseSession === "signedIn") && (
           <>
             <div className="h-px w-full rounded-[2px] bg-border shrink-0" />
             <nav
@@ -340,7 +340,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           collapsed={collapsed}
         />
 
-        {process.env.NODE_ENV !== "development" && role !== null && (
+        {process.env.NODE_ENV !== "development" && (entered || supabaseSession === "signedIn") && (
           <button
             type="button"
             onClick={logout}

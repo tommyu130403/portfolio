@@ -18,7 +18,7 @@ const eslintConfig = defineConfig([
   {
     rules: {
       // 門(npm run check)を二値にするための格下げ。
-      // 該当3箇所(app/page.tsx / components/OwnerGate.tsx / lib/auth.tsx)は
+      // 該当箇所(app/page.tsx / lib/auth.tsx)は
       // localStorage からの復元を hydration 後に反映する意図的なパターンで、
       // useSyncExternalStore への書き換えは認証状態の初期表示の挙動を変える。
       // 挙動変更を伴う修正は別タスクとし、ここでは warn に留めて可視性だけ残す。

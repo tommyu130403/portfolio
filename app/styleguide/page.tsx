@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { StyleguideLayout, type LogoData } from "./StyleguideLayout";
-import { OwnerGate } from "@/components/OwnerGate";
+import { SupabaseSessionGate } from "@/app/admin/SupabaseSessionGate";
 
 export const metadata = {
   title: "Style Guide | Portfolio",
@@ -57,9 +57,11 @@ export default function StyleguidePage() {
 
   const logos = getLogoList();
 
-  return (
-    <OwnerGate>
-      <StyleguideLayout iconSets={iconSets} logos={logos} />
-    </OwnerGate>
+  const content = <StyleguideLayout iconSets={iconSets} logos={logos} />;
+
+  return process.env.NODE_ENV === "development" ? (
+    content
+  ) : (
+    <SupabaseSessionGate>{content}</SupabaseSessionGate>
   );
 }

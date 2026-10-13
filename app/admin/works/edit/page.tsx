@@ -3,8 +3,6 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import WorkEditor from "./WorkEditor";
-import { OwnerGate } from "@/components/OwnerGate";
-import { AuthGate } from "@/components/AuthGate";
 import { SupabaseSessionGate } from "../../SupabaseSessionGate";
 
 /**
@@ -15,13 +13,9 @@ import { SupabaseSessionGate } from "../../SupabaseSessionGate";
 function AdminWorkEditInner() {
   const id = useSearchParams().get("id") ?? "new";
   return (
-    <AuthGate>
-      <OwnerGate>
-        <SupabaseSessionGate>
-          <WorkEditor workId={id} />
-        </SupabaseSessionGate>
-      </OwnerGate>
-    </AuthGate>
+    <SupabaseSessionGate>
+      <WorkEditor workId={id} />
+    </SupabaseSessionGate>
   );
 }
 

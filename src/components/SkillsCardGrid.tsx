@@ -215,8 +215,8 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 
   return (
     <div
-      className={`group transition-[border-radius] duration-200 ${
-        open ? "rounded-[16px] bg-white/5" : "rounded-[10px] hover:rounded-[16px] hover:bg-white/5"
+      className={`relative flex min-h-16 flex-col justify-center rounded-[16px] px-px transition-colors duration-200 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors after:duration-200 after:content-[''] ${
+        open ? "bg-white/5 after:border-border-light" : "hover:bg-white/5 after:border-border"
       }`}
     >
       {/* _SkillVaule — 常時表示。クリックで開閉 */}
@@ -225,7 +225,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex w-full items-center justify-between gap-2 p-3 text-left"
+        className="flex w-full items-center justify-between px-3 py-[13px] text-left"
       >
         {/* 左: アイコン + ラベル */}
         <span className="flex flex-1 min-w-0 items-center gap-3 pr-4">
@@ -235,7 +235,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
             tintColor="#B3FFE7"
             className="w-4 h-4 shrink-0"
           />
-          <span className="flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-[1.4] text-white">
+          <span className="font-en flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-normal text-white">
             {skill.label}
           </span>
         </span>
@@ -248,12 +248,10 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
             <SegBar level={level} />
             <span className="sr-only">{levelInfo.en}</span>
           </span>
-          {/* Button/Function — default では不可視、hover/active で表示 */}
+          {/* Button/Function — Figma では閉じた状態でも常時表示(24×24・p6・r8) */}
           <span
             aria-hidden
-            className={`grid h-4 w-4 place-items-center rounded-lg p-1 transition-opacity duration-150 ${
-              open ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            }`}
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-lg p-1.5"
           >
             <Icon set="Arrows" name={open ? "up" : "down"} tintColor="#9E9E9E" className="w-3 h-3" />
           </span>
@@ -270,16 +268,18 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="flex flex-col gap-4 border-t border-white/5 px-8 pt-4 pb-3">
+          {/* mt3 = 見出し行の下16 − ボタンの下余白13。上罫線は Figma では inside なので pt = 16−1。
+              pb13 = 項目の py13（外枠は ::after で位置に入らない）。Figma 733:2902: h162 / スロット y53 */}
+          <div className="mt-[3px] flex flex-col gap-4 border-t border-border px-8 pt-[15px] pb-[13px]">
             <div className="flex flex-col gap-1">
               {skill.labelNote && (
-                <span className="font-body text-[10px] tracking-[0.3px]" style={{ color: "#757575" }}>
+                <span className="font-body text-[10px] leading-[12px] tracking-[0.3px]" style={{ color: "#757575" }}>
                   {skill.labelNote}
                 </span>
               )}
               {skill.description && (
                 <p
-                  className="font-body text-[13px] leading-[1.5] tracking-[0.39px] whitespace-pre-line"
+                  className="font-body text-[13px] leading-[20px] tracking-[0.39px] whitespace-pre-line"
                   style={{ color: "#9E9E9E" }}
                 >
                   {skill.description}
@@ -287,7 +287,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
               )}
             </div>
             {skill.tools.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-y-2">
                 {skill.tools.map((tool, i) => (
                   <ToolTag key={i} tool={tool} />
                 ))}
@@ -306,23 +306,25 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 function SkillCard({ card }: { card: SkillCardConfig }) {
   return (
     <div
-      className="overflow-clip"
+      // 375/390 幅ではスキル名の折返し切れを防ぐため、640px 未満だけ左右余白を 40 → 16 に詰める（Figma にモバイル画面なし）
+      className="overflow-clip px-4 py-6 sm:px-10"
       style={{
-        background: "#1A1A1A",
-        borderRadius: 14,
-        padding: 40,
-        boxShadow: "0 1px 1.5px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.1)",
+        borderRadius: 16,
+        // Figma は塗りなしの枠に drop-shadow → 中身の形に落ちる影。box-shadow だと箱の下辺に線が出る
+        filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.1)) drop-shadow(0 1px 1px rgba(0,0,0,0.1))",
         display: "flex",
         flexDirection: "column",
       }}
     >
       {/* CategoryCard — ヘッダー */}
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-        <Icon set={card.icon.set} name={card.icon.name} tintColor="#48F4BE" className="w-6 h-6 shrink-0" />
+        <div className="flex shrink-0 py-1">
+          <Icon set={card.icon.set} name={card.icon.name} tintColor="#48F4BE" className="w-6 h-6 shrink-0" />
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span className="text-[20px] font-bold leading-[28px] text-white">{card.title}</span>
+          <span className="text-headline-02-en text-white">{card.title}</span>
           <span
-            className="font-body text-[13px] leading-[1.5] tracking-[0.39px]"
+            className="font-body text-[13px] leading-[20px] tracking-[0.39px]"
             style={{ color: "#757575" }}
           >
             {card.titleJP}

@@ -1,9 +1,9 @@
-import type { FC } from "react";
+import type { CSSProperties, FC } from "react";
 import Icon, { ICON_SETS, type IconSet } from "./Icon";
 
 /**
  * Work 詳細の構造化ビジュアル（Figma: _Process / _Stakeholder）。
- * 本文 markdown の「::: timeline」「::: stakeholders」ディレクティブ位置に描画される。
+ * WorkVizModal（全画面ボタンから開くモーダル）内に描画される。
  * データは works.timeline / works.stakeholders（jsonb）。
  */
 
@@ -90,12 +90,12 @@ const RefIcon: FC<{ icon?: string; tint: string; className: string }> = ({ icon,
 
 /* ─── Timeline（_Process）────────────────────────────── */
 
-// RACI バッジ（Figma 凡例準拠: R=mint塗り / A=枠 / C=gray塗り / I=darkgray）
+// RACI バッジ（Figma 814:3872〜3875）
 const RACI_STYLE: Record<RaciKey, string> = {
-  R: "bg-main-100 text-[#0a0a0a]",
-  A: "border border-main-100 bg-[#0a2218] text-main-100",
-  C: "bg-system-500 text-[#0a0a0a]",
-  I: "bg-system-800 text-fg-caption",
+  R: "bg-main-100 text-system-900",
+  A: "bg-white text-system-900",
+  C: "bg-system-600 text-system-900",
+  I: "bg-system-800 text-system-500",
 };
 const RACI_LEGEND: { key: RaciKey; label: string }[] = [
   { key: "R", label: "Responsible / 実行責任" },
@@ -106,8 +106,8 @@ const RACI_LEGEND: { key: RaciKey; label: string }[] = [
 
 function RaciBadge({ k }: { k: RaciKey }) {
   return (
-    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${RACI_STYLE[k]}`}>
-      {k}
+    <span className={`flex size-3 shrink-0 items-center justify-center rounded-full ${RACI_STYLE[k]}`}>
+      <span className="font-sans text-[8px] font-medium leading-4 [text-box:trim-both_cap_alphabetic]">{k}</span>
     </span>
   );
 }
@@ -115,69 +115,78 @@ function RaciBadge({ k }: { k: RaciKey }) {
 export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
   const { totalUnits, phases } = data;
   return (
-    <div className="rounded-[14px] bg-[#1a1a1a] p-5">
-      {/* 列ヘッダー（Phase + W1..Wn） */}
-      <div className="flex items-center gap-3">
-        <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-muted">Phase</p>
-        <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${totalUnits}, minmax(0,1fr))` }}>
-          {Array.from({ length: totalUnits }, (_, i) => (
-            <p key={i} className="text-center text-[11px] font-extrabold tracking-[0.44px] text-fg-muted">
-              W{i + 1}
-            </p>
+    <div className="w-full max-md:overflow-x-auto">
+      <div
+        className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-[rgba(0,0,0,0.1)] relative flex flex-col gap-6 rounded-[14px] px-[25px] pt-[25px] pb-[9px] max-md:min-w-[var(--tl-min-w)]"
+        style={{ "--tl-min-w": `${totalUnits * 40 + 50}px` } as CSSProperties}
+      >
+        <div className="flex flex-col gap-4">
+          {/* 週ラベル行 */}
+          <div className="grid" style={{ gridTemplateColumns: `repeat(${totalUnits}, minmax(0,1fr))` }}>
+            {Array.from({ length: totalUnits }, (_, i) => (
+              <p key={i} className="font-en text-center text-[11px] font-extrabold leading-6 tracking-[0.55px] text-system-700">
+                W{i + 1}
+              </p>
+            ))}
+          </div>
+
+          {/* フェーズ行一覧 */}
+          <div className="isolate flex flex-col gap-2">
+            {phases.map((p, i) => {
+              const active = p.raci.includes("R") || p.raci.includes("A");
+              const left = ((p.start - 1) / totalUnits) * 100;
+              const width = (p.span / totalUnits) * 100;
+              // バーの最小幅（px）= pl(5) + バッジ幅(12px×個数 + gap4px×(個数-1)) + pr(13)。
+              // 短いバーでもRACIバッジがはみ出さないようにする（フェーズ名は最小幅では見えなくてよい）。
+              const badgeCount = p.raci.length;
+              const minBarWidth = 18 + (badgeCount > 0 ? badgeCount * 12 + (badgeCount - 1) * 4 : 0);
+              return (
+                <div key={i} className="relative h-6 w-full" style={{ zIndex: phases.length - i }}>
+                  <div
+                    className={`group after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] absolute top-0 flex h-6 items-center justify-between gap-1 rounded-[48px] py-px pl-[5px] pr-[13px] ${
+                      active ? "bg-main-700 after:border-border-main" : "bg-[rgba(0,0,0,0.25)] after:border-border"
+                    }`}
+                    style={{
+                      left: `min(${left}%, calc(100% - ${minBarWidth}px))`,
+                      width: `max(${width}%, ${minBarWidth}px)`,
+                    }}
+                  >
+                    <span className="flex shrink-0 items-center gap-1">
+                      {p.raci.map((k, ki) => (
+                        <RaciBadge key={ki} k={k} />
+                      ))}
+                    </span>
+                    <span
+                      className={`font-en min-w-0 truncate text-[10px] font-extrabold leading-[14px] tracking-[0.4px] ${
+                        active ? "text-main-100" : "text-system-500"
+                      }`}
+                      title={p.label}
+                    >
+                      {p.label}
+                    </span>
+                    {/* ツールチップ */}
+                    {p.note && (p.note.title || p.note.body) && (
+                      <div className="pointer-events-none absolute left-2 top-full z-10 mt-1.5 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-[#0a0a0a] px-3 py-2 group-hover:block">
+                        {p.note.title && <p className="text-[10px] tracking-[0.3px] text-fg-muted">{p.note.title}</p>}
+                        {p.note.body && <p className="text-[12px] leading-[1.5] text-white">{p.note.body}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 凡例 */}
+        <div className="flex min-h-[26px] flex-wrap items-center justify-end">
+          {RACI_LEGEND.map(({ key, label }) => (
+            <span key={key} className="flex items-center gap-2 overflow-clip rounded-r8 px-2 text-[10px] leading-4 tracking-[0.5px] text-system-600">
+              <RaciBadge k={key} />
+              {label}
+            </span>
           ))}
         </div>
-      </div>
-
-      {/* フェーズ行 */}
-      <div className="mt-3 flex flex-col gap-2.5">
-        {phases.map((p, i) => {
-          const active = p.raci.includes("R") || p.raci.includes("A");
-          const left = ((p.start - 1) / totalUnits) * 100;
-          const width = (p.span / totalUnits) * 100;
-          return (
-            <div key={i} className="flex items-center gap-3">
-              <p className="w-[120px] shrink-0 text-right text-[13px] font-extrabold tracking-[0.65px] text-fg-caption">
-                {p.label}
-              </p>
-              <div className="relative h-8 flex-1">
-                <div
-                  className={`group absolute top-0 flex h-8 items-center gap-1.5 rounded-full border px-1.5 ${
-                    active ? "border-main-100 bg-[#0a2218]" : "border-system-700 bg-[#242424]"
-                  }`}
-                  style={{ left: `${left}%`, width: `${width}%`, minWidth: 56 }}
-                >
-                  <span className="flex items-center gap-1">
-                    {p.raci.map((k) => (
-                      <RaciBadge key={k} k={k} />
-                    ))}
-                  </span>
-                  {p.progress != null && (
-                    <span className={`ml-auto pr-1 text-[11px] font-extrabold tracking-[0.44px] ${active ? "text-main-100" : "text-fg-muted"}`}>
-                      {p.progress}%
-                    </span>
-                  )}
-                  {/* ツールチップ */}
-                  {p.note && (p.note.title || p.note.body) && (
-                    <div className="pointer-events-none absolute left-2 top-full z-10 mt-1.5 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-[#0a0a0a] px-3 py-2 group-hover:block">
-                      {p.note.title && <p className="text-[10px] tracking-[0.3px] text-fg-muted">{p.note.title}</p>}
-                      {p.note.body && <p className="text-[12px] leading-[1.5] text-white">{p.note.body}</p>}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* 凡例 */}
-      <div className="mt-4 flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5">
-        {RACI_LEGEND.map(({ key, label }) => (
-          <span key={key} className="flex items-center gap-1.5 text-[10px] tracking-[0.3px] text-fg-muted">
-            <RaciBadge k={key} />
-            {label}
-          </span>
-        ))}
       </div>
     </div>
   );
@@ -185,35 +194,57 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
 
 /* ─── Stakeholders（_Stakeholder）────────────────────── */
 
-const Connector: FC = () => <span className="h-px w-4 shrink-0 bg-border-light" />;
+// 行の中央 31.5 だと描画で 32 に丸まるため、下マージン1px で 31 ちょうどに（Figma 31）
+const Connector: FC = () => <span className="mb-px h-px w-4 shrink-0 rounded-full bg-border" />;
 
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
-  <div className="flex flex-col gap-4">
+  <div className="flex flex-col items-start gap-2 md:px-10">
     {data.groups.map((g, gi) => (
-      <div key={gi} className="flex items-center">
+      <div key={gi} className="flex max-w-full items-center gap-1">
         {/* グループタイル */}
-        <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-[12px] border border-[#2a2a2a] bg-[#161616]">
-          <RefIcon icon={g.icon} tint="#bdbdbd" className="h-5 w-5" />
-          <p className="text-[10px] leading-none tracking-[0.3px] text-fg-caption">{g.label}</p>
+        <div className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex size-16 shrink-0 flex-col items-center justify-center rounded-r16 bg-surface">
+          <RefIcon icon={g.icon} tint="var(--color-system-white)" className="h-4 w-4" />
+          <p className="font-sans text-center text-[10px] font-bold leading-normal tracking-[0.5px] text-white">{g.label}</p>
         </div>
         {/* メンバーピル連結 */}
-        <div className="flex min-w-0 flex-wrap items-center gap-y-2">
-          {g.members.map((m, mi) => (
-            <span key={mi} className="flex items-center">
-              <Connector />
-              <span
-                className={`flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] tracking-[0.36px] ${
-                  m.me ? "border-main-100 text-main-100" : "border-border-light text-fg-muted"
-                }`}
-              >
-                <Icon set="Peoples" name="people" tintColor={m.me ? "var(--color-main-100)" : "var(--color-fg-muted)"} className="h-4 w-4 shrink-0" />
-                {m.label}
-                {m.me && (
-                  <span className="rounded-full bg-main-100 px-1.5 py-0.5 text-[9px] font-bold leading-none text-[#0a0a0a]">me</span>
-                )}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-2">
+          {g.members.map((m, mi) => {
+            const memberTint = m.me ? "var(--color-main-050)" : "var(--color-system-500)";
+            return (
+              <span key={mi} className="flex min-w-0 max-w-full items-center gap-1">
+                <Connector />
+                <span
+                  className={`after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] relative flex h-8 min-w-0 max-w-full items-center gap-2 whitespace-nowrap rounded-[32px] px-[9px] py-px ${
+                    m.me ? "after:border-border-main" : "after:border-border"
+                  }`}
+                >
+                  <span className="flex min-w-0 max-w-full items-center gap-1.5">
+                    <Icon
+                      set="Peoples"
+                      name={m.label ? "peoples-two" : "user"}
+                      tintColor={memberTint}
+                      className="h-4 w-4 shrink-0"
+                    />
+                    {m.label && (
+                      <span
+                        title={m.label}
+                        className={`font-en max-md:truncate text-[11px] font-extrabold leading-none tracking-[0.44px] [text-box:trim-both_cap_alphabetic] ${
+                          m.me ? "text-main-050" : "text-system-500"
+                        }`}
+                      >
+                        {m.label}
+                      </span>
+                    )}
+                  </span>
+                  {m.me && (
+                    <span className="font-en rounded-full bg-main-100 px-1.5 py-1 text-[10px] font-normal leading-none tracking-[0.3px] text-system-900">
+                      me
+                    </span>
+                  )}
+                </span>
               </span>
-            </span>
-          ))}
+            );
+          })}
         </div>
       </div>
     ))}

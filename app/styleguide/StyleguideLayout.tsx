@@ -42,6 +42,10 @@ const SAMPLE_WORK_DETAIL = {
   sections: [
     { heading: "概要", body: "### 背景\n市場のニーズに応えるため、新規スカウトサービスを立ち上げました。\n\n### 課題\n既存フローでは候補者と企業のマッチング精度に課題がありました。" },
     { heading: "見出し01", body: "本文テキスト Body01。プロジェクトで取り組んだ施策の詳細を記載します。" },
+    {
+      heading: "本文ブロック（検証用）",
+      body: "本文テキスト Body01。画像ブロックの直前の段落です。\n\n![補足テキスト（キャプション）](https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80){width=320 align=left}\n画像の右に並ぶ本文テキスト。Figma 888:3181 の画像ブロックに相当します。\n\n### 見出し02\n- 箇条書き1\n- 箇条書き2\n\n> 引用テキスト\n\n#### 見出し03\n見出し03配下の本文。\n\n---\n\n::: grid cols=2 gap=4\n左セル\n---\n右セル\n:::\n\n```ts\nconst example = true;\n```",
+    },
   ],
   stakeholder_breakdown: "事業責任者(1) | プロジェクトマネージャー(1) | デザイナー(2) | エンジニア(4)",
   career_item_id: null,
@@ -392,7 +396,7 @@ function TypographySection() {
           [
             { role: "Special / EN", family: typo.special.en, token: "typo.special.en", cssVar: "--font-afacad",       cls: "",           sample: "Special Heading" },
             { role: "Body / JP",    family: typo.body.jp,    token: "typo.body.jp",    cssVar: "--font-noto-sans-jp", cls: "",           sample: "本文テキスト" },
-            { role: "Body / EN",    family: typo.body.en,    token: "typo.body.en",    cssVar: undefined,             cls: "",           sample: "Body Text" },
+            { role: "Body / EN",    family: typo.body.en,    token: "typo.body.en",    cssVar: undefined,             cls: "font-en",    sample: "Body Text" },
             { role: "実装ローカル / JP（font-mplus）",   family: "M PLUS 1p",           token: "—（Figma 変数なし）", cssVar: "--font-mplus-1p", cls: "",  sample: "見出しガイド" },
             // font-guide は @theme inline 定義のため CSS 変数として出力されない（ユーティリティにインライン展開される）。
             // そのためこの1件だけは class 経由で当てる。
@@ -428,7 +432,9 @@ function TypographySection() {
       <p className="mb-4 text-[12px] text-system-700">
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge>、
         クラスからは <TokenBadge>text-body-02-jp</TokenBadge>（app/globals.css の <TokenBadge>@utility</TokenBadge>）で参照。
-        lineHeight は倍率（Figma 100% → 1）。行間 AUTO は <TokenBadge>normal</TokenBadge>。letterSpacing は em（Figma 3% → 0.03em）。
+        lineHeight は倍率（Figma 100% → 1）。Noto の AUTO は Figma 実測 px（round(1.2×size)）、Avenir は
+        <TokenBadge>title-en</TokenBadge> の 52px 以外は <TokenBadge>normal</TokenBadge>。倍率150%の style は、Figma
+        が描く size×1.5 の端数切り上げ px（22.5→23 / 19.5→20 / 16.5→17）で持つ。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
@@ -756,6 +762,7 @@ function FigmaOnlyPreview({ title, figma, description }: {
 function ModalDemo() {
   const [open, setOpen] = useState(false);
   const [carousel, setCarousel] = useState(false);
+  const [fit, setFit] = useState(false);
   const [index, setIndex] = useState(0);
   const total = 3;
   return (
@@ -776,6 +783,14 @@ function ModalDemo() {
           />
           carousel バリアント
         </label>
+        <label className="flex items-center gap-2 text-[13px] text-fg-muted">
+          <input
+            type="checkbox"
+            checked={fit}
+            onChange={(e) => setFit(e.target.checked)}
+          />
+          width=content
+        </label>
       </div>
       {open && (
         <Modal
@@ -783,6 +798,7 @@ function ModalDemo() {
           carousel={carousel}
           currentIndex={index}
           total={total}
+          width={fit ? "content" : "full"}
           onPrev={carousel ? () => setIndex((i) => (i - 1 + total) % total) : undefined}
           onNext={carousel ? () => setIndex((i) => (i + 1) % total) : undefined}
         >
@@ -821,14 +837,28 @@ function WorkVizModalDemo() {
       {kind && (
         <WorkVizModal
           kind={kind}
-          timeline={{ totalUnits: 8, phases: [
-            { label: "Research", start: 1, span: 3, raci: ["R"], progress: 90 },
-            { label: "Design", start: 3, span: 3, raci: ["R", "A"], progress: 100 },
-            { label: "QA", start: 6, span: 3, raci: ["C"], progress: 40 },
+          timeline={{ totalUnits: 16, phases: [
+            { label: "Research", start: 1, span: 3, raci: ["R", "A"] },
+            { label: "Design", start: 3, span: 4, raci: ["C"] },
+            { label: "Stakeholder Interview & Synthesis", start: 16, span: 1, raci: ["R", "A", "C"] },
+            { label: "Development", start: 7, span: 6, raci: ["I"] },
+            { label: "QA", start: 13, span: 3, raci: ["R"] },
           ] }}
           stakeholders={{ groups: [
             { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
             { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
+            {
+              label: "Engineering",
+              icon: "Edit/code",
+              members: [
+                { label: "Tech Lead" },
+                { label: "Frontend Engineer" },
+                { label: "Backend Engineer" },
+                { label: "QA Engineer" },
+                { label: "Site Reliability Engineer with a very long title" },
+                { label: "" },
+              ],
+            },
           ] }}
           onClose={() => setKind(null)}
         />
@@ -842,7 +872,7 @@ function ComponentsSection() {
     <section id="components" className="scroll-mt-8">
       <SectionTitle label="Components" title="コンポーネント" />
       <div className="flex flex-col gap-12">
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default / sub / section / コンテンツ見出し 01・02（Library 304:313）。03 は Figma に存在せず実装のみ">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Title/EN（Avenir Heavy 38px）。sub / section / コンテンツ見出し 01・02（Library 304:313）。03 は Figma に存在せず実装のみ">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
@@ -853,14 +883,14 @@ function ComponentsSection() {
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
-            <p className="text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
+            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
             <p className="font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">見出し01（## / Noto Bold 24px 白）</p>
             <p className="font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">見出し02（### / Noto Bold 20px mint）</p>
-            <p className="text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
-            <p className="text-[15px] leading-[1.5] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
-            <p className="text-[13px] leading-[1.5] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
-            <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[1.5] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
-            <p className="text-[10px] leading-[16px] tracking-[0.5px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
+            <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
+            <p className="text-[15px] leading-[23px] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
+            <p className="text-[13px] leading-[20px] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
+            <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[20px] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
+            <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
           </div>
         </ComponentPreview>
 
@@ -881,7 +911,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small（Figma Tag/Small: プロジェクトカード用）/ tool（Slot-Tool: スキル展開パネル用・border付き・アイコン前置）">
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ tool(border付き・10px #9e9e9e。スキル展開パネルはアイコン前置、WorkCard はアイコンなし)">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -900,7 +930,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="SideMenuBar"
-          description="サイドナビゲーション。Figma node 55-296 準拠。フラットなアイテム構成(アコーディオン形式は廃止)。showCollapseToggle=false で折りたたみトグルを隠す(モバイルのオーバーレイ表示用)"
+          description="サイドナビゲーション。Figma Master 62:545 / Library 55-296 準拠。角丸なし・右境界線は inside stroke(after 疑似要素)。Social はロゴのみ(GitHub / YOUTRUST、リンク先未設定)。showCollapseToggle=false で折りたたみトグルを隠す(モバイルのオーバーレイ表示用)"
         >
           <div className="flex flex-wrap gap-8">
             <div className="overflow-hidden rounded-[12px] border border-border-light">
@@ -938,12 +968,12 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="Modal"
-          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）"
+          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）。Escape で閉じる／開くとモーダルへフォーカス、閉じると開いたボタンへ戻る／width=&quot;content&quot; で中身の幅（上限 800px）"
         >
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 2 列）と同じ 392px を与えている">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 2 列）と同じ 392px を与えている。影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。タグは Tag tool variant">
           {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
           <div className="w-[392px] max-w-full">
           <WorkCard
@@ -992,14 +1022,17 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkProcessChart"
-          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画"
+          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画。Phase 列なし・フェーズ名はバーの中の右端・RACI 12px"
         >
           <div className="w-full">
             <WorkProcessChart
-              data={{ totalUnits: 8, phases: [
-                { label: "Research", start: 1, span: 3, raci: ["R"], progress: 90, note: { title: "調査", body: "ヒアリングを実施" } },
-                { label: "Design", start: 3, span: 3, raci: ["R", "A"], progress: 100 },
-                { label: "QA", start: 6, span: 3, raci: ["C"], progress: 40 },
+              data={{ totalUnits: 12, phases: [
+                { label: "Research", start: 1, span: 3, raci: ["R", "A"], note: { title: "調査", body: "ヒアリングを実施" } },
+                { label: "Design", start: 3, span: 4, raci: ["C"] },
+                { label: "Development", start: 7, span: 4, raci: ["I"] },
+                { label: "QA", start: 9, span: 2, raci: ["R"] },
+                { label: "Launch Preparation", start: 11, span: 2, raci: ["A"] },
+                { label: "Release", start: 12, span: 1, raci: ["I"] },
               ] }}
             />
           </div>
@@ -1012,7 +1045,7 @@ function ComponentsSection() {
           <div className="w-full">
             <WorkStakeholderDiagram
               data={{ groups: [
-                { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
+                { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }, { label: "" }] },
                 { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
               ] }}
             />
@@ -1021,7 +1054,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkVizModal"
-          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画"
+          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画。stakeholder は中身の幅（width=&quot;content&quot;）"
         >
           <WorkVizModalDemo />
         </ComponentPreview>
@@ -1042,7 +1075,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを gap 48 で並べる。横罫線は上部ブロックとの境界に 1 本だけ（Figma 900:9189）"
+          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを gap 48 で並べる。横罫線は上部ブロックとの境界に 1 本だけ（Figma 900:9189）。align=left の画像は画像 320・角丸 16＋右列（本文 13px → キャプション、gap 8）。見出し02→本文 8 / 本文→見出し02 32"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

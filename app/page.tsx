@@ -13,8 +13,6 @@ import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
 const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "works", "skills"];
-const DEFAULT_CAREER_LEAD =
-  "こんにちは。UI/UXデザイナーの山田太郎です。 東京を拠点に、Webサイト、モバイルアプリケーション、ブランディングなど、 幅広いデジタルプロダクトのデザインを手がけています。";
 
 type Profile = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
@@ -165,14 +163,14 @@ export default function Home() {
             </div>
             <div className="flex flex-1 flex-col">
               <div className="flex flex-col gap-2">
-                <p className="text-[16px] leading-6 text-fg-muted">
+                <p className="font-en text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
                 </p>
                 <div className="flex items-end gap-2 text-main-050">
-                  <p className="font-mplus text-[46px] leading-[60px] tracking-[0.26px]">
+                  <p className="font-noto text-[46px] leading-[60px] tracking-[0.2637px]">
                     {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-system-800" /> : profile?.name_jp}
                   </p>
-                  <p className="text-[20px] leading-7 tracking-[-0.45px]">
+                  <p className="font-en text-[20px] leading-7 tracking-[-0.4492px]">
                     {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-system-800" /> : profile?.name_en}
                   </p>
                 </div>
@@ -183,12 +181,27 @@ export default function Home() {
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
             <Headline label="自己紹介" title="Introduction" />
-            <div className="flex flex-col gap-10 text-[15px] leading-[1.5] tracking-[0.45px] text-white">
+            <div className="flex flex-col gap-10 text-[15px] leading-[23px] tracking-[0.45px] text-white">
               {/* Opening paragraphs */}
               <div className="flex flex-col gap-4">
-                <p>こんにちは。プロダクトデザイナーの山田太郎です。 大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
+                <p>こんにちは。プロダクトデザイナーの山田太郎です。<br />&nbsp;大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
                 <p>デザインは問題解決の手段であると考えており、 常にユーザーの課題とビジネスの目標の両方を意識しながらデザイン制作を行ってきました。 開発チームやセールスチームといったあらゆる専門性との密なコミュニケーションを通じて、「最適解」を徹底的に模索することを心がけています。</p>
               </div>
+              {/* Figma の点は本文と同じ 13px の「•」を字下げ 19.5px の中央に置いたもの。list-disc は 5×5 の図形になるため不使用 */}
+              <ul className="list-none text-[13px] leading-[20px] tracking-[0.39px] text-fg-muted" role="list">
+                <li className="relative ms-[19.5px]">
+                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
+                  説明責任を果たす (透明性)
+                </li>
+                <li className="relative ms-[19.5px]">
+                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
+                  あらゆる専門性によって最適解を模索する (異能の掛け算)
+                </li>
+                <li className="relative ms-[19.5px]">
+                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
+                  ビジネスを作る (UXの証明)
+                </li>
+              </ul>
             </div>
           </section>
 
@@ -196,14 +209,6 @@ export default function Home() {
           <section id="career" className="w-full max-w-main">
             <Headline label="経歴" title="Career" />
             <div className="flex flex-col gap-6">
-              {/* careerLead — デザインソース (sections.jsx) 準拠スタイル */}
-              {loading ? (
-                <span className="inline-block h-12 w-full animate-pulse rounded bg-system-800" />
-              ) : (
-                <p style={{ fontFamily: "Avenir, var(--font-noto-sans-jp), sans-serif", fontSize: 14.5, lineHeight: 1.9, letterSpacing: ".04em", color: "var(--color-fg-muted)", margin: 0, maxWidth: 640 }}>
-                  {(profile?.career_lead ?? "").trim() || DEFAULT_CAREER_LEAD}
-                </p>
-              )}
               {loading ? (
                 <div className="flex flex-col gap-3">
                   <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-system-800" />

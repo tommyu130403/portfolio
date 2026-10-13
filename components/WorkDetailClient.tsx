@@ -7,7 +7,6 @@ import type { Tables } from "@/src/types/supabase";
 import { parseScreenshots } from "@/lib/work-content";
 import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
-import { ButtonFunction } from "./ButtonFunction";
 import Icon from "./Icon";
 import SideMenuBar from "./SideMenuBar";
 
@@ -149,11 +148,11 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       </div>
 
       {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
-          WorkVizModal(z-50) / ScreenshotLightbox(z-60) がサイドバー(z-2)や
-          画面端の固定ナビ(z-40)より下に沈む（2026-09-11 に実測） */}
+          WorkVizModal(z-50) / ScreenshotLightbox(z-60) がサイドバー(z-2)より
+          下に沈む（2026-09-11 に実測） */}
       <main className="relative flex min-w-0 flex-1 flex-col items-center">
-        {/* 戻りリンク */}
-        <div className="mx-auto w-full max-w-main px-6 pt-6">
+        {/* 戻りリンク（lg 以上はサイドメニューがあるため非表示） */}
+        <div className="mx-auto w-full max-w-main px-6 pt-6 lg:hidden">
           <button
             type="button"
             onClick={handleBack}
@@ -172,16 +171,16 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
         </div>
 
         {/* カラム */}
-        <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-6 pt-10 pb-20">
+        <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-6 py-20 xl:px-0">
           <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
           <WorkDetailContent work={work} />
         </div>
 
-        {/* 前後ナビ（xl 未満＝本文末尾・タップ44px以上・ラベル付き）。
+        {/* 前後ナビ（lg 未満＝本文末尾・タップ44px以上・ラベル付き。lg 以上はサイドメニューがあるため非表示）。
             ルートが flex 行なので、ここは必ず <main> の内側に置く。外に出すと
             サイドバーと横並びの兄弟になり、lg 未満で <main> が幅 0 に潰れる */}
         {showNav && (
-        <div className="mx-auto flex w-full max-w-main gap-3 px-6 pb-16 xl:hidden">
+        <div className="mx-auto flex w-full max-w-main gap-3 px-6 pb-16 lg:hidden">
           <button
             type="button"
             onClick={() => goTo(-1)}
@@ -199,24 +198,6 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
         </div>
         )}
       </main>
-
-      {/* 前後ナビ（デスクトップ＝画面端に固定・マウス操作前提。xl 未満では本文に重なるため非表示） */}
-      {showNav && (
-        <>
-          {/* left-[264px] = サイドバー 256px + 8px。
-              xl(1280px) 未満では本文カラムの左端が 300px を下回って矢印と重なるため、
-              xl 以上でだけ出す。それ未満は本文末尾のラベル付きボタンが担当する
-              （2026-09-08 に 1024/1090/1096/1100px で実測） */}
-          <div className="fixed left-[264px] top-1/2 z-40 hidden -translate-y-1/2 xl:block">
-            <ButtonFunction direction="left" onClick={() => goTo(-1)} aria-label="前のWork" />
-          </div>
-          <div className="fixed right-2 top-1/2 z-40 hidden -translate-y-1/2 xl:block">
-            <ButtonFunction direction="right" onClick={() => goTo(1)} aria-label="次のWork" />
-          </div>
-
-
-        </>
-      )}
     </div>
   );
 };

@@ -8,7 +8,7 @@
  */
 
 export type ItemStatus = "defalut" | "hover" | "Active";
-export type ItemWidth = "default" | "short";
+export type ItemWidth = "default" | "short" | "hug";
 export type ItemSize = "default" | "small";
 
 /** _Item Status に応じたスタイル（CSS） */
@@ -18,10 +18,14 @@ export const ITEM_STATUS_CLASSES: Record<ItemStatus, string> = {
   Active: "text-system-300",
 };
 
-/** _Item Width に応じたスタイル */
+/**
+ * _Item Width に応じたスタイル
+ * hug = Figma の width=short（アイコンのみ・中身なり 42×38）。short(w-10) は折りたたみ時の実装専用
+ */
 export const ITEM_WIDTH_CLASSES: Record<ItemWidth, string> = {
   default: "w-full",
   short: "w-10",
+  hug: "w-fit",
 };
 
 /** _Item 共通ベース */

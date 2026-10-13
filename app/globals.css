@@ -52,11 +52,10 @@ html {
   --font-guide: var(--font-afacad), var(--font-mplus-1p); /* EN: Afacad / JP: M PLUS 1p */
   --font-sans:  var(--font-afacad);       /* Special 英字のみ: Afacad     (typo.special.en) */
   --font-mplus: var(--font-mplus-1p);     /* Special 日本語のみ: M PLUS 1p（実装ローカル・Figma 変数なし） */
-  /* Body フォント: 全要素のデフォルト (typo.body)。
-     英数字は EN(Avenir)、日本語は JP(Noto Sans JP) へ自動で切り替わる
-     （Avenir に日本語グリフが無いため Noto へフォールバックする仕組み）。 */
-  --font-body:  Avenir, var(--font-noto-sans-jp), sans-serif; /* Body 自動切替: EN Avenir / JP Noto */
+  /* Body フォント: 全要素のデフォルト (typo.body)。Noto のみ。英字 Avenir は font-en で明示する。 */
+  --font-body:  var(--font-noto-sans-jp), sans-serif; /* Body: Noto Sans JP */
   --font-noto:  var(--font-noto-sans-jp); /* Body 日本語のみ: Noto Sans JP (typo.body.jp) */
+  --font-en:    Avenir, var(--font-noto-sans-jp), sans-serif; /* Body/EN 明示用 */
   --font-mono:  var(--font-geist-mono);
 }
 
@@ -167,14 +166,16 @@ html {
    line-height / letter-spacing の 5 プロパティをまとめて当てるため、@theme ではなく
    @utility を使う（Tailwind v4）。
    font-family の対応: lang jp → Noto Sans JP / en → Avenir→Noto / special-en → Afacad→Noto
-   Figma の行間 AUTO は CSS の normal、% 表記の文字間は em に変換している。 */
+   Noto の AUTO は Figma 実測 px（round(1.2×size)）。Avenir の AUTO は title-en の 52 だけ実測済みで他は normal。
+   % 表記の文字間は em に変換している。
+   倍率150%の style は、Figma が描く size×1.5 の端数切り上げ px（22.5→23 / 19.5→20 / 16.5→17）で持つ。 */
 
 @utility text-title-pj {
   /* Figma: Title/PJ */
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 34px;
   font-weight: 700;
-  line-height: normal;
+  line-height: 41px;
   letter-spacing: 0.03em;
 }
 
@@ -183,7 +184,7 @@ html {
   font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
   font-size: 38px;
   font-weight: 800;
-  line-height: normal;
+  line-height: 52px;
   letter-spacing: 0.03em;
 }
 
@@ -192,7 +193,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 24px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 36px;
   letter-spacing: 0.05em;
 }
 
@@ -210,7 +211,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 17px;
   font-weight: 700;
-  line-height: normal;
+  line-height: 20px;
   letter-spacing: 0.05em;
 }
 
@@ -219,7 +220,7 @@ html {
   font-family: var(--font-afacad), var(--font-noto-sans-jp), sans-serif;
   font-size: 20px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 30px;
   letter-spacing: 0.05em;
 }
 
@@ -228,7 +229,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 23px;
   letter-spacing: 0.03em;
 }
 
@@ -237,7 +238,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 23px;
   letter-spacing: 0.03em;
 }
 
@@ -255,7 +256,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 20px;
   letter-spacing: 0.03em;
 }
 
@@ -264,7 +265,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 20px;
   letter-spacing: 0.03em;
 }
 
@@ -282,7 +283,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 17px;
   letter-spacing: 0.03em;
 }
 
@@ -291,7 +292,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 17px;
   letter-spacing: 0.03em;
 }
 
@@ -309,7 +310,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 10px;
   font-weight: 400;
-  line-height: normal;
+  line-height: 12px;
   letter-spacing: 0.03em;
 }
 
@@ -327,7 +328,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 9px;
   font-weight: 400;
-  line-height: normal;
+  line-height: 11px;
   letter-spacing: 0.03em;
 }
 
@@ -350,10 +351,8 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Body: 英数字 Avenir → 日本語 Noto Sans JP へ自動切替 (typo.body)。
+  /* Body: Noto のみ。英字 Avenir は font-en で明示する (typo.body)。
      ※ @theme inline の --font-body は CSS 変数として出力されない（font-body ユーティリティに
         インライン展開されるのみ）ため、ここでは実体スタックを直接指定する。 */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
-  /* Body JP 文字間: 0.03em (3%) */
-  letter-spacing: 0.03em;
+  font-family: var(--font-noto-sans-jp), sans-serif;
 }

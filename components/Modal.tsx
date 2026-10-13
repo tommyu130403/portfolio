@@ -1,7 +1,8 @@
 "use client";
 
-import { type FC, type ReactNode, useEffect } from "react";
+import { type FC, type ReactNode, useEffect, useRef } from "react";
 import { ButtonFunction } from "./ButtonFunction";
+import Icon from "./Icon";
 
 type ModalProps = {
   children: ReactNode;
@@ -16,6 +17,8 @@ type ModalProps = {
   currentIndex?: number;
   /** 総アイテム数（ドット表示用） */
   total?: number;
+  /** full = 常に最大 800px いっぱい / content = 中身の幅に合わせる（上限 800px）。既定 full */
+  width?: "full" | "content";
 };
 
 const Modal: FC<ModalProps> = ({
@@ -27,13 +30,70 @@ const Modal: FC<ModalProps> = ({
   onNext,
   currentIndex = 0,
   total = 1,
+  width = "full",
 }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // ダイアログ本体 + 閉じるボタンをまとめて包むラッパー（フォーカストラップの境界）
+  const trapRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
+    // 開く前の値を保存し、閉じるときに復元する（モーダルが重なった場合でも
+    // 下のモーダルが開いている間はロックが外れないように）
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevOverflow;
     };
   }, []);
+
+  useEffect(() => {
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.focus({ preventScroll: true });
+    return () => {
+      if (previouslyFocused && previouslyFocused.isConnected) {
+        previouslyFocused.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.isComposing) {
+        // モーダルが重なっている場合、最前面（DOM 上で最後）のものだけが閉じる
+        const dialogs = document.querySelectorAll('[role="dialog"]');
+        if (dialogs.length > 0 && dialogs[dialogs.length - 1] !== dialogRef.current) return;
+        onClose();
+        return;
+      }
+      if (e.key === "Tab") {
+        const root = trapRef.current;
+        if (!root || !root.contains(document.activeElement)) return;
+        const focusables = Array.from(
+          root.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey) {
+          if (active === first || active === dialogRef.current) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   return (
     <div
@@ -45,7 +105,7 @@ const Modal: FC<ModalProps> = ({
       }}
       onClick={onClose}
     >
-      <div className="relative flex w-full flex-col items-center gap-4">
+      <div ref={trapRef} className="relative flex w-full flex-col items-center gap-4">
         {/* Prev arrow */}
         {carousel && onPrev && (
           <div className="absolute left-[-53px] top-1/2 -translate-y-1/2">
@@ -77,38 +137,34 @@ const Modal: FC<ModalProps> = ({
         )}
 
         {/* Modal container + Close button wrapper (overflow-visible でボタンが切れないように) */}
-        <div className="relative w-full max-w-main">
+        <div
+          className={
+            width === "content"
+              ? "relative max-w-[min(var(--container-main),calc(100%_-_10px))]"
+              : "relative w-full max-w-[min(var(--container-main),calc(100%_-_10px))]"
+          }
+        >
           <div
-            className="relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 border border-border bg-surface shadow-wisper"
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
+            style={{ outline: "none" }}
+            className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 bg-surface shadow-[0_1px_1.5px_0_rgba(0,0,0,0.1),0_1px_1px_0_rgba(0,0,0,0.1)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex-1 overflow-y-auto">
-              {children}
+            <div className="flex flex-1 flex-col overflow-y-auto">
+              <div className="my-auto w-full">{children}</div>
             </div>
           </div>
-          {/* Close button（Figma node 120:413: right -45px / top -1px・border=off） */}
-          <div className="absolute -top-px -right-[45px]">
+          {/* Close button — Figma の描画位置: right -44px / top 0（node 120:413 の数値 -45/-1 ではなく実際の描画位置に合わせる）・border=off */}
+          <div className="absolute top-0 -right-[44px]">
             <ButtonFunction
               border="off"
               onClick={onClose}
               aria-label="Close"
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="shrink-0"
-                aria-hidden
-              >
-                <path
-                  d="M12 4L4 12M4 4L12 12"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <Icon set="Character" name="close" alt="" aria-hidden className="h-6 w-6 shrink-0" />
             </ButtonFunction>
           </div>
         </div>

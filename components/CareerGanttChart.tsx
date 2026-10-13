@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Icon from "@/components/Icon";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
@@ -15,46 +15,44 @@ type EnrichedItem = CareerItem & {
 };
 type WorkLink = { id: string; title: string };
 
-const CHART_START = 2016;
-const CHART_TOTAL = 10; // 2016–2026（11 ラベル）
-const CHART_YEARS = Array.from({ length: CHART_TOTAL + 1 }, (_, i) => CHART_START + i);
 const CURRENT_YEAR = new Date().getFullYear();
+const CHART_TOTAL = 10; // Figma 770:6432 10列
+const CHART_START = CURRENT_YEAR - (CHART_TOTAL - 1);
+const CHART_YEARS = Array.from({ length: CHART_TOTAL }, (_, i) => CHART_START + i);
 
 /* Figma フォント指定（node 770-6652 準拠）
    period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
-// 英数字/日本語の自動切替（EN Avenir → JP Noto）。Avenir に日本語グリフが無いため
-// 日本語は Noto へフォールバックする。FONT_EN/FONT_JP は同一スタックだが用途の意図を残す。
+// FONT_JP は Noto のみ（日本語テキスト用）。FONT_EN は英数字表示用に Avenir を明示する。
 const FONT_EN = "Avenir, var(--font-noto-sans-jp), sans-serif";
-const FONT_JP = "Avenir, var(--font-noto-sans-jp), sans-serif";
+const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
-  outerBg: "#1a1a1a",
-  cardBg: "#212121", // System/900
-  cardBorder: "#424242", // System/800（折りたたみ default）
-  cardBorderOpen: "#9e9e9e", // System/500（展開 default）
-  currentBg: "#0f2a23",
-  currentBorder: "rgba(72,244,190,0.4)", // 折りたたみ current
-  currentBorderOpen: "#48f4be", // Main/base（展開 current）
-  period: "#b3ffe7", // Main/050
-  role: "#48f4be", // Main/base
-  company: "#9e9e9e", // System/500（AA 対応: 旧 #616161 System/700 はコントラスト不足）
+  cardBg: "#292929", // Background/Light
+  cardBorder: "#3a3a3a", // Border/Default（System/825）
+  cardBorderOpen: "#424242", // Border/Light
+  period: "#9e9e9e", // System/500
+  role: "#ffffff",
+  company: "#616161", // System/700
   desc: "#9e9e9e", // System/500
-  worksLabel: "#9e9e9e", // System/500（AA 対応: 旧 #616161 System/700 はコントラスト不足）
+  worksLabel: "#616161", // System/700
   worksLink: "#b3ffe7", // Main/050
   worksLinkHover: "#39c89b", // Main/200
-  iconArrow: "#9e9e9e",
+  iconArrow: "#757575", // System/600
+  iconArrowCurrent: "#2b9e7a", // Main/300
   badgeBg: "#48f4be",
   badgeText: "#212121",
-  divider: "rgba(255,255,255,0.05)", // Background/Light-α5
-  dot: "#424242", // System/800
-  dotActive: "#48f4be", // Main/base
-  bar: "#424242", // System/800
-  gridLine: "#2a2a2a",
+  divider: "#3a3a3a",
+  dot: "#3a3a3a", // Border/Default（System/825）
+  dotOpen: "#424242", // Border/Light
+  dotCurrent: "#48f4be", // Main/base
+  bar: "#3a3a3a", // Border/Default（System/825）
+  barOpen: "#424242", // Border/Light
+  gridLine: "#3a3a3a",
   yearText: "#757575", // System/600
   yearCurrent: "#b3ffe7", // Main/050
-  shadowWisper: "0px 1px 1.5px rgba(0,0,0,0.1)",
-  shadowStrong: "1px 1px 8px rgba(0,0,0,0.25)",
+  shadowWisper: "0px 1px 3px 0px rgba(0,0,0,0.1)",
+  shadowStrong: "1px 1px 16px 2px rgba(0,0,0,0.25)",
 } as const;
 
 /* 期間文字列を解析（月精度）。
@@ -134,7 +132,7 @@ function WorksLinks({
   if (works.length === 0) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <p style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: C.worksLabel, margin: 0 }}>
+      <p style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", lineHeight: "12px", color: C.worksLabel, margin: 0 }}>
         Works
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -166,9 +164,9 @@ function WorksLinks({
                 set="Arrows"
                 name="arrow-right"
                 tintColor={linkColor}
-                style={{ width: 12, height: 12, flexShrink: 0, marginTop: 1, transition: "background-color .15s ease" }}
+                style={{ width: 12, height: 12, flexShrink: 0, marginTop: 0, transition: "background-color .15s ease" }}
               />
-              <span style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: linkColor, lineHeight: 1.4, transition: "color .15s ease" }}>
+              <span style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: linkColor, lineHeight: "12px", transition: "color .15s ease" }}>
                 {w.title}
               </span>
             </button>
@@ -181,9 +179,9 @@ function WorksLinks({
 
 /* ──────────────────────────────────────────────────────────────────────────
    CareerCard — デスクトップ（バー下）／モバイル（縦リスト）共通の小型カード
-   width: fit-content（min 180 / max 400）で role が 1 行に収まる幅へ。
+   width: 100%（Figma: w-full。幅は呼び出し側の包み div が min 180 / max 400 で決める）。
+   role/company は折り返し（nowrap/ellipsis は付けない）。
    開閉は親が制御（バー・レールのドット色と連動）。
-   multiline=true（モバイル）では role/company を折り返し、幅は利用可能域まで。
    ────────────────────────────────────────────────────────────────────────── */
 function CareerCard({
   item,
@@ -191,60 +189,77 @@ function CareerCard({
   onOpenWork,
   isOpen,
   onToggle,
-  multiline = false,
 }: {
   item: EnrichedItem;
   works: WorkLink[];
   onOpenWork: (workId: string) => void;
   isOpen: boolean;
   onToggle: () => void;
-  multiline?: boolean;
 }) {
   const isCurrent = item.isCurrent;
-  const borderColor = isOpen
-    ? isCurrent
-      ? C.currentBorderOpen
-      : C.cardBorderOpen
-    : isCurrent
-      ? C.currentBorder
-      : C.cardBorder;
+  const borderColor = isOpen ? C.cardBorderOpen : C.cardBorder;
+  const hasAccordionContent = Boolean(item.description) || works.length > 0;
 
-  // role/company の 1 行クランプ（デスクトップ）／折り返し（モバイル）
-  const clampStyle = multiline
-    ? ({ whiteSpace: "normal", overflowWrap: "anywhere" } as const)
-    : ({ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const);
+  // role/company は折り返し（nowrap/ellipsis を付けない。右端切れの原因だったため廃止）
+  const clampStyle = { whiteSpace: "normal", overflowWrap: "anywhere" } as const;
 
   return (
     <div
       onClick={onToggle}
       style={{
-        width: "fit-content",
+        width: "100%",
         minWidth: 180,
-        maxWidth: multiline ? "100%" : 400,
         boxSizing: "border-box",
         borderRadius: 10,
         border: `1px solid ${borderColor}`,
-        background: isCurrent ? C.currentBg : C.cardBg,
+        background: C.cardBg,
         boxShadow: isOpen ? C.shadowStrong : C.shadowWisper,
-        padding: 12,
+        padding: "16px 0",
         display: "flex",
         flexDirection: "column",
         cursor: "pointer",
         position: "relative",
+        pointerEvents: "auto",
         transition: "border-color .2s ease, box-shadow .2s ease",
       }}
     >
       {/* ヘッダー（期間行 + 役職 + 会社）— Figma: gap 6 */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 16, paddingRight: 16 }}>
         {/* 期間行 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-            <Icon set="Time" name="calendar-three-mint" style={{ width: 12, height: 12, flexShrink: 0 }} />
-            <span style={{ fontFamily: FONT_EN, fontWeight: 800, color: C.period, fontSize: 11, letterSpacing: ".33px", lineHeight: 1, whiteSpace: "nowrap" }}>
-              {formatPeriod(item.period)}
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <Icon set="Time" name="calendar-line" tintColor="var(--color-system-500)" style={{ width: 12, height: 12, flexShrink: 0 }} />
+              <span
+                style={{
+                  fontFamily: FONT_EN,
+                  fontWeight: 800,
+                  color: C.period,
+                  fontSize: 11,
+                  letterSpacing: ".33px",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  textBox: "trim-both cap alphabetic",
+                }}
+              >
+                {formatPeriod(item.period)}
+              </span>
+            </div>
             {isCurrent && (
-              <span style={{ background: C.badgeBg, color: C.badgeText, fontSize: 9, lineHeight: 1, padding: "3px 7px", borderRadius: 9999, whiteSpace: "nowrap", flexShrink: 0 }}>
+              <span
+                style={{
+                  fontFamily: FONT_JP,
+                  background: C.badgeBg,
+                  color: C.badgeText,
+                  fontSize: 9,
+                  lineHeight: 1,
+                  letterSpacing: "0.1172px",
+                  padding: "3px 7px",
+                  borderRadius: 9999,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
                 現在
               </span>
             )}
@@ -252,17 +267,17 @@ function CareerCard({
           <Icon
             set="Arrows"
             name={isOpen ? "up" : "down"}
-            tintColor={C.iconArrow}
+            tintColor={isCurrent ? C.iconArrowCurrent : C.iconArrow}
             style={{ width: 12, height: 12, flexShrink: 0 }}
           />
         </div>
 
         {/* 役職 — Noto Sans JP Bold */}
-        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: 1.5, letterSpacing: ".39px", margin: 0, ...clampStyle }}>
+        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: "20px", letterSpacing: ".39px", margin: 0, ...clampStyle }}>
           {item.role}
         </p>
         {/* 会社 — Noto Sans JP Regular */}
-        <p style={{ fontFamily: FONT_JP, color: C.company, fontSize: 10, lineHeight: "normal", letterSpacing: ".3px", margin: 0, ...clampStyle }}>
+        <p style={{ fontFamily: FONT_JP, color: C.company, fontSize: 10, lineHeight: "12px", letterSpacing: ".3px", margin: 0, ...clampStyle }}>
           {item.company}
         </p>
       </div>
@@ -279,29 +294,33 @@ function CareerCard({
           transition: "max-height .3s ease, opacity .2s ease",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 12 }}>
-          <div style={{ height: 1, width: "100%", background: C.divider }} />
-          {item.description && (
-            <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: 1.5, letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
-              {item.description}
-            </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 16 }}>
+          <div style={{ height: 1, marginBottom: -1, width: "100%", background: C.divider }} />
+          {hasAccordionContent && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 16px" }}>
+              {item.description && (
+                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: "17px", letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
+                  {item.description}
+                </p>
+              )}
+              <WorksLinks works={works} onOpenWork={onOpenWork} />
+            </div>
           )}
-          <WorksLinks works={works} onOpenWork={onOpenWork} />
         </div>
       </div>
     </div>
   );
 }
 
-/* タイムラインのドット（中空丸）。展開中は mint。 */
-function Dot({ active }: { active: boolean }) {
+/* タイムラインのドット（中空丸）。色は呼び出し側が状態に応じて指定する。 */
+function Dot({ color }: { color: string }) {
   return (
     <div
       style={{
         width: 12,
         height: 12,
         borderRadius: "50%",
-        border: `2px solid ${active ? C.dotActive : C.dot}`,
+        border: `2px solid ${color}`,
         boxSizing: "border-box",
         flexShrink: 0,
       }}
@@ -316,42 +335,67 @@ function CareerRowDesktop({
   item,
   works,
   onOpenWork,
+  isLast,
+  isOpen,
+  onToggle,
 }: {
   item: EnrichedItem;
   works: WorkLink[];
   onOpenWork: (workId: string) => void;
+  isLast: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  // バー長 = 期間スパン（2016 以前開始は左端でクランプ）
+  // バー長 = 期間スパン（CHART_START 以前開始は左端でクランプ）
   const s = Math.max(0, Math.min(CHART_TOTAL, item.startVal));
-  const e = Math.max(0, Math.min(CHART_TOTAL, item.endVal));
+  const e = item.isCurrent ? CHART_TOTAL : Math.max(0, Math.min(CHART_TOTAL, item.endVal));
   const left = (s / CHART_TOTAL) * 100;
   // 不正データ（開始 > 終了）でも width が負値（CSS 無効）にならないよう 0 でガード
   const width = Math.max(0, ((e - s) / CHART_TOTAL) * 100);
 
-  // type: current = 右端まで（終点ドットなし）／ prev = 2016 以前開始（始点ドットなし）
+  // type: current = 右端まで（終点ドットなし）／ prev = CHART_START 以前開始（始点ドットなし）
   const hasStartDot = item.startYear >= CHART_START;
   const hasEndDot = !item.isCurrent;
 
   return (
-    <div style={{ position: "relative", width: "100%", zIndex: isOpen ? 2 : 1 }}>
-      <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", flexDirection: "column", gap: 11 }}>
-        {/* バー行 */}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, width: "100%" }}>
-          {hasStartDot && <Dot active={isOpen} />}
-          <div style={{ flex: 1, minWidth: 0, height: 2, background: C.bar, borderRadius: 2 }} />
-          {hasEndDot && <Dot active={isOpen} />}
-        </div>
-        {/* カード（バー左端に揃え、px-16 インセット） */}
-        <div style={{ paddingLeft: 16, paddingRight: 16 }}>
-          <CareerCard
-            item={item}
-            works={works}
-            onOpenWork={onOpenWork}
-            isOpen={isOpen}
-            onToggle={() => setIsOpen((o) => !o)}
-          />
+    <div
+      // 行の透明部分は下の行へのクリックを素通りさせる。受けるのはレールとカード本体だけ
+      style={{
+        position: "relative",
+        width: "100%",
+        height: isLast && isOpen ? "auto" : 112,
+        zIndex: isOpen ? 2 : 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: 11,
+        pointerEvents: "none",
+      }}
+    >
+      {/* バー行（レール。位置・幅は Figma の期間バーのまま） */}
+      <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", alignItems: "center", gap: 4, pointerEvents: "auto" }}>
+        {hasStartDot && <Dot color={item.isCurrent ? C.dotCurrent : isOpen ? C.dotOpen : C.dot} />}
+        <div style={{ flex: 1, minWidth: 0, height: 2, background: isOpen ? C.barOpen : C.bar, borderRadius: "2px 0 0 2px" }} />
+        {hasEndDot && <Dot color={isOpen ? C.dotOpen : C.dot} />}
+      </div>
+      {/* カード（行の直下）。[スペーサー][カード包み div] の2分割 flex にして、
+         カード幅は中身（役職・会社名）に合わせつつ、右端にはみ出す場合はスペーサーが縮んで
+         カードが左へ寄る（min-width/max-width の固定値ではなく、実際のテキスト幅で決まる）。 */}
+      <div style={{ display: "flex", width: "100%" }}>
+        <div style={{ flex: `0 1 ${left}%`, minWidth: 0 }} />
+        <div
+          data-career-card=""
+          data-open={isOpen ? "" : undefined}
+          style={{
+            flex: "0 0 auto",
+            width: "max-content",
+            minWidth: `max(228px, ${width}%)`,
+            maxWidth: 400,
+            paddingLeft: 24,
+            paddingRight: 24,
+            boxSizing: "border-box",
+          }}
+        >
+          <CareerCard item={item} works={works} onOpenWork={onOpenWork} isOpen={isOpen} onToggle={onToggle} />
         </div>
       </div>
     </div>
@@ -380,7 +424,7 @@ function CareerItemMobile({
       {/* タイムラインレール */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, alignSelf: "stretch", flexShrink: 0 }}>
         <div style={{ width: 2, height: 10, borderRadius: "0 0 2px 2px", background: isFirst ? "transparent" : C.bar, flexShrink: 0 }} />
-        <Dot active={isOpen} />
+        <Dot color={isOpen ? C.dotOpen : C.dot} />
         <div style={{ width: 2, flex: 1, minHeight: 1, borderRadius: "2px 2px 0 0", background: isLast ? "transparent" : C.bar }} />
       </div>
       {/* カード */}
@@ -391,7 +435,6 @@ function CareerItemMobile({
           onOpenWork={onOpenWork}
           isOpen={isOpen}
           onToggle={() => setIsOpen((o) => !o)}
-          multiline
         />
       </div>
     </div>
@@ -404,6 +447,9 @@ function CareerItemMobile({
 export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const [worksByCareer, setWorksByCareer] = useState<Record<string, WorkLink[]>>({});
   const isMobile = useIsMobile(728);
+  // デスクトップは同時に開けるカードを1枚に制限（別カードを開くと前のカードは閉じる）
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const rowsRef = useRef<HTMLDivElement>(null);
 
   // career_item_id で works をグルーピング → カード別 Works リンク
   useEffect(() => {
@@ -425,6 +471,40 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
       active = false;
     };
   }, []);
+
+  // 開いたカードがチャート下端を越えたぶんだけ行コンテナを伸ばす（縦の目盛り線も伸びる）。越えなければ何もしない
+  useEffect(() => {
+    if (isMobile) return;
+    const box = rowsRef.current;
+    if (!box) return;
+    const cards = box.querySelectorAll<HTMLElement>("[data-career-card]");
+    const lastRow = box.lastElementChild as HTMLElement | null;
+    const update = () => {
+      const top = box.getBoundingClientRect().top;
+      const natural = lastRow ? lastRow.getBoundingClientRect().bottom : top;
+      let maxBottom = natural;
+      cards.forEach((c) => {
+        // 既存の閉じたカードの微小なはみ出し（現職カードの高さ115.5 vs 行112など）を
+        // コンテナ拡張の対象に含めない。拡張は「開いている」カードの越え幅だけを見る。
+        if (c.hasAttribute("data-open")) {
+          maxBottom = Math.max(maxBottom, c.getBoundingClientRect().bottom);
+        }
+      });
+      const pb = parseFloat(getComputedStyle(box).paddingBottom);
+      if (maxBottom - natural > 0.5) {
+        box.style.minHeight = maxBottom - top + pb + "px";
+      } else {
+        box.style.minHeight = "";
+      }
+    };
+    const ro = new ResizeObserver(update);
+    cards.forEach((c) => ro.observe(c));
+    update();
+    return () => {
+      ro.disconnect();
+      box.style.minHeight = "";
+    };
+  }, [isMobile, career]);
 
   // Works リンククリック → Works セクションへスクロール＋モーダル展開イベント
   const handleOpenWork = (workId: string) => {
@@ -457,8 +537,8 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   }
 
   return (
-    <div style={{ overflowX: "auto", width: "100%" }}>
-      <div style={{ background: C.outerBg, borderRadius: 14, padding: 24, minWidth: 640 }}>
+    <div style={{ width: "100%", maxWidth: 800, padding: "24px 0", borderRadius: 14 }}>
+      <div style={{ minWidth: 640, overflowX: "clip", borderRadius: "inherit" }}>
         {/* 年ラベル行 */}
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${CHART_YEARS.length}, 1fr)`, marginBottom: 8 }}>
           {CHART_YEARS.map((year, i) => (
@@ -469,10 +549,14 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
                 fontWeight: 800,
                 fontSize: 11,
                 color: year === CURRENT_YEAR ? C.yearCurrent : C.yearText,
-                letterSpacing: ".33px",
+                letterSpacing: ".3945px",
+                lineHeight: "16.5px",
                 textAlign: "center",
                 borderLeft: i === 0 ? "none" : `1px solid ${C.gridLine}`,
-                paddingTop: 2,
+                height: 17,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               {year}
@@ -490,13 +574,16 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
           </div>
 
           {/* バー列 */}
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
-            {oldestFirst.map((item) => (
+          <div ref={rowsRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
+            {oldestFirst.map((item, i) => (
               <CareerRowDesktop
                 key={item.id}
                 item={item}
                 works={worksByCareer[item.id] ?? []}
                 onOpenWork={handleOpenWork}
+                isLast={i === oldestFirst.length - 1}
+                isOpen={openIndex === i}
+                onToggle={() => setOpenIndex((o) => (o === i ? null : i))}
               />
             ))}
           </div>

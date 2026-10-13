@@ -189,7 +189,7 @@ JSON.stringify(out)
 | C-15 | TabBar Active | アクティブタブ | `font-weight 800` / `background rgb(33,33,33)` / `border-color rgb(58,58,58)` |
 | C-16 | TabBar アイコン | 3つの `<img>` の `naturalWidth` | **3つとも 24**（0 なら画像が壊れている） |
 | C-17 | Modal | `/styleguide` の「Modal を開く」 | `border-radius 16px` / `border-color rgb(58,58,58)` / `box-shadow rgba(0,0,0,0.1) 0 1px 3px` / scrim の `padding 40px` |
-| C-18 | Modal 閉じるボタン | 同上 | コンテナ右端からの隙間 **9px**、上オフセット **-1px** |
+| C-18 | Modal 閉じるボタン | 同上 | コンテナ右端からの隙間 **8px**、上オフセット **0px** |
 
 ---
 

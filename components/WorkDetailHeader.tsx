@@ -118,7 +118,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
               期間
             </span>
           </div>
-          <div className="flex h-10 items-center gap-2 border-b border-border border-l bg-surface-light px-4">
+          <div className="relative flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
             {/* 値が無い行も表として残す。フォールバックは "—" に統一する
                 （旧実装は "タイムライン（RACI）" と出していたが、期間データのように読めてしまう。
                   ボタンが何を開くかは aria-label が担う） */}
@@ -130,7 +130,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
                 type="button"
                 onClick={() => setVizModal("timeline")}
                 aria-label="タイムライン（RACI）を表示"
-                className="relative ml-auto flex size-6 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface p-[6px] transition-colors hover:border-system-500 before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
+                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-system-500"
               >
                 <Icon
                   set="Arrows"
@@ -156,7 +156,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
               役割
             </span>
           </div>
-          <div className="flex h-10 items-center gap-2 border-b border-border border-l bg-surface-light px-4">
+          <div className="relative flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
             <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.role ?? undefined}>
               {work.role || "—"}
             </span>
@@ -175,7 +175,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
               関係者
             </span>
           </div>
-          <div className="flex h-10 items-center gap-2 border-l border-border bg-surface-light px-4">
+          <div className="relative flex h-10 items-center gap-2 bg-surface-light px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
             <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
               {work.stakeholder_breakdown || "—"}
             </span>
@@ -184,7 +184,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
                 type="button"
                 onClick={() => setVizModal("stakeholders")}
                 aria-label="ステークホルダー体制を表示"
-                className="relative ml-auto flex size-6 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface p-[6px] transition-colors hover:border-system-500 before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
+                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-system-500"
               >
                 <Icon
                   set="Arrows"

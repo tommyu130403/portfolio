@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuthGate } from "@/components/AuthGate";
 import { OwnerGate } from "@/components/OwnerGate";
+import { SupabaseSessionGate } from "../../SupabaseSessionGate";
 import FlowchartEditor from "./FlowchartEditor";
 
 function AdminFlowchartEditInner() {
@@ -11,7 +12,9 @@ function AdminFlowchartEditInner() {
   return (
     <AuthGate>
       <OwnerGate>
-        <FlowchartEditor flowchartId={id} />
+        <SupabaseSessionGate>
+          <FlowchartEditor flowchartId={id} />
+        </SupabaseSessionGate>
       </OwnerGate>
     </AuthGate>
   );

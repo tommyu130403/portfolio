@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/src/lib/supabase";
 
 type AuthRole = "guest" | "owner";
 type AuthState = { role: AuthRole; expires: number } | null;
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ? () => {}
     : () => {
         localStorage.removeItem(SESSION_KEY);
+        void supabase.auth.signOut({ scope: "local" }).catch(() => {});
         setRole(null);
       };
 

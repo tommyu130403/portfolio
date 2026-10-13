@@ -4,62 +4,13 @@ import type { FC } from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
-import type { Tables, TablesInsert } from "@/src/types/supabase";
+import type { Tables } from "@/src/types/supabase";
 import WorkCard from "@/components/WorkCard";
 
 type Work = Tables<"works">;
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
-
-/** ダミーデータ（Supabase にデータがない場合にシード） */
-const SEED_WORKS: TablesInsert<"works">[] = [
-  {
-    title: "キャリアチケットスカウトサービスの立ち上げ（ベータ版リリース）",
-    category: "プラットフォーム開発",
-    thumbnail_url: DEFAULT_IMAGE,
-    role: null,
-    period: null,
-    sections: null,
-    sort_order: 0,
-  },
-  {
-    title: "キャリアチケットスカウト正規版",
-    category: "プラットフォーム開発",
-    thumbnail_url: DEFAULT_IMAGE,
-    role: null,
-    period: null,
-    sections: null,
-    sort_order: 1,
-  },
-  {
-    title: "ECサイトリニューアル",
-    category: "組織開発",
-    thumbnail_url: DEFAULT_IMAGE,
-    role: null,
-    period: null,
-    sections: null,
-    sort_order: 2,
-  },
-  {
-    title: "ECサイトリニューアル",
-    category: "Webデザイン",
-    thumbnail_url: DEFAULT_IMAGE,
-    role: null,
-    period: null,
-    sections: null,
-    sort_order: 3,
-  },
-  {
-    title: "ECサイトリニューアル",
-    category: "Webデザイン",
-    thumbnail_url: DEFAULT_IMAGE,
-    role: null,
-    period: null,
-    sections: null,
-    sort_order: 4,
-  },
-];
 
 export const WorksList: FC = () => {
   const router = useRouter();
@@ -98,22 +49,7 @@ export const WorksList: FC = () => {
         return;
       }
 
-      if (!data || data.length === 0) {
-        const { error: insertError } = await supabase.from("works").insert(SEED_WORKS);
-
-        if (insertError) {
-          console.error("Failed to seed works:", insertError);
-          setError(insertError.message);
-        } else {
-          const { data: refetched } = await supabase
-            .from("works")
-            .select("*")
-            .order("sort_order", { ascending: true });
-          setWorks(refetched ?? []);
-        }
-      } else {
-        setWorks(data);
-      }
+      setWorks(data ?? []);
 
       setLoading(false);
     };

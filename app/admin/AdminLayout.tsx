@@ -50,9 +50,9 @@ export { NAV_SECTIONS, type AdminSectionId };
 function SectionTitle({ label, title }: { label: string; title: string }) {
   return (
     <div className="mb-8">
-      <p className="mb-1 text-[12px] tracking-[0.6px] text-[#48f4be]">{label}</p>
+      <p className="mb-1 text-[12px] tracking-[0.6px] text-primary">{label}</p>
       <p className="font-mplus text-[32px] leading-[1.5] tracking-[1.6px] text-white">{title}</p>
-      <div className="mt-3 h-[2px] w-10 rounded bg-[#424242]" />
+      <div className="mt-3 h-[2px] w-10 rounded bg-system-800" />
     </div>
   );
 }
@@ -138,7 +138,7 @@ export function ImagePickerModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[82vh] w-[660px] flex-col overflow-hidden rounded-[12px] border border-[#424242] bg-[#1a1a1a]"
+        className="flex max-h-[82vh] w-[660px] flex-col overflow-hidden rounded-[12px] border border-border-light bg-[#1a1a1a]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ヘッダー */}
@@ -147,7 +147,7 @@ export function ImagePickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-[18px] text-[#616161] hover:text-white"
+            className="text-[18px] text-system-700 hover:text-white"
           >
             ✕
           </button>
@@ -158,8 +158,8 @@ export function ImagePickerModal({
           <div
             className={`cursor-pointer rounded-[8px] border-2 border-dashed p-4 text-center transition-colors ${
               dragging
-                ? "border-[#48f4be] bg-[#48f4be]/10"
-                : "border-[#424242] hover:border-[#616161]"
+                ? "border-primary bg-primary/10"
+                : "border-border-light hover:border-system-700"
             }`}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
@@ -174,15 +174,15 @@ export function ImagePickerModal({
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
             />
             {uploading ? (
-              <p className="text-[12px] text-[#9e9e9e]">アップロード中…</p>
+              <p className="text-[12px] text-fg-muted">アップロード中…</p>
             ) : (
-              <p className="text-[12px] text-[#9e9e9e]">
+              <p className="text-[12px] text-fg-muted">
                 クリック / ドラッグ&amp;ドロップでアップロード
-                <span className="ml-2 text-[#616161]">→ {folder}/</span>
+                <span className="ml-2 text-system-700">→ {folder}/</span>
               </p>
             )}
             {uploadError && (
-              <p className="mt-1 text-[11px] text-[#f4487e]">{uploadError}</p>
+              <p className="mt-1 text-[11px] text-danger-300">{uploadError}</p>
             )}
           </div>
         </div>
@@ -194,16 +194,16 @@ export function ImagePickerModal({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ファイル名 / パスで検索…"
-            className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white outline-none focus:border-[#48f4be]"
+            className="w-full rounded-[8px] border border-border-light bg-surface px-3 py-2 text-[13px] text-white outline-none focus:border-primary"
           />
         </div>
 
         {/* 画像グリッド */}
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {loading ? (
-            <p className="py-8 text-center text-[12px] text-[#616161]">読み込み中…</p>
+            <p className="py-8 text-center text-[12px] text-system-700">読み込み中…</p>
           ) : filtered.length === 0 ? (
-            <p className="py-8 text-center text-[12px] text-[#616161]">
+            <p className="py-8 text-center text-[12px] text-system-700">
               {query ? "一致する画像がありません" : "画像がありません。上からアップロードしてください。"}
             </p>
           ) : (
@@ -215,12 +215,12 @@ export function ImagePickerModal({
                   onClick={() => setSelected(img)}
                   className={`group overflow-hidden rounded-[6px] border transition-colors ${
                     selected?.path === img.path
-                      ? "border-[#48f4be]"
-                      : "border-[#424242] hover:border-[#616161]"
+                      ? "border-primary"
+                      : "border-border-light hover:border-system-700"
                   }`}
                 >
                   <img src={img.url} alt={img.name} className="h-20 w-full object-cover" />
-                  <p className="truncate bg-[#121212] px-1 py-1 text-left text-[9px] text-[#9e9e9e]">
+                  <p className="truncate bg-[#121212] px-1 py-1 text-left text-[9px] text-fg-muted">
                     {img.path}
                   </p>
                 </button>
@@ -232,27 +232,27 @@ export function ImagePickerModal({
         {/* alt テキスト（SectionsEditor 用） */}
         {showAlt && selected && (
           <div className="border-t border-[#2a2a2a] px-5 py-3">
-            <p className="mb-1 text-[11px] text-[#9e9e9e]">代替テキスト（alt）</p>
+            <p className="mb-1 text-[11px] text-fg-muted">代替テキスト（alt）</p>
             <input
               type="text"
               value={alt}
               onChange={(e) => setAlt(e.target.value)}
               placeholder="画像の説明（任意）"
-              className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white outline-none focus:border-[#48f4be]"
+              className="w-full rounded-[8px] border border-border-light bg-surface px-3 py-2 text-[13px] text-white outline-none focus:border-primary"
             />
           </div>
         )}
 
         {/* フッター */}
         <div className="flex items-center justify-between border-t border-[#2a2a2a] px-5 py-3">
-          <p className="text-[11px] text-[#616161]">
+          <p className="text-[11px] text-system-700">
             {selected ? `選択中: ${selected.path}` : "画像をクリックして選択"}
           </p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-[8px] border border-[#424242] px-4 py-2 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#616161] hover:text-white"
+              className="rounded-[8px] border border-border-light px-4 py-2 text-[13px] text-fg-muted transition-colors hover:border-system-700 hover:text-white"
             >
               キャンセル
             </button>
@@ -260,7 +260,7 @@ export function ImagePickerModal({
               type="button"
               onClick={handleConfirm}
               disabled={!selected}
-              className="rounded-[8px] bg-[#48f4be] px-4 py-2 text-[13px] font-semibold text-black transition-opacity disabled:opacity-40"
+              className="rounded-[8px] bg-primary px-4 py-2 text-[13px] font-semibold text-black transition-opacity disabled:opacity-40"
             >
               {showAlt ? "挿入" : "選択"}
             </button>
@@ -318,7 +318,7 @@ export function FlowchartPickerModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[86vh] w-full max-w-[840px] flex-col overflow-hidden rounded-[12px] border border-[#424242] bg-[#1a1a1a]"
+        className="flex max-h-[86vh] w-full max-w-[840px] flex-col overflow-hidden rounded-[12px] border border-border-light bg-[#1a1a1a]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#2a2a2a] px-5 py-4">
@@ -328,7 +328,7 @@ export function FlowchartPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-[18px] text-[#616161] hover:text-white"
+            className="text-[18px] text-system-700 hover:text-white"
             aria-label="閉じる"
           >
             ✕
@@ -340,18 +340,18 @@ export function FlowchartPickerModal({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="タイトル・説明で検索…"
-            className="w-full rounded-[8px] border border-[#424242] bg-[#212121] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+            className="w-full rounded-[8px] border border-border-light bg-surface px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
           />
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
             <div className="h-64 animate-pulse rounded-[12px] bg-white/[0.03]" />
           ) : error ? (
-            <p className="py-8 text-center text-[13px] text-[#f4487e]">
+            <p className="py-8 text-center text-[13px] text-danger-300">
               {error}
             </p>
           ) : filtered.length === 0 ? (
-            <p className="py-8 text-center text-[13px] text-[#616161]">
+            <p className="py-8 text-center text-[13px] text-system-700">
               {query
                 ? "一致するフローチャートがありません"
                 : "フローチャートがありません"}
@@ -368,7 +368,7 @@ export function FlowchartPickerModal({
                     className={`overflow-hidden rounded-[10px] border text-left transition-colors ${
                       selected?.id === item.id
                         ? "border-main-100"
-                        : "border-[#424242] hover:border-[#616161]"
+                        : "border-border-light hover:border-system-700"
                     }`}
                   >
                     <div className="h-32 bg-[#141414]">
@@ -378,7 +378,7 @@ export function FlowchartPickerModal({
                           interactive={false}
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-[11px] text-[#616161]">
+                        <div className="flex h-full items-center justify-center text-[11px] text-system-700">
                           プレビューできません
                         </div>
                       )}
@@ -387,7 +387,7 @@ export function FlowchartPickerModal({
                       <p className="truncate text-[13px] text-white">
                         {item.title}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-[#616161]">
+                      <p className="mt-0.5 text-[10px] text-system-700">
                         {graph?.nodes.length ?? 0} nodes
                       </p>
                     </div>
@@ -398,14 +398,14 @@ export function FlowchartPickerModal({
           )}
         </div>
         <div className="flex items-center justify-between border-t border-[#2a2a2a] px-5 py-3">
-          <p className="truncate text-[11px] text-[#616161]">
+          <p className="truncate text-[11px] text-system-700">
             {selected ? `選択中: ${selected.title}` : "図を選択してください"}
           </p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-[8px] border border-[#424242] px-4 py-2 text-[13px] text-[#9e9e9e] hover:text-white"
+              className="rounded-[8px] border border-border-light px-4 py-2 text-[13px] text-fg-muted hover:text-white"
             >
               キャンセル
             </button>
@@ -450,12 +450,12 @@ export function ImagePickerField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="https://…"
-          className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-[#48f4be]"
+          className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary"
         />
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="shrink-0 rounded-[8px] border border-[#424242] px-3 py-2 text-[12px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+          className="shrink-0 rounded-[8px] border border-border-light px-3 py-2 text-[12px] text-fg-muted transition-colors hover:border-primary hover:text-white"
           title="Supabase Storageから選択"
         >
           🖼 選択
@@ -478,14 +478,14 @@ export function ImagePickerField({
 // ─── 汎用UIパーツ ─────────────────────────────────────────────────────────────
 
 export function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-[#9e9e9e]">{children}</p>;
+  return <p className="mb-1.5 text-[12px] tracking-[0.6px] text-fg-muted">{children}</p>;
 }
 
 /** フォーム内のグループ見出し（Hero / Overview / 本文 などの区切り） */
 export function FormGroupHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="col-span-2 mt-3 border-t border-[#424242] pt-4">
-      <p className="text-[12px] font-semibold tracking-[0.5px] text-[#48f4be]">{children}</p>
+    <div className="col-span-2 mt-3 border-t border-border-light pt-4">
+      <p className="text-[12px] font-semibold tracking-[0.5px] text-primary">{children}</p>
     </div>
   );
 }
@@ -506,7 +506,7 @@ export function Input({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       list={list}
-      className={`w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-[#48f4be] ${className}`}
+      className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary ${className}`}
     />
   );
 }
@@ -520,7 +520,7 @@ export function Textarea({
       onChange={(e) => onChange(e.target.value)}
       rows={rows}
       placeholder={placeholder}
-      className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] leading-relaxed text-white outline-none transition-colors focus:border-[#48f4be]"
+      className="w-full resize-y rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] leading-relaxed text-white outline-none transition-colors focus:border-primary"
     />
   );
 }
@@ -550,7 +550,7 @@ export function HeroScreenshotsEditor({
           <button
             type="button"
             onClick={() => remove(i)}
-            className="shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+            className="shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
           >
             削除
           </button>
@@ -559,7 +559,7 @@ export function HeroScreenshotsEditor({
       <button
         type="button"
         onClick={add}
-        className="self-start rounded-[6px] border border-[#424242] px-3 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+        className="self-start rounded-[6px] border border-border-light px-3 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white"
       >
         ＋ 画像を追加
       </button>
@@ -576,12 +576,12 @@ export function SaveButton({
         type="button"
         onClick={onClick}
         disabled={loading}
-        className="rounded-[8px] bg-[#48f4be] px-5 py-2 text-[14px] font-semibold text-[#0a0a0a] transition-opacity hover:opacity-80 disabled:opacity-40"
+        className="rounded-[8px] bg-primary px-5 py-2 text-[14px] font-semibold text-[#0a0a0a] transition-opacity hover:opacity-80 disabled:opacity-40"
       >
         {loading ? "保存中…" : "保存"}
       </button>
-      {saved && <span className="text-[13px] text-[#48f4be]">✓ 保存しました</span>}
-      {error && <span className="text-[13px] text-[#f4487e]">{error}</span>}
+      {saved && <span className="text-[13px] text-primary">✓ 保存しました</span>}
+      {error && <span className="text-[13px] text-danger-300">{error}</span>}
     </div>
   );
 }
@@ -597,17 +597,17 @@ export function ProofreadPanel({
 }) {
   if (checking) {
     return (
-      <div className="mt-3 flex items-center gap-2 text-[13px] text-[#9e9e9e]">
+      <div className="mt-3 flex items-center gap-2 text-[13px] text-fg-muted">
         <span className="inline-block animate-spin">↻</span> チェック中…
       </div>
     );
   }
-  if (error) return <p className="mt-3 text-[13px] text-[#f4487e]">{error}</p>;
+  if (error) return <p className="mt-3 text-[13px] text-danger-300">{error}</p>;
   if (issues === null) return null;
   if (issues.length === 0) {
     return (
-      <div className="mt-3 rounded-[8px] border border-[#48f4be]/20 bg-[#0a2a1e] px-4 py-3">
-        <p className="text-[13px] text-[#48f4be]">✓ 問題は見つかりませんでした</p>
+      <div className="mt-3 rounded-[8px] border border-primary/20 bg-[#0a2a1e] px-4 py-3">
+        <p className="text-[13px] text-primary">✓ 問題は見つかりませんでした</p>
       </div>
     );
   }
@@ -624,7 +624,7 @@ export function ProofreadPanel({
             </span>
             <div>
               <p className="text-[13px] text-white/90">{issue.message}</p>
-              <p className="mt-0.5 text-[11px] text-[#616161]">{issue.ruleId}</p>
+              <p className="mt-0.5 text-[11px] text-system-700">{issue.ruleId}</p>
             </div>
           </li>
         ))}
@@ -748,7 +748,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
           <button
             type="button"
             onClick={() => set("introduction", [...form.introduction, ""])}
-            className="rounded-[6px] border border-[#424242] px-3 py-1 text-[12px] text-[#9e9e9e] hover:border-[#48f4be] hover:text-white"
+            className="rounded-[6px] border border-border-light px-3 py-1 text-[12px] text-fg-muted hover:border-primary hover:text-white"
           >
             ＋ 段落追加
           </button>
@@ -768,7 +768,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
               <button
                 type="button"
                 onClick={() => set("introduction", form.introduction.filter((_, j) => j !== i))}
-                className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[11px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+                className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
               >
                 削除
               </button>
@@ -783,7 +783,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
           type="button"
           onClick={handleProofread}
           disabled={proofChecking}
-          className="rounded-[8px] border border-[#424242] px-5 py-2 text-[14px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white disabled:opacity-40"
+          className="rounded-[8px] border border-border-light px-5 py-2 text-[14px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:opacity-40"
         >
           {proofChecking ? "チェック中…" : "文章をチェック"}
         </button>
@@ -984,11 +984,11 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   return (
     <section id="career" className="scroll-mt-8">
       <SectionTitle label="Career" title="経歴" />
-      {globalError && <p className="mb-4 text-[13px] text-[#f4487e]">{globalError}</p>}
+      {globalError && <p className="mb-4 text-[13px] text-danger-300">{globalError}</p>}
 
       <div className="mb-6 flex flex-col gap-4">
         {items.map((item, idx) => (
-          <div key={item.id} className="rounded-[12px] border border-[#424242] bg-[#212121] p-5">
+          <div key={item.id} className="rounded-[12px] border border-border-light bg-surface p-5">
             {(() => {
               const base = originalItems.find((o) => o.id === item.id);
               const dirtyRole = base && base.role !== item.role;
@@ -999,25 +999,25 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                 <>
                   {/* ヘッダー行は既存のまま */}
                   <div className="mb-4 flex items-center justify-between">
-                    <span className="text-[12px] text-[#616161]">#{idx + 1}</span>
+                    <span className="text-[12px] text-system-700">#{idx + 1}</span>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => handleMove(idx, -1)}
                         disabled={idx === 0}
-                        className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                        className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                       >↑</button>
                       <button
                         type="button"
                         onClick={() => handleMove(idx, 1)}
                         disabled={idx === items.length - 1}
-                        className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                        className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                       >↓</button>
                       <button
                         type="button"
                         onClick={() => handleDelete(item.id)}
                         disabled={deletingId === item.id}
-                        className="rounded px-2 py-1 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
+                        className="rounded px-2 py-1 text-[12px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40"
                       >
                         {deletingId === item.id ? "…" : "削除"}
                       </button>
@@ -1074,7 +1074,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                           <div className="space-y-2">
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <p className="mb-1 text-[11px] text-[#9e9e9e]">
+                                <p className="mb-1 text-[11px] text-fg-muted">
                                   期間開始
                                 </p>
                                 <div className="flex items-center gap-2">
@@ -1087,9 +1087,9 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                                       handleChange({ startYear: e.target.value })
                                     }
                                     placeholder="2022"
-                                    className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
+                                    className="w-24 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
                                   />
-                                  <span className="text-[12px] text-[#9e9e9e]">
+                                  <span className="text-[12px] text-fg-muted">
                                     年
                                   </span>
                                   <input
@@ -1101,15 +1101,15 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                                       handleChange({ startMonth: e.target.value })
                                     }
                                     placeholder="4"
-                                    className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
+                                    className="w-16 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
                                   />
-                                  <span className="text-[12px] text-[#9e9e9e]">
+                                  <span className="text-[12px] text-fg-muted">
                                     月
                                   </span>
                                 </div>
                               </div>
                               <div>
-                                <p className="mb-1 text-[11px] text-[#9e9e9e]">
+                                <p className="mb-1 text-[11px] text-fg-muted">
                                   期間終了
                                 </p>
                                 <div className="flex flex-col gap-2">
@@ -1124,9 +1124,9 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                                       }
                                       placeholder="2024"
                                       disabled={isCurrent}
-                                      className="w-24 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
+                                      className="w-24 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
                                     />
-                                    <span className="text-[12px] text-[#9e9e9e]">
+                                    <span className="text-[12px] text-fg-muted">
                                       年
                                     </span>
                                     <input
@@ -1139,16 +1139,16 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                                       }
                                       placeholder="3"
                                       disabled={isCurrent}
-                                      className="w-16 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
+                                      className="w-16 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
                                     />
-                                    <span className="text-[12px] text-[#9e9e9e]">
+                                    <span className="text-[12px] text-fg-muted">
                                       月
                                     </span>
                                   </div>
-                                  <label className="inline-flex items-center gap-2 text-[12px] text-[#9e9e9e]">
+                                  <label className="inline-flex items-center gap-2 text-[12px] text-fg-muted">
                                     <input
                                       type="checkbox"
-                                      className="h-3 w-3 accent-[#48f4be]"
+                                      className="h-3 w-3 accent-primary"
                                       checked={isCurrent}
                                       onChange={(e) =>
                                         handleChange({ isCurrent: e.target.checked })
@@ -1190,16 +1190,16 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                 type="button"
                 onClick={() => handleSave(item)}
                 disabled={savingId === item.id}
-                className="rounded-[8px] bg-[#48f4be] px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
+                className="rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
               >
                 {savingId === item.id ? "保存中…" : "保存"}
               </button>
-              {savedId === item.id && <span className="text-[12px] text-[#48f4be]">✓ 保存しました</span>}
+              {savedId === item.id && <span className="text-[12px] text-primary">✓ 保存しました</span>}
               <button
                 type="button"
                 onClick={() => handleProofread(item)}
                 disabled={proofCheckingId === item.id}
-                className="rounded-[8px] border border-[#424242] px-3 py-1.5 text-[13px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white disabled:opacity-40"
+                className="rounded-[8px] border border-border-light px-3 py-1.5 text-[13px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:opacity-40"
               >
                 {proofCheckingId === item.id ? "チェック中…" : "文章をチェック"}
               </button>
@@ -1216,7 +1216,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       <button
         type="button"
         onClick={handleAdd}
-        className="w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
+        className="w-full rounded-[12px] border border-dashed border-border-light py-4 text-[14px] text-system-700 transition-colors hover:border-primary hover:text-white"
       >
         ＋ 経歴を追加
       </button>
@@ -1247,7 +1247,7 @@ function WorksSection() {
   return (
     <section id="works" className="scroll-mt-8">
       <SectionTitle label="Works" title="制作・企画" />
-      <p className="mb-6 text-[13px] text-[#9e9e9e]">
+      <p className="mb-6 text-[13px] text-fg-muted">
         各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。
       </p>
       <div className="mb-6 flex flex-col gap-3">
@@ -1255,20 +1255,20 @@ function WorksSection() {
           <Link
             key={project.id}
             href={`/admin/works/edit?id=${project.id}`}
-            className="flex items-center justify-between rounded-[12px] border border-[#424242] bg-[#161616] px-5 py-4 transition-colors hover:border-[#48f4be]"
+            className="flex items-center justify-between rounded-[12px] border border-border-light bg-[#161616] px-5 py-4 transition-colors hover:border-primary"
           >
             <div className="flex min-w-0 items-center gap-3">
-              <span className="shrink-0 text-[12px] font-medium text-[#48f4be]">{project.category ?? "—"}</span>
+              <span className="shrink-0 text-[12px] font-medium text-primary">{project.category ?? "—"}</span>
               <span className="truncate text-[14px] text-white">{project.title}</span>
             </div>
-            <span className="shrink-0 text-[12px] text-[#616161]">編集 →</span>
+            <span className="shrink-0 text-[12px] text-system-700">編集 →</span>
           </Link>
         ))}
-        {projects.length === 0 && <p className="text-[13px] text-[#616161]">プロジェクトがありません</p>}
+        {projects.length === 0 && <p className="text-[13px] text-system-700">プロジェクトがありません</p>}
       </div>
       <Link
         href="/admin/works/edit?id=new"
-        className="block w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-center text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
+        className="block w-full rounded-[12px] border border-dashed border-border-light py-4 text-center text-[14px] text-system-700 transition-colors hover:border-primary hover:text-white"
       >
         ＋ プロジェクトを追加
       </Link>
@@ -1351,7 +1351,7 @@ function FlowchartsSection({
     <section id="flowcharts" className="scroll-mt-8">
       <SectionTitle label="Flowcharts" title="フローチャート" />
       <div className="mb-6 flex items-center justify-between gap-4">
-        <p className="text-[13px] text-[#9e9e9e]">
+        <p className="text-[13px] text-fg-muted">
           作品をまたいで再利用できるフローチャートを管理します。
         </p>
         <Link
@@ -1362,10 +1362,10 @@ function FlowchartsSection({
         </Link>
       </div>
       {error && (
-        <p className="mb-4 text-[13px] text-[#f4487e]">{error}</p>
+        <p className="mb-4 text-[13px] text-danger-300">{error}</p>
       )}
-      <div className="overflow-hidden rounded-[12px] border border-[#424242]">
-        <div className="grid grid-cols-[minmax(0,1fr)_90px_180px_220px] gap-4 bg-[#161616] px-5 py-3 text-[11px] uppercase tracking-[0.55px] text-[#616161]">
+      <div className="overflow-hidden rounded-[12px] border border-border-light">
+        <div className="grid grid-cols-[minmax(0,1fr)_90px_180px_220px] gap-4 bg-[#161616] px-5 py-3 text-[11px] uppercase tracking-[0.55px] text-system-700">
           <span>タイトル</span>
           <span>ノード数</span>
           <span>更新日時</span>
@@ -1383,15 +1383,15 @@ function FlowchartsSection({
                   {item.title}
                 </p>
                 {item.description && (
-                  <p className="mt-1 truncate text-[11px] text-[#616161]">
+                  <p className="mt-1 truncate text-[11px] text-system-700">
                     {item.description}
                   </p>
                 )}
               </div>
-              <span className="text-[12px] text-[#9e9e9e]">
+              <span className="text-[12px] text-fg-muted">
                 {graph?.nodes.length ?? 0}
               </span>
-              <span className="text-[12px] text-[#9e9e9e]">
+              <span className="text-[12px] text-fg-muted">
                 {item.updated_at
                   ? new Date(item.updated_at).toLocaleString("ja-JP")
                   : "—"}
@@ -1399,7 +1399,7 @@ function FlowchartsSection({
               <div className="flex items-center justify-end gap-2">
                 <Link
                   href={`/admin/flowcharts/edit?id=${item.id}`}
-                  className="rounded-[6px] border border-[#424242] px-3 py-1.5 text-[12px] text-white hover:border-main-100"
+                  className="rounded-[6px] border border-border-light px-3 py-1.5 text-[12px] text-white hover:border-main-100"
                 >
                   編集
                 </Link>
@@ -1407,7 +1407,7 @@ function FlowchartsSection({
                   type="button"
                   disabled={busyId === item.id}
                   onClick={() => handleDuplicate(item.id)}
-                  className="rounded-[6px] px-3 py-1.5 text-[12px] text-[#9e9e9e] hover:bg-white/5 hover:text-white disabled:opacity-40"
+                  className="rounded-[6px] px-3 py-1.5 text-[12px] text-fg-muted hover:bg-white/5 hover:text-white disabled:opacity-40"
                 >
                   複製
                 </button>
@@ -1415,7 +1415,7 @@ function FlowchartsSection({
                   type="button"
                   disabled={busyId === item.id}
                   onClick={() => handleDelete(item.id)}
-                  className="rounded-[6px] px-3 py-1.5 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
+                  className="rounded-[6px] px-3 py-1.5 text-[12px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40"
                 >
                   削除
                 </button>
@@ -1424,7 +1424,7 @@ function FlowchartsSection({
           );
         })}
         {items.length === 0 && (
-          <p className="bg-[#101010] px-5 py-10 text-center text-[13px] text-[#616161]">
+          <p className="bg-[#101010] px-5 py-10 text-center text-[13px] text-system-700">
             フローチャートがありません
           </p>
         )}
@@ -1707,7 +1707,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
   return (
     <section id="skills-experience" className="scroll-mt-8">
       <SectionTitle label="Skills Experience" title="スキルカルーセル" />
-      {globalError && <p className="mb-4 text-[13px] text-[#f4487e]">{globalError}</p>}
+      {globalError && <p className="mb-4 text-[13px] text-danger-300">{globalError}</p>}
       {dirty && (
         <p className="mb-3 text-[11px] text-[#f4c248]">
           未保存の変更があります
@@ -1718,37 +1718,37 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
         {cards.map((card, idx) => {
           const isOpen = expandedId === card.id;
           return (
-            <div key={card.id} className="rounded-[12px] border border-[#424242] bg-[#212121]">
+            <div key={card.id} className="rounded-[12px] border border-border-light bg-surface">
               {/* ヘッダー行 */}
               <div
                 className="flex cursor-pointer items-center justify-between px-5 py-4"
                 onClick={() => setExpandedId(isOpen ? null : card.id)}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-[12px] text-[#616161]">#{idx + 1}</span>
-                  <span className="text-[14px] font-medium text-[#48f4be]">{card.title}</span>
-                  <span className="text-[12px] text-[#9e9e9e]">{card.title_jp}</span>
+                  <span className="text-[12px] text-system-700">#{idx + 1}</span>
+                  <span className="text-[14px] font-medium text-primary">{card.title}</span>
+                  <span className="text-[12px] text-fg-muted">{card.title_jp}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, -1); }}
                     disabled={idx === 0}
-                    className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                    className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                   >↑</button>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, 1); }}
                     disabled={idx === cards.length - 1}
-                    className="rounded px-2 py-1 text-[12px] text-[#616161] hover:text-white disabled:opacity-30"
+                    className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                   >↓</button>
-                  <span className="text-[12px] text-[#616161]">{isOpen ? "▲" : "▼"}</span>
+                  <span className="text-[12px] text-system-700">{isOpen ? "▲" : "▼"}</span>
                 </div>
               </div>
 
               {/* 編集フォーム（展開時） */}
               {isOpen && (
-                <div className="border-t border-[#424242] p-5">
+                <div className="border-t border-border-light p-5">
 
                   {/* カード基本情報 */}
                   <div className="mb-6 grid grid-cols-2 gap-4">
@@ -1775,16 +1775,16 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                       type="button"
                       onClick={() => handleSaveCard(card)}
                       disabled={savingId === card.id}
-                      className="rounded-[8px] bg-[#48f4be] px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
+                      className="rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
                     >
                       {savingId === card.id ? "保存中…" : "カード情報を保存"}
                     </button>
-                    {savedId === card.id && <span className="text-[12px] text-[#48f4be]">✓ 保存しました</span>}
+                    {savedId === card.id && <span className="text-[12px] text-primary">✓ 保存しました</span>}
                     <button
                       type="button"
                       onClick={() => handleDeleteCard(card.id)}
                       disabled={deletingId === card.id}
-                      className="ml-auto rounded-[8px] px-3 py-1.5 text-[13px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e] disabled:opacity-40"
+                      className="ml-auto rounded-[8px] px-3 py-1.5 text-[13px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40"
                     >
                       {deletingId === card.id ? "削除中…" : "カードを削除"}
                     </button>
@@ -1793,11 +1793,11 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                   {/* スキルバー */}
                   <div className="mb-6">
                     <div className="mb-3 flex items-center justify-between">
-                      <p className="text-[12px] font-semibold tracking-[0.6px] text-[#9e9e9e]">スキルバー</p>
+                      <p className="text-[12px] font-semibold tracking-[0.6px] text-fg-muted">スキルバー</p>
                       <button
                         type="button"
                         onClick={() => handleAddBar(card.id)}
-                        className="rounded-[6px] border border-[#424242] px-3 py-1 text-[12px] text-[#9e9e9e] hover:border-[#48f4be] hover:text-white"
+                        className="rounded-[6px] border border-border-light px-3 py-1 text-[12px] text-fg-muted hover:border-primary hover:text-white"
                       >
                         ＋ 追加
                       </button>
@@ -1818,7 +1818,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                                 max={10}
                                 value={bar.segments}
                                 onChange={(e) => updateBar(card.id, bar.id, "segments", Number(e.target.value))}
-                                className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none focus:border-[#48f4be]"
+                                className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none focus:border-primary"
                               />
                             </div>
                             <div>
@@ -1853,17 +1853,17 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                           {/* スキル行ツール（skill_experience_tools） */}
                           <div className="mb-3 rounded-[8px] border border-[#2e2e2e] bg-[#161616] p-3">
                             <div className="mb-2 flex items-center justify-between">
-                              <p className="text-[11px] font-semibold tracking-[0.5px] text-[#9e9e9e]">ツール（行単位）</p>
+                              <p className="text-[11px] font-semibold tracking-[0.5px] text-fg-muted">ツール（行単位）</p>
                               <button
                                 type="button"
                                 onClick={() => addBarTool(card.id, bar.id)}
-                                className="rounded-[6px] border border-[#424242] px-2.5 py-0.5 text-[11px] text-[#9e9e9e] hover:border-[#48f4be] hover:text-white"
+                                className="rounded-[6px] border border-border-light px-2.5 py-0.5 text-[11px] text-fg-muted hover:border-primary hover:text-white"
                               >
                                 ＋ ツール
                               </button>
                             </div>
                             {bar.tools.length === 0 && (
-                              <p className="text-[11px] text-[#616161]">ツール未設定</p>
+                              <p className="text-[11px] text-system-700">ツール未設定</p>
                             )}
                             <div className="flex flex-col gap-2">
                               {bar.tools.map((tool) => (
@@ -1874,7 +1874,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                                   <button
                                     type="button"
                                     onClick={() => removeBarTool(card.id, bar.id, tool.key)}
-                                    className="shrink-0 rounded-[6px] px-2 py-2 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+                                    className="shrink-0 rounded-[6px] px-2 py-2 text-[12px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
                                     aria-label="ツールを削除"
                                   >
                                     ×
@@ -1882,7 +1882,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                                 </div>
                               ))}
                             </div>
-                            <p className="mt-2 text-[10px] leading-[1.5] text-[#616161]">
+                            <p className="mt-2 text-[10px] leading-[1.5] text-system-700">
                               slug が public/logos/&lt;slug&gt;.svg と一致するとロゴ表示。無ければカテゴリーアイコンにフォールバック。保存は下の「保存」ボタンでスキル行とまとめて行われます。
                             </p>
                           </div>
@@ -1891,14 +1891,14 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                             <button
                               type="button"
                               onClick={() => handleSaveBar(card.id, bar)}
-                              className="rounded-[6px] bg-[#48f4be] px-3 py-1 text-[12px] font-semibold text-[#0a0a0a] hover:opacity-80"
+                              className="rounded-[6px] bg-primary px-3 py-1 text-[12px] font-semibold text-[#0a0a0a] hover:opacity-80"
                             >
                               保存
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteBar(card.id, bar.id)}
-                              className="rounded-[6px] px-2 py-1 text-[12px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+                              className="rounded-[6px] px-2 py-1 text-[12px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
                             >
                               削除
                             </button>
@@ -1918,7 +1918,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
       <button
         type="button"
         onClick={handleAddCard}
-        className="w-full rounded-[12px] border border-dashed border-[#424242] py-4 text-[14px] text-[#616161] transition-colors hover:border-[#48f4be] hover:text-white"
+        className="w-full rounded-[12px] border border-dashed border-border-light py-4 text-[14px] text-system-700 transition-colors hover:border-primary hover:text-white"
       >
         ＋ カードを追加
       </button>
@@ -1972,13 +1972,13 @@ export function AdminShell({
         <div className="mb-8 px-2">
           <Link
             href="/"
-            className="mb-1 block text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline"
+            className="mb-1 block text-[12px] tracking-[0.6px] text-primary hover:underline"
             onClick={confirmLeave}
           >
             ← Portfolio
           </Link>
           <p className="text-[20px] font-semibold text-white">Admin</p>
-          <p className="text-[11px] text-[#616161]">コンテンツ管理</p>
+          <p className="text-[11px] text-system-700">コンテンツ管理</p>
         </div>
         <nav className="flex flex-col gap-1">
           {NAV_SECTIONS.map(({ id, label, labelJa }) => {
@@ -1993,13 +1993,13 @@ export function AdminShell({
                   "flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-left transition-colors",
                   isActive
                     ? "bg-[rgba(72,244,190,0.08)] text-white"
-                    : "text-[#9e9e9e] hover:bg-[#1a1a1a] hover:text-white",
+                    : "text-fg-muted hover:bg-[#1a1a1a] hover:text-white",
                 ].join(" ")}
               >
-                {isActive && <span className="h-4 w-[2px] shrink-0 rounded-full bg-[#48f4be]" />}
+                {isActive && <span className="h-4 w-[2px] shrink-0 rounded-full bg-primary" />}
                 <span className={["flex flex-col", isActive ? "" : "pl-[10px]"].join(" ")}>
                   <span className="text-[14px] leading-[1.4]">{label}</span>
-                  <span className="text-[11px] text-[#616161]">{labelJa}</span>
+                  <span className="text-[11px] text-system-700">{labelJa}</span>
                 </span>
               </Link>
             );
@@ -2010,7 +2010,7 @@ export function AdminShell({
         <div className="mt-auto">
           <Link
             href="/styleguide"
-            className="block rounded-[8px] px-3 py-2 text-[12px] text-[#616161] hover:bg-[#1a1a1a] hover:text-[#9e9e9e]"
+            className="block rounded-[8px] px-3 py-2 text-[12px] text-system-700 hover:bg-[#1a1a1a] hover:text-fg-muted"
             onClick={confirmLeave}
           >
             Style Guide →
@@ -2052,9 +2052,9 @@ export function AdminLayout({ section }: { section: AdminSectionId }) {
   return (
     <AdminShell section={section} hasUnsavedChanges={hasUnsavedChanges}>
       <div className="mb-16">
-        <p className="text-[12px] tracking-[0.6px] text-[#48f4be]">Content Management</p>
+        <p className="text-[12px] tracking-[0.6px] text-primary">Content Management</p>
         <p className="mt-1 font-mplus text-[40px] font-bold tracking-[2px] text-white">Admin</p>
-        <p className="mt-3 text-[14px] text-[#9e9e9e]">
+        <p className="mt-3 text-[14px] text-fg-muted">
           ポートフォリオのコンテンツを編集・管理します。変更は保存ボタンを押すと即時反映されます。
         </p>
       </div>
@@ -2081,7 +2081,7 @@ export function AdminLayout({ section }: { section: AdminSectionId }) {
       )}
 
       <div className="mt-24 border-t border-[#2a2a2a] pt-8">
-        <p className="text-[12px] text-[#424242]">Portfolio Admin</p>
+        <p className="text-[12px] text-system-800">Portfolio Admin</p>
       </div>
     </AdminShell>
   );

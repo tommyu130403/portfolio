@@ -677,7 +677,7 @@ function FlowchartEditorInner({
   if (missing) {
     return (
       <AdminShell section="flowcharts">
-        <p className="text-[14px] text-[#9e9e9e]">
+        <p className="text-[14px] text-fg-muted">
           フローチャートが見つかりませんでした。
         </p>
         <Link
@@ -746,7 +746,7 @@ function FlowchartEditorInner({
 
       <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)_260px] overflow-hidden rounded-[14px] border border-[#2a2a2a] bg-[#101010]">
         <aside className="overflow-y-auto border-r border-[#2a2a2a] p-4">
-          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.66px] text-[#616161]">
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.66px] text-system-700">
             Nodes
           </p>
           <div className="flex flex-col gap-2">
@@ -755,17 +755,17 @@ function FlowchartEditorInner({
                 key={option.kind}
                 type="button"
                 onClick={() => addNode(option.kind, option.defaultLabel)}
-                className="rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-left text-[13px] text-white transition-colors hover:border-main-100 hover:text-main-100"
+                className="rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-left text-[13px] text-white transition-colors hover:border-main-100 hover:text-main-100"
               >
                 ＋ {option.label}
               </button>
             ))}
           </div>
           <div className="mt-6 border-t border-[#2a2a2a] pt-4">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.66px] text-[#616161]">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.66px] text-system-700">
               Layout
             </p>
-            <p className="mb-3 text-[10px] leading-[1.5] text-[#616161]">
+            <p className="mb-3 text-[10px] leading-[1.5] text-system-700">
               複数選択時は選択対象、それ以外は全体を整列します。
             </p>
             <div className="grid grid-cols-2 gap-2">
@@ -775,7 +775,7 @@ function FlowchartEditorInner({
                   type="button"
                   onClick={() => alignNodes(option.action)}
                   disabled={layoutTargetCount < option.minNodes}
-                  className="rounded-[7px] border border-[#424242] bg-[#1a1a1a] px-2 py-1.5 text-[10px] text-[#bdbdbd] transition-colors hover:border-main-100 hover:text-main-100 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="rounded-[7px] border border-border-light bg-[#1a1a1a] px-2 py-1.5 text-[10px] text-fg-caption transition-colors hover:border-main-100 hover:text-main-100 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   {option.label}
                 </button>
@@ -847,11 +847,11 @@ function FlowchartEditorInner({
         </div>
 
         <aside className="overflow-y-auto border-l border-[#2a2a2a] p-4">
-          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.66px] text-[#616161]">
+          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.66px] text-system-700">
             Inspector
           </p>
           {!selectedNode && !selectedEdge && (
-            <p className="text-[12px] leading-[1.6] text-[#616161]">
+            <p className="text-[12px] leading-[1.6] text-system-700">
               ノードまたはエッジを選択すると、ここで内容を編集できます。
             </p>
           )}
@@ -879,7 +879,7 @@ function FlowchartEditorInner({
                       })
                     }
                     rows={5}
-                    className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                    className="w-full resize-y rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                     placeholder="カードに表示する本文"
                   />
                 ) : (
@@ -902,7 +902,7 @@ function FlowchartEditorInner({
                       kind: event.target.value as FlowNodeKind,
                     })
                   }
-                  className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                 >
                   {NODE_OPTIONS.map((option) => (
                     <option key={option.kind} value={option.kind}>
@@ -925,7 +925,7 @@ function FlowchartEditorInner({
                       className={`flex min-w-0 flex-col items-center gap-1.5 rounded-[7px] border px-1 py-2 text-[9px] transition-colors ${
                         selectedNode.data.color === option.value
                           ? "border-main-100 bg-main-100/10 text-main-100"
-                          : "border-[#424242] bg-[#1a1a1a] text-[#bdbdbd] hover:border-main-100"
+                          : "border-border-light bg-[#1a1a1a] text-fg-caption hover:border-main-100"
                       }`}
                     >
                       <span
@@ -936,7 +936,7 @@ function FlowchartEditorInner({
                     </button>
                   ))}
                 </div>
-                <p className="mt-2 text-[10px] leading-[1.5] text-[#616161]">
+                <p className="mt-2 text-[10px] leading-[1.5] text-system-700">
                   Primary・Secondaryは全オブジェクトで共通です。
                 </p>
               </div>
@@ -955,7 +955,7 @@ function FlowchartEditorInner({
                       className={`rounded-[7px] border px-2 py-1.5 text-[11px] transition-colors ${
                         selectedNode.data.fontSize === preset.value
                           ? "border-main-100 bg-main-100/10 text-main-100"
-                          : "border-[#424242] bg-[#1a1a1a] text-[#bdbdbd] hover:border-main-100"
+                          : "border-border-light bg-[#1a1a1a] text-fg-caption hover:border-main-100"
                       }`}
                     >
                       {preset.label}
@@ -977,9 +977,9 @@ function FlowchartEditorInner({
                         ),
                       })
                     }
-                    className="min-w-0 flex-1 rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                    className="min-w-0 flex-1 rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                   />
-                  <span className="text-[11px] text-[#9e9e9e]">px</span>
+                  <span className="text-[11px] text-fg-muted">px</span>
                 </div>
               </div>
               <div>
@@ -1001,7 +1001,7 @@ function FlowchartEditorInner({
                       className={`rounded-[7px] border px-2 py-1.5 text-[11px] transition-colors ${
                         selectedNode.data.textAlign === value
                           ? "border-main-100 bg-main-100/10 text-main-100"
-                          : "border-[#424242] bg-[#1a1a1a] text-[#bdbdbd] hover:border-main-100"
+                          : "border-border-light bg-[#1a1a1a] text-fg-caption hover:border-main-100"
                       }`}
                     >
                       {label}
@@ -1018,7 +1018,7 @@ function FlowchartEditorInner({
                       verticalAlign: event.target.value as FlowVerticalAlign,
                     })
                   }
-                  className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                 >
                   <option value="top">上</option>
                   <option value="middle">中央</option>
@@ -1027,11 +1027,11 @@ function FlowchartEditorInner({
               </div>
               <div>
                 <FieldLabel>オブジェクトサイズ</FieldLabel>
-                <p className="mb-2 text-[10px] leading-[1.5] text-[#616161]">
+                <p className="mb-2 text-[10px] leading-[1.5] text-system-700">
                   キャンバス上のハンドルからも直接変更できます。
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="text-[10px] text-[#9e9e9e]">
+                  <label className="text-[10px] text-fg-muted">
                     幅
                     <input
                       type="number"
@@ -1051,10 +1051,10 @@ function FlowchartEditorInner({
                           ),
                         )
                       }
-                      className="mt-1 w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-2 text-[12px] text-white outline-none focus:border-main-100"
+                      className="mt-1 w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-2 text-[12px] text-white outline-none focus:border-main-100"
                     />
                   </label>
-                  <label className="text-[10px] text-[#9e9e9e]">
+                  <label className="text-[10px] text-fg-muted">
                     高さ
                     <input
                       type="number"
@@ -1074,7 +1074,7 @@ function FlowchartEditorInner({
                           ),
                         )
                       }
-                      className="mt-1 w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-2 py-2 text-[12px] text-white outline-none focus:border-main-100"
+                      className="mt-1 w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-2 text-[12px] text-white outline-none focus:border-main-100"
                     />
                   </label>
                 </div>
@@ -1089,7 +1089,7 @@ function FlowchartEditorInner({
                         divider: event.target.value as FlowCardDivider,
                       })
                     }
-                    className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                    className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                   >
                     <option value="none">なし</option>
                     <option value="horizontal">横仕切り</option>
@@ -1131,7 +1131,7 @@ function FlowchartEditorInner({
                         .value as FlowHandlePosition,
                     })
                   }
-                  className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                 >
                   {HANDLE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1149,7 +1149,7 @@ function FlowchartEditorInner({
                       sourceMarker: event.target.value as FlowEdgeMarker,
                     })
                   }
-                  className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                 >
                   {MARKER_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1172,7 +1172,7 @@ function FlowchartEditorInner({
                         .value as FlowHandlePosition,
                     })
                   }
-                  className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                 >
                   {HANDLE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1190,7 +1190,7 @@ function FlowchartEditorInner({
                       targetMarker: event.target.value as FlowEdgeMarker,
                     })
                   }
-                  className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
                 >
                   {MARKER_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1199,7 +1199,7 @@ function FlowchartEditorInner({
                   ))}
                 </select>
               </div>
-              <label className="flex items-center gap-2 text-[13px] text-[#bdbdbd]">
+              <label className="flex items-center gap-2 text-[13px] text-fg-caption">
                 <input
                   type="checkbox"
                   checked={selectedEdge.data?.dashed === true}
@@ -1223,7 +1223,7 @@ function FlowchartEditorInner({
                 setSaved(false);
               }}
               rows={4}
-              className="w-full resize-y rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+              className="w-full resize-y rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
               placeholder="一覧で管理するための補足"
             />
           </div>

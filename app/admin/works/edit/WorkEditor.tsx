@@ -289,8 +289,8 @@ export default function WorkEditor({ workId }: { workId: string }) {
   if (missing) {
     return (
       <AdminShell section="works">
-        <p className="text-[14px] text-[#9e9e9e]">プロジェクトが見つかりませんでした。</p>
-        <Link href="/admin/works" className="mt-4 inline-block text-[13px] text-[#48f4be] hover:underline">
+        <p className="text-[14px] text-fg-muted">プロジェクトが見つかりませんでした。</p>
+        <Link href="/admin/works" className="mt-4 inline-block text-[13px] text-primary hover:underline">
           ← Works 一覧へ戻る
         </Link>
       </AdminShell>
@@ -310,7 +310,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
       type="button"
       onClick={() => setTab(key)}
       className={`rounded-[8px] px-3 py-1.5 text-[13px] transition-colors ${
-        tab === key ? "bg-[#48f4be]/10 text-[#48f4be]" : "text-[#9e9e9e] hover:text-white"
+        tab === key ? "bg-primary/10 text-primary" : "text-fg-muted hover:text-white"
       }`}
     >
       {label}
@@ -323,7 +323,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
       <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
         <Link
           href="/admin/works"
-          className="shrink-0 text-[12px] tracking-[0.6px] text-[#48f4be] hover:underline"
+          className="shrink-0 text-[12px] tracking-[0.6px] text-primary hover:underline"
           onClick={(e) => {
             if (dirty && !window.confirm("未保存の変更があります。破棄して一覧へ戻りますか？")) e.preventDefault();
           }}
@@ -334,12 +334,12 @@ export default function WorkEditor({ workId }: { workId: string }) {
           value={work.title}
           onChange={(e) => setField("title", e.target.value)}
           placeholder="プロジェクトタイトル"
-          className="min-w-0 flex-1 rounded-[8px] border border-transparent bg-transparent px-2 py-1 text-[20px] font-semibold text-white outline-none transition-colors hover:border-[#424242] focus:border-[#48f4be]"
+          className="min-w-0 flex-1 rounded-[8px] border border-transparent bg-transparent px-2 py-1 text-[20px] font-semibold text-white outline-none transition-colors hover:border-border-light focus:border-primary"
         />
         {dirty && <span className="shrink-0 text-[11px] text-[#f4c248]">未保存の変更があります</span>}
-        {savedAt && <span className="shrink-0 text-[12px] text-[#48f4be]">✓ 保存しました</span>}
+        {savedAt && <span className="shrink-0 text-[12px] text-primary">✓ 保存しました</span>}
         {saveError && (
-          <span className="shrink-0 text-[12px] text-[#f4487e]" title={saveError}>
+          <span className="shrink-0 text-[12px] text-danger-300" title={saveError}>
             保存に失敗しました
           </span>
         )}
@@ -347,14 +347,14 @@ export default function WorkEditor({ workId }: { workId: string }) {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="shrink-0 rounded-[8px] bg-[#48f4be] px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
+          className="shrink-0 rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
         >
           {saving ? "保存中…" : "保存"}
         </button>
         <button
           type="button"
           onClick={handleDelete}
-          className="shrink-0 rounded-[8px] px-3 py-1.5 text-[13px] text-[#616161] hover:bg-[#f4487e]/10 hover:text-[#f4487e]"
+          className="shrink-0 rounded-[8px] px-3 py-1.5 text-[13px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
         >
           削除
         </button>
@@ -401,7 +401,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
               <select
                 value={work.career_item_id ?? ""}
                 onChange={(e) => setField("career_item_id", e.target.value || null)}
-                className="w-full rounded-[8px] border border-[#424242] bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-[#48f4be]"
+                className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary"
               >
                 <option value="">（紐付けなし）</option>
                 {careerOptions.map((c) => (
@@ -415,17 +415,17 @@ export default function WorkEditor({ workId }: { workId: string }) {
               <FieldLabel>期間</FieldLabel>
               <div className="flex flex-wrap items-center gap-2">
                 <Input className="!w-20" value={period.startYear} onChange={(v) => { setPeriod((p) => ({ ...p, startYear: v })); markDirty(); }} placeholder="2023" />
-                <span className="text-[12px] text-[#9e9e9e]">年</span>
+                <span className="text-[12px] text-fg-muted">年</span>
                 <Input className="!w-14" value={period.startMonth} onChange={(v) => { setPeriod((p) => ({ ...p, startMonth: v })); markDirty(); }} placeholder="4" />
-                <span className="text-[12px] text-[#9e9e9e]">月 〜</span>
+                <span className="text-[12px] text-fg-muted">月 〜</span>
                 <Input className="!w-20" value={period.isCurrent ? "" : period.endYear} onChange={(v) => { setPeriod((p) => ({ ...p, endYear: v })); markDirty(); }} placeholder="2024" />
-                <span className="text-[12px] text-[#9e9e9e]">年</span>
+                <span className="text-[12px] text-fg-muted">年</span>
                 <Input className="!w-14" value={period.isCurrent ? "" : period.endMonth} onChange={(v) => { setPeriod((p) => ({ ...p, endMonth: v })); markDirty(); }} placeholder="3" />
-                <span className="text-[12px] text-[#9e9e9e]">月</span>
-                <label className="ml-2 inline-flex items-center gap-2 text-[12px] text-[#9e9e9e]">
+                <span className="text-[12px] text-fg-muted">月</span>
+                <label className="ml-2 inline-flex items-center gap-2 text-[12px] text-fg-muted">
                   <input
                     type="checkbox"
-                    className="h-3 w-3 accent-[#48f4be]"
+                    className="h-3 w-3 accent-primary"
                     checked={period.isCurrent}
                     onChange={(e) => { setPeriod((p) => ({ ...p, isCurrent: e.target.checked })); markDirty(); }}
                   />
@@ -467,15 +467,15 @@ export default function WorkEditor({ workId }: { workId: string }) {
                       onClick={() => toggle(skills, setSkills, label)}
                       className={`rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${
                         selected
-                          ? "border-[#48f4be] bg-[#48f4be]/10 text-[#48f4be]"
-                          : "border-[#424242] bg-[#1a1a1a] text-[#9e9e9e] hover:text-white"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border-light bg-[#1a1a1a] text-fg-muted hover:text-white"
                       }`}
                     >
                       {label}
                     </button>
                   );
                 })}
-                {skillOptions.length === 0 && <span className="text-[12px] text-[#616161]">スキル定義がありません</span>}
+                {skillOptions.length === 0 && <span className="text-[12px] text-system-700">スキル定義がありません</span>}
               </div>
             </div>
             <div className="col-span-2">
@@ -490,8 +490,8 @@ export default function WorkEditor({ workId }: { workId: string }) {
                       onClick={() => toggle(tools, setTools, opt.name)}
                       className={`flex items-center gap-1.5 rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${
                         selected
-                          ? "border-[#48f4be] bg-[#48f4be]/10 text-[#48f4be]"
-                          : "border-[#424242] bg-[#1a1a1a] text-[#9e9e9e] hover:text-white"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border-light bg-[#1a1a1a] text-fg-muted hover:text-white"
                       }`}
                     >
                       {opt.icon_url && (
@@ -521,7 +521,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
                     toggle(tools, setTools, name);
                     setNewToolName("");
                   }}
-                  className="rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white"
+                  className="rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white"
                 >
                   追加
                 </button>
@@ -535,7 +535,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
                 if (selectedTools.length === 0) return null;
                 return (
                   <div className="mt-3 flex flex-col gap-2 border-t border-[#2a2a2a] pt-3">
-                    <p className="text-[11px] text-[#9e9e9e]">
+                    <p className="text-[11px] text-fg-muted">
                       ツールアイコン（共有・任意。未設定なら詳細ページでテキスト表示）
                     </p>
                     {selectedTools.map((t) => (
@@ -543,7 +543,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
                         {t.icon_url ? (
                           <img src={t.icon_url} alt="" className="h-5 w-5 shrink-0 object-contain" />
                         ) : (
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#1a1a1a] text-[9px] text-[#616161]">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#1a1a1a] text-[9px] text-system-700">
                             —
                           </span>
                         )}
@@ -612,8 +612,8 @@ export default function WorkEditor({ workId }: { workId: string }) {
 /* ─── Timeline / Stakeholders 構造化フォーム ───────────── */
 
 const vizBtn =
-  "rounded-[6px] border border-[#424242] px-2 py-1 text-[11px] text-[#9e9e9e] transition-colors hover:border-[#48f4be] hover:text-white";
-const vizDel = "rounded px-2 py-1 text-[11px] text-[#616161] hover:text-[#f4487e]";
+  "rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white";
+const vizDel = "rounded px-2 py-1 text-[11px] text-system-700 hover:text-danger-300";
 const RACI_KEYS: RaciKey[] = ["R", "A", "C", "I"];
 
 /**
@@ -653,21 +653,21 @@ function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: 
         <Input className="!w-20" value={String(value.totalUnits)} onChange={(v) => onChange({ ...value, totalUnits: clampInt(v, 1) })} />
       </div>
       {value.phases.map((ph, i) => (
-        <div key={i} className="rounded-[8px] border border-[#424242] bg-[#161616] p-3">
+        <div key={i} className="rounded-[8px] border border-border-light bg-[#161616] p-3">
           <div className="flex flex-wrap items-center gap-2">
             <Input className="!w-44" value={ph.label} onChange={(v) => patch(i, { label: v })} placeholder="フェーズ名" />
-            <span className="text-[11px] text-[#9e9e9e]">開始W</span>
+            <span className="text-[11px] text-fg-muted">開始W</span>
             <Input className="!w-14" value={String(ph.start)} onChange={(v) => patch(i, { start: clampInt(v, 1) })} />
-            <span className="text-[11px] text-[#9e9e9e]">期間</span>
+            <span className="text-[11px] text-fg-muted">期間</span>
             <Input className="!w-14" value={String(ph.span)} onChange={(v) => patch(i, { span: clampInt(v, 1) })} />
-            <span className="text-[11px] text-[#9e9e9e]">進捗%</span>
+            <span className="text-[11px] text-fg-muted">進捗%</span>
             <Input className="!w-16" value={ph.progress == null ? "" : String(ph.progress)} onChange={(v) => patch(i, { progress: v === "" ? undefined : Number(v) || 0 })} />
             <span className="ml-1 flex items-center gap-1.5">
               {RACI_KEYS.map((k) => (
-                <label key={k} className="inline-flex items-center gap-0.5 text-[11px] text-[#9e9e9e]">
+                <label key={k} className="inline-flex items-center gap-0.5 text-[11px] text-fg-muted">
                   <input
                     type="checkbox"
-                    className="h-3 w-3 accent-[#48f4be]"
+                    className="h-3 w-3 accent-primary"
                     checked={ph.raci.includes(k)}
                     onChange={(e) =>
                       patch(i, { raci: e.target.checked ? [...ph.raci, k] : ph.raci.filter((r) => r !== k) })
@@ -698,7 +698,7 @@ function StakeholdersForm({ value, onChange }: { value: StakeholdersData; onChan
   return (
     <div className="flex flex-col gap-3">
       {value.groups.map((g, gi) => (
-        <div key={gi} className="rounded-[8px] border border-[#424242] bg-[#161616] p-3">
+        <div key={gi} className="rounded-[8px] border border-border-light bg-[#161616] p-3">
           <div className="flex flex-wrap items-center gap-2">
             <Input className="!w-36" value={g.label} onChange={(v) => patchGroup(gi, { label: v })} placeholder="グループ名" />
             <Input className="!w-56" value={g.icon ?? ""} onChange={(v) => patchGroup(gi, { icon: v || undefined })} placeholder="アイコン（例: Components/page）" />
@@ -708,10 +708,10 @@ function StakeholdersForm({ value, onChange }: { value: StakeholdersData; onChan
             {g.members.map((m, mi) => (
               <div key={mi} className="flex items-center gap-2">
                 <Input className="!w-56" value={m.label} onChange={(v) => patchGroup(gi, { members: g.members.map((mm, idx) => (idx === mi ? { ...mm, label: v } : mm)) })} placeholder="メンバー名（役職）" />
-                <label className="inline-flex items-center gap-1 text-[11px] text-[#9e9e9e]">
+                <label className="inline-flex items-center gap-1 text-[11px] text-fg-muted">
                   <input
                     type="checkbox"
-                    className="h-3 w-3 accent-[#48f4be]"
+                    className="h-3 w-3 accent-primary"
                     checked={m.me === true}
                     onChange={(e) => patchGroup(gi, { members: g.members.map((mm, idx) => (idx === mi ? { ...mm, me: e.target.checked } : mm)) })}
                   />

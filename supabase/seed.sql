@@ -1,15 +1,14 @@
 -- Dev environment seed data (dummy data only, not a copy of production)
 -- 削除済みテーブル（todos / user_skills / skill_level_tokens）への INSERT は含めない。
 
-INSERT INTO profile (name_jp, name_en, title, bio, hero_image_url, introduction, career_lead)
+INSERT INTO profile (name_jp, name_en, title, bio, hero_image_url, introduction)
 VALUES (
   'テスト 太郎',
   'Test Taro',
   'Frontend Engineer',
   'dev環境用のサンプルプロフィールです。',
   '/images/hero-placeholder.jpg',
-  '[{"type": "paragraph", "content": "サンプル自己紹介テキストです。"}]',
-  'dev環境用のキャリアリードテキストです。'
+  '[{"type": "paragraph", "content": "サンプル自己紹介テキストです。"}]'
 );
 
 INSERT INTO career_items (company, role, period, description, sort_order) VALUES

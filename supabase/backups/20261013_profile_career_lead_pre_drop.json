@@ -1,0 +1,10 @@
+{
+  "project": "kljlxjlbetaxhtxqzrdc",
+  "table": "public.profile",
+  "column": "career_lead",
+  "captured_at": "2026-10-13",
+  "note": "drop 前の本番実測値。全 1 行とも null のため、ロールバック時は列の再作成のみで値の復元は不要。",
+  "rows": [
+    { "id": 1, "career_lead": null }
+  ]
+}

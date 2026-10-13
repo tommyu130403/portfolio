@@ -1,0 +1,1265 @@
+{
+  "note": "本番(kljlxjlbetaxhtxqzrdc)で 20261013130100_drop_anon_write_policies を流す直前の pg_policies(public/storage)と anon の権限。1本目(20261013130000)適用後の状態。ロールバック時はこれを正とする。",
+  "taken_at": "2026-10-13T13:39:01.41342+00:00",
+  "project": "kljlxjlbetaxhtxqzrdc",
+  "policies": [
+    {
+      "schema": "public",
+      "table": "career_items",
+      "name": "anon full access career_items",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "career_items",
+      "name": "anon_all",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "career_items",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "career_items",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "career_items",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "career_items",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "flowcharts",
+      "name": "anon full access flowcharts",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "flowcharts",
+      "name": "auth write flowcharts",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "flowcharts",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "flowcharts",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "flowcharts",
+      "name": "public read flowcharts",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "flowcharts",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "flowcharts",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "profile",
+      "name": "anon can upsert profile",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "profile",
+      "name": "anon_all",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "profile",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "profile",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "profile",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "profile",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skill_cards",
+      "name": "anon full access skill_cards",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "skill_cards",
+      "name": "auth write skill_cards",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "public"
+      ],
+      "qual": "(auth.role() = 'authenticated'::text)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_cards",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_cards",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skill_cards",
+      "name": "public read skill_cards",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_cards",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_cards",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience",
+      "name": "anon full access skill_experience",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience",
+      "name": "auth write skill_bars",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "public"
+      ],
+      "qual": "(auth.role() = 'authenticated'::text)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience",
+      "name": "public read skill_bars",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience_tools",
+      "name": "anon full access skill_experience_tools",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience_tools",
+      "name": "auth write skill_experience_tools",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "public"
+      ],
+      "qual": "(auth.role() = 'authenticated'::text)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience_tools",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience_tools",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience_tools",
+      "name": "public read skill_experience_tools",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience_tools",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skill_experience_tools",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skills_vocab",
+      "name": "anon full access skills_vocab",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "skills_vocab",
+      "name": "auth write skills_vocab",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "skills_vocab",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skills_vocab",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "skills_vocab",
+      "name": "public read skills_vocab",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skills_vocab",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "skills_vocab",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "tools_vocab",
+      "name": "anon full access tools_vocab",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "tools_vocab",
+      "name": "auth write tools_vocab",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "tools_vocab",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "tools_vocab",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "tools_vocab",
+      "name": "public read tools_vocab",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "tools_vocab",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "tools_vocab",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "work_skills",
+      "name": "anon full access work_skills",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "work_skills",
+      "name": "auth write work_skills",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "work_skills",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "work_skills",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "work_skills",
+      "name": "public read work_skills",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "work_skills",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "work_skills",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "work_tools",
+      "name": "anon full access work_tools",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "work_tools",
+      "name": "auth write work_tools",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "work_tools",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "work_tools",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "work_tools",
+      "name": "public read work_tools",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "work_tools",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "work_tools",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "works",
+      "name": "anon full access works",
+      "permissive": "PERMISSIVE",
+      "cmd": "ALL",
+      "roles": [
+        "anon"
+      ],
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "schema": "public",
+      "table": "works",
+      "name": "delete_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "DELETE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "works",
+      "name": "insert_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "works",
+      "name": "select_public",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "public",
+      "table": "works",
+      "name": "update_owner",
+      "permissive": "PERMISSIVE",
+      "cmd": "UPDATE",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": "( SELECT private.is_owner() AS is_owner)",
+      "with_check": "( SELECT private.is_owner() AS is_owner)"
+    },
+    {
+      "schema": "public",
+      "table": "works",
+      "name": "works public read",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "public"
+      ],
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "Portfolio owner insert",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "authenticated"
+      ],
+      "qual": null,
+      "with_check": "((bucket_id = 'Portfolio'::text) AND ( SELECT private.is_owner() AS is_owner))"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "Portfolio read",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "qual": "(bucket_id = 'Portfolio'::text)",
+      "with_check": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "anon can read Portfolio storage",
+      "permissive": "PERMISSIVE",
+      "cmd": "SELECT",
+      "roles": [
+        "anon"
+      ],
+      "qual": "(bucket_id = 'Portfolio'::text)",
+      "with_check": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "anon can upload to Portfolio storage",
+      "permissive": "PERMISSIVE",
+      "cmd": "INSERT",
+      "roles": [
+        "anon"
+      ],
+      "qual": null,
+      "with_check": "(bucket_id = 'Portfolio'::text)"
+    }
+  ],
+  "anon_grants": [
+    {
+      "table": "career_items",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "career_items",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "career_items",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "career_items",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "career_items",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "career_items",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "career_items",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "flowcharts",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "flowcharts",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "flowcharts",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "flowcharts",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "flowcharts",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "flowcharts",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "flowcharts",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "profile",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "profile",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "profile",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "profile",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "profile",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "profile",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "profile",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "skill_cards",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "skill_cards",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "skill_cards",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "skill_cards",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "skill_cards",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "skill_cards",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "skill_cards",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "skill_experience",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "skill_experience",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "skill_experience",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "skill_experience",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "skill_experience",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "skill_experience",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "skill_experience",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "skill_experience_tools",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "skill_experience_tools",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "skill_experience_tools",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "skill_experience_tools",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "skill_experience_tools",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "skill_experience_tools",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "skill_experience_tools",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "skills_vocab",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "skills_vocab",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "skills_vocab",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "skills_vocab",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "skills_vocab",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "skills_vocab",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "skills_vocab",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "tools_vocab",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "tools_vocab",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "tools_vocab",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "tools_vocab",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "tools_vocab",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "tools_vocab",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "tools_vocab",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "work_skills",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "work_skills",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "work_skills",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "work_skills",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "work_skills",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "work_skills",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "work_skills",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "work_tools",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "work_tools",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "work_tools",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "work_tools",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "work_tools",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "work_tools",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "work_tools",
+      "privilege": "UPDATE"
+    },
+    {
+      "table": "works",
+      "privilege": "DELETE"
+    },
+    {
+      "table": "works",
+      "privilege": "INSERT"
+    },
+    {
+      "table": "works",
+      "privilege": "REFERENCES"
+    },
+    {
+      "table": "works",
+      "privilege": "SELECT"
+    },
+    {
+      "table": "works",
+      "privilege": "TRIGGER"
+    },
+    {
+      "table": "works",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "table": "works",
+      "privilege": "UPDATE"
+    }
+  ]
+}

@@ -636,8 +636,7 @@ export function ProofreadPanel({
 // ─── Profile セクション ────────────────────────────────
 
 // profile.introduction は jsonb カラムだが実体は string[] なのでローカル型で上書き
-// career_lead は表示先がないためフォームから除外
-type ProfileForm = Omit<Profile, "updated_at" | "introduction" | "career_lead"> & { introduction: string[] };
+type ProfileForm = Omit<Profile, "updated_at" | "introduction"> & { introduction: string[] };
 
 function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [form, setForm] = useState<ProfileForm>({

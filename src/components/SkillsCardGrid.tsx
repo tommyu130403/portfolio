@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Icon from "@/components/Icon";
 import type { IconProps } from "@/components/Icon";
 import ServiceLogo from "@/components/ServiceLogo";
@@ -215,18 +215,9 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 
   return (
     <div
-      data-skill-row=""
-      className={`relative flex min-h-16 flex-col justify-center rounded-[16px] px-px after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors after:duration-200 after:content-[''] ${
-        open
-          ? "bg-[color-mix(in_srgb,var(--color-surface),white_5%)] after:border-border-light"
-          : "hover:bg-white/5 after:border-border"
+      className={`relative flex min-h-16 flex-col justify-center rounded-[16px] px-px transition-colors duration-200 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors after:duration-200 after:content-[''] ${
+        open ? "bg-white/5 after:border-border-light" : "hover:bg-white/5 after:border-border"
       }`}
-      // 閉じる300ms の間は手前に残す。アニメ無効時は即座に戻る
-      style={
-        open
-          ? { zIndex: 1, transition: "background-color 200ms cubic-bezier(0.4, 0, 0.2, 1)" }
-          : { zIndex: 0, transition: "background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), z-index 0s linear 300ms" }
-      }
     >
       {/* _SkillVaule — 常時表示。クリックで開閉 */}
       <button
@@ -316,7 +307,7 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
   return (
     <div
       // 375/390 幅ではスキル名の折返し切れを防ぐため、640px 未満だけ左右余白を 40 → 16 に詰める（Figma にモバイル画面なし）
-      className="overflow-clip xl:overflow-visible px-4 py-6 sm:px-10"
+      className="overflow-clip px-4 py-6 sm:px-10"
       style={{
         borderRadius: 16,
         // Figma は塗りなしの枠に drop-shadow → 中身の形に落ちる影。box-shadow だと箱の下辺に線が出る
@@ -344,9 +335,8 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
       {/* items 容器 — Figma (Master 502:1344) は 1 カード内をスキル項目 2 列（352px × gap 16）で並べる。
           items-start で、片方を展開してももう片方の高さに影響しない。
           2 列にするのは本文幅が 800px に達する xl (1280px) 以上のときだけ。
-          それ未満で 2 列にするとカードの左右パディング 40px が効いてスキル名が潰れる。
-          xl では行の高さ 64 固定。開いた項目は下へはみ出して重なる（Figma 905:12566 の grid h144 と item h162）。xl 未満は押し下げ */}
-      <div className="grid grid-cols-1 items-start gap-4 pt-6 xl:grid-cols-2 xl:auto-rows-[64px]">
+          それ未満で 2 列にするとカードの左右パディング 40px が効いてスキル名が潰れる。 */}
+      <div className="grid grid-cols-1 items-start gap-4 pt-6 xl:grid-cols-2">
         {card.skills.map((skill) => (
           <SkillRow key={skill.id} skill={skill} />
         ))}
@@ -361,7 +351,6 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
 export default function SkillsCardGrid() {
   const [cards, setCards] = useState<SkillCardConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchSkillCards().then((data) => {
@@ -369,35 +358,6 @@ export default function SkillsCardGrid() {
       setLoading(false);
     });
   }, []);
-
-  useEffect(() => {
-    const box = gridRef.current;
-    if (!box) return;
-    const rows = box.querySelectorAll<HTMLElement>("[data-skill-row]");
-    const update = () => {
-      const top = box.getBoundingClientRect().top;
-      const natural = box.lastElementChild
-        ? (box.lastElementChild as HTMLElement).getBoundingClientRect().bottom
-        : top;
-      let maxBottom = natural;
-      rows.forEach((r) => {
-        maxBottom = Math.max(maxBottom, r.getBoundingClientRect().bottom);
-      });
-      if (maxBottom - natural > 0.5) {
-        box.style.minHeight = maxBottom - top + "px";
-      } else {
-        box.style.minHeight = "";
-      }
-    };
-    const ro = new ResizeObserver(update);
-    rows.forEach((r) => ro.observe(r));
-    Array.from(box.children).forEach((c) => ro.observe(c));
-    update();
-    return () => {
-      ro.disconnect();
-      box.style.minHeight = "";
-    };
-  }, [cards, loading]);
 
   if (loading) {
     return (
@@ -412,7 +372,7 @@ export default function SkillsCardGrid() {
   // Figma (Master 502:1344) はカテゴリカードを本文幅 800px の 1 列で縦積みし、
   // カード内のスキル項目を 2 列に並べる。カードを 2 列にするとスキル名が潰れる。
   return (
-    <div ref={gridRef} className="flex w-full flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       {cards.map((card) => (
         <SkillCard key={card.id} card={card} />
       ))}

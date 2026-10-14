@@ -218,9 +218,9 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
     >
       {/* ツールバー */}
       <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border-light bg-[#141414] px-3 py-2">
-        <TBtn label="セクション" title="# セクション見出し（34px）" onClick={() => insertLine("# セクション見出し")} />
-        <TBtn label="見出01" title="## 見出し01（24px 白）" onClick={() => insertLine("## 見出し")} />
-        <TBtn label="見出02" title="### 見出し02（20px mint）" onClick={() => insertLine("### 見出し")} />
+        <TBtn label="セクション" title="# セクション見出し（横線＋13px gray）" onClick={() => insertLine("# セクション見出し")} />
+        <TBtn label="見出01" title="## 見出し01（横線＋13px gray）" onClick={() => insertLine("## 見出し")} />
+        <TBtn label="見出02" title="### 見出し02（見出し01 と同形）" onClick={() => insertLine("### 見出し")} />
         <TBtn label="見出03" title="#### 見出し03（17px gray）" onClick={() => insertLine("#### 見出し")} />
         <TBtn label="小本文" title="##### 小本文（13px）" onClick={() => insertLine("##### 小本文")} />
         <TSep />

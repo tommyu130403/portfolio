@@ -279,7 +279,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
               )}
               {skill.description && (
                 <p
-                  className="font-body text-[13px] leading-[20px] tracking-[0.39px] whitespace-pre-line"
+                  className="font-body text-[13px] leading-[21px] tracking-[0.39px] whitespace-pre-line"
                   style={{ color: "#9E9E9E" }}
                 >
                   {skill.description}
@@ -324,7 +324,7 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-white">{card.title}</span>
           <span
-            className="font-body text-[13px] leading-[20px] tracking-[0.39px]"
+            className="font-body text-[13px] leading-[21px] tracking-[0.39px]"
             style={{ color: "#757575" }}
           >
             {card.titleJP}

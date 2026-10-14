@@ -12,8 +12,8 @@ import FlowchartEmbed from "./FlowchartEmbed";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（Noto Bold 24px white）
- *  - `### `  → 見出し02（Noto Bold 17px / 20px gray #9e9e9e）
+ *  - `## `   → 見出し01（横線＋Noto Bold 13px gray #9e9e9e・Library Headline 304:302）
+ *  - `### `  → 見出し02（01 と同形）
  *  - `#### ` → 見出し03（Avenir Heavy 17px gray #9e9e9e）
  *  - `##### `→ 小本文 Body02（13px white）
  *  - `> `    → 引用（13px system-400 #BDBDBD・左ボーダー、連続行対応）
@@ -500,15 +500,21 @@ function RenderBlock({
   switch (block.type) {
     case "h1":
       return (
-        <p className="mb-8 mt-10 text-headline-01-jp text-white">
-          {renderInline(block.content, k)}
-        </p>
+        <div className="mb-8 mt-10 flex w-full items-center gap-2">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
+          <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
+            {renderInline(block.content, k)}
+          </p>
+        </div>
       );
     case "h2":
       return (
-        <p className="mb-2 mt-8 text-headline-02-jp text-system-500">
-          {renderInline(block.content, k)}
-        </p>
+        <div className="mb-2 mt-8 flex w-full items-center gap-2">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
+          <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
+            {renderInline(block.content, k)}
+          </p>
+        </div>
       );
     case "h3":
       return (
@@ -636,7 +642,7 @@ export type WorkSection = { heading: string; md: string };
  */
 export const WorkSections: FC<{
   sections: WorkSection[];
-  /** 見出しの体裁: section=34px / markdown-h1=24px */
+  /** 見出しの体裁: section=34px / markdown-h1=横線＋13px gray（Library Headline 304:302） */
   headingVariant?: "section" | "markdown-h1";
   /** セクション間の余白クラス */
   gapClass?: string;

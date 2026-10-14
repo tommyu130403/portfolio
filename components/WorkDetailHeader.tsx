@@ -95,7 +95,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
       {/* カテゴリ + タイトル + メタ表 + Skills/Tools */}
       <div className="flex w-full flex-col gap-6">
         <div className="flex w-full flex-col gap-2 [word-break:break-word]">
-          {work.category && <p className="text-body-03-jp text-primary">{work.category}</p>}
+          {work.category && <p className="text-body-02-en text-primary">{work.category}</p>}
           <p className="text-title-pj text-white">{work.title}</p>
         </div>
 

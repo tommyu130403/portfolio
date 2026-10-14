@@ -168,7 +168,7 @@ html {
    font-family の対応: lang jp → Noto Sans JP / en → Avenir→Noto / special-en → Afacad→Noto
    Noto の AUTO は Figma 実測 px（round(1.2×size)）。Avenir の AUTO は title-en の 52 だけ実測済みで他は normal。
    % 表記の文字間は em に変換している。
-   倍率150%の style は、Figma が描く size×1.5 の端数切り上げ px（22.5→23 / 19.5→20 / 16.5→17）で持つ。 */
+   倍率160%の style は、Figma が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。 */
 
 @utility text-title-pj {
   /* Figma: Title/PJ */
@@ -188,48 +188,12 @@ html {
   letter-spacing: 0.03em;
 }
 
-@utility text-headline-01-jp {
-  /* Figma: Headline/01/JP */
-  font-family: var(--font-noto-sans-jp), sans-serif;
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 36px;
-  letter-spacing: 0.05em;
-}
-
-@utility text-headline-01-en {
-  /* Figma: Headline/01/EN */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
-  font-size: 24px;
-  font-weight: 800;
-  line-height: normal;
-  letter-spacing: 0.05em;
-}
-
-@utility text-headline-02-jp {
-  /* Figma: Headline/02/JP */
-  font-family: var(--font-noto-sans-jp), sans-serif;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 20px;
-  letter-spacing: 0.05em;
-}
-
-@utility text-headline-02-en {
-  /* Figma: Headline/02/EN */
-  font-family: var(--font-afacad), var(--font-noto-sans-jp), sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 30px;
-  letter-spacing: 0.05em;
-}
-
 @utility text-body-01-jp {
   /* Figma: Body/01/JP/Regular */
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 400;
-  line-height: 23px;
+  line-height: 24px;
   letter-spacing: 0.03em;
 }
 
@@ -238,7 +202,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 700;
-  line-height: 23px;
+  line-height: 24px;
   letter-spacing: 0.03em;
 }
 
@@ -256,7 +220,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 400;
-  line-height: 20px;
+  line-height: 21px;
   letter-spacing: 0.03em;
 }
 
@@ -265,7 +229,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 21px;
   letter-spacing: 0.03em;
 }
 
@@ -283,7 +247,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 400;
-  line-height: 17px;
+  line-height: 18px;
   letter-spacing: 0.03em;
 }
 
@@ -292,7 +256,7 @@ html {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 700;
-  line-height: 17px;
+  line-height: 18px;
   letter-spacing: 0.03em;
 }
 

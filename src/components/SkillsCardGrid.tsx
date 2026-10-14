@@ -322,7 +322,7 @@ function SkillCard({ card }: { card: SkillCardConfig }) {
           <Icon set={card.icon.set} name={card.icon.name} tintColor="#48F4BE" className="w-6 h-6 shrink-0" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span className="text-headline-02-en text-white">{card.title}</span>
+          <span className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-white">{card.title}</span>
           <span
             className="font-body text-[13px] leading-[20px] tracking-[0.39px]"
             style={{ color: "#757575" }}

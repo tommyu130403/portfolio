@@ -235,7 +235,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[13px] leading-[20px] tracking-[0.39px] text-white">
+            <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -485,7 +485,7 @@ type BodyLevel = "01" | "02";
 
 /** 本文（段落・リスト）の Body01 / Body02 タイポクラス */
 const bodyTypo = (level: BodyLevel) =>
-  level === "02" ? "text-[13px] leading-[20px] tracking-[0.39px]" : "text-[15px] leading-[23px] tracking-[0.45px]";
+  level === "02" ? "text-[13px] leading-[21px] tracking-[0.39px]" : "text-[15px] leading-[24px] tracking-[0.45px]";
 
 function RenderBlock({
   block,
@@ -524,7 +524,7 @@ function RenderBlock({
       );
     case "small":
       return (
-        <p className="mb-3 text-[13px] leading-[20px] tracking-[0.39px] text-white">
+        <p className="mb-3 text-[13px] leading-[21px] tracking-[0.39px] text-white">
           {renderInline(block.content, k)}
         </p>
       );
@@ -538,7 +538,7 @@ function RenderBlock({
       return (
         <div className="mb-3 border-l-2 border-border-light pl-3">
           {block.content.split("\n").map((l, i) => (
-            <p key={i} className="text-[13px] leading-[20px] tracking-[0.39px] text-system-400">
+            <p key={i} className="text-[13px] leading-[21px] tracking-[0.39px] text-system-400">
               {renderInlineLine(l, `${k}-q${i}`)}
             </p>
           ))}
@@ -664,7 +664,7 @@ export const WorkSections: FC<{
 
 /**
  * `# 見出し` でセクション分割された markdown ドキュメント全体を描画する
- * （admin の本文プレビュー用。公開側と同じ Section 見出し 34px + 本文の見た目）。
+ * （admin の本文プレビュー用。公開側 WorkDetailContent と同じ見出し・本文の見た目）。
  */
 export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   const sections: WorkSection[] = [];
@@ -685,5 +685,6 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   if (sections.length === 0) {
     return <p className="text-[13px] text-fg-muted">本文がありません</p>;
   }
-  return <WorkSections sections={sections} headingVariant="section" />;
+  // 公開側（WorkDetailContent）と同じ見出し体裁・セクション間隔で描画する
+  return <WorkSections sections={sections} headingVariant="markdown-h1" gapClass="gap-12" />;
 };

@@ -10,7 +10,7 @@ type HeadlineProps = {
    * - default: ページ上部のセクション見出し（JP サブ + Title/EN 38px Avenir Heavy。Figma SectionTitle 836:3312）
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
-   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（Library 304:313 = 01/02（03 は Figma に無い））
+   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（h1・h2 は Library 304:302 の Headline 1種類。03 は Figma に無い）
    */
   variant?: "default" | "sub" | "section" | "markdown-h1" | "markdown-h2" | "markdown-h3";
 };
@@ -36,7 +36,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   }
 
   // Library 305:265 / 03: Avenir(Body/EN) Heavy 17px #9e9e9e
-  // ※ Figma の Headline セットは 01 / 02 の2バリアントのみで 03 は存在しない（Library 304:313 で確認・2026-09-08）。実装側のみの見出し。
+  // ※ Figma の Headline に 03 は存在しない。実装側のみの見出し。
   if (variant === "markdown-h3") {
     return (
       <p className="font-en w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
@@ -45,21 +45,15 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Library 304:312 / 02: Noto Sans JP Bold 17px 行間AUTO System/500(#9E9E9E)
-  if (variant === "markdown-h2") {
+  // Library 304:302（Headline は1種類のみ・2026-10-14 確認）: 横線 16×1px + Noto Sans JP Bold 13px System/500。h1・h2 とも同形
+  if (variant === "markdown-h1" || variant === "markdown-h2") {
     return (
-      <p className="w-full text-headline-02-jp text-system-500">
-        {title}
-      </p>
-    );
-  }
-
-  // Library 305:265 / 01: Noto Sans JP Bold 24px white（装飾バー無し）
-  if (variant === "markdown-h1") {
-    return (
-      <p className="w-full text-headline-01-jp text-white">
-        {title}
-      </p>
+      <div className="flex w-full items-center gap-2">
+        <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
+        <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
+          {title}
+        </p>
+      </div>
     );
   }
 

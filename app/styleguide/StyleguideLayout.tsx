@@ -166,14 +166,10 @@ const TYPO_LANG = {
 
 // textStyle のキー → app/globals.css の @utility クラス名。
 // Tailwind v4 のスキャナは `text-${key}` のような連結を検出しないため、literal で持つ。
-// ここに並んでいること自体が「19 種のユーティリティが実際に生成されている」ことの担保になる。
+// ここに並んでいること自体が「15 種のユーティリティが実際に生成されている」ことの担保になる。
 const TEXT_STYLE_CLASS: Record<keyof typeof textStyle, string> = {
   "title-pj":        "text-title-pj",
   "title-en":        "text-title-en",
-  "headline-01-jp":  "text-headline-01-jp",
-  "headline-01-en":  "text-headline-01-en",
-  "headline-02-jp":  "text-headline-02-jp",
-  "headline-02-en":  "text-headline-02-en",
   "body-01-jp":      "text-body-01-jp",
   "body-01-jp-bold": "text-body-01-jp-bold",
   "body-01-en":      "text-body-01-en",
@@ -432,9 +428,9 @@ function TypographySection() {
       <p className="mb-4 text-[12px] text-system-700">
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge>、
         クラスからは <TokenBadge>text-body-02-jp</TokenBadge>（app/globals.css の <TokenBadge>@utility</TokenBadge>）で参照。
-        lineHeight は倍率（Figma 100% → 1）。Noto の AUTO は Figma 実測 px（round(1.2×size)）、Avenir は
-        <TokenBadge>title-en</TokenBadge> の 52px 以外は <TokenBadge>normal</TokenBadge>。倍率150%の style は、Figma
-        が描く size×1.5 の端数切り上げ px（22.5→23 / 19.5→20 / 16.5→17）で持つ。letterSpacing は em（Figma 3% → 0.03em）。
+        lineHeight は px か <TokenBadge>normal</TokenBadge>。Noto の AUTO は Figma 実測 px（round(1.2×size)）、Avenir は
+        <TokenBadge>title-en</TokenBadge> の 52px 以外は <TokenBadge>normal</TokenBadge>。倍率160%の style は、Figma
+        が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
@@ -872,20 +868,20 @@ function ComponentsSection() {
     <section id="components" className="scroll-mt-8">
       <SectionTitle label="Components" title="コンポーネント" />
       <div className="flex flex-col gap-12">
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Title/EN（Avenir Heavy 38px）。sub / section / コンテンツ見出し 01・02（Library 304:313）。03 は Figma に存在せず実装のみ">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Title/EN（Avenir Heavy 38px）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）。03 は Figma に存在せず実装のみ">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
-          <div className="w-full"><Headline title="見出し 01（24px 白）" variant="markdown-h1" /></div>
-          <div className="w-full"><Headline title="見出し 02（17px gray・Headline/02/JP）" variant="markdown-h2" /></div>
+          <div className="w-full"><Headline title="見出し 01（Headline 13px Bold・横線つき）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="見出し 02（01 と同形・Library 304:302）" variant="markdown-h2" /></div>
           <div className="w-full"><Headline title="見出し 03（17px gray・Figma に対応なし）" variant="markdown-h3" /></div>
         </ComponentPreview>
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
             <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
-            <p className="font-body text-[24px] font-bold leading-[1.5] tracking-[1.2px] text-white">見出し01（## / Noto Bold 24px 白）</p>
-            <p className="font-body text-[20px] font-bold leading-[1.5] tracking-[1px] text-main-050">見出し02（### / Noto Bold 20px mint）</p>
+            <Headline title="見出し01（## / 横線＋Noto Bold 13px gray）" variant="markdown-h1" />
+            <Headline title="見出し02（### / 01 と同形）" variant="markdown-h2" />
             <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
             <p className="text-[15px] leading-[23px] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
             <p className="text-[13px] leading-[20px] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>

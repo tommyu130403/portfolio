@@ -30,3 +30,7 @@ export function parseScreenshots(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((u): u is string => typeof u === "string" && u.length > 0);
 }
+
+/** サムネイル未登録の作品に出す既定画像（一覧カード・前後ナビ共通） */
+export const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";

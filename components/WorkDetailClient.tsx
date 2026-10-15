@@ -4,13 +4,14 @@ import { type FC, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
-import { parseScreenshots } from "@/lib/work-content";
+import { DEFAULT_IMAGE, parseScreenshots } from "@/lib/work-content";
 import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
-import Icon from "./Icon";
-import SideMenuBar from "./SideMenuBar";
+import WorkBreadcrumb from "./WorkBreadcrumb";
+import WorkPagerCard from "./WorkPagerCard";
 
 type Work = Tables<"works">;
+type OrderItem = { id: string; title: string; category: string | null; thumbnail_url: string | null };
 
 type WorkDetailClientProps = {
   /** クエリ文字列 ?id= から受け取った Work ID */
@@ -22,7 +23,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const [work, setWork] = useState<Work | null>(null);
   const [skills, setSkills] = useState<string[]>([]);
   const [tools, setTools] = useState<WorkToolItem[]>([]);
-  const [order, setOrder] = useState<string[]>([]);
+  const [order, setOrder] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,10 +96,11 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
     let cancelled = false;
     supabase
       .from("works")
-      .select("id")
+      .select("id, title, category, thumbnail_url")
       .order("sort_order", { ascending: true })
-      .then(({ data }) => {
-        if (!cancelled) setOrder((data ?? []).map((r) => r.id));
+      .then(({ data, error: orderError }) => {
+        if (orderError) console.error("Failed to fetch works order:", orderError);
+        if (!cancelled) setOrder(data ?? []);
       });
     return () => {
       cancelled = true;
@@ -107,13 +109,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
   const handleBack = () => router.push("/#works");
 
-  const goTo = (delta: number) => {
-    if (!id || order.length < 2) return;
-    const idx = order.indexOf(id);
-    if (idx < 0) return;
-    const nextId = order[(idx + delta + order.length) % order.length];
-    router.push(`/works?id=${nextId}`);
-  };
+  const workHref = (targetId: string) => `/works?id=${targetId}`;
 
   if (loading) {
     return (
@@ -139,64 +135,57 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   }
 
   const screenshots = parseScreenshots(work.hero_screenshots);
-  const showNav = order.length > 1;
+  const idx = id ? order.findIndex((o) => o.id === id) : -1;
+  const prev = idx > 0 ? order[idx - 1] : undefined;
+  const next = idx >= 0 && idx < order.length - 1 ? order[idx + 1] : undefined;
+  const showNav = idx >= 0 && order.length > 1;
 
   return (
-    <div className="relative flex min-h-screen items-start bg-surface text-white">
-      <div className="sticky top-0 shrink-0 z-[2] hidden lg:block">
-        <SideMenuBar hrefBase="/" showCollapseToggle={false} />
-      </div>
-
+    <div className="relative min-h-screen bg-surface text-white">
       {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
-          WorkVizModal(z-50) / ScreenshotLightbox(z-60) がサイドバー(z-2)より
+          WorkVizModal(z-50) / ScreenshotLightbox(z-60) が他の層より
           下に沈む（2026-09-11 に実測） */}
-      <main className="relative flex min-w-0 flex-1 flex-col items-center">
-        {/* 戻りリンク（lg 以上はサイドメニューがあるため非表示） */}
-        <div className="mx-auto w-full max-w-main px-6 pt-6 lg:hidden">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex items-center gap-1 text-system-500 transition-colors hover:text-white"
-            aria-label="Works一覧へ戻る"
-          >
-            <Icon
-              set="Arrows"
-              name="left"
-              tintColor="currentColor"
-              className="h-2 w-2 shrink-0"
-              aria-hidden
-            />
-            <span className="font-guide text-[12px] leading-[1.3] tracking-[0.6px]">Works</span>
-          </button>
-        </div>
-
+      <main className="relative flex min-w-0 flex-col items-center">
         {/* カラム */}
         <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-6 py-20 xl:px-0">
+          <WorkBreadcrumb
+            title={work.title}
+            index={idx}
+            total={idx < 0 ? 0 : order.length}
+            prevHref={prev ? workHref(prev.id) : undefined}
+            nextHref={next ? workHref(next.id) : undefined}
+          />
           <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
           <WorkDetailContent work={work} />
-        </div>
 
-        {/* 前後ナビ（lg 未満＝本文末尾・タップ44px以上・ラベル付き。lg 以上はサイドメニューがあるため非表示）。
-            ルートが flex 行なので、ここは必ず <main> の内側に置く。外に出すと
-            サイドバーと横並びの兄弟になり、lg 未満で <main> が幅 0 に潰れる */}
-        {showNav && (
-        <div className="mx-auto flex w-full max-w-main gap-3 px-6 pb-16 lg:hidden">
-          <button
-            type="button"
-            onClick={() => goTo(-1)}
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
-          >
-            ‹ 前のWork
-          </button>
-          <button
-            type="button"
-            onClick={() => goTo(1)}
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-1 rounded-full border border-system-800 px-4 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
-          >
-            次のWork ›
-          </button>
+          {showNav && (
+            <>
+              <div className="h-px bg-border" />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {prev && (
+                  <WorkPagerCard
+                    direction="prev"
+                    category={prev.category}
+                    thumbnail={prev.thumbnail_url ?? DEFAULT_IMAGE}
+                    title={prev.title}
+                    href={workHref(prev.id)}
+                  />
+                )}
+                {next && (
+                  <div className={prev ? "h-full" : "h-full md:col-start-2"}>
+                    <WorkPagerCard
+                      direction="next"
+                      category={next.category}
+                      thumbnail={next.thumbnail_url ?? DEFAULT_IMAGE}
+                      title={next.title}
+                      href={workHref(next.id)}
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
-        )}
       </main>
     </div>
   );

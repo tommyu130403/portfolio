@@ -6,11 +6,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 import WorkCard from "@/components/WorkCard";
+import { DEFAULT_IMAGE } from "@/lib/work-content";
 
 type Work = Tables<"works">;
-
-export const DEFAULT_IMAGE =
-  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
 
 export const WorksList: FC = () => {
   const router = useRouter();

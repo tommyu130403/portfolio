@@ -4,12 +4,11 @@ import { type FC, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
-import { parseScreenshots } from "@/lib/work-content";
+import { DEFAULT_IMAGE, parseScreenshots } from "@/lib/work-content";
 import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
 import WorkBreadcrumb from "./WorkBreadcrumb";
 import WorkPagerCard from "./WorkPagerCard";
-import { DEFAULT_IMAGE } from "@/src/components/WorksList";
 
 type Work = Tables<"works">;
 type OrderItem = { id: string; title: string; category: string | null; thumbnail_url: string | null };
@@ -99,7 +98,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       .from("works")
       .select("id, title, category, thumbnail_url")
       .order("sort_order", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error: orderError }) => {
+        if (orderError) console.error("Failed to fetch works order:", orderError);
         if (!cancelled) setOrder(data ?? []);
       });
     return () => {
@@ -109,7 +109,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
   const handleBack = () => router.push("/#works");
 
-  const goTo = (targetId: string) => router.push(`/works?id=${targetId}`);
+  const workHref = (targetId: string) => `/works?id=${targetId}`;
 
   if (loading) {
     return (
@@ -152,9 +152,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
             title={work.title}
             index={idx}
             total={idx < 0 ? 0 : order.length}
-            onBack={handleBack}
-            onPrev={prev ? () => goTo(prev.id) : undefined}
-            onNext={next ? () => goTo(next.id) : undefined}
+            prevHref={prev ? workHref(prev.id) : undefined}
+            nextHref={next ? workHref(next.id) : undefined}
           />
           <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
           <WorkDetailContent work={work} />
@@ -169,7 +168,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
                     category={prev.category}
                     thumbnail={prev.thumbnail_url ?? DEFAULT_IMAGE}
                     title={prev.title}
-                    onClick={() => goTo(prev.id)}
+                    href={workHref(prev.id)}
                   />
                 )}
                 {next && (
@@ -179,7 +178,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
                       category={next.category}
                       thumbnail={next.thumbnail_url ?? DEFAULT_IMAGE}
                       title={next.title}
-                      onClick={() => goTo(next.id)}
+                      href={workHref(next.id)}
                     />
                   </div>
                 )}

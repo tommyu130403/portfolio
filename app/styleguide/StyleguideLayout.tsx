@@ -1076,9 +1076,9 @@ function ComponentsSection() {
           description="作品詳細の先頭ヘッダー（Figma 787:9918）。md 以上は「Works / 作品名」＋件数＋前後矢印、md 未満は「‹ Works」＋件数のみ。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
-            <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={2} total={8} onBack={() => {}} onPrev={() => {}} onNext={() => {}} />
-            <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={0} total={8} onBack={() => {}} onNext={() => {}} />
-            <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={0} total={1} onBack={() => {}} />
+            <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={2} total={8} prevHref="#" nextHref="#" />
+            <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={0} total={8} nextHref="#" />
+            <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={0} total={1} />
           </div>
         </ComponentPreview>
 
@@ -1087,17 +1087,17 @@ function ComponentsSection() {
           description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。実ページと同じく md 以上で 2 列"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
-            <WorkPagerCard direction="prev" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" onClick={() => {}} />
-            <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" onClick={() => {}} />
+            <WorkPagerCard direction="prev" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
+            <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" onClick={() => {}} />
-              <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" onClick={() => {}} />
+              <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" href="#" />
+              <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" thumbnail="/window.svg" onClick={() => {}} />
-              <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" thumbnail="/window.svg" onClick={() => {}} />
+              <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" thumbnail="/window.svg" href="#" />
+              <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" thumbnail="/window.svg" href="#" />
             </div>
-            <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" onClick={() => {}} />
+            <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" href="#" />
           </div>
         </ComponentPreview>
 

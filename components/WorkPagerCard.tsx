@@ -1,7 +1,9 @@
 "use client";
 
 import { type FC, useState } from "react";
+import Link from "next/link";
 import Icon from "./Icon";
+import { GUIDE_TEXT } from "./WorkBreadcrumb";
 
 type WorkPagerCardProps = {
   direction: "prev" | "next";
@@ -10,10 +12,10 @@ type WorkPagerCardProps = {
   title: string;
   /** 値があるとき左（next は md 以上で右）にサムネイルを出す */
   thumbnail?: string | null;
-  onClick: () => void;
+  href: string;
 };
 
-const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thumbnail, onClick }) => {
+const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thumbnail, href }) => {
   const isNext = direction === "next";
   // 画像の読み込みに失敗したら画像なしの形に落とす
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -32,7 +34,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
 
   const body = (
     <>
-      <span className="flex items-center gap-1 font-guide text-[12px] tracking-[0.6px] text-system-500">
+      <span className={`flex items-center gap-1 ${GUIDE_TEXT} text-system-500`}>
         {!isNext && arrow}
         {isNext ? "Next" : "Prev"}
         {isNext && arrow}
@@ -45,9 +47,8 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
   );
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      href={href}
       aria-label={`${isNext ? "次" : "前"}のWork: ${title}`}
       className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border bg-surface-light transition-colors hover:border-system-500 ${
         thumbSrc
@@ -62,14 +63,14 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
             alt=""
             loading="lazy"
             onError={() => setFailedSrc(thumbSrc)}
-            className="hidden aspect-video w-[128px] shrink-0 self-stretch object-cover md:block"
+            className="hidden w-[128px] shrink-0 self-stretch object-cover md:block"
           />
           <div className={`flex min-w-0 flex-1 flex-col justify-center gap-[6px] px-4 py-[14px] md:gap-1 md:py-[10px] ${align}`}>{body}</div>
         </>
       ) : (
         body
       )}
-    </button>
+    </Link>
   );
 };
 

@@ -1,8 +1,12 @@
 "use client";
 
 import type { FC } from "react";
+import Link from "next/link";
 import Icon from "./Icon";
-import ButtonFunction from "./ButtonFunction";
+import { BUTTON_FUNCTION } from "@/lib/figma-button-variants";
+
+/** ガイド文字（EN 12px / 行間 1.3 / 字間 0.6px）。WorkPagerCard と共用 */
+export const GUIDE_TEXT = "font-guide text-[12px] leading-[1.3] tracking-[0.6px]";
 
 type WorkBreadcrumbProps = {
   /** 現在の作品名（md 以上でパンくずに表示） */
@@ -11,46 +15,58 @@ type WorkBreadcrumbProps = {
   index: number;
   /** 全件数。1 以下なら件数・矢印を出さない */
   total: number;
-  onBack: () => void;
   /** 無いとき（先頭）は前ボタンを描画しない */
-  onPrev?: () => void;
+  prevHref?: string;
   /** 無いとき（最後）は次ボタンを描画しない */
-  onNext?: () => void;
+  nextHref?: string;
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
- * 矢印ボタンを 44px の押下領域で包む。ButtonFunction は 36px 固定で className を
- * 受け取らないため、外側の 44px 要素がクリックを受け、内側ボタンのクリックは
- * バブリングで同じハンドラに届く（onClick は外側だけに付ける）。
+ * 前後の矢印リンク。ButtonFunction は <button> で <a> の中に入れられないため、
+ * 44×44 の Link の中に BUTTON_FUNCTION と同じクラスの span を置いて見た目を揃える。
  */
-const HitArea: FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
-  <div
-    onClick={onClick}
-    className="flex h-11 w-11 cursor-pointer items-center justify-center"
-  >
-    {children}
-  </div>
+const ArrowLink: FC<{ href: string; direction: "left" | "right"; label: string }> = ({
+  href,
+  direction,
+  label,
+}) => (
+  <Link href={href} aria-label={label} className="flex h-11 w-11 items-center justify-center">
+    <span
+      className={[
+        BUTTON_FUNCTION.base,
+        BUTTON_FUNCTION.border.on,
+        BUTTON_FUNCTION.status.default,
+        BUTTON_FUNCTION.status.hover,
+      ].join(" ")}
+    >
+      <Icon
+        set="Arrows"
+        name={direction}
+        className="h-6 w-6 min-h-6 min-w-6 shrink-0 text-fg-muted"
+        style={{ minWidth: 24, minHeight: 24 }}
+        aria-hidden
+      />
+    </span>
+  </Link>
 );
 
 const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
   title,
   index,
   total,
-  onBack,
-  onPrev,
-  onNext,
+  prevHref,
+  nextHref,
 }) => {
   const showCounter = total > 1;
 
   return (
     <div className="flex min-h-11 min-w-0 items-center justify-between gap-3">
       <nav aria-label="パンくず" className="flex min-w-0 items-center gap-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="relative flex shrink-0 items-center gap-1 text-system-500 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] transition-colors hover:text-white"
+        <Link
+          href="/#works"
+          className="relative flex shrink-0 items-center gap-1 text-system-500 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] transition-colors hover:text-system-white"
           aria-label="Works一覧へ戻る"
         >
           <span className="flex shrink-0 md:hidden" aria-hidden>
@@ -62,16 +78,16 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
               aria-hidden
             />
           </span>
-          <span className="font-guide text-[12px] leading-[1.3] tracking-[0.6px]">Works</span>
-        </button>
+          <span className={GUIDE_TEXT}>Works</span>
+        </Link>
         <span
-          className="hidden font-guide text-[12px] leading-[1.3] tracking-[0.6px] text-border-light md:inline"
+          className={`hidden ${GUIDE_TEXT} text-border-light md:inline`}
           aria-hidden
         >
           /
         </span>
         <span
-          className="hidden min-w-0 truncate font-guide text-[12px] leading-[1.3] tracking-[0.6px] text-fg-caption md:inline"
+          className={`hidden min-w-0 truncate ${GUIDE_TEXT} text-fg-caption md:inline`}
           aria-current="page"
         >
           {title}
@@ -80,20 +96,12 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
 
       {showCounter && (
         <div className="flex shrink-0 items-center gap-2">
-          <span className="font-guide text-[12px] leading-[1.3] tracking-[0.6px] tabular-nums text-system-500">
+          <span className={`${GUIDE_TEXT} tabular-nums text-system-500`}>
             <span className="text-system-white">{pad(index + 1)}</span> / {pad(total)}
           </span>
           <div className="hidden items-center md:flex">
-            {onPrev && (
-              <HitArea onClick={onPrev}>
-                <ButtonFunction direction="left" border="on" aria-label="前のWork" />
-              </HitArea>
-            )}
-            {onNext && (
-              <HitArea onClick={onNext}>
-                <ButtonFunction direction="right" border="on" aria-label="次のWork" />
-              </HitArea>
-            )}
+            {prevHref && <ArrowLink href={prevHref} direction="left" label="前のWork" />}
+            {nextHref && <ArrowLink href={nextHref} direction="right" label="次のWork" />}
           </div>
         </div>
       )}

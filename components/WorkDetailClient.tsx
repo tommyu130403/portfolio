@@ -9,6 +9,7 @@ import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
 import WorkBreadcrumb from "./WorkBreadcrumb";
 import WorkPagerCard from "./WorkPagerCard";
+import SideMenuBar from "./SideMenuBar";
 
 type Work = Tables<"works">;
 type OrderItem = { id: string; title: string; category: string | null; thumbnail_url: string | null };
@@ -26,6 +27,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const [order, setOrder] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,11 +143,23 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const showNav = idx >= 0 && order.length > 1;
 
   return (
-    <div className="relative min-h-screen bg-surface text-white">
+    <div className="relative flex min-h-screen items-start bg-surface text-white">
+      {/* Side Menu（lg 以上のみ表示） */}
+      <div
+        className="sticky top-0 shrink-0 z-[2] hidden lg:block"
+        style={{ width: sidebarCollapsed ? 96 : 256, transition: "width 300ms ease-in-out" }}
+      >
+        <SideMenuBar
+          activeSection="works"
+          hrefBase="/"
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
+        />
+      </div>
       {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
           WorkVizModal(z-50) / ScreenshotLightbox(z-60) が他の層より
           下に沈む（2026-09-11 に実測） */}
-      <main className="relative flex min-w-0 flex-col items-center">
+      <main className="relative flex min-w-0 flex-1 flex-col items-center">
         {/* カラム */}
         <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-6 py-20 xl:px-0">
           <WorkBreadcrumb

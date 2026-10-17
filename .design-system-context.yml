@@ -82,3 +82,12 @@ intentional_compromises:
       app/globals.css の --radius-r* を同期し、rounded-[Npx] の直書きを
       rounded-r12 等へ一括置換する。
       Figma 側の追加依頼は docs/requests/20260908-figma-master-sync.md §6 に列挙してある。
+
+  - item: >-
+      /works の SideMenuBar はモバイルのハンバーガー / オーバーレイを持たない
+      （lg 未満では非表示）。初期表示は折りたたみ（Figma Master 974:3319）。
+    why: >-
+      トップページのオーバーレイ実装を移植するとレイアウトの作り直しと
+      ナビゲーションの変更が 1PR に混ざるため。
+    trigger: >-
+      /works をモバイルで使う導線ができたとき。

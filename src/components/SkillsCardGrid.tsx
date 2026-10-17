@@ -33,7 +33,7 @@ type IconRef = { set: NonNullable<IconProps["set"]>; name: string };
 // public/logos/ に実在する slug（モノクロームのツールロゴ）
 const LOGO_SLUGS = new Set([
   "figma", "github",
-  "illustrator", "photoshop", "google-analytics", "asana", "vscode",
+  "illustrator", "photoshop", "google-analytics", "google-optimize", "asana", "vscode",
   "react", "nextjs", "html", "css", "javascript", "typescript",
   "docker", "vue", "vite", "webpack",
 ]);
@@ -46,6 +46,7 @@ const TOOL_NAME_TO_SLUG: Record<string, string> = {
   "Illustrator": "illustrator",
   "Photoshop": "photoshop",
   "Google Analytics": "google-analytics",
+  "Google Optimize": "google-optimize",
   "Asana": "asana",
   "Visual Studio Code": "vscode",
   "React": "react",

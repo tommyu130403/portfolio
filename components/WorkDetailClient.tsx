@@ -19,6 +19,37 @@ type WorkDetailClientProps = {
   id: string | null;
 };
 
+const WorkDetailSkeleton: FC = () => (
+  <div role="status" className="flex w-full flex-col gap-12">
+    <span className="sr-only">読み込み中…</span>
+    <div className="flex h-11 items-center justify-between">
+      <div className="h-4 w-40 motion-safe:animate-pulse rounded bg-system-800" />
+      <div className="h-4 w-16 motion-safe:animate-pulse rounded bg-system-800" />
+    </div>
+    <div className="flex justify-center gap-6">
+      <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
+      <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
+    </div>
+    <div className="flex flex-col gap-2">
+      <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-system-800" />
+      <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+    </div>
+    <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
+    <div className="flex gap-2">
+      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+    </div>
+    <div className="h-px bg-border" />
+    <div className="flex flex-col gap-3">
+      <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
+      <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
+      <div className="h-4 w-11/12 motion-safe:animate-pulse rounded bg-system-800" />
+      <div className="h-4 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+    </div>
+  </div>
+);
+
 const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const router = useRouter();
   const [work, setWork] = useState<Work | null>(null);
@@ -86,8 +117,9 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
     };
 
     fetchDetail();
-    // id 変更（前後ナビ）時は先頭へスクロール
-    if (typeof window !== "undefined") window.scrollTo(0, 0);
+    // id 変更（前後ナビ）時は先頭へスクロール。globals.css の scroll-behavior: smooth だと
+    // スケルトン(画面より高い)の途中で止まってから戻るため instant を指定する
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "instant" });
     return () => {
       cancelled = true;
     };
@@ -113,34 +145,72 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
   const workHref = (targetId: string) => `/works?id=${targetId}`;
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-system-900 text-[17px] text-white/50">
-        読み込み中…
-      </div>
-    );
-  }
+  const renderBody = () => {
+    if (loading) return <WorkDetailSkeleton />;
 
-  if (error || !work) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-system-900 px-6 text-center">
-        <p className="text-[15px] text-white/70">{error ?? "Work が見つかりませんでした。"}</p>
-        <button
-          type="button"
-          onClick={handleBack}
-          className="rounded-full border border-system-800 px-4 py-2 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
-        >
-          ‹ Works 一覧へ戻る
-        </button>
-      </div>
-    );
-  }
+    if (error || !work) {
+      return (
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+          <p className="text-[15px] text-white/70">{error ?? "Work が見つかりませんでした。"}</p>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="rounded-full border border-system-800 px-4 py-2 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+          >
+            ‹ Works 一覧へ戻る
+          </button>
+        </div>
+      );
+    }
 
-  const screenshots = parseScreenshots(work.hero_screenshots);
-  const idx = id ? order.findIndex((o) => o.id === id) : -1;
-  const prev = idx > 0 ? order[idx - 1] : undefined;
-  const next = idx >= 0 && idx < order.length - 1 ? order[idx + 1] : undefined;
-  const showNav = idx >= 0 && order.length > 1;
+    const screenshots = parseScreenshots(work.hero_screenshots);
+    const idx = id ? order.findIndex((o) => o.id === id) : -1;
+    const prev = idx > 0 ? order[idx - 1] : undefined;
+    const next = idx >= 0 && idx < order.length - 1 ? order[idx + 1] : undefined;
+    const showNav = idx >= 0 && order.length > 1;
+
+    return (
+      <>
+        <WorkBreadcrumb
+          title={work.title}
+          index={idx}
+          total={idx < 0 ? 0 : order.length}
+          prevHref={prev ? workHref(prev.id) : undefined}
+          nextHref={next ? workHref(next.id) : undefined}
+        />
+        <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
+        <WorkDetailContent work={work} />
+
+        {showNav && (
+          <>
+            <div className="h-px bg-border" />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {prev && (
+                <WorkPagerCard
+                  direction="prev"
+                  category={prev.category}
+                  thumbnail={prev.thumbnail_url ?? DEFAULT_IMAGE}
+                  title={prev.title}
+                  href={workHref(prev.id)}
+                />
+              )}
+              {next && (
+                <div className={prev ? "h-full" : "h-full md:col-start-2"}>
+                  <WorkPagerCard
+                    direction="next"
+                    category={next.category}
+                    thumbnail={next.thumbnail_url ?? DEFAULT_IMAGE}
+                    title={next.title}
+                    href={workHref(next.id)}
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="relative flex min-h-screen items-start bg-surface text-white">
@@ -162,43 +232,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       <main className="relative flex min-w-0 flex-1 flex-col items-center">
         {/* カラム */}
         <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-6 py-20 xl:px-0">
-          <WorkBreadcrumb
-            title={work.title}
-            index={idx}
-            total={idx < 0 ? 0 : order.length}
-            prevHref={prev ? workHref(prev.id) : undefined}
-            nextHref={next ? workHref(next.id) : undefined}
-          />
-          <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
-          <WorkDetailContent work={work} />
-
-          {showNav && (
-            <>
-              <div className="h-px bg-border" />
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {prev && (
-                  <WorkPagerCard
-                    direction="prev"
-                    category={prev.category}
-                    thumbnail={prev.thumbnail_url ?? DEFAULT_IMAGE}
-                    title={prev.title}
-                    href={workHref(prev.id)}
-                  />
-                )}
-                {next && (
-                  <div className={prev ? "h-full" : "h-full md:col-start-2"}>
-                    <WorkPagerCard
-                      direction="next"
-                      category={next.category}
-                      thumbnail={next.thumbnail_url ?? DEFAULT_IMAGE}
-                      title={next.title}
-                      href={workHref(next.id)}
-                    />
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+          {renderBody()}
         </div>
       </main>
     </div>

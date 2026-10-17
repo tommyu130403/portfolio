@@ -3,13 +3,40 @@
 import { type FC, useEffect, useMemo, useState } from "react";
 import Icon from "./Icon";
 import Tag from "./Tag";
+import Tooltip from "./Tooltip";
+import { resolveLogoSlug } from "@/src/components/SkillsCardGrid";
 import WorkVizModal from "./WorkVizModal";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
 
-export type WorkToolItem = { name: string; icon_url: string | null };
+export type WorkToolItem = { name: string; icon_url: string | null; slug?: string | null };
+
+/** ツールのアイコン URL を決める。icon_url 優先、無ければスキル欄と同じ判定で public/logos のロゴ、無ければ null */
+const resolveToolIconSrc = (t: WorkToolItem): string | null => {
+  if (t.icon_url) return t.icon_url;
+  const slug = resolveLogoSlug(t);
+  return slug ? `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/${slug}.svg` : null;
+};
+
+/**
+ * 「事業責任者1・エンジニア3」「インターン5名」形式の関係者内訳を { name, count }[] に分解する。
+ * 区切りは役割と同じ「・」「、」「,」。名前に数字を含む区切り（「エンジニア1〜2」等）も含め、
+ * 1 つでも形式に合わなければ null（呼び出し側は元の文字列をそのまま出す）。
+ */
+export const parseStakeholderBreakdown = (
+  raw: string | null | undefined
+): { name: string; count: number }[] | null => {
+  if (!raw) return null;
+  const items: { name: string; count: number }[] = [];
+  for (const seg of raw.split(/[・、,]/)) {
+    const m = seg.trim().match(/^(\D+?)\s*(\d+)名?$/);
+    if (!m) return null;
+    items.push({ name: m[1].trim(), count: Number(m[2]) });
+  }
+  return items;
+};
 
 type WorkDetailHeaderProps = {
   work: Work;
@@ -80,6 +107,8 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
   // jsonb のパースは該当カラムが変わったときだけ（WorkEditor と同じ useMemo 規約）
   const timeline = useMemo(() => parseTimeline(work.timeline), [work.timeline]);
   const stakeholders = useMemo(() => parseStakeholders(work.stakeholders), [work.stakeholders]);
+  const roles = (work.role ?? "").split(/[・、,]/).map((r) => r.trim()).filter(Boolean);
+  const stakeholderTags = useMemo(() => parseStakeholderBreakdown(work.stakeholder_breakdown), [work.stakeholder_breakdown]);
 
   return (
     <div className="flex w-full flex-col gap-12">
@@ -144,7 +173,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           </div>
 
           {/* 役割 */}
-          <div className="flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4">
+          <div className="flex min-h-10 items-center gap-2 border-b border-border bg-surface-light px-4">
             <Icon
               set="Peoples"
               name="people"
@@ -156,14 +185,16 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
               役割
             </span>
           </div>
-          <div className="relative flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
-            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.role ?? undefined}>
-              {work.role || "—"}
-            </span>
+          <div className="relative flex min-h-10 flex-wrap items-center gap-2 border-b border-border bg-surface-light px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
+            {roles.length > 0 ? (
+              roles.map((r, i) => <Tag key={`${i}-${r}`} variant="tool" filled label={r} />)
+            ) : (
+              <span className="min-w-0 truncate text-body-03-jp text-fg-muted">—</span>
+            )}
           </div>
 
           {/* 関係者 */}
-          <div className="flex h-10 items-center gap-2 bg-surface-light px-4">
+          <div className="flex min-h-10 items-center gap-2 bg-surface-light px-4">
             <Icon
               set="Peoples"
               name="every-user"
@@ -175,10 +206,14 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
               関係者
             </span>
           </div>
-          <div className="relative flex h-10 items-center gap-2 bg-surface-light px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
-            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
-              {work.stakeholder_breakdown || "—"}
-            </span>
+          <div className="relative flex min-h-10 flex-wrap items-center gap-2 bg-surface-light px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
+            {stakeholderTags ? (
+              stakeholderTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
+            ) : (
+              <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
+                {work.stakeholder_breakdown || "—"}
+              </span>
+            )}
             {stakeholders && (
               <button
                 type="button"
@@ -212,20 +247,21 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           {/* Tools（icon_url があればアイコン、無ければテキスト Tag） */}
           {tools.length > 0 && (
             <div className="flex w-full flex-wrap items-center gap-2">
-              {tools.map((t) =>
-                t.icon_url && !brokenIcons[t.name] ? (
-                  <img
-                    key={t.name}
-                    src={t.icon_url}
-                    alt={t.name}
-                    title={t.name}
-                    className="h-4 w-4 shrink-0 object-contain"
-                    onError={() => setBrokenIcons((prev) => ({ ...prev, [t.name]: true }))}
-                  />
+              {tools.map((t) => {
+                const iconSrc = resolveToolIconSrc(t);
+                return iconSrc && !brokenIcons[t.name] ? (
+                  <Tooltip key={t.name} label={t.name}>
+                    <img
+                      src={iconSrc}
+                      alt={t.name}
+                      className="h-4 w-4 shrink-0 object-contain"
+                      onError={() => setBrokenIcons((prev) => ({ ...prev, [t.name]: true }))}
+                    />
+                  </Tooltip>
                 ) : (
                   <Tag key={t.name} label={t.name} variant="small" />
-                )
-              )}
+                );
+              })}
             </div>
           )}
         </div>

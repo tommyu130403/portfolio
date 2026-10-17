@@ -60,7 +60,7 @@ const TOOL_NAME_TO_SLUG: Record<string, string> = {
   "Webpack": "webpack",
 };
 
-function resolveLogoSlug(tool: { name: string; slug?: string | null }): string | null {
+export function resolveLogoSlug(tool: { name: string; slug?: string | null }): string | null {
   const slug = tool.slug || TOOL_NAME_TO_SLUG[tool.name];
   return slug && LOGO_SLUGS.has(slug) ? slug : null;
 }

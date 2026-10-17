@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import ServiceLogo from "@/components/ServiceLogo";
 import Tag from "@/components/Tag";
+import Tooltip from "@/components/Tooltip";
 import Headline from "@/components/Headline";
 import ButtonAction from "@/components/ButtonAction";
 import { ButtonFunction } from "@/components/ButtonFunction";
@@ -49,7 +50,7 @@ const SAMPLE_WORK_DETAIL = {
       body: "本文テキスト Body01。画像ブロックの直前の段落です。\n\n![補足テキスト（キャプション）](https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80){width=320 align=left}\n画像の右に並ぶ本文テキスト。Figma 888:3181 の画像ブロックに相当します。\n\n### 見出し02\n- 箇条書き1\n- 箇条書き2\n\n> 引用テキスト\n\n#### 見出し03\n見出し03配下の本文。\n\n---\n\n::: grid cols=2 gap=4\n左セル\n---\n右セル\n:::\n\n```ts\nconst example = true;\n```",
     },
   ],
-  stakeholder_breakdown: "事業責任者(1) | プロジェクトマネージャー(1) | デザイナー(2) | エンジニア(4)",
+  stakeholder_breakdown: "事業責任者1・プロジェクトマネージャー1・デザイナー2・エンジニア4",
   career_item_id: null,
   sort_order: 0,
   created_at: null,
@@ -909,7 +910,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ tool(border付き・10px #9e9e9e。スキル展開パネルはアイコン前置、WorkCard はアイコンなし)">
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ tool(border付き・10px #9e9e9e。スキル展開パネルはアイコン前置、WorkCard はアイコンなし)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -923,6 +924,18 @@ function ComponentsSection() {
             <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
             <Tag label="GitHub" variant="tool" prefix={<ServiceLogo name="github" className="w-4 h-4 shrink-0 object-contain" />} />
             <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />} />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            <Tag label="デザインリード" variant="tool" filled />
+            <Tag label="エンジニア" variant="tool" filled count={3} />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview title="Tooltip" description="アイコンの下に出る名前ラベル。hover とキーボード focus で表示（Figma 900:9214）。bg-surface・border・10px・white/80。作品詳細の Tools 一覧で使用">
+          <div className="pb-8">
+            <Tooltip label="Figma">
+              <ServiceLogo name="figma" className="h-4 w-4 shrink-0 object-contain" />
+            </Tooltip>
           </div>
         </ComponentPreview>
 

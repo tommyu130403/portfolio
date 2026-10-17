@@ -1,0 +1,49 @@
+{
+  "taken_at": "2026-10-17",
+  "project": "kljlxjlbetaxhtxqzrdc (本番)",
+  "note": "supabase/data/20261017_work_meta_update.sql を流す前の works.role / works.stakeholder_breakdown / work_skills / work_tools の控え",
+  "works": [
+    {"id": "0e986137-1b6c-408c-a99b-d734058fd845", "role": "デザインリード", "stakeholder_breakdown": "PO1・De1・En1"},
+    {"id": "11a52276-96b7-48e2-8275-17648f3247ea", "role": "デザインリード・進行管理", "stakeholder_breakdown": "14名・4組織横断"},
+    {"id": "2de17215-462a-4486-b4de-c9ce3ba90229", "role": "デザインリード", "stakeholder_breakdown": "PO1・PM1・En3・De2"},
+    {"id": "412da8f6-cd0b-4569-b29f-402c8d6470df", "role": "デザインリード", "stakeholder_breakdown": "PO1・PM1・En3・De2"},
+    {"id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "role": "デザインリード", "stakeholder_breakdown": "PO1・PM兼De1・En3・De1"},
+    {"id": "6d8bb338-c19d-4235-8317-196ace01aaf9", "role": "UI/UXデザイナー", "stakeholder_breakdown": "Dir1・De1・En2"},
+    {"id": "723313f5-dd84-4557-a63d-f6a9b92f60f9", "role": "UI/UXデザイナー", "stakeholder_breakdown": "職能横断・キックオフ参加10名"},
+    {"id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "role": "デザインリード兼PM", "stakeholder_breakdown": "PO1・PM兼De1・En3・De1"},
+    {"id": "94734d87-a54f-4588-a521-e9ea414b9ef0", "role": "デザインリード", "stakeholder_breakdown": "PO1・PM兼De1・En3・De1・CS2"},
+    {"id": "ab150f48-3da7-47b6-ba3d-f0b624e8ff29", "role": "デザインリード", "stakeholder_breakdown": null},
+    {"id": "c58ff371-9532-4634-8b7b-938f9d91bbf9", "role": "企画の主担当", "stakeholder_breakdown": "インターン5名・研修5名"}
+  ],
+  "work_skills": [
+    {"work_id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "skill_id": "af5d7fc0-467d-49c9-b65a-d367451d359d", "sort_order": 0},
+    {"work_id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "skill_id": "51576ae2-1228-4897-9b37-80d8c74570e7", "sort_order": 1},
+    {"work_id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "skill_id": "f558330c-e408-4040-b303-5647ed0d456b", "sort_order": 2},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "skill_id": "af5d7fc0-467d-49c9-b65a-d367451d359d", "sort_order": 0},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "skill_id": "6ccaa33b-fd94-4f14-823e-49539ec2022f", "sort_order": 1},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "skill_id": "b281dee0-5bda-4f53-b2fa-21d3f2b4fc96", "sort_order": 2},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "skill_id": "cbe6cd75-e661-490c-a07b-a96af6f2bff7", "sort_order": 3},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "skill_id": "51576ae2-1228-4897-9b37-80d8c74570e7", "sort_order": 4},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "skill_id": "7a7e94f7-a54b-4642-a1f0-392661241cfa", "sort_order": 5},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "skill_id": "f558330c-e408-4040-b303-5647ed0d456b", "sort_order": 6},
+    {"work_id": "ab150f48-3da7-47b6-ba3d-f0b624e8ff29", "skill_id": "af5d7fc0-467d-49c9-b65a-d367451d359d", "sort_order": 0},
+    {"work_id": "ab150f48-3da7-47b6-ba3d-f0b624e8ff29", "skill_id": "51576ae2-1228-4897-9b37-80d8c74570e7", "sort_order": 1}
+  ],
+  "work_tools": [
+    {"work_id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "tool_id": "6a263240-af08-453d-a96e-f8d944c42a33", "sort_order": 0},
+    {"work_id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "tool_id": "884cfcb6-e8de-451e-a9d6-2d37a0c933fe", "sort_order": 1},
+    {"work_id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "tool_id": "3fd5ace4-e86a-4eb1-9d59-1376f81cd847", "sort_order": 2},
+    {"work_id": "65afbbb3-1ba4-40f7-ab1e-538b34c65847", "tool_id": "ccc8c46c-65c6-40f3-9b4b-8ab80e911352", "sort_order": 3},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "ccc8c46c-65c6-40f3-9b4b-8ab80e911352", "sort_order": 0},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "e283310d-7c2b-4154-9a22-9d8b9b0daddf", "sort_order": 1},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "f17f971f-87a5-4a5f-b673-ba53aacad0f3", "sort_order": 2},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "1afbeea7-b82c-4925-9a1f-e8aa0860280a", "sort_order": 3},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "6a263240-af08-453d-a96e-f8d944c42a33", "sort_order": 4},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "884cfcb6-e8de-451e-a9d6-2d37a0c933fe", "sort_order": 5},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "3fd5ace4-e86a-4eb1-9d59-1376f81cd847", "sort_order": 6},
+    {"work_id": "894c880d-8a59-48e0-aebc-eb25c904cb2b", "tool_id": "b98389a9-1056-49b8-b3b6-c8d8bc63f807", "sort_order": 7},
+    {"work_id": "ab150f48-3da7-47b6-ba3d-f0b624e8ff29", "tool_id": "6a263240-af08-453d-a96e-f8d944c42a33", "sort_order": 0},
+    {"work_id": "ab150f48-3da7-47b6-ba3d-f0b624e8ff29", "tool_id": "3e09eff7-5f17-4827-9991-39c10a2b0fe1", "sort_order": 1},
+    {"work_id": "ab150f48-3da7-47b6-ba3d-f0b624e8ff29", "tool_id": "8322b9f5-7b77-4f69-927d-920e6a8216fa", "sort_order": 2}
+  ]
+}

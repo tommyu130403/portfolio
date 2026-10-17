@@ -66,7 +66,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
+    // globals.css の scroll-behavior: smooth を、Next.js が画面切り替え中だけ外せるようにする目印
+    <html lang="ja" data-scroll-behavior="smooth">
       <body
         className={`${afacad.variable} ${mplusOnep.variable} ${notoSansJP.variable} ${geistMono.variable} antialiased`}
       >

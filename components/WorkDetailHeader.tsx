@@ -13,11 +13,14 @@ type Work = Tables<"works">;
 
 export type WorkToolItem = { name: string; icon_url: string | null; slug?: string | null };
 
-/** ツールのアイコン URL を決める。icon_url 優先、無ければスキル欄と同じ判定で public/logos のロゴ、無ければ null */
-const resolveToolIconSrc = (t: WorkToolItem): string | null => {
-  if (t.icon_url) return t.icon_url;
+/**
+ * ツールのアイコン URL を決める。icon_url → スキル欄と同じ判定の public/logos のロゴ の順に、
+ * 読み込みに失敗していない最初のものを返す。どちらも無い / 失敗済みなら null（文字 Tag にする）
+ */
+const resolveToolIconSrc = (t: WorkToolItem, broken: Record<string, boolean>): string | null => {
   const slug = resolveLogoSlug(t);
-  return slug ? `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/${slug}.svg` : null;
+  const candidates = [t.icon_url, slug ? `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/${slug}.svg` : null];
+  return candidates.find((src): src is string => Boolean(src) && !broken[src as string]) ?? null;
 };
 
 /**
@@ -100,7 +103,7 @@ const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void }> = ({ shot
 const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, screenshots }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [vizModal, setVizModal] = useState<"timeline" | "stakeholders" | null>(null);
-  // icon_url が読み込み失敗したツールはテキスト Tag へフォールバックする
+  // 読み込みに失敗したアイコン URL。失敗したら次の候補（手元のロゴ → 文字 Tag）へ進む
   const [brokenIcons, setBrokenIcons] = useState<Record<string, boolean>>({});
   const shots = screenshots.length > 0 ? screenshots : work.thumbnail_url ? [work.thumbnail_url] : [];
   // 「全画面」ボタンで開く構造化ビジュアル（データが無ければボタン自体を非表示）。
@@ -248,14 +251,14 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           {tools.length > 0 && (
             <div className="flex w-full flex-wrap items-center gap-2">
               {tools.map((t) => {
-                const iconSrc = resolveToolIconSrc(t);
-                return iconSrc && !brokenIcons[t.name] ? (
+                const iconSrc = resolveToolIconSrc(t, brokenIcons);
+                return iconSrc ? (
                   <Tooltip key={t.name} label={t.name}>
                     <img
                       src={iconSrc}
                       alt={t.name}
                       className="h-4 w-4 shrink-0 object-contain"
-                      onError={() => setBrokenIcons((prev) => ({ ...prev, [t.name]: true }))}
+                      onError={() => setBrokenIcons((prev) => ({ ...prev, [iconSrc]: true }))}
                     />
                   </Tooltip>
                 ) : (

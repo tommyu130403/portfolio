@@ -1,4 +1,6 @@
-import { type FC, type ReactNode, useId } from "react";
+"use client";
+
+import { type FC, type ReactNode, useId, useRef, useState } from "react";
 
 type TooltipProps = {
   label: string;
@@ -19,18 +21,34 @@ type TooltipProps = {
  */
 const Tooltip: FC<TooltipProps> = ({ label, children, focusable = true, className }) => {
   const id = useId();
+  const tipRef = useRef<HTMLSpanElement>(null);
+  // 画面右端からはみ出すときだけ右端そろえに切り替える（表示された直後に実測する）
+  const [alignRight, setAlignRight] = useState(false);
+  const measure = () =>
+    requestAnimationFrame(() => {
+      const tip = tipRef.current;
+      if (!tip) return;
+      const wrapLeft = tip.parentElement?.getBoundingClientRect().left ?? 0;
+      setAlignRight(wrapLeft + tip.offsetWidth > document.documentElement.clientWidth - 8);
+    });
+
   return (
+    // 名前付き group: 祖先に別の group があっても、この要素の hover / focus だけに反応させる
     <span
-      className={`group relative inline-flex ${className ?? ""}`}
+      className={`group/tooltip relative inline-flex ${className ?? ""}`}
       tabIndex={focusable ? 0 : undefined}
       aria-describedby={id}
+      onMouseEnter={measure}
+      onFocus={measure}
     >
       {children}
-      {/* 下 4px・左端そろえ。hover / focus のときだけ表示 */}
+      {/* 下 4px・左端そろえ（右端ではみ出すときは右端そろえ）。hover / キーボード focus のときだけ表示。
+          focus-within は使わない（マウスでクリックすると focus が残り、離しても出たままになるため） */}
       <span
+        ref={tipRef}
         id={id}
         role="tooltip"
-        className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden whitespace-nowrap rounded-[4px] border border-border bg-surface px-2 py-[6px] font-en text-[10px] leading-none text-white/80 drop-shadow-[1px_1px_8px_rgba(0,0,0,0.25)] group-hover:block group-focus-visible:block group-focus-within:block"
+        className={`pointer-events-none absolute top-full z-10 mt-1 hidden whitespace-nowrap rounded-[4px] border border-border bg-surface px-2 py-[6px] font-en text-[10px] leading-none text-white/80 drop-shadow-[1px_1px_8px_rgba(0,0,0,0.25)] group-hover/tooltip:block group-focus-visible/tooltip:block ${alignRight ? "right-0" : "left-0"}`}
       >
         {label}
       </span>

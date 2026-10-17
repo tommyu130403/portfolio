@@ -23,11 +23,16 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
     const spacing = hasCount ? "gap-[6px] pl-[10px] pr-2" : "gap-[4px] px-[10px]";
     return (
       <div
-        className={`relative flex max-w-full items-center rounded-full py-[6px] shrink-0 ${spacing} ${filled ? "bg-surface" : ""} after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-[''] ${className ?? ""}`}
+        className={`relative flex items-center rounded-full py-[6px] shrink-0 ${spacing} ${filled ? "max-w-full bg-surface" : ""} after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-[''] ${className ?? ""}`}
       >
         {prefix}
-        {/* 容器より長いラベルは省略する（375px 未満で人数バッジが切れないように）。全文の title は作品詳細の filled だけ */}
-        <p className="min-w-0 truncate font-en text-[10px] leading-none text-fg-muted" title={filled ? label : undefined}>{label}</p>
+        {/* filled（作品詳細の役割・関係者）だけ、容器より長いラベルを省略して全文を title で補う
+            （375px 未満で人数バッジが切れないように）。それ以外は従来どおり折り返さず全文を出す */}
+        {filled ? (
+          <p className="min-w-0 truncate font-en text-[10px] leading-none text-fg-muted" title={label}>{label}</p>
+        ) : (
+          <p className="font-en text-[10px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
+        )}
         {hasCount && (
           <span className="flex size-4 shrink-0 items-center justify-center rounded-[8px] bg-surface-light p-0.5 font-en text-[10px] font-bold leading-none text-system-700">
             {count}

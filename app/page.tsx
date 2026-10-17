@@ -60,6 +60,37 @@ export default function Home() {
     fetchData();
   }, []);
 
+  // 別ページから /#works 等で来たとき、Next.js のクライアント遷移はデータ読み込み前の高さで
+  // 位置を決める(または移動しない)ため、経歴・作品・スキルが読み込まれて伸びた分だけずれる。
+  // 読み込みで高さが変わる間はハッシュの位置に合わせ直し、ユーザーが操作したらやめる
+  useEffect(() => {
+    // /#% のような壊れたハッシュで decodeURIComponent が投げるとページ全体が落ちる
+    let id: string;
+    try {
+      id = decodeURIComponent(window.location.hash.slice(1));
+    } catch {
+      return;
+    }
+    if (!id) return;
+
+    // html の scroll-behavior: smooth のままだと合わせ直しのたびにアニメーションが割り込む
+    const align = () =>
+      document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "instant" });
+    const resizeObserver = new ResizeObserver(align);
+    const userEvents = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+    const stop = () => {
+      resizeObserver.disconnect();
+      window.clearTimeout(timer);
+      userEvents.forEach((e) => window.removeEventListener(e, stop));
+    };
+
+    const timer = window.setTimeout(stop, 5000);
+    align();
+    resizeObserver.observe(document.body);
+    userEvents.forEach((e) => window.addEventListener(e, stop, { passive: true }));
+    return stop;
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 

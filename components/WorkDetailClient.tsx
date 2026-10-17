@@ -87,7 +87,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           .order("sort_order"),
         supabase
           .from("work_tools")
-          .select("sort_order, tools_vocab(name, icon_url)")
+          .select("sort_order, tools_vocab(name, icon_url, slug)")
           .eq("work_id", id)
           .order("sort_order"),
       ]);
@@ -109,9 +109,9 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       );
       setTools(
         (toolRows ?? [])
-          .map((r) => r.tools_vocab as { name: string; icon_url: string | null } | null)
-          .filter((t): t is { name: string; icon_url: string | null } => Boolean(t?.name))
-          .map((t) => ({ name: t.name, icon_url: t.icon_url }))
+          .map((r) => r.tools_vocab as WorkToolItem | null)
+          .filter((t): t is WorkToolItem => Boolean(t?.name))
+          .map((t) => ({ name: t.name, icon_url: t.icon_url, slug: t.slug }))
       );
       setLoading(false);
     };

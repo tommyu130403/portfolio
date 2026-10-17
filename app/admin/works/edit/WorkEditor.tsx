@@ -565,11 +565,11 @@ export default function WorkEditor({ workId }: { workId: string }) {
 
             <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>
             <div className="col-span-2">
-              <FieldLabel>体制内訳（例: 事業責任者(1) | PM(1) | デザイナー(2) | エンジニア(4)）</FieldLabel>
+              <FieldLabel>体制内訳（例: 事業責任者1・プロジェクトマネージャー1・デザイナー2・エンジニア4。この形なら人数付きタグで表示）</FieldLabel>
               <Input
                 value={work.stakeholder_breakdown ?? ""}
                 onChange={(v) => setField("stakeholder_breakdown", v || null)}
-                placeholder="事業責任者(1) | PM(1) | デザイナー(2) | エンジニア(4)"
+                placeholder="事業責任者1・プロジェクトマネージャー1・デザイナー2・エンジニア4"
               />
             </div>
 

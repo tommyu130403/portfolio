@@ -18,11 +18,14 @@ type TagProps = {
   count?: number;
 };
 
+/** skill / tool 共通: 内側に枠線を描く疑似要素（枠の色は呼び出し側でリテラルのまま足す。Tailwind が拾えるように） */
+const INNER_RING = "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-['']";
+
 const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suffix, filled, count }) => {
   if (variant === "skill") {
     return (
       <div
-        className={`relative flex max-w-full shrink-0 items-center rounded-full px-[10px] py-[6px] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border-main after:content-[''] ${className ?? ""}`}
+        className={`relative flex max-w-full shrink-0 items-center rounded-full px-[10px] py-[6px] ${INNER_RING} after:border-border-main ${className ?? ""}`}
       >
         {/* 行より長い名前は省略し、全文を title で補う（filled の tool と同じ）。
             truncate の overflow:hidden が leading-none だと g / y の下端を切るため、
@@ -37,7 +40,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suff
     const spacing = hasCount ? "gap-[6px] pl-[10px] pr-2" : "gap-[4px] px-[10px]";
     return (
       <div
-        className={`relative flex items-center rounded-full py-[6px] shrink-0 ${spacing} ${filled ? "max-w-full bg-surface" : ""} after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-[''] ${className ?? ""}`}
+        className={`relative flex items-center rounded-full py-[6px] shrink-0 ${spacing} ${filled ? "max-w-full bg-surface" : ""} ${INNER_RING} after:border-border ${className ?? ""}`}
       >
         {prefix}
         {/* filled（作品詳細の役割・関係者）だけ、容器より長いラベルを省略して全文を title で補う

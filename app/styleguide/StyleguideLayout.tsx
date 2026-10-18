@@ -990,7 +990,7 @@ function ComponentsSection() {
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。タグは Tag skill variant">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。タグは Tag skill variant">
           {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
           <div className="w-[256px] max-w-full">
           <WorkCard
@@ -998,6 +998,7 @@ function ComponentsSection() {
             title="キャリアチケットスカウトサービス"
             tags={["UI Design", "UX Research", "Figma"]}
             image="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80"
+            onClick={() => {}}
           />
           </div>
         </ComponentPreview>

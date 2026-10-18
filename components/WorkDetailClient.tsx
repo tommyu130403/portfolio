@@ -22,7 +22,7 @@ type WorkDetailClientProps = {
 const WorkDetailSkeleton: FC = () => (
   <div role="status" className="flex w-full flex-col gap-12">
     <span className="sr-only">読み込み中…</span>
-    <div className="flex h-11 items-center justify-between">
+    <div className="flex h-14 items-center justify-between">
       <div className="h-4 w-40 motion-safe:animate-pulse rounded bg-system-800" />
       <div className="h-4 w-16 motion-safe:animate-pulse rounded bg-system-800" />
     </div>
@@ -181,13 +181,18 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
     return (
       <>
-        <WorkBreadcrumb
-          title={work.title}
-          index={idx}
-          total={idx < 0 ? 0 : order.length}
-          prevHref={prev ? workHref(prev.id) : undefined}
-          nextHref={next ? workHref(next.id) : undefined}
-        />
+        {/* ヘッダーは上部固定。z-20 は本文中の z-10（FlowchartEmbed の拡大ボタン・Tooltip）より上、
+            WorkVizModal(z-50) / ScreenshotLightbox(z-60) より下。帯の透明部分は後ろの本文を押せるよう
+            pointer-events-none にし、囲み（パンくず・件数）だけ WorkBreadcrumb 側で auto に戻す */}
+        <div className="pointer-events-none sticky top-0 z-20">
+          <WorkBreadcrumb
+            title={work.title}
+            index={idx}
+            total={idx < 0 ? 0 : order.length}
+            prevHref={prev ? workHref(prev.id) : undefined}
+            nextHref={next ? workHref(next.id) : undefined}
+          />
+        </div>
         <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
         <WorkDetailContent work={work} />
 

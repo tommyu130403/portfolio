@@ -3,7 +3,7 @@
 import type { FC } from "react";
 import Link from "next/link";
 import Icon from "./Icon";
-import { BUTTON_FUNCTION } from "@/lib/figma-button-variants";
+import { BUTTON_FUNCTION, BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 
 /** ガイド文字（EN 12px / 行間 1.3 / 字間 0.6px）。WorkPagerCard と共用 */
 export const GUIDE_TEXT = "font-guide text-[12px] leading-[1.3] tracking-[0.6px]";
@@ -44,7 +44,8 @@ const ArrowLink: FC<{ href: string; direction: "left" | "right"; label: string }
       <Icon
         set="Arrows"
         name={direction}
-        className="h-6 w-6 min-h-6 min-w-6 shrink-0 text-fg-muted"
+        tintColor="currentColor"
+        className={`h-6 w-6 min-h-6 min-w-6 shrink-0 ${BUTTON_FUNCTION_ICON}`}
         style={{ minWidth: 24, minHeight: 24 }}
         aria-hidden
       />
@@ -62,23 +63,31 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
   const showCounter = total > 1;
 
   return (
-    <div className="flex min-h-11 min-w-0 items-center justify-between gap-3">
-      <nav aria-label="パンくず" className="flex min-w-0 items-center gap-2">
+    // 高さ 56px。パンくずと「件数＋前後矢印」を、それぞれ半透明＋ぼかしの囲みに入れる
+    // （Library 414:296、Background/Dark-α25 = #212121 の 25%）。後ろを通る本文はぼかして透ける。
+    // 上部固定は呼び出し側（WorkDetailClient）の sticky ラッパーが持つ
+    <div className="flex h-14 min-w-0 items-center justify-between gap-3">
+      <nav
+        aria-label="パンくず"
+        className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-r8 bg-surface/25 backdrop-blur-[2px] md:py-2"
+      >
+        {/* 「Works」は枠なしの Button/Function（文字版・Library 458:442 / md 未満は矢印付き 458:449）。
+            高さ 36px の見た目に対し、当たり判定だけ縦 44px に広げる */}
         <Link
           href="/#works"
-          className="relative flex shrink-0 items-center gap-1 text-system-500 after:absolute after:left-1/2 after:top-1/2 after:h-11 after:w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] transition-colors hover:text-system-white"
+          className={`${BUTTON_FUNCTION.base} ${BUTTON_FUNCTION.border.off} relative px-[6px] text-system-500 hover:text-system-white after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']`}
           aria-label="Works一覧へ戻る"
         >
-          <span className="flex shrink-0 md:hidden" aria-hidden>
+          <span className="flex size-6 shrink-0 items-center justify-center md:hidden" aria-hidden>
             <Icon
               set="Arrows"
               name="left"
               tintColor="currentColor"
-              className="h-2 w-2 shrink-0"
+              className="h-3 w-3 shrink-0"
               aria-hidden
             />
           </span>
-          <span className={GUIDE_TEXT}>Works</span>
+          <span className="pr-2 font-guide text-[14px] leading-[1.3] tracking-[0.42px] md:pr-0">Works</span>
         </Link>
         <span
           className={`hidden ${GUIDE_TEXT} text-border-light md:inline`}
@@ -87,7 +96,7 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
           /
         </span>
         <span
-          className={`hidden min-w-0 truncate ${GUIDE_TEXT} text-fg-caption md:inline`}
+          className="hidden min-w-0 truncate px-2 font-body text-[12px] leading-[1.3] tracking-[0.6px] text-system-white md:inline"
           aria-current="page"
         >
           {title}
@@ -95,11 +104,14 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
       </nav>
 
       {showCounter && (
-        <div className="flex shrink-0 items-center gap-2">
+        // 囲みは行の高さ（56px）いっぱいにし、44px の矢印リンクを中に収める。前後矢印は全幅で出す
+        // （Figma は md 未満を件数のみとしているが、幅に余裕があるため 2026-10-18 にユーザー判断で全幅表示）。
+        // 矢印リンクは見た目(36px)より左右 4px 大きいので、右の余白は pr-1 で見た目 8px に揃える
+        <div className="pointer-events-auto flex shrink-0 items-center gap-2 self-stretch rounded-r8 bg-surface/25 py-0 pl-2 pr-1 backdrop-blur-[2px]">
           <span className={`${GUIDE_TEXT} tabular-nums text-system-500`}>
             <span className="text-system-white">{pad(index + 1)}</span> / {pad(total)}
           </span>
-          <div className="hidden items-center md:flex">
+          <div className="flex items-center">
             {prevHref && <ArrowLink href={prevHref} direction="left" label="前のWork" />}
             {nextHref && <ArrowLink href={nextHref} direction="right" label="次のWork" />}
           </div>

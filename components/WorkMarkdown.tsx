@@ -650,7 +650,9 @@ export const WorkSections: FC<{
   gapClass?: string;
   /** セクション間に横罫線を挿入する */
   withDividers?: boolean;
-}> = ({ sections, headingVariant = "section", layout = "stack", gapClass = "gap-[120px]", withDividers = false }) => (
+  /** aside の 2 列時、左の見出しをスクロール中も上部固定ヘッダー（56px）の直下に貼り付ける（公開ページ用） */
+  stickyHeading?: boolean;
+}> = ({ sections, headingVariant = "section", layout = "stack", gapClass = "gap-[120px]", withDividers = false, stickyHeading = false }) => (
   // aside の2列切替は画面幅ではなく容器幅で判定する（admin の 390px モバイルプレビュー枠でも縦積みにするため。
   // 720px = 画面 768px から左右 px-6 を引いた本文幅。ImageTextRow と同じ @container 方式）
   <div className={`${layout === "aside" ? "@container " : ""}flex flex-col ${gapClass}`}>
@@ -662,7 +664,9 @@ export const WorkSections: FC<{
             <section className="flex w-full flex-col gap-4 @min-[720px]:flex-row">
               {/* 見出しが空でも 2 列時は左列の幅を確保し、本文の左端を他セクションと揃える */}
               {sec.heading ? (
-                <div className="shrink-0 @min-[720px]:w-[160px]">
+                <div
+                  className={`shrink-0 @min-[720px]:w-[160px] ${stickyHeading ? "@min-[720px]:sticky @min-[720px]:top-14 @min-[720px]:self-start" : ""}`}
+                >
                   <Headline title={sec.heading} variant="section-aside" />
                 </div>
               ) : (

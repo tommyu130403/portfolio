@@ -7,7 +7,7 @@
  * Button/Function: Status (default, hover), Border (on, off)
  *
  * Button/Action の実ノード: 15:297（Library）/ Button/Function: 120:395（Library）
- * Figma の hover 背景は rgba(255,255,255,0.02) だが、対応するトークンが無いため Action/hover（白5%）を使っている。2% のトークン化は Figma 側に依頼中。
+ * Figma の hover 背景は rgba(255,255,255,0.02)。Figma 側も変数でなく直値のため、実装も bg-white/[0.02] の直値にしている。
  */
 
 export type ButtonActionType = "primary" | "secondary" | "ghost";
@@ -38,6 +38,9 @@ export const BUTTON_ACTION = {
   },
 } as const;
 
+/** Button/Function 内のアイコン・ラベル文字の色: 通常 System/500、hover で白（Text/Body/Primary・Library 324:293） */
+export const BUTTON_FUNCTION_ICON = "text-system-500 transition-colors group-hover:text-system-white";
+
 export type ButtonFunctionBorder = "on" | "off";
 export type ButtonFunctionStatus = "default" | "hover";
 
@@ -49,10 +52,12 @@ export type ButtonFunctionStatus = "default" | "hover";
  * 見た目を Figma と揃えるため padding は付けず、36px の箱の中央にアイコンを置いている。
  */
 export const BUTTON_FUNCTION = {
-  base: "flex h-[36px] min-w-[36px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] transition-colors",
+  // group: hover 時に中のアイコンを白にする（子に BUTTON_FUNCTION_ICON を付ける）
+  base: "group flex h-[36px] min-w-[36px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] transition-colors",
+  // hover（Library 120:396 / 120:404・2026-10-18）: 背景 白 2%（Figma 側も変数でなく直値）、枠ありは枠を Border/Light に
   border: {
-    on: "border border-border bg-surface hover:bg-action-hover hover:border-border-light",
-    off: "border border-transparent bg-transparent hover:bg-action-hover",
+    on: "border border-border bg-surface hover:bg-white/[0.02] hover:border-border-light",
+    off: "border border-transparent bg-transparent hover:bg-white/[0.02]",
   },
   status: {
     default: "",

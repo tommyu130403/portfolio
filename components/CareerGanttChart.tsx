@@ -28,7 +28,7 @@ const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
-  cardBg: "#292929", // Background/Light
+  cardBg: "#212121", // Background/Default（Figma 770:6652。ページ背景と同色・影なし）
   cardBorder: "#3a3a3a", // Border/Default（System/825）
   cardBorderOpen: "#424242", // Border/Light
   period: "#9e9e9e", // System/500
@@ -51,8 +51,6 @@ const C = {
   gridLine: "#3a3a3a",
   yearText: "#757575", // System/600
   yearCurrent: "#b3ffe7", // Main/050
-  shadowWisper: "0px 1px 3px 0px rgba(0,0,0,0.1)",
-  shadowStrong: "1px 1px 16px 2px rgba(0,0,0,0.25)",
 } as const;
 
 /* 期間文字列を解析（月精度）。
@@ -213,14 +211,13 @@ function CareerCard({
         borderRadius: 10,
         border: `1px solid ${borderColor}`,
         background: C.cardBg,
-        boxShadow: isOpen ? C.shadowStrong : C.shadowWisper,
         padding: "16px 0",
         display: "flex",
         flexDirection: "column",
         cursor: "pointer",
         position: "relative",
         pointerEvents: "auto",
-        transition: "border-color .2s ease, box-shadow .2s ease",
+        transition: "border-color .2s ease",
       }}
     >
       {/* ヘッダー（期間行 + 役職 + 会社）— Figma: gap 6 */}
@@ -273,7 +270,7 @@ function CareerCard({
         </div>
 
         {/* 役職 — Noto Sans JP Bold */}
-        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: "20px", letterSpacing: ".39px", margin: 0, ...clampStyle }}>
+        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: 1.6, letterSpacing: ".39px", margin: 0, ...clampStyle }}>
           {item.role}
         </p>
         {/* 会社 — Noto Sans JP Regular */}
@@ -299,7 +296,7 @@ function CareerCard({
           {hasAccordionContent && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 16px" }}>
               {item.description && (
-                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: "17px", letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
+                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: 1.6, letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
                   {item.description}
                 </p>
               )}

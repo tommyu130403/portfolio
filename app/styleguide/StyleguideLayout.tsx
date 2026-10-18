@@ -6,6 +6,7 @@ import Icon from "@/components/Icon";
 import ServiceLogo from "@/components/ServiceLogo";
 import Tag from "@/components/Tag";
 import Tooltip from "@/components/Tooltip";
+import { TableGrid, TableKeyValue } from "@/components/Table";
 import Headline from "@/components/Headline";
 import ButtonAction from "@/components/ButtonAction";
 import { ButtonFunction } from "@/components/ButtonFunction";
@@ -935,6 +936,33 @@ function ComponentsSection() {
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="デザインリード" variant="tool" filled />
             <Tag label="エンジニア" variant="tool" filled count={3} />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview title="Table" description="本文 markdown に挿入できる表（Library 188:355）。外枠 1px Border・角丸 8px。項目-値（TableKeyValue）はコンテナ幅 480px 以上で横（ラベル列は内容幅・高さ 40px）、480px 未満で縦積み。グリッド（TableGrid）は 1 行目が見出し（12px Bold）・列は等幅。markdown では「| 項目 | 値 |」の行、または 2 行目に「| --- | --- |」を置いた表で書く">
+          <div className="flex w-full max-w-main flex-col gap-6">
+            <TableKeyValue
+              rows={[
+                { label: "期間", value: "2023.04 – 2024.03" },
+                { label: "役割", value: "UI デザイン / フロントエンド実装" },
+                { label: "体制", value: "デザイナー 2 名、エンジニア 4 名" },
+              ]}
+            />
+            <div className="w-[320px] max-w-full">
+              <TableKeyValue
+                rows={[
+                  { label: "期間", value: "2023.04 – 2024.03" },
+                  { label: "役割", value: "UI デザイン / フロントエンド実装" },
+                ]}
+              />
+            </div>
+            <TableGrid
+              header={["見出し1", "見出し2", "見出し3"]}
+              rows={[
+                ["内容", "内容", "内容"],
+                ["内容", "内容", "内容"],
+              ]}
+            />
           </div>
         </ComponentPreview>
 

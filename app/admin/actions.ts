@@ -206,6 +206,7 @@ export async function saveWork(
           stakeholder_breakdown: payload.stakeholder_breakdown ?? null,
           sort_order: payload.sort_order,
           career_item_id: payload.career_item_id ?? null,
+          is_published: payload.is_published ?? true,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
         },
         { onConflict: "id" }

@@ -1262,6 +1262,7 @@ function WorksSection() {
             <div className="flex min-w-0 items-center gap-3">
               <span className="shrink-0 text-[12px] font-medium text-primary">{project.category ?? "—"}</span>
               <span className="truncate text-[14px] text-white">{project.title}</span>
+              {!project.is_published && <span className="shrink-0 rounded border border-border-light px-1.5 py-0.5 text-[10px] text-fg-muted">非公開</span>}
             </div>
             <span className="shrink-0 text-[12px] text-system-700">編集 →</span>
           </Link>

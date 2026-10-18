@@ -89,7 +89,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
         { data: skillRows },
         { data: toolRows },
       ] = await Promise.all([
-        supabase.from("works").select("*").eq("id", id).single(),
+        supabase.from("works").select("*").eq("id", id).eq("is_published", true).single(),
         supabase
           .from("work_skills")
           .select("sort_order, skills_vocab(label)")
@@ -141,6 +141,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
     supabase
       .from("works")
       .select("id, title, category, thumbnail_url")
+      .eq("is_published", true)
       .order("sort_order", { ascending: true })
       .then(({ data, error: orderError }) => {
         if (orderError) console.error("Failed to fetch works order:", orderError);

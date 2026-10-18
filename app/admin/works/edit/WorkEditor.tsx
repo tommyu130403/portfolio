@@ -43,6 +43,7 @@ type Work = Tables<"works">;
 function emptyWork(id: string): Work {
   return {
     id,
+    is_published: true,
     title: "新しいプロジェクト",
     category: null,
     thumbnail_url: null,
@@ -446,6 +447,18 @@ export default function WorkEditor({ workId }: { workId: string }) {
             </div>
 
             <FormGroupHeader>公開・タグ設定（一覧サムネ / スキル / ツール）</FormGroupHeader>
+            <div className="col-span-2">
+              <FieldLabel>公開状態</FieldLabel>
+              <label className="inline-flex items-center gap-2 text-[12px] text-fg-muted">
+                <input
+                  type="checkbox"
+                  className="h-3 w-3 accent-primary"
+                  checked={work.is_published}
+                  onChange={(e) => setField("is_published", e.target.checked)}
+                />
+                公開する（オフにすると公開サイトの一覧・詳細・経歴リンクに出ません）
+              </label>
+            </div>
             <div className="col-span-2">
               <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
               <ImagePickerField

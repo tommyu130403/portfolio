@@ -487,6 +487,7 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
     supabase
       .from("works")
       .select("id, title, career_item_id, sort_order")
+      .eq("is_published", true)
       .order("sort_order", { ascending: true })
       .then(({ data }) => {
         if (!active) return;

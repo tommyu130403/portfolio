@@ -30,6 +30,7 @@ import type { Tables } from "@/src/types/supabase";
 // Works 詳細ページのプレビュー用サンプルデータ
 const SAMPLE_WORK_DETAIL = {
   id: "sample",
+  is_published: true,
   title: "キャリアチケットスカウトサービスの立ち上げ",
   category: "プラットフォーム開発",
   thumbnail_url: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80",

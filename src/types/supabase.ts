@@ -343,6 +343,7 @@ export type Database = {
           hero_brand: string | null
           hero_screenshots: Json | null
           id: string
+          is_published: boolean
           period: string | null
           role: string | null
           sections: Json | null
@@ -361,6 +362,7 @@ export type Database = {
           hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
+          is_published?: boolean
           period?: string | null
           role?: string | null
           sections?: Json | null
@@ -379,6 +381,7 @@ export type Database = {
           hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
+          is_published?: boolean
           period?: string | null
           role?: string | null
           sections?: Json | null

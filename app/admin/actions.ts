@@ -206,6 +206,7 @@ export async function saveWork(
           stakeholder_breakdown: payload.stakeholder_breakdown ?? null,
           sort_order: payload.sort_order,
           career_item_id: payload.career_item_id ?? null,
+          is_published: payload.is_published ?? true,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
         },
         { onConflict: "id" }
@@ -226,6 +227,31 @@ export async function deleteWork(id: string): Promise<{ error: string | null }> 
   try {
     const { error } = await supabase.from("works").delete().eq("id", id);
     if (error) return { error: error.message || error.code || String(error) };
+    return { error: null };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg };
+  }
+}
+
+/**
+ * Works の公開 / 非公開だけを即時更新する（一覧・編集ヘッダーのスイッチ用）
+ * RLS で拒否されるとエラーなしで 0 行更新になるため、更新行が無ければ失敗として返す。
+ */
+export async function setWorkPublished(
+  id: string,
+  isPublished: boolean
+): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from("works")
+      .update({ is_published: isPublished })
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) {
+      return { error: "公開状態を更新できませんでした（権限またはデータが見つかりません）" };
+    }
     return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

@@ -23,7 +23,7 @@ export const WorksList: FC = () => {
       setError(null);
 
       const [{ data, error: fetchError }, { data: workSkillsRows }] = await Promise.all([
-        supabase.from("works").select("*").order("sort_order", { ascending: true }),
+        supabase.from("works").select("*").eq("is_published", true).order("sort_order", { ascending: true }),
         supabase
           .from("work_skills")
           .select("work_id, sort_order, skills_vocab(label)")

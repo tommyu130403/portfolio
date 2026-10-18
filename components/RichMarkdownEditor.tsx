@@ -174,7 +174,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   const [mode, setMode] = useState<Mode>("split");
   const [device, setDevice] = useState<PreviewDevice>("full");
   const taRef = useRef<HTMLTextAreaElement>(null);
-  const [dialog, setDialog] = useState<null | "link" | "image" | "grid">(null);
+  const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table">(null);
   const [linkLabel, setLinkLabel] = useState("");
   // リンクの挿入先。ダイアログ表示中に textarea の選択がブラウザ側で変わっても影響されないよう、ボタン押下時に記録する
   const [linkRange, setLinkRange] = useState({ start: 0, end: 0 });
@@ -277,6 +277,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           />
           <TBtn label="画像" title="画像を挿入（幅 / 配置 / 倍率 / キャプション）" onClick={() => setDialog("image")} />
           <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
+          <TBtn label="表" title="表を挿入（項目-値 / グリッド）" onClick={() => setDialog("table")} />
           {onPickFlowchart && (
             <TBtn
               label="フローチャート"
@@ -375,6 +376,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         <ImageDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} onPickImage={onPickImage} />
       )}
       {dialog === "grid" && <GridDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
+      {dialog === "table" && <TableDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
     </div>
   );
 };
@@ -606,6 +608,73 @@ function GridDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
           </div>
         ))}
       </div>
+    </DialogShell>
+  );
+}
+
+/* ─── 表ダイアログ ───────────────────────────── */
+
+function TableDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md: string) => void }) {
+  const [kind, setKind] = useState<"kv" | "grid">("kv");
+  const [rows, setRows] = useState(3);
+  const [cols, setCols] = useState(3);
+  const submit = () => {
+    if (kind === "kv") {
+      onInsert(`\n${Array.from({ length: rows }, () => "| 期間 | 2023.04 – 2024.03 |").join("\n")}\n`);
+    } else {
+      const header = `| ${Array.from({ length: cols }, (_, i) => `見出し${i + 1}`).join(" | ")} |`;
+      const sep = `| ${Array.from({ length: cols }, () => "---").join(" | ")} |`;
+      const row = `| ${Array.from({ length: cols }, () => "内容").join(" | ")} |`;
+      onInsert(`\n${[header, sep, ...Array.from({ length: rows }, () => row)].join("\n")}\n`);
+    }
+    onClose();
+  };
+  const kindBtn = (value: "kv" | "grid", label: string) => (
+    <button
+      type="button"
+      className={kind === value ? dBtnPrimary : dBtnGhost}
+      onClick={() => setKind(value)}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <DialogShell
+      title="表を挿入"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className={dBtnGhost} onClick={onClose}>キャンセル</button>
+          <button type="button" className={dBtnPrimary} onClick={submit}>挿入</button>
+        </>
+      }
+    >
+      <div>
+        <DLabel>型</DLabel>
+        <div className="mt-1 flex gap-2">
+          {kindBtn("kv", "項目-値")}
+          {kindBtn("grid", "グリッド")}
+        </div>
+      </div>
+      <div>
+        <div className="flex items-center justify-between">
+          <DLabel>行数</DLabel>
+          <span className="text-[12px] text-fg-muted">{rows}</span>
+        </div>
+        <input type="range" min={1} max={10} step={1} value={rows} onChange={(e) => setRows(Number(e.target.value))} className="w-full accent-primary" />
+      </div>
+      {kind === "grid" && (
+        <div>
+          <div className="flex items-center justify-between">
+            <DLabel>列数</DLabel>
+            <span className="text-[12px] text-fg-muted">{cols}</span>
+          </div>
+          <input type="range" min={2} max={6} step={1} value={cols} onChange={(e) => setCols(Number(e.target.value))} className="w-full accent-primary" />
+        </div>
+      )}
+      <p className="text-[11px] text-fg-muted">
+        {kind === "kv" ? "「| 項目 | 値 |」の行を並べます。" : "1 行目が見出し、2 行目の「---」が区切りです（行数は見出しを除く）。"}セル内の「|」は「\|」と書きます
+      </p>
     </DialogShell>
   );
 }

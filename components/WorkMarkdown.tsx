@@ -7,6 +7,7 @@ import {
   type ImageAlign,
 } from "@/lib/image-layout";
 import FlowchartEmbed from "./FlowchartEmbed";
+import { TableGrid, TableKeyValue } from "./Table";
 
 /**
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
@@ -273,7 +274,21 @@ type Block =
   | { type: "hr" }
   | { type: "code"; lang: string; content: string }
   | { type: "flowchart"; id: string }
-  | { type: "grid"; cols: number; gap: number; cells: string[] };
+  | { type: "grid"; cols: number; gap: number; cells: string[] }
+  | { type: "tableKeyValue"; rows: { label: string; value: string }[] }
+  | { type: "tableGrid"; header: string[]; rows: string[][] };
+
+/** pipe table の1行をセルに分ける（先頭末尾の | を除き、\| は文字の | として扱う） */
+function splitTableRow(line: string): string[] {
+  const body = line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "");
+  return body.split(/(?<!\\)\|/).map((c) => c.replace(/\\\|/g, "|").trim());
+}
+
+/** 区切り行（各セルがダッシュ3本以上で、両端に任意の : を付けたもの。例: |---|:--:|） */
+const isTableSeparator = (line: string) => {
+  const cells = splitTableRow(line);
+  return cells.length > 0 && cells.every((c) => /^:?-{3,}:?$/.test(c));
+};
 
 function parseBlocks(src: string): Block[] {
   const lines = src.split("\n");
@@ -287,6 +302,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*\d+\.\s+/.test(line) ||
     /^```/.test(line) ||
     /^:::\s*(grid|timeline|stakeholders|flowchart)\b/.test(line) ||
+    /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
 
@@ -340,6 +356,32 @@ function parseBlocks(src: string): Block[] {
       if (buf.length) cells.push(buf.join("\n").trim());
       i++; // closing :::
       blocks.push({ type: "grid", cols, gap, cells: cells.filter(Boolean) });
+      continue;
+    }
+
+    // 表: 行頭が | の連続行。区切り行あり=グリッド / 区切り行なしで全行2セル=項目-値 / それ以外は段落
+    if (/^\|/.test(line)) {
+      const tableLines: string[] = [];
+      while (i < lines.length && /^\|/.test(lines[i])) {
+        tableLines.push(lines[i].trimEnd());
+        i++;
+      }
+      if (tableLines.length >= 2 && isTableSeparator(tableLines[1])) {
+        const header = splitTableRow(tableLines[0]);
+        const rows = tableLines.slice(2).map((l) => {
+          const cells = splitTableRow(l).slice(0, header.length);
+          while (cells.length < header.length) cells.push("");
+          return cells;
+        });
+        blocks.push({ type: "tableGrid", header, rows });
+      } else {
+        const rows = tableLines.map(splitTableRow);
+        if (!tableLines.some(isTableSeparator) && rows.every((r) => r.length === 2)) {
+          blocks.push({ type: "tableKeyValue", rows: rows.map(([label, value]) => ({ label, value })) });
+        } else {
+          blocks.push({ type: "paragraph", content: tableLines.join("\n") });
+        }
+      }
       continue;
     }
 
@@ -592,6 +634,26 @@ function RenderBlock({
       );
     case "flowchart":
       return <FlowchartEmbed id={block.id} />;
+    case "tableKeyValue":
+      return (
+        <div className="mb-4 mt-10">
+          <TableKeyValue
+            rows={block.rows.map((r, ri) => ({
+              label: renderInline(r.label, `${k}-tl${ri}`),
+              value: renderInline(r.value, `${k}-tv${ri}`),
+            }))}
+          />
+        </div>
+      );
+    case "tableGrid":
+      return (
+        <div className="mb-4 mt-10">
+          <TableGrid
+            header={block.header.map((h, ci) => renderInline(h, `${k}-th${ci}`))}
+            rows={block.rows.map((r, ri) => r.map((c, ci) => renderInline(c, `${k}-tc${ri}-${ci}`)))}
+          />
+        </div>
+      );
     case "grid":
       return (
         <div

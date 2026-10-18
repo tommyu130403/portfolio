@@ -258,7 +258,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
       sections: markdownToSections(markdown),
     };
     const [saveRes, skillsRes, toolsRes] = await Promise.all([
-      saveWork(payload, {}),
+      saveWork(payload),
       saveWorkSkillsByLabels(id, skills),
       saveWorkToolsByNames(id, tools),
     ]);

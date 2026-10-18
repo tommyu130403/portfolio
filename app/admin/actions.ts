@@ -6,17 +6,12 @@ import {
   setWorkTools,
   setExperienceTools,
   setToolIconUrl,
-  listSkillVocab,
-  listToolVocab,
 } from "@/src/lib/skills-tools-client";
 import type { Json, Tables } from "@/src/types/supabase";
 import {
   clearFlowchartCache,
   type FlowchartData,
 } from "@/lib/flowchart";
-
-export type { SkillVocab, ToolVocab } from "@/src/lib/skills-tools-client";
-export { listSkillVocab, listToolVocab };
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
@@ -186,12 +181,10 @@ export async function duplicateFlowchart(id: string): Promise<{
 }
 
 /**
- * Works を 1 件 upsert し、work_skills / work_tools も同期する。
- * skillIds / toolIds が渡された場合は新テーブルで保存。
+ * Works を 1 件 upsert する。
  */
 export async function saveWork(
-  payload: WorkRow,
-  opts?: { skillIds?: string[]; toolIds?: string[] }
+  payload: WorkRow
 ): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase
@@ -218,14 +211,6 @@ export async function saveWork(
         { onConflict: "id" }
       );
     if (error) return { error: error.message || error.code || String(error) };
-
-    // 新テーブルへの保存（skillIds / toolIds が渡された場合）
-    if (opts?.skillIds !== undefined) {
-      await setWorkSkills(payload.id, opts.skillIds);
-    }
-    if (opts?.toolIds !== undefined) {
-      await setWorkTools(payload.id, opts.toolIds);
-    }
 
     return { error: null };
   } catch (e) {
@@ -422,7 +407,7 @@ export async function saveExperienceTools(
   }
 }
 
-// ─── work_skills / work_tools 一括取得 ──────────────────────────────────
+// ─── work_skills / work_tools 保存 ──────────────────────────────────
 
 /**
  * スキルラベル配列からそのまま work_skills を更新する。
@@ -465,36 +450,4 @@ export async function saveWorkToolsByNames(
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
-}
-
-/** 全 Works のスキルラベルを一括取得 { workId → label[] } */
-export async function listAllWorkSkillLabels(): Promise<Record<string, string[]>> {
-  const { data } = await supabase
-    .from("work_skills")
-    .select("work_id, sort_order, skills_vocab(label)")
-    .order("sort_order");
-  const result: Record<string, string[]> = {};
-  for (const row of data ?? []) {
-    const label = (row.skills_vocab as { label: string } | null)?.label;
-    if (!label) continue;
-    if (!result[row.work_id]) result[row.work_id] = [];
-    result[row.work_id].push(label);
-  }
-  return result;
-}
-
-/** 全 Works のツール名を一括取得 { workId → name[] } */
-export async function listAllWorkToolNames(): Promise<Record<string, string[]>> {
-  const { data } = await supabase
-    .from("work_tools")
-    .select("work_id, sort_order, tools_vocab(name)")
-    .order("sort_order");
-  const result: Record<string, string[]> = {};
-  for (const row of data ?? []) {
-    const name = (row.tools_vocab as { name: string } | null)?.name;
-    if (!name) continue;
-    if (!result[row.work_id]) result[row.work_id] = [];
-    result[row.work_id].push(name);
-  }
-  return result;
 }

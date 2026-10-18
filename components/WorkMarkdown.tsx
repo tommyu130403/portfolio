@@ -509,7 +509,7 @@ function RenderBlock({
       );
     case "h2":
       return (
-        <div className="mb-2 mt-8 flex w-full items-center gap-2">
+        <div className="mb-6 mt-10 flex w-full items-center gap-2">
           <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
           <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
             {renderInline(block.content, k)}

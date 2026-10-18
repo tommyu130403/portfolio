@@ -730,7 +730,7 @@ function ComponentPreview({ title, description, children }: {
 
 function MarkdownEditorDemo() {
   const [md, setMd] = useState(
-    "# プロジェクト概要\n\n本文テキストを **太字** や *斜体*、[リンク](https://example.com) 付きで入力できます。\n\n## 見出し01\n\n- 箇条書き\n- 項目",
+    "# プロジェクト概要\n\n本文テキストを **太字** や *斜体*、[リンク](https://example.com) 付きで入力できます。\n\n### 見出し02\n\n- 箇条書き\n- 項目",
   );
   return (
     <div className="w-full">

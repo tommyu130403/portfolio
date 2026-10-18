@@ -25,7 +25,7 @@ import FlowchartEmbed from "./FlowchartEmbed";
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
- *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma 888:3181）
+ *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
  */
 
 /* ------------------------------------------------------------------ *
@@ -65,7 +65,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
           src={layout.base}
           alt={img[1]}
           style={{ width: widthToCss(layout.width), maxWidth: "100%" }}
-          className="my-2 inline-block rounded-[12px] align-top"
+          className="my-2 inline-block rounded-r16 align-top"
         />
       );
       i += img[0].length;
@@ -174,18 +174,17 @@ const ImageFigure: FC<{
   caption?: string;
 }> = ({ url, align, width, scale, caption }) => {
   const cssW = widthToCss(width);
-  const isFloat = align === "left" || align === "right";
   const figStyle: CSSProperties = {
     width: align === "full" ? "100%" : cssW ?? "50%",
     maxWidth: "100%",
     ...(align === "center" ? { marginLeft: "auto", marginRight: "auto" } : {}),
   };
   const floatClass =
-    align === "left" ? "float-left mr-10 mb-2" : align === "right" ? "float-right ml-10 mb-2" : "clear-both my-2";
+    align === "left" ? "float-left mr-10 mb-2" : align === "right" ? "float-right ml-10 mb-2" : "clear-both mt-10 mb-10";
 
   return (
     <figure className={floatClass} style={figStyle}>
-      <div className="overflow-hidden rounded-[12px]">
+      <div className="overflow-hidden rounded-r16">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
@@ -201,13 +200,12 @@ const ImageFigure: FC<{
           {caption}
         </figcaption>
       )}
-      {isFloat ? null : null}
     </figure>
   );
 };
 
 /**
- * align=left の画像＋右列（本文＋キャプション）の横並びブロック（Figma 888:3181）。
+ * align=left の画像＋右列（本文＋キャプション）の横並びブロック（Figma Master 994:5656）。
  * 560px 未満は縦積みにする（@container クエリ）。
  */
 const ImageTextRow: FC<{
@@ -218,11 +216,11 @@ const ImageTextRow: FC<{
   text: string | null;
   keyBase: string;
 }> = ({ url, width, scale, caption, text, keyBase }) => (
-  <div className="@container mt-8 mb-8">
+  <div className="@container mt-10 mb-10">
     <div className="flex flex-col items-start gap-2 @min-[560px]:flex-row @min-[560px]:gap-10">
       <div
         className="min-w-0 shrink overflow-hidden rounded-r16"
-        style={{ width: widthToCss(width) ?? "320px", maxWidth: "100%" }}
+        style={{ width: widthToCss(width) ?? "200px", maxWidth: "100%" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -235,7 +233,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">
+            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-white">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -322,7 +320,10 @@ function parseBlocks(src: string): Block[] {
       let m: RegExpExecArray | null;
       while ((m = re.exec(gridOpen[1])) !== null) {
         if (m[1] === "cols") cols = Math.max(1, parseInt(m[2], 10) || 2);
-        if (m[1] === "gap") gap = parseInt(m[2], 10) || 4;
+        if (m[1] === "gap") {
+          const n = parseInt(m[2], 10);
+          gap = Number.isNaN(n) ? 4 : n;
+        }
       }
       const cells: string[] = [];
       let buf: string[] = [];
@@ -452,7 +453,7 @@ function parseBlocks(src: string): Block[] {
 
 /**
  * align=left の単独画像を直後の段落と束ねて「画像＋右列」の横並びブロックにする
- * （Figma 888:3181）。直後が段落でなければテキスト無しの横並びとして扱う。
+ * （Figma Master 994:5656）。直後が段落でなければテキスト無しの横並びとして扱う。
  */
 function groupImageText(blocks: Block[]): Block[] {
   const out: Block[] = [];

@@ -884,12 +884,12 @@ function ComponentsSection() {
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
-            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 作品詳細では左列の見出し・16px Noto Bold 白。Headline section-aside）</p>
-            <Headline title="見出し01（## / 横線＋Noto Bold 13px gray）" variant="markdown-h1" />
-            <Headline title="見出し02（### / 01 と同形）" variant="markdown-h2" />
-            <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
+            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">見出し01（# / Headline type=01・作品詳細では左列の見出し・16px Noto Bold 白。Headline section-aside）</p>
+            <Headline title="見出し02（### / Headline type=02・横線＋Noto Bold 13px gray）" variant="markdown-h2" />
+            <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
+            <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">旧見出し03（#### / エディタのボタンなし・Avenir Heavy 17px gray）</p>
             <p className="text-[15px] leading-[24px] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
-            <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">Body02（##### / UI「小本文」 / Noto Regular 13px 白）</p>
+            <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">Body02（##### / Noto Regular 13px 白）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
             <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
           </div>

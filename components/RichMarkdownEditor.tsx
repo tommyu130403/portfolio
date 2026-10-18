@@ -242,10 +242,9 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         {/* プレビュー中は入力欄がなく挿入先がないため、挿入系ボタンは出さない */}
         {mode !== "preview" && (
           <>
-          {/* 見出しは Library Headline（305:265）の 2 種のみ: type=01 = セクション / type=02 = 見出02 */}
-          <TBtn label="セクション" title="# セクション見出し（Headline type=01・16px 白）" onClick={() => insertLine("# セクション見出し")} />
+          {/* 見出しは Library Headline（305:265）の 2 種のみ: type=01 = 見出01（#）/ type=02 = 見出02（###） */}
+          <TBtn label="見出01" title="# 見出し01（Headline type=01・16px 白・セクション区切り）" onClick={() => insertLine("# 見出し")} />
           <TBtn label="見出02" title="### 見出し02（Headline type=02・横線＋13px gray）" onClick={() => insertLine("### 見出し")} />
-          <TBtn label="小本文" title="##### 小本文（13px）" onClick={() => insertLine("##### 小本文")} />
           <TSep />
           <TBtn label={<strong>B</strong>} title="太字 (Ctrl+B)" onClick={() => insertAround("**", "**", "太字")} />
           <TBtn label={<em>I</em>} title="斜体 (Ctrl+I)" onClick={() => insertAround("*", "*", "斜体")} />

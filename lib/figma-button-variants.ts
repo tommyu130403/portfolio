@@ -7,7 +7,8 @@
  * Button/Function: Status (default, hover), Border (on, off)
  *
  * Button/Action の実ノード: 15:297（Library）/ Button/Function: 120:395（Library）
- * Figma の hover 背景は rgba(255,255,255,0.02)。Figma 側も変数でなく直値のため、実装も bg-white/[0.02] の直値にしている。
+ * Figma の hover 背景は rgba(255,255,255,0.02)（Figma 側も変数でなく直値）。枠なしは bg-white/[0.02]、
+ * 枠ありは地色に白 2% を混ぜた不透明色（color-mix）にしている（BUTTON_FUNCTION.border.on 参照）。
  */
 
 export type ButtonActionType = "primary" | "secondary" | "ghost";
@@ -56,8 +57,14 @@ export const BUTTON_FUNCTION = {
   base: "group flex h-[36px] min-w-[36px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] transition-colors",
   // hover（Library 120:396 / 120:404・2026-10-18）: 背景 白 2%（Figma 側も変数でなく直値）、枠ありは枠を Border/Light に
   border: {
-    on: "border border-border bg-surface hover:bg-white/[0.02] hover:border-border-light",
+    // 枠ありは通常時が不透明（bg-surface）なので、hover も地色に白 2% を混ぜた不透明色にする。
+    // 白 2% をそのまま重ねると、上部固定ヘッダーで後ろを通る本文がボタン越しに透ける
+    on: "border border-border bg-surface hover:bg-[color-mix(in_srgb,#fff_2%,var(--color-surface))] hover:border-border-light",
     off: "border border-transparent bg-transparent hover:bg-white/[0.02]",
+  },
+  // 押せる範囲（親の Link 等・class "group"）の hover で見た目を変える版。WorkBreadcrumb の 44px 矢印リンク用
+  borderGroupHover: {
+    on: "border border-border bg-surface group-hover:bg-[color-mix(in_srgb,#fff_2%,var(--color-surface))] group-hover:border-border-light",
   },
   status: {
     default: "",

@@ -32,11 +32,12 @@ const ArrowLink: FC<{ href: string; direction: "left" | "right"; label: string }
   direction,
   label,
 }) => (
-  <Link href={href} aria-label={label} className="flex h-11 w-11 items-center justify-center">
+  // hover は 44px のリンク全体で反応させる（group をリンクに付け、見た目の span は group-hover で変える）
+  <Link href={href} aria-label={label} className="group flex h-11 w-11 items-center justify-center">
     <span
       className={[
         BUTTON_FUNCTION.base,
-        BUTTON_FUNCTION.border.on,
+        BUTTON_FUNCTION.borderGroupHover.on,
         BUTTON_FUNCTION.status.default,
         BUTTON_FUNCTION.status.hover,
       ].join(" ")}
@@ -63,10 +64,11 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
   const showCounter = total > 1;
 
   return (
-    // 高さ 56px。パンくずと「件数＋前後矢印」を、それぞれ半透明＋ぼかしの囲みに入れる
+    // 高さは --work-header-h（既定 56px）。パンくずと「件数＋前後矢印」を、それぞれ半透明＋ぼかしの囲みに入れる
     // （Library 414:296、Background/Dark-α25 = #212121 の 25%）。後ろを通る本文はぼかして透ける。
     // 上部固定は呼び出し側（WorkDetailClient）の sticky ラッパーが持つ
-    <div className="flex h-14 min-w-0 items-center justify-between gap-3">
+    // 高さは作品詳細ページの --work-header-h（globals.css）。変数の無い場所（スタイルガイド）は既定値 3.5rem（globals.css と同値）
+    <div className="flex h-[var(--work-header-h,3.5rem)] min-w-0 items-center justify-between gap-3">
       <nav
         aria-label="パンくず"
         className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-r8 bg-surface/25 backdrop-blur-[2px] md:py-2"
@@ -104,7 +106,7 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
       </nav>
 
       {showCounter && (
-        // 囲みは行の高さ（56px）いっぱいにし、44px の矢印リンクを中に収める。前後矢印は全幅で出す
+        // 囲みは行の高さ（--work-header-h）いっぱいにし、44px の矢印リンクを中に収める。前後矢印は全幅で出す
         // （Figma は md 未満を件数のみとしているが、幅に余裕があるため 2026-10-18 にユーザー判断で全幅表示）。
         // 矢印リンクは見た目(36px)より左右 4px 大きいので、右の余白は pr-1 で見た目 8px に揃える
         <div className="pointer-events-auto flex shrink-0 items-center gap-2 self-stretch rounded-r8 bg-surface/25 py-0 pl-2 pr-1 backdrop-blur-[2px]">

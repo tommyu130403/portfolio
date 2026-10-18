@@ -22,7 +22,7 @@ type WorkDetailClientProps = {
 const WorkDetailSkeleton: FC = () => (
   <div role="status" className="flex w-full flex-col gap-12">
     <span className="sr-only">読み込み中…</span>
-    <div className="flex h-14 items-center justify-between">
+    <div className="flex h-[var(--work-header-h)] items-center justify-between">
       <div className="h-4 w-40 motion-safe:animate-pulse rounded bg-system-800" />
       <div className="h-4 w-16 motion-safe:animate-pulse rounded bg-system-800" />
     </div>
@@ -228,7 +228,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   };
 
   return (
-    <div className="relative flex min-h-screen items-start bg-surface text-white">
+    <div data-work-detail className="relative flex min-h-screen items-start bg-surface text-white">
       {/* Side Menu（lg 以上のみ表示） */}
       <div
         className="sticky top-0 shrink-0 z-[2] hidden lg:block"

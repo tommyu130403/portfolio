@@ -167,7 +167,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
               期間
             </span>
           </div>
-          <div className="relative flex h-10 items-center gap-2 border-b border-border px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
+          <div className="relative flex min-h-10 items-center gap-2 border-b border-border px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
             {/* 値が無い行も表として残す。フォールバックは "—" に統一する
                 （旧実装は "タイムライン（RACI）" と出していたが、期間データのように読めてしまう。
                   ボタンが何を開くかは aria-label が担う） */}
@@ -193,7 +193,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           </div>
 
           {/* 役割 */}
-          <div className="flex min-h-10 items-center gap-2 border-b border-border px-4">
+          <div className="flex min-h-10 items-center border-b border-border px-4">
             <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
               役割
             </span>
@@ -207,7 +207,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           </div>
 
           {/* 関係者 */}
-          <div className="flex min-h-10 items-center gap-2 px-4">
+          <div className="flex min-h-10 items-center px-4">
             <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
               関係者
             </span>

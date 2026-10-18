@@ -500,7 +500,7 @@ function RenderBlock({
   switch (block.type) {
     case "h1":
       return (
-        <div className="mb-8 mt-10 flex w-full items-center gap-2">
+        <div className="mb-6 mt-10 flex w-full items-center gap-2">
           <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
           <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
             {renderInline(block.content, k)}
@@ -530,7 +530,7 @@ function RenderBlock({
       );
     case "paragraph":
       return (
-        <p className={`mb-4 ${bodyTypo(bodyLevel)} text-white`}>
+        <p className={`mb-6 ${bodyTypo(bodyLevel)} text-white`}>
           {renderInline(block.content, k)}
         </p>
       );
@@ -644,19 +644,44 @@ export const WorkSections: FC<{
   sections: WorkSection[];
   /** 見出しの体裁: section=34px / markdown-h1=横線＋13px gray（Library Headline 304:302） */
   headingVariant?: "section" | "markdown-h1";
+  /** stack=見出しの下に本文（従来）/ aside=md 以上で左に見出し・右に本文＋セクション間に罫線（Figma 787:9916） */
+  layout?: "stack" | "aside";
   /** セクション間の余白クラス */
   gapClass?: string;
   /** セクション間に横罫線を挿入する */
   withDividers?: boolean;
-}> = ({ sections, headingVariant = "section", gapClass = "gap-[120px]", withDividers = false }) => (
-  <div className={`flex flex-col ${gapClass}`}>
+}> = ({ sections, headingVariant = "section", layout = "stack", gapClass = "gap-[120px]", withDividers = false }) => (
+  // aside の2列切替は画面幅ではなく容器幅で判定する（admin の 390px モバイルプレビュー枠でも縦積みにするため。
+  // 720px = 画面 768px から左右 px-6 を引いた本文幅。ImageTextRow と同じ @container 方式）
+  <div className={`${layout === "aside" ? "@container " : ""}flex flex-col ${gapClass}`}>
     {sections.map((sec, i) => (
       <React.Fragment key={i}>
-        {withDividers && i > 0 && <div className="h-px w-full bg-border-light" aria-hidden />}
-        <section className="flex w-full flex-col gap-8">
-          {sec.heading && <Headline title={sec.heading} variant={headingVariant} />}
-          <MarkdownBody md={sec.md} />
-        </section>
+        {layout === "aside" ? (
+          <>
+            {i > 0 && <div className="h-px w-full bg-border" aria-hidden />}
+            <section className="flex w-full flex-col gap-4 @min-[720px]:flex-row">
+              {/* 見出しが空でも 2 列時は左列の幅を確保し、本文の左端を他セクションと揃える */}
+              {sec.heading ? (
+                <div className="shrink-0 @min-[720px]:w-[160px]">
+                  <Headline title={sec.heading} variant="section-aside" />
+                </div>
+              ) : (
+                <div className="hidden shrink-0 @min-[720px]:block @min-[720px]:w-[160px]" aria-hidden />
+              )}
+              <div className="min-w-0 flex-1">
+                <MarkdownBody md={sec.md} />
+              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            {withDividers && i > 0 && <div className="h-px w-full bg-border-light" aria-hidden />}
+            <section className="flex w-full flex-col gap-8">
+              {sec.heading && <Headline title={sec.heading} variant={headingVariant} />}
+              <MarkdownBody md={sec.md} />
+            </section>
+          </>
+        )}
       </React.Fragment>
     ))}
   </div>
@@ -670,7 +695,8 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   const sections: WorkSection[] = [];
   let current: { heading: string; body: string[] } | null = null;
   const flush = () => {
-    if (current) sections.push({ heading: current.heading, md: current.body.join("\n").trim() });
+    // 見出しも本文も空のセクション（先頭の空行など）は捨てる。残すと先頭に罫線だけが出る
+    if (current && (current.heading || current.body.join("").trim())) sections.push({ heading: current.heading, md: current.body.join("\n").trim() });
   };
   for (const line of md.split("\n")) {
     if (line.startsWith("# ")) {
@@ -685,6 +711,6 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   if (sections.length === 0) {
     return <p className="text-[13px] text-fg-muted">本文がありません</p>;
   }
-  // 公開側（WorkDetailContent）と同じ見出し体裁・セクション間隔で描画する
-  return <WorkSections sections={sections} headingVariant="markdown-h1" gapClass="gap-12" />;
+  // 公開側（WorkDetailContent）と同じ 2 列（見出し左・本文右）・罫線・セクション間隔で描画する
+  return <WorkSections sections={sections} layout="aside" gapClass="gap-12" />;
 };

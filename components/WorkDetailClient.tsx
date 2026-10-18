@@ -30,22 +30,32 @@ const WorkDetailSkeleton: FC = () => (
       <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
       <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
     </div>
-    <div className="flex flex-col gap-2">
-      <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
-    </div>
-    <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
-    <div className="flex gap-2">
-      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
-      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
-      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+    <div className="flex flex-col gap-12">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
+          <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-system-800" />
+          <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+        </div>
+      </div>
+      <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
     </div>
     <div className="h-px bg-border" />
-    <div className="flex flex-col gap-3">
-      <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-4 w-11/12 motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-4 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+    {/* 本文（WorkSections aside）と同じく容器幅 720px で 2 列に切り替える */}
+    <div className="@container">
+      <div className="flex flex-col gap-4 @min-[720px]:flex-row">
+      <div className="h-5 w-24 shrink-0 motion-safe:animate-pulse rounded bg-system-800 @min-[720px]:w-[160px]" />
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-4 w-11/12 motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-4 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+      </div>
+      </div>
     </div>
   </div>
 );

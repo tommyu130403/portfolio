@@ -19,6 +19,8 @@ const CURRENT_YEAR = new Date().getFullYear();
 const CHART_TOTAL = 10; // Figma 770:6432 10列
 const CHART_START = CURRENT_YEAR - (CHART_TOTAL - 1);
 const CHART_YEARS = Array.from({ length: CHART_TOTAL }, (_, i) => CHART_START + i);
+// カードの開閉アニメーションの長さ。閉じる間も行を手前に保つ時間と揃える
+const COLLAPSE_MS = 300;
 
 /* Figma フォント指定（node 770-6652 準拠）
    period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
@@ -288,7 +290,7 @@ function CareerCard({
           maxHeight: isOpen ? 2000 : 0,
           opacity: isOpen ? 1 : 0,
           overflow: "hidden",
-          transition: "max-height .3s ease, opacity .2s ease",
+          transition: `max-height ${COLLAPSE_MS}ms ease, opacity .2s ease`,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 16 }}>
@@ -334,6 +336,7 @@ function CareerRowDesktop({
   onOpenWork,
   isLast,
   isOpen,
+  isClosing,
   onToggle,
 }: {
   item: EnrichedItem;
@@ -341,6 +344,8 @@ function CareerRowDesktop({
   onOpenWork: (workId: string) => void;
   isLast: boolean;
   isOpen: boolean;
+  /** 閉じるアニメーション中。縮み切るまで後ろの行より手前に描く */
+  isClosing: boolean;
   onToggle: () => void;
 }) {
   // バー長 = 期間スパン（CHART_START 以前開始は左端でクランプ）
@@ -361,7 +366,7 @@ function CareerRowDesktop({
         position: "relative",
         width: "100%",
         height: isLast && isOpen ? "auto" : 112,
-        zIndex: isOpen ? 2 : 1,
+        zIndex: isOpen ? 3 : isClosing ? 2 : 1,
         display: "flex",
         flexDirection: "column",
         gap: 11,
@@ -446,6 +451,34 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const isMobile = useIsMobile(728);
   // デスクトップは同時に開けるカードを1枚に制限（別カードを開くと前のカードは閉じる）
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // 閉じている途中のカード（行番号 → 閉じ操作ごとの目印）。閉じた瞬間に z-index を戻すと、
+  // 縮む途中のカードに後ろの行が重なって見える。連打で閉じ途中が重なっても、各行は自分の目印のタイマーでだけ外す
+  const [closing, setClosing] = useState<Record<number, number>>({});
+  const closeSeqRef = useRef(0);
+  const timersRef = useRef(new Set<number>());
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, []);
+  const toggleCard = (i: number) => {
+    if (openIndex !== null) {
+      const idx = openIndex;
+      const seq = ++closeSeqRef.current;
+      setClosing((prev) => ({ ...prev, [idx]: seq }));
+      // transition は次の描画フレームから始まるので、1フレーム分の余裕を足して外す
+      const timer = window.setTimeout(() => {
+        timersRef.current.delete(timer);
+        setClosing((prev) => {
+          if (prev[idx] !== seq) return prev;
+          const next = { ...prev };
+          delete next[idx];
+          return next;
+        });
+      }, COLLAPSE_MS + 50);
+      timersRef.current.add(timer);
+    }
+    setOpenIndex(openIndex === i ? null : i);
+  };
   const rowsRef = useRef<HTMLDivElement>(null);
 
   // career_item_id で works をグルーピング → カード別 Works リンク
@@ -580,7 +613,8 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
                 onOpenWork={handleOpenWork}
                 isLast={i === oldestFirst.length - 1}
                 isOpen={openIndex === i}
-                onToggle={() => setOpenIndex((o) => (o === i ? null : i))}
+                isClosing={closing[i] !== undefined}
+                onToggle={() => toggleCard(i)}
               />
             ))}
           </div>

@@ -49,28 +49,37 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
-
-  const updateTooltipPos = () => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setTooltipPos({
-      top: rect.top - 1,
-      left: rect.left + 36,
-    });
+  // ツールチップの向き: 縦に並ぶ項目（折りたたみ時）は右、横に並ぶ項目（展開時の Social アイコン）は下
+  const placement = collapsed ? "right" : "bottom";
+  // 隠すときに位置も消す（次に出すとき、前回の位置で一瞬描かれないように）
+  const hideTooltip = () => {
+    setShowTooltip(false);
+    setTooltipPos(null);
   };
 
   useEffect(() => {
     if (!(collapsed || iconOnly) || !showTooltip) return;
-    updateTooltipPos();
-    const handle = () => updateTooltipPos();
+    const handle = () => {
+      // 包み div は折りたたみ時に横幅いっぱいなので、ボタン本体の位置で測る
+      const el = wrapperRef.current?.firstElementChild ?? wrapperRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setTooltipPos(
+        placement === "right"
+          ? { top: rect.top + rect.height / 2, left: rect.right + 4 }
+          : { top: rect.bottom + 4, left: rect.left }
+      );
+    };
+    // 初回も次のフレームで測る（effect 内で同期に setState しない）
+    const raf = requestAnimationFrame(handle);
     window.addEventListener("resize", handle);
     window.addEventListener("scroll", handle, true);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("resize", handle);
       window.removeEventListener("scroll", handle, true);
     };
-  }, [collapsed, iconOnly, showTooltip]);
+  }, [collapsed, iconOnly, showTooltip, placement]);
 
   const content = (
     <>
@@ -98,7 +107,11 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
               "text-[14px] leading-[20px] whitespace-nowrap text-white/80",
               "shadow-base",
             ].join(" ")}
-            style={{ top: tooltipPos.top, left: tooltipPos.left }}
+            style={{
+              top: tooltipPos.top,
+              left: tooltipPos.left,
+              transform: placement === "right" ? "translateY(-50%)" : undefined,
+            }}
             role="tooltip"
           >
             {label}
@@ -113,9 +126,9 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
         ref={wrapperRef}
         className={iconOnly ? "relative" : "relative w-full"}
         onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
+        onMouseLeave={hideTooltip}
         onFocusCapture={() => setShowTooltip(true)}
-        onBlurCapture={() => setShowTooltip(false)}
+        onBlurCapture={hideTooltip}
       >
         <Link
           href={href}
@@ -135,9 +148,9 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       ref={wrapperRef}
       className={iconOnly ? "relative" : "relative w-full"}
       onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseLeave={hideTooltip}
       onFocusCapture={() => setShowTooltip(true)}
-      onBlurCapture={() => setShowTooltip(false)}
+      onBlurCapture={hideTooltip}
     >
       <button
         type="button"

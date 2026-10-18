@@ -25,7 +25,7 @@ import FlowchartEmbed from "./FlowchartEmbed";
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
- *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma 888:3181）
+ *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
  */
 
 /* ------------------------------------------------------------------ *
@@ -205,7 +205,7 @@ const ImageFigure: FC<{
 };
 
 /**
- * align=left の画像＋右列（本文＋キャプション）の横並びブロック（Figma 888:3181）。
+ * align=left の画像＋右列（本文＋キャプション）の横並びブロック（Figma Master 994:5656）。
  * 560px 未満は縦積みにする（@container クエリ）。
  */
 const ImageTextRow: FC<{
@@ -453,7 +453,7 @@ function parseBlocks(src: string): Block[] {
 
 /**
  * align=left の単独画像を直後の段落と束ねて「画像＋右列」の横並びブロックにする
- * （Figma 888:3181）。直後が段落でなければテキスト無しの横並びとして扱う。
+ * （Figma Master 994:5656）。直後が段落でなければテキスト無しの横並びとして扱う。
  */
 function groupImageText(blocks: Block[]): Block[] {
   const out: Block[] = [];

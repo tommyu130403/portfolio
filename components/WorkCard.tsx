@@ -40,7 +40,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
         </div>
         <div className="flex flex-wrap gap-1">
           {tags.map((tag) => (
-            <Tag key={tag} label={tag} variant="tool" />
+            <Tag key={tag} label={tag} variant="skill" />
           ))}
         </div>
       </div>

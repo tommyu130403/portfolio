@@ -6,8 +6,8 @@ type TagProps = {
   /**
    * default: 従来の main 系（プロジェクトカード等）
    * small:   Figma Tag/Small（bg black/25・12px white）
-   * skill:   作品詳細のスキルタグ（Figma Master 989:4804・背景なし・border-main 1px・10px main-050・折り返さない）
-   * tool:    Figma Slot-Tool（border付き・グレー文字・16pxアイコン前置。スキル展開パネル用）（Figma Card 内の Tag 実値: border Border/Default・背景なし・px10 py6・10px・System/500）
+   * skill:   作品詳細のスキルタグ（Figma Master 989:4804・背景なし・border-main 1px・10px main-050・折り返さない。WorkCard のタグも同じ（Figma Master 50:174））
+   * tool:    Figma Slot-Tool（border付き・グレー文字・16pxアイコン前置。スキル展開パネル用）
    */
   variant?: "default" | "small" | "tool" | "skill";
   prefix?: ReactNode;

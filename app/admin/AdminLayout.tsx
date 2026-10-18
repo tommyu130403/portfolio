@@ -491,13 +491,14 @@ export function FormGroupHeader({ children }: { children: React.ReactNode }) {
 }
 
 export function Input({
-  value, onChange, placeholder, className = "", list,
+  value, onChange, placeholder, className = "", list, disabled,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   className?: string;
   list?: string;
+  disabled?: boolean;
 }) {
   return (
     <input
@@ -506,7 +507,8 @@ export function Input({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       list={list}
-      className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary ${className}`}
+      disabled={disabled}
+      className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
     />
   );
 }

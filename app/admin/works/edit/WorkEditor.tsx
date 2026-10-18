@@ -418,9 +418,9 @@ export default function WorkEditor({ workId }: { workId: string }) {
                 <span className="text-[12px] text-fg-muted">年</span>
                 <Input className="!w-14" value={period.startMonth} onChange={(v) => { setPeriod((p) => ({ ...p, startMonth: v })); markDirty(); }} placeholder="4" />
                 <span className="text-[12px] text-fg-muted">月 〜</span>
-                <Input className="!w-20" value={period.isCurrent ? "" : period.endYear} onChange={(v) => { setPeriod((p) => ({ ...p, endYear: v })); markDirty(); }} placeholder="2024" />
+                <Input className="!w-20" value={period.isCurrent ? "" : period.endYear} onChange={(v) => { setPeriod((p) => ({ ...p, endYear: v })); markDirty(); }} placeholder="2024" disabled={period.isCurrent} />
                 <span className="text-[12px] text-fg-muted">年</span>
-                <Input className="!w-14" value={period.isCurrent ? "" : period.endMonth} onChange={(v) => { setPeriod((p) => ({ ...p, endMonth: v })); markDirty(); }} placeholder="3" />
+                <Input className="!w-14" value={period.isCurrent ? "" : period.endMonth} onChange={(v) => { setPeriod((p) => ({ ...p, endMonth: v })); markDirty(); }} placeholder="3" disabled={period.isCurrent} />
                 <span className="text-[12px] text-fg-muted">月</span>
                 <label className="ml-2 inline-flex items-center gap-2 text-[12px] text-fg-muted">
                   <input
@@ -620,17 +620,17 @@ const RACI_KEYS: RaciKey[] = ["R", "A", "C", "I"];
  * 新規タイムラインの既定フェーズ一式。
  * ラベル・週数・バー位置は Figma マスター（Master / _Process, W1〜W12）のデフォルト構成に準拠。
  * start/span は各 _ProcessBar の位置・幅（週幅 = 694/12px）から算出。
- * raci/progress は編集前提の中立値（既存「＋フェーズを追加」と同じ）で投入する。
+ * raci は編集前提の中立値（既存「＋フェーズを追加」と同じ）で投入する。
  */
 const DEFAULT_TIMELINE: TimelineData = {
   totalUnits: 12,
   phases: [
-    { label: "UX Research", start: 1, span: 4, raci: ["R"], progress: 0 },
-    { label: "Ideation", start: 1, span: 2, raci: ["R"], progress: 0 },
-    { label: "UI Design", start: 3, span: 5, raci: ["R"], progress: 0 },
-    { label: "Development / FE", start: 7, span: 4, raci: ["R"], progress: 0 },
-    { label: "QA / Launch", start: 9, span: 3, raci: ["R"], progress: 0 },
-    { label: "Optimization", start: 11, span: 2, raci: ["R"], progress: 0 },
+    { label: "UX Research", start: 1, span: 4, raci: ["R"] },
+    { label: "Ideation", start: 1, span: 2, raci: ["R"] },
+    { label: "UI Design", start: 3, span: 5, raci: ["R"] },
+    { label: "Development / FE", start: 7, span: 4, raci: ["R"] },
+    { label: "QA / Launch", start: 9, span: 3, raci: ["R"] },
+    { label: "Optimization", start: 11, span: 2, raci: ["R"] },
   ],
 };
 
@@ -646,11 +646,16 @@ const clampInt = (v: string, min: number): number => {
 function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: TimelineData) => void }) {
   const patch = (i: number, p: Partial<TimelineData["phases"][number]>) =>
     onChange({ ...value, phases: value.phases.map((ph, idx) => (idx === i ? { ...ph, ...p } : ph)) });
+  // 週数は最後のフェーズの終わりより小さくできない（フェーズ側の位置が先に決まっているため）
+  const minUnits = Math.max(1, ...value.phases.map((p) => p.start + p.span - 1));
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <FieldLabel>週数（W1〜）</FieldLabel>
         <Input className="!w-20" value={String(value.totalUnits)} onChange={(v) => onChange({ ...value, totalUnits: clampInt(v, 1) })} />
+        {value.phases.length > 0 && (
+          <span className="text-[11px] text-fg-muted">一番遅く終わるフェーズ（W{minUnits}）より小さくはできません</span>
+        )}
       </div>
       {value.phases.map((ph, i) => (
         <div key={i} className="rounded-[8px] border border-border-light bg-[#161616] p-3">
@@ -660,8 +665,6 @@ function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: 
             <Input className="!w-14" value={String(ph.start)} onChange={(v) => patch(i, { start: clampInt(v, 1) })} />
             <span className="text-[11px] text-fg-muted">期間</span>
             <Input className="!w-14" value={String(ph.span)} onChange={(v) => patch(i, { span: clampInt(v, 1) })} />
-            <span className="text-[11px] text-fg-muted">進捗%</span>
-            <Input className="!w-16" value={ph.progress == null ? "" : String(ph.progress)} onChange={(v) => patch(i, { progress: v === "" ? undefined : Number(v) || 0 })} />
             <span className="ml-1 flex items-center gap-1.5">
               {RACI_KEYS.map((k) => (
                 <label key={k} className="inline-flex items-center gap-0.5 text-[11px] text-fg-muted">
@@ -685,7 +688,7 @@ function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: 
           </div>
         </div>
       ))}
-      <button type="button" className={`${vizBtn} self-start`} onClick={() => onChange({ ...value, phases: [...value.phases, { label: "", start: 1, span: 2, raci: ["R"], progress: 0 }] })}>
+      <button type="button" className={`${vizBtn} self-start`} onClick={() => onChange({ ...value, phases: [...value.phases, { label: "", start: 1, span: 2, raci: ["R"] }] })}>
         ＋ フェーズを追加
       </button>
     </div>

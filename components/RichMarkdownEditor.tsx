@@ -129,7 +129,10 @@ function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; 
   if (device === "full") {
     return (
       <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-surface p-6`}>
-        <WorkMarkdownDocument md={md} />
+        {/* 公開ページと同じ最大幅で表示 */}
+        <div className="mx-auto max-w-main">
+          <WorkMarkdownDocument md={md} />
+        </div>
       </div>
     );
   }
@@ -172,6 +175,9 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   const [device, setDevice] = useState<PreviewDevice>("full");
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [dialog, setDialog] = useState<null | "link" | "image" | "grid">(null);
+  const [linkLabel, setLinkLabel] = useState("");
+  // リンクの挿入先。ダイアログ表示中に textarea の選択がブラウザ側で変わっても影響されないよう、ボタン押下時に記録する
+  const [linkRange, setLinkRange] = useState({ start: 0, end: 0 });
 
   /** 選択範囲を before/after で囲む（未選択時は placeholder を挿入して選択状態にする） */
   const insertAround = useCallback(
@@ -187,6 +193,21 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         ta.focus();
         const pos = start + before.length;
         ta.setSelectionRange(pos, pos + selected.length);
+      });
+    },
+    [value, onChange]
+  );
+
+  /** start〜end を text で置き換え、カーソルを挿入文字の直後へ置く */
+  const replaceRange = useCallback(
+    (text: string, { start, end }: { start: number; end: number }) => {
+      const ta = taRef.current;
+      if (!ta) return;
+      onChange(value.slice(0, start) + text + value.slice(end));
+      requestAnimationFrame(() => {
+        ta.focus();
+        const pos = start + text.length;
+        ta.setSelectionRange(pos, pos);
       });
     },
     [value, onChange]
@@ -218,36 +239,59 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
     >
       {/* ツールバー */}
       <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border-light bg-[#141414] px-3 py-2">
-        <TBtn label="セクション" title="# セクション見出し（横線＋13px gray）" onClick={() => insertLine("# セクション見出し")} />
-        <TBtn label="見出01" title="## 見出し01（横線＋13px gray）" onClick={() => insertLine("## 見出し")} />
-        <TBtn label="見出02" title="### 見出し02（見出し01 と同形）" onClick={() => insertLine("### 見出し")} />
-        <TBtn label="見出03" title="#### 見出し03（17px gray）" onClick={() => insertLine("#### 見出し")} />
-        <TBtn label="小本文" title="##### 小本文（13px）" onClick={() => insertLine("##### 小本文")} />
-        <TSep />
-        <TBtn label={<strong>B</strong>} title="太字 (Ctrl+B)" onClick={() => insertAround("**", "**", "太字")} />
-        <TBtn label={<em>I</em>} title="斜体 (Ctrl+I)" onClick={() => insertAround("*", "*", "斜体")} />
-        <TBtn label={<s>S</s>} title="取り消し線" onClick={() => insertAround("~~", "~~", "取消")} />
-        <TBtn label={<code className="text-[10px]">{"</>"}</code>} title="インラインコード" onClick={() => insertAround("`", "`", "code")} />
-        <TSep />
-        <TBtn label="・リスト" title="箇条書き" onClick={() => insertLine("- 項目")} />
-        <TBtn label="1. リスト" title="番号付きリスト" onClick={() => insertLine("1. 項目")} />
-        <TBtn label="引用" title="> 引用（13px system-400）" onClick={() => insertLine("> 引用文")} />
-        <TBtn label="――" title="区切り線" onClick={() => insertLine("---")} />
-        <TSep />
-        <TBtn label="リンク" title="リンクを挿入" onClick={() => setDialog("link")} />
-        <TBtn label="画像" title="画像を挿入（幅 / 配置 / 倍率 / キャプション）" onClick={() => setDialog("image")} />
-        <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
-        {onPickFlowchart && (
+        {/* プレビュー中は入力欄がなく挿入先がないため、挿入系ボタンは出さない */}
+        {mode !== "preview" && (
+          <>
+          <TBtn label="セクション" title="# セクション見出し（横線＋13px gray）" onClick={() => insertLine("# セクション見出し")} />
+          <TBtn label="見出01" title="## 見出し01（横線＋13px gray）" onClick={() => insertLine("## 見出し")} />
+          <TBtn label="見出02" title="### 見出し02（見出し01 と同形）" onClick={() => insertLine("### 見出し")} />
+          <TBtn label="見出03" title="#### 見出し03（17px gray）" onClick={() => insertLine("#### 見出し")} />
+          <TBtn label="小本文" title="##### 小本文（13px）" onClick={() => insertLine("##### 小本文")} />
+          <TSep />
+          <TBtn label={<strong>B</strong>} title="太字 (Ctrl+B)" onClick={() => insertAround("**", "**", "太字")} />
+          <TBtn label={<em>I</em>} title="斜体 (Ctrl+I)" onClick={() => insertAround("*", "*", "斜体")} />
+          <TBtn label={<s>S</s>} title="取り消し線" onClick={() => insertAround("~~", "~~", "取消")} />
+          <TBtn label={<code className="text-[10px]">{"</>"}</code>} title="インラインコード" onClick={() => insertAround("`", "`", "code")} />
+          <TSep />
+          <TBtn label="・リスト" title="箇条書き" onClick={() => insertLine("- 項目")} />
+          <TBtn label="1. リスト" title="番号付きリスト" onClick={() => insertLine("1. 項目")} />
+          <TBtn label="引用" title="> 引用（13px system-400）" onClick={() => insertLine("> 引用文")} />
+          <TBtn label="――" title="区切り線" onClick={() => insertLine("---")} />
+          <TSep />
           <TBtn
-            label="フローチャート"
-            title="フローチャートを挿入"
-            onClick={async () => {
-              const picked = await onPickFlowchart();
-              if (picked) {
-                insertLine(`::: flowchart id=${picked.id}`);
+            label="リンク"
+            title="リンクを挿入"
+            onClick={() => {
+              const ta = taRef.current;
+              const start = ta?.selectionStart ?? value.length;
+              const end = ta?.selectionEnd ?? value.length;
+              const selected = value.slice(start, end);
+              // リンク記法は1行・角括弧なしでしか解釈されないため、該当する選択は置き換えず末尾への挿入にする
+              if (/[\n\[\]]/.test(selected)) {
+                setLinkRange({ start: end, end });
+                setLinkLabel("");
+              } else {
+                setLinkRange({ start, end });
+                setLinkLabel(selected);
               }
+              setDialog("link");
             }}
           />
+          <TBtn label="画像" title="画像を挿入（幅 / 配置 / 倍率 / キャプション）" onClick={() => setDialog("image")} />
+          <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
+          {onPickFlowchart && (
+            <TBtn
+              label="フローチャート"
+              title="フローチャートを挿入"
+              onClick={async () => {
+                const picked = await onPickFlowchart();
+                if (picked) {
+                  insertLine(`::: flowchart id=${picked.id}`);
+                }
+              }}
+            />
+          )}
+          </>
         )}
 
         {/* デバイス幅切替（プレビュー表示時のみ。Device コレクション = container トークン参照） */}
@@ -328,7 +372,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
       </div>
 
       {/* ダイアログ */}
-      {dialog === "link" && <LinkDialog onClose={() => setDialog(null)} onInsert={(md) => insertAround(md)} />}
+      {dialog === "link" && <LinkDialog initialLabel={linkLabel} onClose={() => setDialog(null)} onInsert={(md) => replaceRange(md, linkRange)} />}
       {dialog === "image" && (
         <ImageDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} onPickImage={onPickImage} />
       )}
@@ -339,8 +383,16 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
 
 /* ─── リンクダイアログ ─────────────────────────────── */
 
-function LinkDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md: string) => void }) {
-  const [label, setLabel] = useState("");
+function LinkDialog({
+  initialLabel,
+  onClose,
+  onInsert,
+}: {
+  initialLabel: string;
+  onClose: () => void;
+  onInsert: (md: string) => void;
+}) {
+  const [label, setLabel] = useState(initialLabel);
   const [url, setUrl] = useState("https://");
   const submit = () => {
     onInsert(`[${label || url}](${url})`);
@@ -463,7 +515,8 @@ function ImageDialog({
           <input
             type="range"
             min={120}
-            max={864}
+            // 本文欄の最大幅（max-w-main 800px − 左見出し 160px − gap 16px）。これより広げても切り詰められるため
+            max={624}
             step={10}
             value={width}
             onChange={(e) => setWidth(Number(e.target.value))}
@@ -488,13 +541,18 @@ function ImageDialog({
       </div>
       {url && (
         <div className="rounded-[8px] border border-border-light bg-[#141414] p-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
-            alt={caption}
+          <div
+            className="mx-auto overflow-hidden rounded-[6px]"
             style={{ width: useWidth ? widthToCss(String(width)) : "100%", maxWidth: "100%" }}
-            className="mx-auto rounded-[6px]"
-          />
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={caption}
+              className="block h-auto w-full"
+              style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "center" } : undefined}
+            />
+          </div>
         </div>
       )}
     </DialogShell>
@@ -536,6 +594,7 @@ function GridDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
         </div>
         <input type="range" min={0} max={10} step={1} value={gap} onChange={(e) => setGap(Number(e.target.value))} className="w-full accent-primary" />
       </div>
+      <p className="text-[11px] text-fg-muted">カラム内で区切り線を引くときは *** を使います（--- はカラムの区切りになります）</p>
       <div
         className="grid rounded-[8px] border border-border-light bg-[#141414] p-3"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: `${gap * 4}px` }}

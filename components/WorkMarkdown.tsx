@@ -174,7 +174,6 @@ const ImageFigure: FC<{
   caption?: string;
 }> = ({ url, align, width, scale, caption }) => {
   const cssW = widthToCss(width);
-  const isFloat = align === "left" || align === "right";
   const figStyle: CSSProperties = {
     width: align === "full" ? "100%" : cssW ?? "50%",
     maxWidth: "100%",
@@ -201,7 +200,6 @@ const ImageFigure: FC<{
           {caption}
         </figcaption>
       )}
-      {isFloat ? null : null}
     </figure>
   );
 };
@@ -322,7 +320,10 @@ function parseBlocks(src: string): Block[] {
       let m: RegExpExecArray | null;
       while ((m = re.exec(gridOpen[1])) !== null) {
         if (m[1] === "cols") cols = Math.max(1, parseInt(m[2], 10) || 2);
-        if (m[1] === "gap") gap = parseInt(m[2], 10) || 4;
+        if (m[1] === "gap") {
+          const n = parseInt(m[2], 10);
+          gap = Number.isNaN(n) ? 4 : n;
+        }
       }
       const cells: string[] = [];
       let buf: string[] = [];

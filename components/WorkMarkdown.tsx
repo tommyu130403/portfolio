@@ -642,13 +642,11 @@ export type WorkSection = { heading: string; md: string };
  */
 export const WorkSections: FC<{
   sections: WorkSection[];
-  /** セクション間の余白クラス */
-  gapClass: string;
-}> = ({ sections, gapClass }) => (
+}> = ({ sections }) => (
   // 容器幅 720px 以上で左に見出し・右に本文、セクション間に罫線（Figma 787:9916）。
   // 2列切替は画面幅ではなく容器幅で判定する（admin の 390px モバイルプレビュー枠でも縦積みにするため。
   // 720px = 画面 768px から左右 px-6 を引いた本文幅。ImageTextRow と同じ @container 方式）
-  <div className={`@container flex flex-col ${gapClass}`}>
+  <div className="@container flex flex-col gap-12">
     {sections.map((sec, i) => (
       <React.Fragment key={i}>
         {i > 0 && <div className="h-px w-full bg-border" aria-hidden />}
@@ -697,5 +695,5 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
     return <p className="text-[13px] text-fg-muted">本文がありません</p>;
   }
   // 公開側（WorkDetailContent）と同じ 2 列（見出し左・本文右）・罫線・セクション間隔で描画する
-  return <WorkSections sections={sections} gapClass="gap-12" />;
+  return <WorkSections sections={sections} />;
 };

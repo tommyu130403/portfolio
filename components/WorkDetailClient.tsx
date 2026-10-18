@@ -45,7 +45,7 @@ const WorkDetailSkeleton: FC = () => (
       <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
     </div>
     <div className="h-px bg-border" />
-    {/* 本文（WorkSections aside）と同じく容器幅 720px で 2 列に切り替える */}
+    {/* 本文（WorkSections）と同じく容器幅 720px で 2 列に切り替える */}
     <div className="@container">
       <div className="flex flex-col gap-4 @min-[720px]:flex-row">
       <div className="h-5 w-24 shrink-0 motion-safe:animate-pulse rounded bg-system-800 @min-[720px]:w-[160px]" />

@@ -26,7 +26,7 @@ const WorkDetailContent: FC<WorkDetailContentProps> = ({ work }) => {
   return (
     <div className="flex w-full flex-col gap-12">
       <div className="h-px w-full bg-border" aria-hidden />
-      <WorkSections sections={sections} gapClass="gap-12" />
+      <WorkSections sections={sections} />
     </div>
   );
 };

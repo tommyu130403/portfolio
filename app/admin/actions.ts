@@ -235,6 +235,31 @@ export async function deleteWork(id: string): Promise<{ error: string | null }> 
 }
 
 /**
+ * Works の公開 / 非公開だけを即時更新する（一覧・編集ヘッダーのスイッチ用）
+ * RLS で拒否されるとエラーなしで 0 行更新になるため、更新行が無ければ失敗として返す。
+ */
+export async function setWorkPublished(
+  id: string,
+  isPublished: boolean
+): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from("works")
+      .update({ is_published: isPublished })
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) {
+      return { error: "公開状態を更新できませんでした（権限またはデータが見つかりません）" };
+    }
+    return { error: null };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: msg };
+  }
+}
+
+/**
  * スキルラベルを skills_vocab に追加（Works から新規入力された場合）
  * 旧: skill_bars への書き込みから移行済み。
  */

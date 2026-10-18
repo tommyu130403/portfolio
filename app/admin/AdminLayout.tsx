@@ -19,6 +19,7 @@ import {
   listFlowcharts,
   deleteFlowchart,
   duplicateFlowchart,
+  setWorkPublished,
 } from "@/app/admin/actions";
 import type {
   FlowchartRow,
@@ -27,6 +28,7 @@ import type {
 import type { Tables } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 import { parseFlowchart } from "@/lib/flowchart";
+import PublishToggle from "./PublishToggle";
 import { NAV_SECTIONS, type AdminSectionId } from "./sections";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -1231,6 +1233,8 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
 function WorksSection() {
   const [projects, setProjects] = useState<Tables<"works">[]>([]);
   const [fetching, setFetching] = useState(true);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [toggleError, setToggleError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -1244,28 +1248,55 @@ function WorksSection() {
     fetchProjects();
   }, []);
 
+  // 公開状態は即時に画面へ反映し、保存に失敗したらその行だけ元へ戻す
+  const handleTogglePublished = async (id: string, next: boolean) => {
+    const setRow = (value: boolean) =>
+      setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, is_published: value } : p)));
+    setRow(next);
+    setPendingIds((prev) => new Set(prev).add(id));
+    setToggleError(null);
+    const { error } = await setWorkPublished(id, next);
+    if (error) {
+      setRow(!next);
+      setToggleError(error);
+    }
+    setPendingIds((prev) => {
+      const rest = new Set(prev);
+      rest.delete(id);
+      return rest;
+    });
+  };
+
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
 
   return (
     <section id="works" className="scroll-mt-8">
       <SectionTitle label="Works" title="制作・企画" />
       <p className="mb-6 text-[13px] text-fg-muted">
-        各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。
+        各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。右のスイッチで公開 / 非公開を切り替えられます（すぐに反映されます）。
       </p>
+      {toggleError && <p className="mb-3 text-[12px] text-danger-300">公開状態の更新に失敗しました: {toggleError}</p>}
       <div className="mb-6 flex flex-col gap-3">
         {projects.map((project) => (
-          <Link
+          <div
             key={project.id}
-            href={`/admin/works/edit?id=${project.id}`}
-            className="flex items-center justify-between rounded-[12px] border border-border-light bg-[#161616] px-5 py-4 transition-colors hover:border-primary"
+            className="flex items-center justify-between gap-4 rounded-[12px] border border-border-light bg-[#161616] px-5 py-4 transition-colors hover:border-primary"
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <Link href={`/admin/works/edit?id=${project.id}`} className="flex min-w-0 flex-1 items-center gap-3">
               <span className="shrink-0 text-[12px] font-medium text-primary">{project.category ?? "—"}</span>
-              <span className="truncate text-[14px] text-white">{project.title}</span>
-              {!project.is_published && <span className="shrink-0 rounded border border-border-light px-1.5 py-0.5 text-[10px] text-fg-muted">非公開</span>}
-            </div>
-            <span className="shrink-0 text-[12px] text-system-700">編集 →</span>
-          </Link>
+              <span className={`truncate text-[14px] ${project.is_published ? "text-white" : "text-fg-muted"}`}>{project.title}</span>
+            </Link>
+            <PublishToggle
+              checked={project.is_published}
+              disabled={pendingIds.has(project.id)}
+              label={project.title}
+              title="オフにすると公開サイトの一覧・詳細・経歴リンクに出ません（すぐに反映されます）"
+              onChange={(next) => handleTogglePublished(project.id, next)}
+            />
+            <Link href={`/admin/works/edit?id=${project.id}`} className="shrink-0 text-[12px] text-system-700">
+              編集 →
+            </Link>
+          </div>
         ))}
         {projects.length === 0 && <p className="text-[13px] text-system-700">プロジェクトがありません</p>}
       </div>

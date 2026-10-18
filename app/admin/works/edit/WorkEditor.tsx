@@ -29,7 +29,9 @@ import {
   saveWorkToolsByNames,
   addToolNameFromWorks,
   saveToolIconUrl,
+  setWorkPublished,
 } from "@/app/admin/actions";
+import PublishToggle from "@/app/admin/PublishToggle";
 import { supabase } from "@/src/lib/supabase";
 import type { Json, Tables } from "@/src/types/supabase";
 
@@ -126,6 +128,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [publishPending, setPublishPending] = useState(false);
 
   // 画像ピッカー（RichMarkdownEditor からは Promise で URL を受け取る）
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -248,6 +251,26 @@ export default function WorkEditor({ workId }: { workId: string }) {
     }, 600);
   };
 
+  // 公開状態は本文の保存とは独立に即時反映する（ツールアイコンと同じ扱い）。
+  // 未保存の新規作品はまだ DB に行が無いので、フォームの値として「保存」時に一緒に送る。
+  const handleTogglePublished = async (next: boolean) => {
+    if (isNew) {
+      setField("is_published", next);
+      return;
+    }
+    if (!work || saving) return;
+    const prev = work.is_published;
+    setWork((p) => (p ? { ...p, is_published: next } : p));
+    setPublishPending(true);
+    setSaveError(null);
+    const { error } = await setWorkPublished(id, next);
+    if (error) {
+      setWork((p) => (p ? { ...p, is_published: prev } : p));
+      setSaveError(error);
+    }
+    setPublishPending(false);
+  };
+
   const handleSave = async () => {
     if (!work) return;
     setSaving(true);
@@ -337,6 +360,13 @@ export default function WorkEditor({ workId }: { workId: string }) {
           placeholder="プロジェクトタイトル"
           className="min-w-0 flex-1 rounded-[8px] border border-transparent bg-transparent px-2 py-1 text-[20px] font-semibold text-white outline-none transition-colors hover:border-border-light focus:border-primary"
         />
+        <PublishToggle
+          checked={work.is_published}
+          disabled={saving || publishPending}
+          onChange={handleTogglePublished}
+          title={isNew ? "新規作品は「保存」を押すと公開状態も保存されます" : "オフにすると公開サイトの一覧・詳細・経歴リンクに出ません（すぐに反映されます）"}
+        />
+        <span className="h-5 w-px shrink-0 bg-border-light" aria-hidden />
         {dirty && <span className="shrink-0 text-[11px] text-[#f4c248]">未保存の変更があります</span>}
         {savedAt && <span className="shrink-0 text-[12px] text-primary">✓ 保存しました</span>}
         {saveError && (
@@ -347,7 +377,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || publishPending}
           className="shrink-0 rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
         >
           {saving ? "保存中…" : "保存"}
@@ -446,19 +476,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
               />
             </div>
 
-            <FormGroupHeader>公開・タグ設定（一覧サムネ / スキル / ツール）</FormGroupHeader>
-            <div className="col-span-2">
-              <FieldLabel>公開状態</FieldLabel>
-              <label className="inline-flex items-center gap-2 text-[12px] text-fg-muted">
-                <input
-                  type="checkbox"
-                  className="h-3 w-3 accent-primary"
-                  checked={work.is_published}
-                  onChange={(e) => setField("is_published", e.target.checked)}
-                />
-                公開する（オフにすると公開サイトの一覧・詳細・経歴リンクに出ません）
-              </label>
-            </div>
+            <FormGroupHeader>一覧・タグ設定（一覧サムネ / スキル / ツール）</FormGroupHeader>
             <div className="col-span-2">
               <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
               <ImagePickerField

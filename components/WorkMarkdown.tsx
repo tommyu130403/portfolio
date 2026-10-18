@@ -65,7 +65,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
           src={layout.base}
           alt={img[1]}
           style={{ width: widthToCss(layout.width), maxWidth: "100%" }}
-          className="my-2 inline-block rounded-[12px] align-top"
+          className="my-2 inline-block rounded-r16 align-top"
         />
       );
       i += img[0].length;
@@ -180,11 +180,11 @@ const ImageFigure: FC<{
     ...(align === "center" ? { marginLeft: "auto", marginRight: "auto" } : {}),
   };
   const floatClass =
-    align === "left" ? "float-left mr-10 mb-2" : align === "right" ? "float-right ml-10 mb-2" : "clear-both my-2";
+    align === "left" ? "float-left mr-10 mb-2" : align === "right" ? "float-right ml-10 mb-2" : "clear-both mt-10 mb-10";
 
   return (
     <figure className={floatClass} style={figStyle}>
-      <div className="overflow-hidden rounded-[12px]">
+      <div className="overflow-hidden rounded-r16">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
@@ -216,11 +216,11 @@ const ImageTextRow: FC<{
   text: string | null;
   keyBase: string;
 }> = ({ url, width, scale, caption, text, keyBase }) => (
-  <div className="@container mt-8 mb-8">
+  <div className="@container mt-10 mb-10">
     <div className="flex flex-col items-start gap-2 @min-[560px]:flex-row @min-[560px]:gap-10">
       <div
         className="min-w-0 shrink overflow-hidden rounded-r16"
-        style={{ width: widthToCss(width) ?? "320px", maxWidth: "100%" }}
+        style={{ width: widthToCss(width) ?? "200px", maxWidth: "100%" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -233,7 +233,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">
+            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-white">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}

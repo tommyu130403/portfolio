@@ -435,7 +435,7 @@ function ImageDialog({
   const [url, setUrl] = useState("");
   const [caption, setCaption] = useState("");
   const [align, setAlign] = useState<ImageAlign>("full");
-  const [width, setWidth] = useState(320);
+  const [width, setWidth] = useState(200);
   const [scale, setScale] = useState(1);
 
   const useWidth = align !== "full";

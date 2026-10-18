@@ -912,7 +912,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ skill(作品詳細のスキル・背景なし・border-main・10px main-050)/ tool(border付き・10px #9e9e9e。スキル展開パネルはアイコン前置、WorkCard はアイコンなし)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ skill(作品詳細のスキル・WorkCard のタグ・背景なし・border-main・10px main-050)/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -990,14 +990,15 @@ function ComponentsSection() {
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 2 列）と同じ 392px を与えている。影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。タグは Tag tool variant">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。タグは Tag skill variant">
           {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
-          <div className="w-[392px] max-w-full">
+          <div className="w-[256px] max-w-full">
           <WorkCard
             category="プラットフォーム開発"
             title="キャリアチケットスカウトサービス"
             tags={["UI Design", "UX Research", "Figma"]}
             image="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80"
+            onClick={() => {}}
           />
           </div>
         </ComponentPreview>

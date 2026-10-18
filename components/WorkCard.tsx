@@ -16,9 +16,11 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
       className={[
         "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[14px]",
         "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-['']",
-        // Figma: 影は内側 _ProjectCard に付くが外側 Card の clip で切れて画面に出ない → 影なし
+        // Figma: 通常時の影は内側 _ProjectCard に付くが外側 Card の clip で切れて画面に出ない → 影なし。
+        // ホバー（Library Card Status=hover）は外側に 背景 Action/hover・枠 Border/Light・影 shadow を付ける。
+        // 影が gap 16px を越えて隣のカードの下に隠れないよう、ホバー中は1段手前に出す
         onClick
-          ? "hover:after:border-system-500 hover:bg-system-800 transition-colors cursor-pointer"
+          ? "hover:z-[1] hover:bg-action-hover hover:after:border-border-light hover:shadow-base transition-[background-color,box-shadow] cursor-pointer"
           : "",
       ].join(" ")}
     >
@@ -40,7 +42,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
         </div>
         <div className="flex flex-wrap gap-1">
           {tags.map((tag) => (
-            <Tag key={tag} label={tag} variant="tool" />
+            <Tag key={tag} label={tag} variant="skill" />
           ))}
         </div>
       </div>

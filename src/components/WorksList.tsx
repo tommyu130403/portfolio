@@ -91,11 +91,11 @@ export const WorksList: FC = () => {
     );
   }
 
-  // Figma (Master 50:174) は本文幅 800px を 2 列（カード 392px・gap 16）で並べる。
-  // 2 列にするのは sm(640px) 以上。それ未満は 1 列。
-  // カード幅は容器に従うので、本文幅 800px のとき Figma と同じ 392px になる。
+  // Figma (Master 50:174) は本文幅 800px を 3 列（カード 256px・gap 16）で並べる。
+  // 1 列 → sm(640px) で 2 列 → xl(1280px) で 3 列。xl の境目はユーザー判断（Skills の 2 列化と同じ）。
+  // カード幅は容器に従うので、本文幅 800px のとき Figma と同じ 256px になる。
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {works.map((work) => (
         <WorkCard
           key={work.id}

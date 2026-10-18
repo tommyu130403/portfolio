@@ -19,6 +19,8 @@ const CURRENT_YEAR = new Date().getFullYear();
 const CHART_TOTAL = 10; // Figma 770:6432 10列
 const CHART_START = CURRENT_YEAR - (CHART_TOTAL - 1);
 const CHART_YEARS = Array.from({ length: CHART_TOTAL }, (_, i) => CHART_START + i);
+// カードの開閉アニメーションの長さ。閉じる間も行を手前に保つ時間と揃える
+const COLLAPSE_MS = 300;
 
 /* Figma フォント指定（node 770-6652 準拠）
    period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
@@ -28,7 +30,7 @@ const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
-  cardBg: "#292929", // Background/Light
+  cardBg: "#212121", // Background/Default（Figma 770:6652。ページ背景と同色・影なし）
   cardBorder: "#3a3a3a", // Border/Default（System/825）
   cardBorderOpen: "#424242", // Border/Light
   period: "#9e9e9e", // System/500
@@ -51,8 +53,6 @@ const C = {
   gridLine: "#3a3a3a",
   yearText: "#757575", // System/600
   yearCurrent: "#b3ffe7", // Main/050
-  shadowWisper: "0px 1px 3px 0px rgba(0,0,0,0.1)",
-  shadowStrong: "1px 1px 16px 2px rgba(0,0,0,0.25)",
 } as const;
 
 /* 期間文字列を解析（月精度）。
@@ -213,14 +213,13 @@ function CareerCard({
         borderRadius: 10,
         border: `1px solid ${borderColor}`,
         background: C.cardBg,
-        boxShadow: isOpen ? C.shadowStrong : C.shadowWisper,
         padding: "16px 0",
         display: "flex",
         flexDirection: "column",
         cursor: "pointer",
         position: "relative",
         pointerEvents: "auto",
-        transition: "border-color .2s ease, box-shadow .2s ease",
+        transition: "border-color .2s ease",
       }}
     >
       {/* ヘッダー（期間行 + 役職 + 会社）— Figma: gap 6 */}
@@ -273,7 +272,7 @@ function CareerCard({
         </div>
 
         {/* 役職 — Noto Sans JP Bold */}
-        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: "20px", letterSpacing: ".39px", margin: 0, ...clampStyle }}>
+        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: 1.6, letterSpacing: ".39px", margin: 0, ...clampStyle }}>
           {item.role}
         </p>
         {/* 会社 — Noto Sans JP Regular */}
@@ -291,7 +290,7 @@ function CareerCard({
           maxHeight: isOpen ? 2000 : 0,
           opacity: isOpen ? 1 : 0,
           overflow: "hidden",
-          transition: "max-height .3s ease, opacity .2s ease",
+          transition: `max-height ${COLLAPSE_MS}ms ease, opacity .2s ease`,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 16 }}>
@@ -299,7 +298,7 @@ function CareerCard({
           {hasAccordionContent && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 16px" }}>
               {item.description && (
-                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: "17px", letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
+                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: 1.6, letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
                   {item.description}
                 </p>
               )}
@@ -337,6 +336,7 @@ function CareerRowDesktop({
   onOpenWork,
   isLast,
   isOpen,
+  isClosing,
   onToggle,
 }: {
   item: EnrichedItem;
@@ -344,6 +344,8 @@ function CareerRowDesktop({
   onOpenWork: (workId: string) => void;
   isLast: boolean;
   isOpen: boolean;
+  /** 閉じるアニメーション中。縮み切るまで後ろの行より手前に描く */
+  isClosing: boolean;
   onToggle: () => void;
 }) {
   // バー長 = 期間スパン（CHART_START 以前開始は左端でクランプ）
@@ -364,7 +366,7 @@ function CareerRowDesktop({
         position: "relative",
         width: "100%",
         height: isLast && isOpen ? "auto" : 112,
-        zIndex: isOpen ? 2 : 1,
+        zIndex: isOpen ? 3 : isClosing ? 2 : 1,
         display: "flex",
         flexDirection: "column",
         gap: 11,
@@ -449,6 +451,34 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const isMobile = useIsMobile(728);
   // デスクトップは同時に開けるカードを1枚に制限（別カードを開くと前のカードは閉じる）
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // 閉じている途中のカード（行番号 → 閉じ操作ごとの目印）。閉じた瞬間に z-index を戻すと、
+  // 縮む途中のカードに後ろの行が重なって見える。連打で閉じ途中が重なっても、各行は自分の目印のタイマーでだけ外す
+  const [closing, setClosing] = useState<Record<number, number>>({});
+  const closeSeqRef = useRef(0);
+  const timersRef = useRef(new Set<number>());
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, []);
+  const toggleCard = (i: number) => {
+    if (openIndex !== null) {
+      const idx = openIndex;
+      const seq = ++closeSeqRef.current;
+      setClosing((prev) => ({ ...prev, [idx]: seq }));
+      // transition は次の描画フレームから始まるので、1フレーム分の余裕を足して外す
+      const timer = window.setTimeout(() => {
+        timersRef.current.delete(timer);
+        setClosing((prev) => {
+          if (prev[idx] !== seq) return prev;
+          const next = { ...prev };
+          delete next[idx];
+          return next;
+        });
+      }, COLLAPSE_MS + 50);
+      timersRef.current.add(timer);
+    }
+    setOpenIndex(openIndex === i ? null : i);
+  };
   const rowsRef = useRef<HTMLDivElement>(null);
 
   // career_item_id で works をグルーピング → カード別 Works リンク
@@ -583,7 +613,8 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
                 onOpenWork={handleOpenWork}
                 isLast={i === oldestFirst.length - 1}
                 isOpen={openIndex === i}
-                onToggle={() => setOpenIndex((o) => (o === i ? null : i))}
+                isClosing={closing[i] !== undefined}
+                onToggle={() => toggleCard(i)}
               />
             ))}
           </div>

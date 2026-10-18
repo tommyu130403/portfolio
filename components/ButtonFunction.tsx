@@ -2,7 +2,7 @@
 
 import type { FC, ReactNode } from "react";
 import Icon from "./Icon";
-import { BUTTON_FUNCTION, type ButtonFunctionBorder } from "@/lib/figma-button-variants";
+import { BUTTON_FUNCTION, BUTTON_FUNCTION_ICON, type ButtonFunctionBorder } from "@/lib/figma-button-variants";
 
 type ButtonFunctionProps = {
   /** アイコン向き（children 指定時は不要） */
@@ -34,7 +34,8 @@ export const ButtonFunction: FC<ButtonFunctionProps> = ({
       <Icon
         set="Arrows"
         name={direction}
-        className="h-6 w-6 min-h-6 min-w-6 shrink-0 text-fg-muted"
+        tintColor="currentColor"
+        className={`h-6 w-6 min-h-6 min-w-6 shrink-0 ${BUTTON_FUNCTION_ICON}`}
         style={{ minWidth: 24, minHeight: 24 }}
         aria-hidden
       />

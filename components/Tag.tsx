@@ -6,9 +6,10 @@ type TagProps = {
   /**
    * default: 従来の main 系（プロジェクトカード等）
    * small:   Figma Tag/Small（bg black/25・12px white）
+   * skill:   作品詳細のスキルタグ（Figma Master 989:4804・背景なし・border-main 1px・10px main-050・折り返さない）
    * tool:    Figma Slot-Tool（border付き・グレー文字・16pxアイコン前置。スキル展開パネル用）（Figma Card 内の Tag 実値: border Border/Default・背景なし・px10 py6・10px・System/500）
    */
-  variant?: "default" | "small" | "tool";
+  variant?: "default" | "small" | "tool" | "skill";
   prefix?: ReactNode;
   suffix?: ReactNode;
   /** tool のみ: 背景を bg-surface で塗る（Figma 900:9214 の役割・関係者タグ。未指定は背景なし） */
@@ -18,6 +19,19 @@ type TagProps = {
 };
 
 const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suffix, filled, count }) => {
+  if (variant === "skill") {
+    return (
+      <div
+        className={`relative flex max-w-full shrink-0 items-center rounded-full px-[10px] py-[6px] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border-main after:content-[''] ${className ?? ""}`}
+      >
+        {/* 行より長い名前は省略し、全文を title で補う（filled の tool と同じ）。
+            truncate の overflow:hidden が leading-none だと g / y の下端を切るため、
+            行を 14px に広げて -my-[2px] で相殺し、タグの高さ 22px（Figma）を保つ */}
+        <p className="-my-[2px] min-w-0 truncate font-en text-[10px] leading-[14px] text-main-050" title={label}>{label}</p>
+      </div>
+    );
+  }
+
   if (variant === "tool") {
     const hasCount = count !== undefined;
     const spacing = hasCount ? "gap-[6px] pl-[10px] pr-2" : "gap-[4px] px-[10px]";

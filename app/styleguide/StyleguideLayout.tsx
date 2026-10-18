@@ -9,6 +9,7 @@ import Tooltip from "@/components/Tooltip";
 import Headline from "@/components/Headline";
 import ButtonAction from "@/components/ButtonAction";
 import { ButtonFunction } from "@/components/ButtonFunction";
+import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 import TabBar from "@/components/TabBar";
 import HistoryItem from "@/components/HistoryItem";
 import WorkCard from "@/components/WorkCard";
@@ -878,11 +879,12 @@ function ComponentsSection() {
           <div className="w-full"><Headline title="見出し 01（Headline 13px Bold・横線つき）" variant="markdown-h1" /></div>
           <div className="w-full"><Headline title="見出し 02（01 と同形・Library 304:302）" variant="markdown-h2" /></div>
           <div className="w-full"><Headline title="見出し 03（17px gray・Figma に対応なし）" variant="markdown-h3" /></div>
+          <div className="w-[160px]"><Headline title="背景と課題（section-aside・16px Bold 白。作品詳細の左列見出し）" variant="section-aside" /></div>
         </ComponentPreview>
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
-            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 34px Avenir Heavy 白）</p>
+            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">Section（# / 作品詳細では左列の見出し・16px Noto Bold 白。Headline section-aside）</p>
             <Headline title="見出し01（## / 横線＋Noto Bold 13px gray）" variant="markdown-h1" />
             <Headline title="見出し02（### / 01 と同形）" variant="markdown-h2" />
             <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">見出し03（#### / Avenir Heavy 17px gray）</p>
@@ -900,17 +902,17 @@ function ComponentsSection() {
           <ButtonAction label="With Icon" type="primary" iconRight={{ set: "Arrows", name: "right" }} />
         </ComponentPreview>
 
-        <ComponentPreview title="ButtonFunction" description="アイコンのみのアクションボタン。Border on / off バリアント">
+        <ComponentPreview title="ButtonFunction" description="アイコンのみのアクションボタン。Border on / off バリアント。hover で背景 白 2%・アイコンとラベル文字が白、Border on は枠が Border/Light（Library 120:395）">
           <ButtonFunction direction="left"  border="on"  aria-label="Left border-on" />
           <ButtonFunction direction="right" border="on"  aria-label="Right border-on" />
           <ButtonFunction direction="left"  border="off" aria-label="Left border-off" />
           <ButtonFunction direction="right" border="off" aria-label="Right border-off" />
           <ButtonFunction border="on" aria-label="Custom icon">
-            <Icon set="Base" name="home" className="h-5 w-5" />
+            <Icon set="Base" name="home" tintColor="currentColor" className={`h-5 w-5 ${BUTTON_FUNCTION_ICON}`} />
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ tool(border付き・10px #9e9e9e。スキル展開パネルはアイコン前置、WorkCard はアイコンなし)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ skill(作品詳細のスキル・背景なし・border-main・10px main-050)/ tool(border付き・10px #9e9e9e。スキル展開パネルはアイコン前置、WorkCard はアイコンなし)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -919,6 +921,10 @@ function ComponentsSection() {
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="UI Design" variant="small" />
             <Tag label="UX Research" variant="small" />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            <Tag label="UI Design" variant="skill" />
+            <Tag label="UX Research" variant="skill" />
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
@@ -1072,7 +1078,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailHeader"
-          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック / カテゴリ・タイトル / メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)/ Skills・Tools"
+          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック / カテゴリ・タイトル / Skills・Tools(タイトル直下の1行)/ メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)"
         >
           <div className="rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailHeader
@@ -1086,7 +1092,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkBreadcrumb"
-          description="作品詳細の先頭ヘッダー（Figma 787:9918）。md 以上は「Works / 作品名」＋件数＋前後矢印、md 未満は「‹ Works」＋件数のみ。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
+          description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずと件数＋前後矢印を半透明（Figma Background/Dark-α25 = bg-surface/25）＋ぼかしの囲みに入れる。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」、md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={2} total={8} prevHref="#" nextHref="#" />
@@ -1116,7 +1122,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。見出し01 + 本文 markdown のセクションを gap 48 で並べる。横罫線は上部ブロックとの境界に 1 本だけ（Figma 900:9189）。align=left の画像は画像 320・角丸 16＋右列（本文 13px → キャプション、gap 8）。見出し02→本文 8 / 本文→見出し02 32"
+          description="Works 詳細ページの本文（800px カラム）。セクションは左に見出し（160px・16px Bold 白）・右に本文 markdown の 2 列（Figma 787:9916。容器幅 720px 未満は縦積み）。2 列時、左の見出しはスクロール中も上部固定ヘッダーの直下（top 56px）に貼り付く。上部ブロックとの境界とセクション間に横罫線を引き、罫線の上下は 48px。align=left の画像は画像 320・角丸 16＋右列（本文 13px → キャプション、gap 8）。見出し02→本文 8 / 本文→見出し02 32"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

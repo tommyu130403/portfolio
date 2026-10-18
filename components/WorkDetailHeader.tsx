@@ -124,33 +124,50 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
         </div>
       )}
 
-      {/* カテゴリ + タイトル + メタ表 + Skills/Tools */}
-      <div className="flex w-full flex-col gap-6">
-        <div className="flex w-full flex-col gap-2 [word-break:break-word]">
-          {work.category && <p className="text-body-02-en text-primary">{work.category}</p>}
-          <p className="text-title-pj text-white">{work.title}</p>
+      {/* カテゴリ + タイトル + Skills/Tools（gap-6）→ メタ表（48px 空け） */}
+      <div className="flex w-full flex-col gap-12">
+        <div className="flex w-full flex-col gap-6">
+          <div className="flex w-full flex-col gap-4 [word-break:break-word]">
+            {work.category && <p className="text-body-01-jp text-primary">{work.category}</p>}
+            <p className="text-title-pj text-white">{work.title}</p>
+          </div>
+
+          {/* Skills → Tools を 1 行で並べる（Tools は icon_url があればアイコン、無ければ文字 Tag） */}
+          {(skills.length > 0 || tools.length > 0) && (
+            <div className="flex w-full flex-wrap items-center gap-2">
+              {skills.map((s) => (
+                <Tag key={s} label={s} variant="skill" />
+              ))}
+              {tools.map((t) => {
+                const iconSrc = resolveToolIconSrc(t, brokenIcons);
+                return iconSrc ? (
+                  <Tooltip key={t.name} label={t.name}>
+                    <img
+                      src={iconSrc}
+                      alt={t.name}
+                      className="h-4 w-4 shrink-0 object-contain"
+                      onError={() => setBrokenIcons((prev) => ({ ...prev, [iconSrc]: true }))}
+                    />
+                  </Tooltip>
+                ) : (
+                  <Tag key={t.name} label={t.name} variant="small" />
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* メタ表。ラベル列の下限は Figma（902:9343）の 93px。
-            93px 固定にすると、ブラウザの既定フォントサイズを上げたとき
-            アイコン(h-4)・gap(gap-2)・padding(px-4) だけが rem で拡大して
-            ラベル文字(12px 固定)が収まらなくなり、「関係者」が仕切り線を越える
-            （root 24px で実測）。minmax にして下限だけ固定する。 */}
-        <div className="grid w-full grid-cols-[minmax(93px,auto)_minmax(0,1fr)] overflow-hidden rounded-r8 border border-border">
+        {/* メタ表（Figma 787:9916）。列比は 1fr : 4fr（Figma 0.25fr : 1fr）。
+            ラベル列の下限は max-content にして、ブラウザの既定フォントサイズを上げても
+            ラベル文字（12px 固定）が仕切り線を越えないようにする（root 24px で「関係者」が越えた実績）。 */}
+        <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] overflow-hidden rounded-r8 border border-border">
           {/* 期間 */}
-          <div className="flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4">
-            <Icon
-              set="Time"
-              name="calendar-three"
-              className="h-4 w-4 shrink-0"
-              tintColor="var(--color-system-500)"
-              aria-hidden
-            />
-            <span className="text-[12px] font-bold leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
+          <div className="flex min-h-10 items-center border-b border-border px-4">
+            <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
               期間
             </span>
           </div>
-          <div className="relative flex h-10 items-center gap-2 border-b border-border bg-surface-light px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
+          <div className="relative flex h-10 items-center gap-2 border-b border-border px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
             {/* 値が無い行も表として残す。フォールバックは "—" に統一する
                 （旧実装は "タイムライン（RACI）" と出していたが、期間データのように読めてしまう。
                   ボタンが何を開くかは aria-label が担う） */}
@@ -176,19 +193,12 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           </div>
 
           {/* 役割 */}
-          <div className="flex min-h-10 items-center gap-2 border-b border-border bg-surface-light px-4">
-            <Icon
-              set="Peoples"
-              name="people"
-              className="h-4 w-4 shrink-0"
-              tintColor="var(--color-system-500)"
-              aria-hidden
-            />
-            <span className="text-[12px] font-bold leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
+          <div className="flex min-h-10 items-center gap-2 border-b border-border px-4">
+            <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
               役割
             </span>
           </div>
-          <div className="relative flex min-h-10 flex-wrap items-center gap-2 border-b border-border bg-surface-light px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
+          <div className="relative flex min-h-10 flex-wrap items-center gap-2 border-b border-border px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
             {roles.length > 0 ? (
               roles.map((r, i) => <Tag key={`${i}-${r}`} variant="tool" filled label={r} />)
             ) : (
@@ -197,19 +207,12 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
           </div>
 
           {/* 関係者 */}
-          <div className="flex min-h-10 items-center gap-2 bg-surface-light px-4">
-            <Icon
-              set="Peoples"
-              name="every-user"
-              className="h-4 w-4 shrink-0"
-              tintColor="var(--color-system-500)"
-              aria-hidden
-            />
-            <span className="text-[12px] font-bold leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
+          <div className="flex min-h-10 items-center gap-2 px-4">
+            <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
               関係者
             </span>
           </div>
-          <div className="relative flex min-h-10 flex-wrap items-center gap-2 bg-surface-light px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
+          <div className="relative flex min-h-10 flex-wrap items-center gap-2 px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
             {stakeholderTags ? (
               stakeholderTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
             ) : (
@@ -234,39 +237,6 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
               </button>
             )}
           </div>
-        </div>
-
-        {/* Skills / Tools */}
-        <div className="flex w-full flex-col gap-4">
-          {/* Skills */}
-          {skills.length > 0 && (
-            <div className="flex w-full flex-wrap items-start gap-2">
-              {skills.map((s) => (
-                <Tag key={s} label={s} variant="tool" />
-              ))}
-            </div>
-          )}
-
-          {/* Tools（icon_url があればアイコン、無ければテキスト Tag） */}
-          {tools.length > 0 && (
-            <div className="flex w-full flex-wrap items-center gap-2">
-              {tools.map((t) => {
-                const iconSrc = resolveToolIconSrc(t, brokenIcons);
-                return iconSrc ? (
-                  <Tooltip key={t.name} label={t.name}>
-                    <img
-                      src={iconSrc}
-                      alt={t.name}
-                      className="h-4 w-4 shrink-0 object-contain"
-                      onError={() => setBrokenIcons((prev) => ({ ...prev, [iconSrc]: true }))}
-                    />
-                  </Tooltip>
-                ) : (
-                  <Tag key={t.name} label={t.name} variant="small" />
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
 

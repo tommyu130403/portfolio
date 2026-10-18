@@ -22,7 +22,7 @@ type WorkDetailClientProps = {
 const WorkDetailSkeleton: FC = () => (
   <div role="status" className="flex w-full flex-col gap-12">
     <span className="sr-only">読み込み中…</span>
-    <div className="flex h-11 items-center justify-between">
+    <div className="flex h-[var(--work-header-h)] items-center justify-between">
       <div className="h-4 w-40 motion-safe:animate-pulse rounded bg-system-800" />
       <div className="h-4 w-16 motion-safe:animate-pulse rounded bg-system-800" />
     </div>
@@ -30,22 +30,32 @@ const WorkDetailSkeleton: FC = () => (
       <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
       <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
     </div>
-    <div className="flex flex-col gap-2">
-      <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
-    </div>
-    <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
-    <div className="flex gap-2">
-      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
-      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
-      <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+    <div className="flex flex-col gap-12">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
+          <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-system-800" />
+          <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+        </div>
+      </div>
+      <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
     </div>
     <div className="h-px bg-border" />
-    <div className="flex flex-col gap-3">
-      <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-4 w-11/12 motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-4 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+    {/* 本文（WorkSections aside）と同じく容器幅 720px で 2 列に切り替える */}
+    <div className="@container">
+      <div className="flex flex-col gap-4 @min-[720px]:flex-row">
+      <div className="h-5 w-24 shrink-0 motion-safe:animate-pulse rounded bg-system-800 @min-[720px]:w-[160px]" />
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-4 w-11/12 motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-4 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+      </div>
+      </div>
     </div>
   </div>
 );
@@ -171,13 +181,18 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
     return (
       <>
-        <WorkBreadcrumb
-          title={work.title}
-          index={idx}
-          total={idx < 0 ? 0 : order.length}
-          prevHref={prev ? workHref(prev.id) : undefined}
-          nextHref={next ? workHref(next.id) : undefined}
-        />
+        {/* ヘッダーは上部固定。z-20 は本文中の z-10（FlowchartEmbed の拡大ボタン・Tooltip）より上、
+            WorkVizModal(z-50) / ScreenshotLightbox(z-60) より下。帯の透明部分は後ろの本文を押せるよう
+            pointer-events-none にし、囲み（パンくず・件数）だけ WorkBreadcrumb 側で auto に戻す */}
+        <div className="pointer-events-none sticky top-0 z-20">
+          <WorkBreadcrumb
+            title={work.title}
+            index={idx}
+            total={idx < 0 ? 0 : order.length}
+            prevHref={prev ? workHref(prev.id) : undefined}
+            nextHref={next ? workHref(next.id) : undefined}
+          />
+        </div>
         <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
         <WorkDetailContent work={work} />
 
@@ -213,7 +228,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   };
 
   return (
-    <div className="relative flex min-h-screen items-start bg-surface text-white">
+    <div data-work-detail className="relative flex min-h-screen items-start bg-surface text-white">
       {/* Side Menu（lg 以上のみ表示） */}
       <div
         className="sticky top-0 shrink-0 z-[2] hidden lg:block"

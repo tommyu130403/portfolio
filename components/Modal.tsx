@@ -2,6 +2,7 @@
 
 import { type FC, type ReactNode, useEffect, useRef } from "react";
 import { ButtonFunction } from "./ButtonFunction";
+import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 import Icon from "./Icon";
 
 type ModalProps = {
@@ -164,7 +165,7 @@ const Modal: FC<ModalProps> = ({
               onClick={onClose}
               aria-label="Close"
             >
-              <Icon set="Character" name="close" alt="" aria-hidden className="h-6 w-6 shrink-0" />
+              <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${BUTTON_FUNCTION_ICON}`} />
             </ButtonFunction>
           </div>
         </div>

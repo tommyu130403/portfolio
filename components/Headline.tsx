@@ -10,9 +10,10 @@ type HeadlineProps = {
    * - default: ページ上部のセクション見出し（JP サブ + Title/EN 38px Avenir Heavy。Figma SectionTitle 836:3312）
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
+   * - section-aside: 作品詳細の左列見出し（Figma Master 994:4821・16px Noto Sans JP Bold 白）。幅は親が指定する
    * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（h1・h2 は Library 304:302 の Headline 1種類。03 は Figma に無い）
    */
-  variant?: "default" | "sub" | "section" | "markdown-h1" | "markdown-h2" | "markdown-h3";
+  variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2" | "markdown-h3";
 };
 
 const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
@@ -30,6 +31,15 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   if (variant === "section") {
     return (
       <p className="font-en w-full text-[34px] font-extrabold leading-[1.2] text-white [word-break:break-word]">
+        {title}
+      </p>
+    );
+  }
+
+  // Figma Master 994:4821: 作品詳細の左列見出し（16px Bold・lh1.5・tracking 0.8px・白）
+  if (variant === "section-aside") {
+    return (
+      <p className="w-full text-[16px] font-bold leading-[1.5] tracking-[0.8px] text-white [word-break:break-word]">
         {title}
       </p>
     );

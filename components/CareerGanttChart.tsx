@@ -106,16 +106,16 @@ function formatPeriod(period: string): string {
     .replace(/\s*[-–−~〜]\s*/g, " - ");
 }
 
-function useIsMobile(bp: number) {
-  // useSyncExternalStore で matchMedia を購読（SSR は desktop=false を返す）。
+function useMediaQuery(query: string) {
+  // useSyncExternalStore で matchMedia を購読（SSR は false を返す）。
   // effect 内同期 setState を避けつつ、ハイドレーション後に正しい値へ同期する。
   return useSyncExternalStore(
     (onChange) => {
-      const mq = window.matchMedia(`(max-width: ${bp - 1}px)`);
+      const mq = window.matchMedia(query);
       mq.addEventListener("change", onChange);
       return () => mq.removeEventListener("change", onChange);
     },
-    () => window.matchMedia(`(max-width: ${bp - 1}px)`).matches,
+    () => window.matchMedia(query).matches,
     () => false
   );
 }
@@ -194,7 +194,8 @@ function CareerCard({
   works: WorkLink[];
   onOpenWork: (workId: string) => void;
   isOpen: boolean;
-  onToggle: () => void;
+  /** 省略時はクリックで開閉しない（マウス操作のデスクトップはホバーで開閉する） */
+  onToggle?: () => void;
 }) {
   const isCurrent = item.isCurrent;
   const borderColor = isOpen ? C.cardBorderOpen : C.cardBorder;
@@ -216,7 +217,7 @@ function CareerCard({
         padding: "16px 0",
         display: "flex",
         flexDirection: "column",
-        cursor: "pointer",
+        cursor: onToggle ? "pointer" : "default",
         position: "relative",
         pointerEvents: "auto",
         transition: "border-color .2s ease",
@@ -337,7 +338,9 @@ function CareerRowDesktop({
   isLast,
   isOpen,
   isClosing,
+  canHover,
   onToggle,
+  onHoverChange,
 }: {
   item: EnrichedItem;
   works: WorkLink[];
@@ -346,7 +349,10 @@ function CareerRowDesktop({
   isOpen: boolean;
   /** 閉じるアニメーション中。縮み切るまで後ろの行より手前に描く */
   isClosing: boolean;
+  /** マウス操作の端末か。true ならカードはホバーで開閉し、クリックでは開閉しない */
+  canHover: boolean;
   onToggle: () => void;
+  onHoverChange: (hovered: boolean) => void;
 }) {
   // バー長 = 期間スパン（CHART_START 以前開始は左端でクランプ）
   const s = Math.max(0, Math.min(CHART_TOTAL, item.startVal));
@@ -387,6 +393,8 @@ function CareerRowDesktop({
         <div
           data-career-card=""
           data-open={isOpen ? "" : undefined}
+          onMouseEnter={canHover ? () => onHoverChange(true) : undefined}
+          onMouseLeave={canHover ? () => onHoverChange(false) : undefined}
           style={{
             flex: "0 0 auto",
             width: "max-content",
@@ -397,7 +405,7 @@ function CareerRowDesktop({
             boxSizing: "border-box",
           }}
         >
-          <CareerCard item={item} works={works} onOpenWork={onOpenWork} isOpen={isOpen} onToggle={onToggle} />
+          <CareerCard item={item} works={works} onOpenWork={onOpenWork} isOpen={isOpen} onToggle={canHover ? undefined : onToggle} />
         </div>
       </div>
     </div>
@@ -448,7 +456,9 @@ function CareerItemMobile({
    ────────────────────────────────────────────────────────────────────────── */
 export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const [worksByCareer, setWorksByCareer] = useState<Record<string, WorkLink[]>>({});
-  const isMobile = useIsMobile(728);
+  const isMobile = useMediaQuery("(max-width: 727px)");
+  // マウス操作の端末だけホバーで開閉する（タッチのタブレット等はタップで開閉）
+  const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
   // デスクトップは同時に開けるカードを1枚に制限（別カードを開くと前のカードは閉じる）
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   // 閉じている途中のカード（行番号 → 閉じ操作ごとの目印）。閉じた瞬間に z-index を戻すと、
@@ -460,7 +470,8 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
     const timers = timersRef.current;
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, []);
-  const toggleCard = (i: number) => {
+  const changeOpen = (next: number | null) => {
+    if (next === openIndex) return;
     if (openIndex !== null) {
       const idx = openIndex;
       const seq = ++closeSeqRef.current;
@@ -477,7 +488,7 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
       }, COLLAPSE_MS + 50);
       timersRef.current.add(timer);
     }
-    setOpenIndex(openIndex === i ? null : i);
+    setOpenIndex(next);
   };
   const rowsRef = useRef<HTMLDivElement>(null);
 
@@ -615,7 +626,12 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
                 isLast={i === oldestFirst.length - 1}
                 isOpen={openIndex === i}
                 isClosing={closing[i] !== undefined}
-                onToggle={() => toggleCard(i)}
+                canHover={canHover}
+                onToggle={() => changeOpen(openIndex === i ? null : i)}
+                onHoverChange={(hovered) => {
+                  if (hovered) changeOpen(i);
+                  else if (openIndex === i) changeOpen(null);
+                }}
               />
             ))}
           </div>

@@ -1,12 +1,12 @@
 import type { CSSProperties, FC, ReactNode } from "react";
-import React from "react";
+import React, { useMemo } from "react";
 import Headline from "./Headline";
 import {
   parseImageAttrs,
   widthToCss,
   type ImageAlign,
 } from "@/lib/image-layout";
-import FlowchartEmbed from "./FlowchartEmbed";
+import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
 import { TableGrid, TableKeyValue } from "./Table";
 
 /**
@@ -705,33 +705,54 @@ export type WorkSection = { heading: string; md: string };
  */
 export const WorkSections: FC<{
   sections: WorkSection[];
-}> = ({ sections }) => (
+}> = ({ sections }) => {
+  // 本文全体で登場順にフローチャートへ Fig. 番号を振る（同じ id は最初の番号を使う）
+  const figureNumbers = useMemo(() => {
+    const map = new Map<string, number>();
+    // MarkdownBody と同じ解析結果をたどる（コードブロック内や分割行は数えず、grid のセルは再帰して数える）
+    const collect = (md: string) => {
+      for (const block of parseBlocks(md)) {
+        if (block.type === "flowchart") {
+          if (!map.has(block.id)) map.set(block.id, map.size + 1);
+        } else if (block.type === "grid") {
+          block.cells.forEach(collect);
+        }
+      }
+    };
+    sections.forEach((sec) => collect(sec.md));
+    return map;
+  }, [sections]);
+
   // 容器幅 720px 以上で左に見出し・右に本文、セクション間に罫線（Figma 787:9916）。
   // 2列切替は画面幅ではなく容器幅で判定する（admin の 390px モバイルプレビュー枠でも縦積みにするため。
   // 720px = 画面 768px から左右 px-6 を引いた本文幅。ImageTextRow と同じ @container 方式）
-  <div className="@container flex flex-col gap-12">
-    {sections.map((sec, i) => (
-      <React.Fragment key={i}>
-        {i > 0 && <div className="h-px w-full bg-border" aria-hidden />}
-        <section className="flex w-full flex-col gap-4 @min-[720px]:flex-row">
-          {/* 見出しが空でも 2 列時は左列の幅を確保し、本文の左端を他セクションと揃える */}
-          {sec.heading ? (
-            // 2 列時は上部固定ヘッダーの直下に貼り付く。--work-header-h は作品詳細ページでだけ定義される
-            // （globals.css）ため、スタイルガイド・admin プレビューでは top が auto になり貼り付かない
-            <div className="shrink-0 @min-[720px]:sticky @min-[720px]:top-[var(--work-header-h)] @min-[720px]:w-[160px] @min-[720px]:self-start">
-              <Headline title={sec.heading} variant="section-aside" />
+  return (
+    <FlowchartFigureContext.Provider value={figureNumbers}>
+      <div className="@container flex flex-col gap-12">
+      {sections.map((sec, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <div className="h-px w-full bg-border" aria-hidden />}
+          <section className="flex w-full flex-col gap-4 @min-[720px]:flex-row">
+            {/* 見出しが空でも 2 列時は左列の幅を確保し、本文の左端を他セクションと揃える */}
+            {sec.heading ? (
+              // 2 列時は上部固定ヘッダーの直下に貼り付く。--work-header-h は作品詳細ページでだけ定義される
+              // （globals.css）ため、スタイルガイド・admin プレビューでは top が auto になり貼り付かない
+              <div className="shrink-0 @min-[720px]:sticky @min-[720px]:top-[var(--work-header-h)] @min-[720px]:w-[160px] @min-[720px]:self-start">
+                <Headline title={sec.heading} variant="section-aside" />
+              </div>
+            ) : (
+              <div className="hidden shrink-0 @min-[720px]:block @min-[720px]:w-[160px]" aria-hidden />
+            )}
+            <div className="min-w-0 flex-1">
+              <MarkdownBody md={sec.md} />
             </div>
-          ) : (
-            <div className="hidden shrink-0 @min-[720px]:block @min-[720px]:w-[160px]" aria-hidden />
-          )}
-          <div className="min-w-0 flex-1">
-            <MarkdownBody md={sec.md} />
-          </div>
-        </section>
-      </React.Fragment>
-    ))}
-  </div>
-);
+          </section>
+        </React.Fragment>
+      ))}
+      </div>
+    </FlowchartFigureContext.Provider>
+  );
+};
 
 /**
  * `# 見出し` でセクション分割された markdown ドキュメント全体を描画する

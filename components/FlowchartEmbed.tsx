@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import { fetchFlowchart, type FlowchartData } from "@/lib/flowchart";
+import { createContext, useContext, useEffect, useState } from "react";
+import { fetchFlowchartRecord, type FlowchartRecord } from "@/lib/flowchart";
+import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
+import { ButtonFunction } from "./ButtonFunction";
 import Modal from "./Modal";
 
 const FlowchartView = dynamic(() => import("./FlowchartView"), {
@@ -10,18 +12,25 @@ const FlowchartView = dynamic(() => import("./FlowchartView"), {
   loading: () => <div className="h-full w-full animate-pulse bg-white/[0.03]" />,
 });
 
+/** 作品本文内のフローチャート id → Fig. 番号（1 始まり）。未提供なら番号なし */
+export const FlowchartFigureContext = createContext<ReadonlyMap<
+  string,
+  number
+> | null>(null);
+
 export default function FlowchartEmbed({ id }: { id: string }) {
   const [result, setResult] = useState<{
     id: string;
-    data: FlowchartData | null;
+    record: FlowchartRecord | null;
   } | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const figureNumbers = useContext(FlowchartFigureContext);
 
   useEffect(() => {
     let active = true;
-    fetchFlowchart(id).then((next) => {
+    fetchFlowchartRecord(id).then((next) => {
       if (!active) return;
-      setResult({ id, data: next });
+      setResult({ id, record: next });
     });
     return () => {
       active = false;
@@ -29,12 +38,12 @@ export default function FlowchartEmbed({ id }: { id: string }) {
   }, [id]);
 
   const loading = result?.id !== id;
-  const data = result?.id === id ? result.data : null;
+  const record = result?.id === id ? result.record : null;
 
   if (loading) {
     return (
       <div
-        className="mb-4 h-[clamp(260px,50vh,420px)] animate-pulse rounded-[14px] bg-[#1a1a1a] p-2"
+        className="mb-4 h-[clamp(260px,50vh,420px)] animate-pulse rounded-[14px] border border-border bg-[#1a1a1a] p-2"
         aria-label="フローチャートを読み込み中"
       >
         <div className="h-full rounded-[10px] bg-white/[0.03]" />
@@ -42,7 +51,7 @@ export default function FlowchartEmbed({ id }: { id: string }) {
     );
   }
 
-  if (!data) {
+  if (!record) {
     return (
       <div className="mb-4 flex h-[clamp(260px,50vh,420px)] items-center justify-center rounded-[14px] border border-dashed border-border-light bg-[#1a1a1a] p-6">
         <p className="text-[13px] tracking-[0.39px] text-fg-muted">
@@ -52,27 +61,50 @@ export default function FlowchartEmbed({ id }: { id: string }) {
     );
   }
 
+  const { data } = record;
+  const title = record.title.trim();
+  const figureNumber = figureNumbers?.get(id);
+
   return (
-    <>
-      <div className="relative mb-4 h-[clamp(260px,50vh,420px)] max-w-full overflow-hidden rounded-[14px] bg-[#1a1a1a] p-2">
+    <figure className="mb-4 flex flex-col gap-3">
+      <div className="relative h-[clamp(260px,50vh,420px)] max-w-full overflow-hidden rounded-[14px] border border-border bg-[#1a1a1a] p-2">
         <FlowchartView data={data} onRequestExpand={() => setExpanded(true)} />
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border-light bg-[#0a0a0a]/90 text-white transition-colors hover:border-main-100 hover:text-main-100"
-          aria-label="フローチャートを拡大"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-            <path
-              d="M6 3H3v3m7-3h3v3M6 13H3v-3m7 3h3v-3"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        <div className="absolute right-4 top-4 z-10">
+          <ButtonFunction
+            border="on"
+            aria-label="フローチャートを拡大"
+            onClick={() => setExpanded(true)}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={BUTTON_FUNCTION_ICON}
+              aria-hidden
+            >
+              <path
+                d="M6 3H3v3m7-3h3v3M6 13H3v-3m7 3h3v-3"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </ButtonFunction>
+        </div>
       </div>
+
+      {title && (
+        <figcaption className="flex gap-3 text-[13px] tracking-[0.39px] text-fg-muted">
+          {figureNumber !== undefined && (
+            <span className="font-mono text-[12px] text-system-700">
+              Fig.{String(figureNumber).padStart(2, "0")}
+            </span>
+          )}
+          {title}
+        </figcaption>
+      )}
 
       {expanded && (
         <Modal onClose={() => setExpanded(false)}>
@@ -81,6 +113,6 @@ export default function FlowchartEmbed({ id }: { id: string }) {
           </div>
         </Modal>
       )}
-    </>
+    </figure>
   );
 }

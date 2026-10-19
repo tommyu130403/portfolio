@@ -246,6 +246,19 @@ export function parseFlowchart(raw: unknown): FlowchartData | null {
   return { nodes, edges };
 }
 
+/** エッジラベルの見た目（閲覧側 toReactFlow とエディタで共通） */
+export const FLOWCHART_EDGE_LABEL_PROPS = {
+  labelStyle: {
+    fill: "#9E9E9E",
+    fontSize: 13,
+    fontFamily: "var(--font-afacad), sans-serif",
+  },
+  labelShowBg: true,
+  labelBgStyle: { fill: "#1A1A1A" },
+  labelBgPadding: [6, 0] as [number, number],
+  labelBgBorderRadius: 0,
+};
+
 export function toReactFlow(data: FlowchartData): {
   nodes: ReactFlowNode[];
   edges: ReactFlowEdge[];
@@ -288,6 +301,7 @@ export function toReactFlow(data: FlowchartData): {
       sourceHandle: edge.sourceHandle ?? "bottom",
       targetHandle: edge.targetHandle ?? "top",
       label: edge.label,
+      ...FLOWCHART_EDGE_LABEL_PROPS,
       type: "grid",
       style: {
         stroke: "#616161",
@@ -382,9 +396,11 @@ export const DEFAULT_FLOWCHART: FlowchartData = {
   ],
 };
 
+export type FlowchartRecord = { data: FlowchartData; title: string };
+
 const flowchartFetchCache = new Map<
   string,
-  Promise<FlowchartData | null>
+  Promise<FlowchartRecord | null>
 >();
 
 export function clearFlowchartCache(id?: string) {
@@ -392,7 +408,9 @@ export function clearFlowchartCache(id?: string) {
   else flowchartFetchCache.clear();
 }
 
-export function fetchFlowchart(id: string): Promise<FlowchartData | null> {
+export function fetchFlowchartRecord(
+  id: string,
+): Promise<FlowchartRecord | null> {
   const cached = flowchartFetchCache.get(id);
   if (cached) return cached;
 
@@ -400,7 +418,7 @@ export function fetchFlowchart(id: string): Promise<FlowchartData | null> {
     try {
       const { data, error } = await supabase
         .from("flowcharts")
-        .select("data")
+        .select("data, title")
         .eq("id", id)
         .maybeSingle();
       if (error) {
@@ -408,7 +426,12 @@ export function fetchFlowchart(id: string): Promise<FlowchartData | null> {
         return null;
       }
       if (!data) return null;
-      return parseFlowchart(data.data);
+      const parsed = parseFlowchart(data.data);
+      if (!parsed) return null;
+      return {
+        data: parsed,
+        title: typeof data.title === "string" ? data.title : "",
+      };
     } catch {
       flowchartFetchCache.delete(id);
       return null;
@@ -417,4 +440,10 @@ export function fetchFlowchart(id: string): Promise<FlowchartData | null> {
 
   flowchartFetchCache.set(id, request);
   return request;
+}
+
+export async function fetchFlowchart(
+  id: string,
+): Promise<FlowchartData | null> {
+  return (await fetchFlowchartRecord(id))?.data ?? null;
 }

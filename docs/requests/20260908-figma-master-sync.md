@@ -115,7 +115,7 @@ Figma Radius コレクションは 2 / 4 / 8 / 16 / 40 / 80 の 6 値。実装�
 | TabBar / _TabBarItem | `components/TabBar.tsx` | 外枠 rounded 8 bg white5% / item h40 px24 gap12 14px tracking 0.7px / active: border-border-light bg white5% 600 white / inactive fg-muted / アイコン 18px | | 14px は Figma text style に無い。white5% は bg-action-hover へ |
 | Card（default / hover） | `components/WorkCard.tsx` | w 216 / rounded 14 / border-system-800 bg-system-900 / shadow 直書き / hover border-system-500 bg-system-800 / 画像 aspect 339:190.69 / body p16 gap16 min-h 160 / category 10px main-100 / title 14px bold lh1.5 / Tag small | | primitive 直参照（system-800/900）を semantic（border-light / surface）へ。shadow は shadow-wisper と一致するか |
 | Modal（Slot / Carousel） | `components/Modal.tsx` | scrim rgba(0,0,0,.25) + blur 8 / px80 py40 / 矢印 left -53 / ButtonFunction border on / ドット表示 | | |
-| （Figma に無い）HistoryItem | `components/HistoryItem.tsx` | bg #1a1a1a（トークン外）/ rounded 14 / p24 / 11px・17px | | Master 20-702 に職歴があれば Figma 側の対応を探す。#1a1a1a は surface-light（#292929）か surface（#212121）のどちらかへ寄せる（ユーザー判断） |
+| （Figma に無い）HistoryItem | `components/HistoryItem.tsx` | bg #1a1a1a（トークン外）/ rounded 14 / p24 / 11px・17px | | **解消（2026-10-19）**: 未使用のため削除（PR #126）。 |
 
 ## 5. 画面レイアウト層（Phase 3）
 - 20-702 の Auto Layout（方向 / gap / padding / 幅制約）と `app/page.tsx` の対応値（gap 120 / px 24→32→40 / py 80 / max-w-main 800 / ヒーロー画像 200×200 rounded 32 / 名前 46px M PLUS 1p など）を表にして照合する。

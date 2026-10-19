@@ -6,7 +6,6 @@ import Headline from "@/components/Headline";
 import CareerGanttChart from "@/components/CareerGanttChart";
 import { WorksList } from "@/src/components/WorksList";
 import SkillsCardGrid from "@/src/components/SkillsCardGrid";
-import { ButtonAction } from "@/components/ButtonAction";
 import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";

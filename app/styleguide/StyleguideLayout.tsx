@@ -1032,12 +1032,6 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <FigmaOnlyPreview
-          title="Table"
-          figma="_Table/CellLabel・_Table/CellContent"
-          description="テーブルのセルコンポーネント。Figma Component ページには存在するが実装が無い"
-        />
-
         <SubHeading>実装のみ(Figma に対応コンポーネントなし)</SubHeading>
 
         <ComponentPreview

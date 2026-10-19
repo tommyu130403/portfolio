@@ -181,12 +181,25 @@ export async function duplicateFlowchart(id: string): Promise<{
 }
 
 /**
- * Works を 1 件 upsert する。
+ * Works を 1 件 upsert する。並び順は一覧で管理し、新規は末尾に追加する。
  */
 export async function saveWork(
-  payload: WorkRow
+  payload: WorkRow,
+  options: { isNew: boolean }
 ): Promise<{ error: string | null }> {
   try {
+    let sortOrderField: { sort_order: number } | Record<string, never> = {};
+    if (options.isNew) {
+      const { data: rows, error: maxError } = await supabase
+        .from("works")
+        .select("sort_order")
+        .order("sort_order", { ascending: false, nullsFirst: false })
+        .limit(1);
+      if (maxError) {
+        return { error: maxError.message || maxError.code || String(maxError) };
+      }
+      sortOrderField = { sort_order: (rows?.[0]?.sort_order ?? -1) + 1 };
+    }
     const { error } = await supabase
       .from("works")
       .upsert(
@@ -204,7 +217,7 @@ export async function saveWork(
           hero_bg_color: payload.hero_bg_color ?? null,
           sections: payload.sections ?? null,
           stakeholder_breakdown: payload.stakeholder_breakdown ?? null,
-          sort_order: payload.sort_order,
+          ...sortOrderField,
           career_item_id: payload.career_item_id ?? null,
           is_published: payload.is_published ?? true,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),

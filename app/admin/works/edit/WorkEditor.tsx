@@ -281,13 +281,18 @@ export default function WorkEditor({ workId }: { workId: string }) {
       period: formatPeriod(period),
       sections: markdownToSections(markdown),
     };
-    const [saveRes, skillsRes, toolsRes] = await Promise.all([
-      saveWork(payload),
+    const saveRes = await saveWork(payload, { isNew });
+    if (saveRes.error) {
+      setSaving(false);
+      setSaveError(saveRes.error);
+      return;
+    }
+    const [skillsRes, toolsRes] = await Promise.all([
       saveWorkSkillsByLabels(id, skills),
       saveWorkToolsByNames(id, tools),
     ]);
     setSaving(false);
-    const err = saveRes.error ?? skillsRes.error ?? toolsRes.error ?? null;
+    const err = skillsRes.error ?? toolsRes.error ?? null;
     if (err) {
       setSaveError(err);
       return;
@@ -418,10 +423,6 @@ export default function WorkEditor({ workId }: { workId: string }) {
             <div>
               <FieldLabel>カテゴリ</FieldLabel>
               <Input value={work.category ?? ""} onChange={(v) => setField("category", v || null)} placeholder="プラットフォーム開発" />
-            </div>
-            <div>
-              <FieldLabel>並び順 (sort_order)</FieldLabel>
-              <Input value={String(work.sort_order ?? 0)} onChange={(v) => setField("sort_order", Number(v) || 0)} />
             </div>
             <div className="col-span-2">
               <FieldLabel>担当役割</FieldLabel>

@@ -24,8 +24,8 @@ const COLLAPSE_MS = 300;
 
 /* Figma フォント指定（node 770-6652 準拠）
    period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
-// FONT_JP は Noto のみ（日本語テキスト用）。FONT_EN は英数字表示用に Avenir を明示する。
-const FONT_EN = "Avenir, var(--font-noto-sans-jp), sans-serif";
+// FONT_JP は Noto のみ（日本語テキスト用）。FONT_EN は英数字表示用に Avenir を明示する（Avenir の無い端末は Figtree）。
+const FONT_EN = "Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif";
 const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */

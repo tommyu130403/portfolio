@@ -141,7 +141,7 @@ JSON.stringify(out)
 
 | ID | 手順 | 期待値 |
 |---|---|---|
-| T-3 | `app/globals.css` の 19 個の `@utility` と `lib/design-tokens.ts` の `textStyle` 19 件を**スクリプトで機械的に突き合わせる**（size / weight / lineHeight / letterSpacing / lang→font-family）。変換規則: `lineHeight: "normal"` → CSS `normal`、数値 → 無単位、`letterSpacing` の数値 → `Nem`、lang `jp`→`var(--font-noto-sans-jp), sans-serif` / `en`→`Avenir, var(--font-noto-sans-jp), sans-serif` / `special-en`→`var(--font-afacad), var(--font-noto-sans-jp), sans-serif` | **19 件すべて一致**。目視で「合っていそう」は不可 |
+| T-3 | `app/globals.css` の 19 個の `@utility` と `lib/design-tokens.ts` の `textStyle` 19 件を**スクリプトで機械的に突き合わせる**（size / weight / lineHeight / letterSpacing / lang→font-family）。変換規則: `lineHeight: "normal"` → CSS `normal`、数値 → 無単位、`letterSpacing` の数値 → `Nem`、lang `jp`→`var(--font-noto-sans-jp), sans-serif` / `en`→`Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif` / `special-en`→`var(--font-afacad), var(--font-noto-sans-jp), sans-serif` | **19 件すべて一致**。目視で「合っていそう」は不可 |
 | T-4 | `app/styleguide/StyleguideLayout.tsx` の `TEXT_STYLE_CLASS` のキーが `textStyle` のキー 19 件と過不足なく一致 | 過不足 **0** |
 
 > T-4 が重要な理由: Tailwind v4 は**使われていないユーティリティを CSS に出力しない**。`TEXT_STYLE_CLASS` の literal 19 件が、19 種が生成されることの唯一の担保になっている。この配列を消すとユーティリティが CSS から消える。

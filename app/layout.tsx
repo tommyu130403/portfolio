@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Afacad, Geist_Mono, Noto_Sans_JP, M_PLUS_1p } from "next/font/google";
+import { Afacad, Geist_Mono, Noto_Sans_JP, M_PLUS_1p, Figtree } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 
@@ -23,6 +23,15 @@ const notoSansJP = Noto_Sans_JP({
   variable: "--font-noto-sans-jp",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: "swap",
+});
+
+// Avenir の代替: Avenir は Mac / iOS にしか無いため、それ以外の端末ではこれで表示する。
+// 800 は読み込まない: Figtree の 800 は Avenir Heavy より太いため、800 指定時は 700 で描かせる。
+const figtree = Figtree({
+  variable: "--font-figtree",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -69,7 +78,7 @@ export default function RootLayout({
     // globals.css の scroll-behavior: smooth を、Next.js が画面切り替え中だけ外せるようにする目印
     <html lang="ja" data-scroll-behavior="smooth">
       <body
-        className={`${afacad.variable} ${mplusOnep.variable} ${notoSansJP.variable} ${geistMono.variable} antialiased`}
+        className={`${afacad.variable} ${mplusOnep.variable} ${notoSansJP.variable} ${figtree.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
           {children}

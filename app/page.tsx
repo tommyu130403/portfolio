@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import SideMenuBar, { type SideMenuSectionId } from "@/components/SideMenuBar";
 import Headline from "@/components/Headline";
-// HistoryItem は旧デザイン用として保持: import HistoryItem from "@/components/HistoryItem";
 import CareerGanttChart from "@/components/CareerGanttChart";
 import { WorksList } from "@/src/components/WorksList";
 import SkillsCardGrid from "@/src/components/SkillsCardGrid";
-import { ButtonAction } from "@/components/ButtonAction";
 import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";

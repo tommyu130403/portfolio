@@ -13,7 +13,7 @@ phase: growth
 strategy: scratch        # Tailwind + 自前 variant map（lib/figma-button-variants.ts）。MUI 等の汎用ライブラリは不使用
 generic_level: 2         # 同一プロダクト内でドメインをまたいで使えるレベルを「汎用」と呼ぶ
 ssot: figma              # CLAUDE.md §5 が Figma を Design Source of Truth と宣言している
-split_approach: flat     # components/ は階層なし24件。30件が階層化の検討目安
+split_approach: flat     # components/ は階層なし26件（2026-10-19 計測）。30件が階層化の検討目安
 naming_grammar: ""       # 未定。語順ルール（[カテゴリ]/[コンポーネント]/[バリアント]/[状態] 等）は未合意
 figma_only_prefix: "_"   # Figma 専用プロパティの接頭辞規約
 i18n: false              # i18n / locale / messages のいずれも存在しない

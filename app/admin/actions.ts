@@ -363,6 +363,29 @@ export async function moveSkillCards(
   }
 }
 
+export async function saveWorksOrder(
+  updates: { id: string; sort_order: number }[]
+): Promise<{ error: string | null }> {
+  try {
+    const results = await Promise.all(
+      updates.map(({ id, sort_order }) =>
+        supabase.from("works").update({ sort_order }).eq("id", id).select("id")
+      )
+    );
+    // RLS で拒否されるとエラーなしで 0 行更新になるため、更新行が無ければ失敗として返す
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      return { error: failed.error.message || failed.error.code || String(failed.error) };
+    }
+    if (results.some((r) => !r.data?.length)) {
+      return { error: "並び順を更新できませんでした（権限またはデータが見つかりません）" };
+    }
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 // ─── skill_experience CRUD ────────────────────────────────────────────────────
 
 export async function saveSkillBar(bar: {

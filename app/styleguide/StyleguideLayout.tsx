@@ -12,7 +12,6 @@ import ButtonAction from "@/components/ButtonAction";
 import { ButtonFunction } from "@/components/ButtonFunction";
 import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 import TabBar from "@/components/TabBar";
-import HistoryItem from "@/components/HistoryItem";
 import WorkCard from "@/components/WorkCard";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
@@ -1040,17 +1039,6 @@ function ComponentsSection() {
         />
 
         <SubHeading>実装のみ(Figma に対応コンポーネントなし)</SubHeading>
-
-        <ComponentPreview title="HistoryItem" description="職歴・学歴タイムラインアイテム">
-          <div className="w-full">
-            <HistoryItem
-              role="Senior Product Designer"
-              company="株式会社サンプル"
-              period="2022.04 - 現在"
-              description="プロダクトデザインリードとして、UX 戦略の立案からプロトタイプ制作まで一貫して担当。デザインシステムの構築を主導し、開発効率を 30% 改善。"
-            />
-          </div>
-        </ComponentPreview>
 
         <ComponentPreview
           title="RichMarkdownEditor"

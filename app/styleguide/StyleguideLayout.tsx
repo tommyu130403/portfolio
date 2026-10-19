@@ -391,7 +391,7 @@ function TypographySection() {
       {/* フォントファミリー（Typo トークン） */}
       <p className="mb-3 text-[12px] text-system-700">
         Figma Typo コレクションの3変数（Special/EN・Body/JP・Body/EN）+ Figma に対応変数が無い実装ローカルの
-        フォント2件。実装ローカルの2件は Figma と同期されないので、デザイン側の正としては扱わない。
+        フォント3件。実装ローカルの3件は Figma と同期されないので、デザイン側の正としては扱わない。
       </p>
       <div className="mb-10 grid grid-cols-2 gap-4">
         {(
@@ -399,6 +399,7 @@ function TypographySection() {
             { role: "Special / EN", family: typo.special.en, token: "typo.special.en", cssVar: "--font-afacad",       cls: "",           sample: "Special Heading" },
             { role: "Body / JP",    family: typo.body.jp,    token: "typo.body.jp",    cssVar: "--font-noto-sans-jp", cls: "",           sample: "本文テキスト" },
             { role: "Body / EN",    family: typo.body.en,    token: "typo.body.en",    cssVar: undefined,             cls: "font-en",    sample: "Body Text" },
+            { role: "Body / EN 代替（Avenir の無い端末）", family: "Figtree", token: "—（Figma 変数なし）", cssVar: "--font-figtree", cls: "", sample: "Body Text" },
             { role: "実装ローカル / JP（font-mplus）",   family: "M PLUS 1p",           token: "—（Figma 変数なし）", cssVar: "--font-mplus-1p", cls: "",  sample: "見出しガイド" },
             // font-guide は @theme inline 定義のため CSS 変数として出力されない（ユーティリティにインライン展開される）。
             // そのためこの1件だけは class 経由で当てる。

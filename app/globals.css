@@ -71,7 +71,7 @@ html:has([data-work-detail]) {
   /* Body フォント: 全要素のデフォルト (typo.body)。Noto のみ。英字 Avenir は font-en で明示する。 */
   --font-body:  var(--font-noto-sans-jp), sans-serif; /* Body: Noto Sans JP */
   --font-noto:  var(--font-noto-sans-jp); /* Body 日本語のみ: Noto Sans JP (typo.body.jp) */
-  --font-en:    Avenir, var(--font-noto-sans-jp), sans-serif; /* Body/EN 明示用 */
+  --font-en:    Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif; /* Body/EN 明示用 */
   --font-mono:  var(--font-geist-mono);
 }
 
@@ -181,7 +181,7 @@ html:has([data-work-detail]) {
    値を変えるときは必ず両方を同時に直す。1 クラスで font-family / font-size / font-weight /
    line-height / letter-spacing の 5 プロパティをまとめて当てるため、@theme ではなく
    @utility を使う（Tailwind v4）。
-   font-family の対応: lang jp → Noto Sans JP / en → Avenir→Noto / special-en → Afacad→Noto
+   font-family の対応: lang jp → Noto Sans JP / en → Avenir→Figtree→Noto（Avenir の無い端末は Figtree）/ special-en → Afacad→Noto
    Noto の AUTO は Figma 実測 px（round(1.2×size)）。Avenir の AUTO は title-en の 52 だけ実測済みで他は normal。
    % 表記の文字間は em に変換している。
    倍率160%の style は、Figma が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。 */
@@ -197,7 +197,7 @@ html:has([data-work-detail]) {
 
 @utility text-title-en {
   /* Figma: Title/EN */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-family: Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif;
   font-size: 38px;
   font-weight: 800;
   line-height: 52px;
@@ -224,7 +224,7 @@ html:has([data-work-detail]) {
 
 @utility text-body-01-en {
   /* Figma: Body/01/EN/Regular */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-family: Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif;
   font-size: 17px;
   font-weight: 400;
   line-height: normal;
@@ -251,7 +251,7 @@ html:has([data-work-detail]) {
 
 @utility text-body-02-en {
   /* Figma: Body/02/EN/Regular */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-family: Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 400;
   line-height: normal;
@@ -278,7 +278,7 @@ html:has([data-work-detail]) {
 
 @utility text-body-03-en {
   /* Figma: Body/03/EN/Regular */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-family: Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 400;
   line-height: normal;
@@ -296,7 +296,7 @@ html:has([data-work-detail]) {
 
 @utility text-caption-01-en {
   /* Figma: Caption/01/EN */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-family: Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif;
   font-size: 12px;
   font-weight: 400;
   line-height: normal;
@@ -314,7 +314,7 @@ html:has([data-work-detail]) {
 
 @utility text-caption-02-en {
   /* Figma: Caption/02/EN */
-  font-family: Avenir, var(--font-noto-sans-jp), sans-serif;
+  font-family: Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 400;
   line-height: normal;

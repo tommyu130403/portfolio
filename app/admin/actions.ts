@@ -181,12 +181,25 @@ export async function duplicateFlowchart(id: string): Promise<{
 }
 
 /**
- * Works を 1 件 upsert する。
+ * Works を 1 件 upsert する。並び順は一覧で管理し、新規は末尾に追加する。
  */
 export async function saveWork(
-  payload: WorkRow
+  payload: WorkRow,
+  options: { isNew: boolean }
 ): Promise<{ error: string | null }> {
   try {
+    let sortOrderField: { sort_order: number } | Record<string, never> = {};
+    if (options.isNew) {
+      const { data: rows, error: maxError } = await supabase
+        .from("works")
+        .select("sort_order")
+        .order("sort_order", { ascending: false, nullsFirst: false })
+        .limit(1);
+      if (maxError) {
+        return { error: maxError.message || maxError.code || String(maxError) };
+      }
+      sortOrderField = { sort_order: (rows?.[0]?.sort_order ?? -1) + 1 };
+    }
     const { error } = await supabase
       .from("works")
       .upsert(
@@ -204,7 +217,7 @@ export async function saveWork(
           hero_bg_color: payload.hero_bg_color ?? null,
           sections: payload.sections ?? null,
           stakeholder_breakdown: payload.stakeholder_breakdown ?? null,
-          sort_order: payload.sort_order,
+          ...sortOrderField,
           career_item_id: payload.career_item_id ?? null,
           is_published: payload.is_published ?? true,
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
@@ -357,6 +370,29 @@ export async function moveSkillCards(
         supabase.from("skill_cards").update({ sort_order }).eq("id", id)
       )
     );
+    return { error: null };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function saveWorksOrder(
+  updates: { id: string; sort_order: number }[]
+): Promise<{ error: string | null }> {
+  try {
+    const results = await Promise.all(
+      updates.map(({ id, sort_order }) =>
+        supabase.from("works").update({ sort_order }).eq("id", id).select("id")
+      )
+    );
+    // RLS で拒否されるとエラーなしで 0 行更新になるため、更新行が無ければ失敗として返す
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      return { error: failed.error.message || failed.error.code || String(failed.error) };
+    }
+    if (results.some((r) => !r.data?.length)) {
+      return { error: "並び順を更新できませんでした（権限またはデータが見つかりません）" };
+    }
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };

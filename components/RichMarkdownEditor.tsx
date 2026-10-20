@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ClipboardEvent,
   type FC,
   type ReactNode,
   type RefObject,
@@ -21,6 +22,11 @@ import { container, type DeviceMode } from "@/lib/design-tokens";
  * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
  * - 画像・リンク・グリッドは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）
  * - 分割表示では本文欄とプレビューのスクロール位置を割合で連動する
+ * - 画像は本文欄への貼り付けでもアップロードできる（onUploadImage を渡した場合）。貼り付け画像は画像ダイアログ（配置・横幅・倍率）を経て挿入する
+ *   貼り付け時は本文に仮の行（![画像をアップロード中…](uploading)）を置き、挿入時にその行を置き換える（キャンセル・失敗時は除去）。
+ *   仮の行は挿入した断片（前後の改行を含む）をそのまま覚えて除去し、元の本文を正確に復元する。エディタが閉じられた時も除去する
+ *   貼り付け処理は同時に1件だけ（処理中は画像ボタンと追加の貼り付けを止める）。クリップボードに表（text/html の <table）がある場合（表計算）は通常のテキスト貼り付けにし、それ以外で画像があればアップロードする
+ *   アップロード前の圧縮は呼び出し側（WorkEditor）で行う
  */
 
 export type RichMarkdownEditorProps = {
@@ -29,6 +35,8 @@ export type RichMarkdownEditorProps = {
   placeholder?: string;
   /** ストレージから画像を選ぶ（resolve した URL を画像ダイアログに反映する） */
   onPickImage?: () => Promise<{ url: string; alt?: string } | null>;
+  /** 本文欄に貼り付けられた画像をアップロードし、公開 URL（または失敗理由）を返す */
+  onUploadImage?: (file: File) => Promise<{ url: string | null; error: string | null }>;
   /** 保存済みフローチャートを選び、参照ディレクティブとして挿入する */
   onPickFlowchart?: () => Promise<{
     id: string;
@@ -52,13 +60,24 @@ const DEVICE_OPTIONS: { key: PreviewDevice; label: string }[] = [
 
 /* ─── 小物 UI ─────────────────────────────────────── */
 
-function TBtn({ label, title, onClick }: { label: ReactNode; title: string; onClick: () => void }) {
+function TBtn({
+  label,
+  title,
+  onClick,
+  disabled,
+}: {
+  label: ReactNode;
+  title: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       title={title}
       onClick={onClick}
-      className="flex h-8 shrink-0 items-center rounded-[6px] border border-border-light px-2 text-[11px] text-fg-muted transition-colors hover:border-system-700 hover:text-white"
+      disabled={disabled}
+      className="flex h-8 shrink-0 items-center rounded-[6px] border border-border-light px-2 text-[11px] text-fg-muted transition-colors hover:border-system-700 hover:text-white disabled:opacity-40 disabled:hover:border-border-light disabled:hover:text-fg-muted"
     >
       {label}
     </button>
@@ -107,6 +126,43 @@ const dBtnPrimary =
   "rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40";
 const dBtnGhost =
   "rounded-[8px] border border-border-light px-3 py-1.5 text-[13px] text-fg-muted hover:border-system-700 hover:text-white";
+
+/** 画像アップロード中の仮の行。本文に置き、挿入・キャンセル・失敗のいずれかで置き換え / 除去する */
+export const UPLOAD_PLACEHOLDER = "![画像をアップロード中…](uploading)";
+
+/** text の at 位置に、前後へ改行を補いつつ行として挿入する。挿入後のキャレット位置と、挿入した断片（改行込み）も返す */
+function insertLineAt(current: string, line: string, at: number) {
+  const start = Math.min(at, current.length);
+  const before = current.slice(0, start);
+  const after = current.slice(start);
+  const prefix = before.length === 0 || before.endsWith("\n") ? "" : "\n";
+  const suffix = after.startsWith("\n") || after.length === 0 ? "" : "\n";
+  return {
+    next: before + prefix + line + suffix + after,
+    pos: before.length + prefix.length + line.length,
+    segment: prefix + line + suffix,
+  };
+}
+
+/** 挿入した断片 segment を最初の1件だけ除去して元の本文に戻す。見つからなければ仮の行だけを除去する */
+function removeInserted(current: string, segment: string | null) {
+  if (segment) {
+    const idx = current.indexOf(segment);
+    if (idx >= 0) return current.slice(0, idx) + current.slice(idx + segment.length);
+  }
+  return removePlaceholder(current);
+}
+
+/** 仮の行を最初の1件だけ除去する（直後の改行も含む）。無ければそのまま返す */
+function removePlaceholder(current: string) {
+  const idx = current.indexOf(UPLOAD_PLACEHOLDER);
+  if (idx < 0) return current;
+  let end = idx + UPLOAD_PLACEHOLDER.length;
+  if (current[end] === "\n") end += 1;
+  return current.slice(0, idx) + current.slice(end);
+}
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
 /* ─── プレビューペイン（デバイス幅切替）────────────────── */
 
@@ -182,11 +238,15 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   placeholder,
   onPickImage,
   onPickFlowchart,
+  onUploadImage,
   className,
 }) => {
   const [mode, setMode] = useState<Mode>("split");
   const [device, setDevice] = useState<PreviewDevice>("full");
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const [uploadStatus, setUploadStatus] = useState<null | { kind: "uploading" } | { kind: "error"; message: string }>(
+    null
+  );
   const previewRef = useRef<HTMLDivElement>(null);
   // 連動スクロールで直前に値を書き込んだ側。その scroll イベントでは折り返さない
   const syncLock = useRef<HTMLElement | null>(null);
@@ -196,6 +256,48 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   const [linkLabel, setLinkLabel] = useState("");
   // リンクの挿入先。ダイアログ表示中に textarea の選択がブラウザ側で変わっても影響されないよう、ボタン押下時に記録する
   const [linkRange, setLinkRange] = useState({ start: 0, end: 0 });
+  // 画像ダイアログの初期 URL と開いた経路。貼り付け経由は仮の行を置き換えて挿入する。key は開くたびに作り直して初期 URL を反映させる
+  const [imageInitialUrl, setImageInitialUrl] = useState("");
+  const [imageFromPaste, setImageFromPaste] = useState(false);
+  const [imageKey, setImageKey] = useState(0);
+  // 貼り付け画像の処理中（貼り付けからダイアログを閉じるまで）。ref は連続貼り付けの即時判定用、state はボタンの無効化用
+  const [pasteBusy, setPasteBusyState] = useState(false);
+  const pasteBusyRef = useRef(false);
+  const setPasteBusy = (busy: boolean) => {
+    pasteBusyRef.current = busy;
+    setPasteBusyState(busy);
+  };
+  // 常に最新の本文。非同期処理（アップロード後）でも textarea なしで最新の本文を編集できるようにする
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+  // 仮の行として本文に挿入した断片（前後の改行を含む）。取り消し時に元の本文へ正確に戻すために覚える
+  const segmentRef = useRef<string | null>(null);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  const mountedRef = useRef(true);
+  // 貼り付け処理中にエディタが閉じられた（タブ切替など）時は、仮の行を除去して非同期の続きを無効にする
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (pasteBusyRef.current) {
+        onChangeRef.current(removeInserted(valueRef.current, segmentRef.current));
+        pasteBusyRef.current = false;
+      }
+    };
+  }, []);
+  /** 本文を更新する。再描画を待たず valueRef にも即時反映する（続けて編集しても取りこぼさない） */
+  const commit = useCallback(
+    (next: string) => {
+      valueRef.current = next;
+      onChange(next);
+    },
+    [onChange]
+  );
 
   /** from のスクロール割合を to に写す（分割表示のみ）。写した側の scroll イベントで折り返さないようロックする */
   const syncScroll = useCallback(
@@ -286,25 +388,79 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
     [value, onChange, restoreCaret]
   );
 
-  /** カーソル行の前後に改行を補いつつテキストを行として挿入する */
+  /** カーソル行の前後に改行を補いつつテキストを行として挿入する。挿入した断片（改行込み）を返す */
   const insertLine = useCallback(
     (text: string) => {
       const ta = taRef.current;
-      if (!ta) return;
-      const start = ta.selectionStart;
-      const before = value.slice(0, start);
-      const after = value.slice(start);
-      const prefix = before.length === 0 || before.endsWith("\n") ? "" : "\n";
-      const suffix = after.startsWith("\n") || after.length === 0 ? "" : "\n";
+      if (!ta) return null;
+      const { next, pos, segment } = insertLineAt(valueRef.current, text, ta.selectionStart);
       const scrollTop = ta.scrollTop;
-      onChange(before + prefix + text + suffix + after);
-      requestAnimationFrame(() => {
-        const pos = before.length + prefix.length + text.length;
-        restoreCaret(ta, scrollTop, pos, pos);
-      });
+      commit(next);
+      requestAnimationFrame(() => restoreCaret(ta, scrollTop, pos, pos));
+      return segment;
     },
-    [value, onChange, restoreCaret]
+    [commit, restoreCaret]
   );
+
+  /** 貼り付け処理を終える（仮の行を除去して処理中を解除する）。挿入済みなら仮の行は既に無く、除去は何もしない */
+  const finishPaste = () => {
+    commit(removeInserted(valueRef.current, segmentRef.current));
+    setPasteBusy(false);
+    setDialog(null);
+  };
+
+  /** 貼り付けられた画像の仮の行を本文に置き、アップロードして画像ダイアログを開く */
+  const handlePaste = async (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!onUploadImage) return;
+    // 表計算（Excel / Numbers）は表とプレビュー画像の両方を載せるため、表があれば通常のテキスト貼り付けに任せる
+    if (/<table/i.test(e.clipboardData.getData("text/html"))) return;
+    const fromFiles = Array.from(e.clipboardData.files).find((f) => f.type.startsWith("image/"));
+    const fromItems = Array.from(e.clipboardData.items)
+      .filter((it) => it.kind === "file" && it.type.startsWith("image/"))
+      .map((it) => it.getAsFile())
+      .find((f): f is File => f !== null);
+    const file = fromFiles ?? fromItems;
+    if (!file) return;
+    e.preventDefault();
+    if (pasteBusyRef.current) {
+      setUploadStatus({ kind: "error", message: "前の画像の処理が終わってから貼り付けてください" });
+      return;
+    }
+    setPasteBusy(true);
+    segmentRef.current = insertLine(UPLOAD_PLACEHOLDER);
+    setUploadStatus({ kind: "uploading" });
+    try {
+      const { url, error } = await onUploadImage(file);
+      if (!mountedRef.current) return;
+      if (error || !url) {
+        commit(removeInserted(valueRef.current, segmentRef.current));
+        setUploadStatus({ kind: "error", message: error ?? "URL を取得できませんでした" });
+        setPasteBusy(false);
+        return;
+      }
+      setUploadStatus(null);
+      setImageFromPaste(true);
+      setImageInitialUrl(url);
+      setImageKey((k) => k + 1);
+      setDialog("image");
+    } catch (err) {
+      if (!mountedRef.current) return;
+      commit(removeInserted(valueRef.current, segmentRef.current));
+      setUploadStatus({ kind: "error", message: err instanceof Error ? err.message : "不明なエラー" });
+      setPasteBusy(false);
+    }
+  };
+
+  /** 貼り付け経由の画像ダイアログで挿入する。仮の行を置き換え、無ければ末尾に追加する */
+  const insertPastedImage = (md: string) => {
+    const current = valueRef.current;
+    const idx = current.indexOf(UPLOAD_PLACEHOLDER);
+    if (idx >= 0) {
+      commit(current.slice(0, idx) + md + current.slice(idx + UPLOAD_PLACEHOLDER.length));
+    } else {
+      commit(insertLineAt(current, md, current.length).next);
+    }
+  };
 
   return (
     <div
@@ -348,7 +504,18 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
               setDialog("link");
             }}
           />
-          <TBtn label="画像" title="画像を挿入（幅 / 配置 / 倍率 / キャプション）" onClick={() => setDialog("image")} />
+          <TBtn
+            label="画像"
+            title={pasteBusy ? "貼り付けた画像の処理が終わるまで使えません" : "画像を挿入（幅 / 配置 / 倍率 / キャプション）"}
+            disabled={pasteBusy}
+            onClick={() => {
+              if (pasteBusyRef.current) return;
+              setImageFromPaste(false);
+              setImageInitialUrl("");
+              setImageKey((k) => k + 1);
+              setDialog("image");
+            }}
+          />
           <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
           <TBtn label="表" title="表を挿入（項目-値 / グリッド）" onClick={() => setDialog("table")} />
           {onPickFlowchart && (
@@ -414,6 +581,26 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         </div>
       </div>
 
+      {uploadStatus && (
+        <div className="flex shrink-0 items-center gap-2 border-b border-border-light bg-[#141414] px-3 py-1.5 text-[12px]">
+          {uploadStatus.kind === "uploading" ? (
+            <span className="text-fg-muted">画像をアップロード中…</span>
+          ) : (
+            <>
+              <span className="text-danger-300">画像のアップロードに失敗しました: {uploadStatus.message}</span>
+              <button
+                type="button"
+                title="閉じる"
+                onClick={() => setUploadStatus(null)}
+                className="text-[11px] text-fg-muted transition-colors hover:text-white"
+              >
+                ✕
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* 本体 */}
       <div className="flex min-h-0 flex-1">
         {(mode === "edit" || mode === "split") && (
@@ -421,6 +608,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
             ref={taRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onPaste={handlePaste}
             onScroll={() => syncScroll(taRef.current, previewRef.current)}
             spellCheck={false}
             placeholder={placeholder ?? "Markdown で本文を入力..."}
@@ -453,7 +641,13 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
       {/* ダイアログ */}
       {dialog === "link" && <LinkDialog initialLabel={linkLabel} onClose={() => setDialog(null)} onInsert={(md) => replaceRange(md, linkRange)} />}
       {dialog === "image" && (
-        <ImageDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} onPickImage={onPickImage} />
+        <ImageDialog
+          key={imageKey}
+          initialUrl={imageInitialUrl}
+          onClose={imageFromPaste ? finishPaste : () => setDialog(null)}
+          onInsert={imageFromPaste ? insertPastedImage : (md) => insertLine(md)}
+          onPickImage={onPickImage}
+        />
       )}
       {dialog === "grid" && <GridDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "table" && <TableDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
@@ -504,23 +698,49 @@ function LinkDialog({
 /* ─── 画像ダイアログ ───────────────────────────────── */
 
 function ImageDialog({
+  initialUrl = "",
   onClose,
   onInsert,
   onPickImage,
 }: {
+  initialUrl?: string;
   onClose: () => void;
   onInsert: (md: string) => void;
   onPickImage?: () => Promise<{ url: string; alt?: string } | null>;
 }) {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(initialUrl);
   const [caption, setCaption] = useState("");
   const [align, setAlign] = useState<ImageAlign>("full");
+  // 数値欄は入力途中で空にできるよう文字列の下書きを持つ。width / scale は最後に有効だった（範囲内の）値
   const [width, setWidth] = useState(200);
+  const [widthDraft, setWidthDraft] = useState("200");
   const [scale, setScale] = useState(1);
+  const [scaleDraft, setScaleDraft] = useState("1");
+
+  /** 下書きを範囲内の数値に確定する。数値でなければ最後の有効値に戻す */
+  const commitNumber = (
+    draft: string,
+    last: number,
+    min: number,
+    max: number,
+    setValue: (n: number) => void,
+    setDraft: (s: string) => void
+  ) => {
+    const n = draft.trim() === "" ? NaN : Number(draft);
+    const v = Number.isFinite(n) ? clamp(n, min, max) : last;
+    setValue(v);
+    setDraft(String(v));
+    return v;
+  };
+  const commitWidth = () => commitNumber(widthDraft, width, 120, 624, setWidth, setWidthDraft);
+  const commitScale = () => commitNumber(scaleDraft, scale, 0.1, 3, setScale, setScaleDraft);
 
   const useWidth = align !== "full";
   const submit = () => {
-    onInsert(buildImageMarkdown(caption, url, { align, width: useWidth ? String(width) : "", scale }));
+    // blur を待たず、書き込む値は常に確定済み（範囲内）のものを使う
+    const w = commitWidth();
+    const sc = commitScale();
+    onInsert(buildImageMarkdown(caption, url, { align, width: useWidth ? String(w) : "", scale: sc }));
     onClose();
   };
 
@@ -590,7 +810,23 @@ function ImageDialog({
         <div>
           <div className="flex items-center justify-between">
             <DLabel>横幅</DLabel>
-            <span className="text-[12px] text-fg-muted">{width}px</span>
+            <div className="flex items-center gap-1 text-[12px] text-fg-muted">
+              <input
+                type="number"
+                min={120}
+                max={624}
+                step={10}
+                value={widthDraft}
+                onChange={(e) => {
+                  setWidthDraft(e.target.value);
+                  const n = e.target.value.trim() === "" ? NaN : Number(e.target.value);
+                  if (Number.isFinite(n)) setWidth(clamp(n, 120, 624));
+                }}
+                onBlur={commitWidth}
+                className={`${dInput} !w-[72px] !px-2 !py-1 text-right`}
+              />
+              px
+            </div>
           </div>
           <input
             type="range"
@@ -599,7 +835,10 @@ function ImageDialog({
             max={624}
             step={10}
             value={width}
-            onChange={(e) => setWidth(Number(e.target.value))}
+            onChange={(e) => {
+              setWidth(Number(e.target.value));
+              setWidthDraft(e.target.value);
+            }}
             className="w-full accent-primary"
           />
         </div>
@@ -607,15 +846,49 @@ function ImageDialog({
       <div>
         <div className="flex items-center justify-between">
           <DLabel>表示倍率（scale）</DLabel>
-          <span className="text-[12px] text-fg-muted">×{scale}</span>
+          <div className="flex items-center gap-1.5 text-[12px] text-fg-muted">
+            ×
+            <input
+              type="number"
+              min={0.1}
+              max={3}
+              step={0.05}
+              value={scaleDraft}
+              onChange={(e) => {
+                setScaleDraft(e.target.value);
+                const n = e.target.value.trim() === "" ? NaN : Number(e.target.value);
+                if (Number.isFinite(n)) setScale(clamp(n, 0.1, 3));
+              }}
+              onBlur={commitScale}
+              className={`${dInput} !w-[72px] !px-2 !py-1 text-right`}
+            />
+            <button
+              type="button"
+              disabled={scale === 1}
+              onClick={() => {
+                setScale(1);
+                setScaleDraft("1");
+              }}
+              className={`rounded-[6px] border px-2.5 py-1 text-[11px] transition-colors ${
+                scale === 1
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border-light text-fg-muted hover:text-white"
+              }`}
+            >
+              等倍
+            </button>
+          </div>
         </div>
         <input
           type="range"
-          min={0.5}
-          max={2}
-          step={0.1}
+          min={0.1}
+          max={3}
+          step={0.05}
           value={scale}
-          onChange={(e) => setScale(Number(e.target.value))}
+          onChange={(e) => {
+            setScale(Number(e.target.value));
+            setScaleDraft(e.target.value);
+          }}
           className="w-full accent-primary"
         />
       </div>

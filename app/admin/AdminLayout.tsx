@@ -29,6 +29,7 @@ import type {
 import type { Tables } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 import { parseFlowchart } from "@/lib/flowchart";
+import { compressImage } from "@/lib/compress-image";
 import PublishToggle from "./PublishToggle";
 import { NAV_SECTIONS, type AdminSectionId } from "./sections";
 
@@ -113,7 +114,7 @@ export function ImagePickerModal({
     setUploading(true);
     setUploadError("");
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", await compressImage(file));
     const { url, path, error } = await uploadStorageImage(fd, folder);
     setUploading(false);
     if (error || !url || !path) { setUploadError(error ?? "アップロード失敗"); return; }

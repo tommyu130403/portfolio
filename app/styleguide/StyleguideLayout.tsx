@@ -1036,7 +1036,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="RichMarkdownEditor"
-          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画"
+          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画。onUploadImage を渡すと本文欄への画像の貼り付けでアップロードでき、貼り付けた画像はアップロード後に画像ダイアログ（配置・横幅・倍率）を経て挿入される"
         >
           <MarkdownEditorDemo />
         </ComponentPreview>

@@ -70,7 +70,7 @@ export default function FlowchartView({
           variant={BackgroundVariant.Dots}
           gap={FLOWCHART_GRID_SIZE}
           size={1}
-          color="#424242"
+          color="#292929"
         />
         {interactive && <Controls showInteractive={false} />}
       </ReactFlow>

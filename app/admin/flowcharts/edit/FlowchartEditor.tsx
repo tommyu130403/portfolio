@@ -52,6 +52,7 @@ import {
   FLOW_NODE_MIN_SIZE,
   fromReactFlow,
   isFlowHandlePosition,
+  FLOWCHART_EDGE_LABEL_PROPS,
   parseFlowchart,
   snapFlowchartCoordinate,
   toReactFlow,
@@ -175,6 +176,7 @@ function edgeAppearance(
 ) {
   return {
     type: "grid",
+    ...FLOWCHART_EDGE_LABEL_PROPS,
     style: {
       stroke: "#616161",
       strokeWidth: 1.5,
@@ -840,7 +842,7 @@ function FlowchartEditorInner({
               variant={BackgroundVariant.Dots}
               gap={FLOWCHART_GRID_SIZE}
               size={1}
-              color="#424242"
+              color="#292929"
             />
             <Controls />
           </ReactFlow>

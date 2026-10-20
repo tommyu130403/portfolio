@@ -1043,9 +1043,9 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="FlowchartView"
-          description="React Flowを使った読み取り専用ダイアグラム。全オブジェクト共通の標準・Primary（ミント塗り）・Secondary（ミント枠＋濃緑背景）配色、文字サイズ・整列・カード仕切り・線端マーカー・可変サイズに対応"
+          description="React Flowを使った読み取り専用ダイアグラム。全オブジェクト共通の標準・Primary（ミント塗り）・Secondary（ミント枠＋濃緑背景）配色、文字サイズ・整列・カード仕切り・線端マーカー・可変サイズに対応。ボーダー基調（影なし・全ノード Surface + Border/Light 1px）"
         >
-          <div className="h-[420px] w-full overflow-hidden rounded-[14px] bg-[#1a1a1a] p-2">
+          <div className="h-[420px] w-full overflow-hidden rounded-[14px] border border-border bg-[#1a1a1a] p-2">
             <FlowchartView data={SAMPLE_FLOWCHART} />
           </div>
         </ComponentPreview>

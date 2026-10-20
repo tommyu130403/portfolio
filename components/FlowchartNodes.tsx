@@ -325,25 +325,25 @@ function Ports() {
         id="top"
         type="source"
         position={Position.Top}
-        className="!h-2.5 !w-2.5 !border-[#161616] !bg-system-500"
+        className="!h-2.5 !w-2.5 !border-surface !bg-system-500"
       />
       <Handle
         id="right"
         type="source"
         position={Position.Right}
-        className="!h-2.5 !w-2.5 !border-[#161616] !bg-system-500"
+        className="!h-2.5 !w-2.5 !border-surface !bg-system-500"
       />
       <Handle
         id="bottom"
         type="source"
         position={Position.Bottom}
-        className="!h-2.5 !w-2.5 !border-[#161616] !bg-main-100"
+        className="!h-2.5 !w-2.5 !border-surface !bg-main-100"
       />
       <Handle
         id="left"
         type="source"
         position={Position.Left}
-        className="!h-2.5 !w-2.5 !border-[#161616] !bg-system-500"
+        className="!h-2.5 !w-2.5 !border-surface !bg-system-500"
       />
     </>
   );
@@ -424,14 +424,14 @@ function NodeText({
   return (
     <>
       <p
-        className="font-bold leading-[1.4] tracking-[0.03em]"
+        className="font-normal leading-[1.5] tracking-[0.06em]"
         style={{ fontSize: data.fontSize, textAlign: data.textAlign }}
       >
         {data.label}
       </p>
       {data.sublabel && (
         <p
-          className={`mt-1 leading-[1.45] tracking-[0.03em] ${nodeMutedTextClass(
+          className={`mt-1 leading-[1.5] tracking-[0.04em] ${nodeMutedTextClass(
             data.color,
             mutedClassName,
           )}`}
@@ -480,7 +480,7 @@ const StartNode = memo(function StartNode({
       kind="start"
       selected={selected}
       shapeClassName="rounded-full border"
-      className="border-border bg-surface text-fg"
+      className="border-border-light bg-surface text-fg"
     />
   );
 });
@@ -495,7 +495,7 @@ const EndNode = memo(function EndNode({
       kind="end"
       selected={selected}
       shapeClassName="rounded-full border"
-      className="border-border bg-surface text-fg"
+      className="border-border-light bg-surface text-fg"
     />
   );
 });
@@ -509,8 +509,8 @@ const StepNode = memo(function StepNode({
       data={data}
       kind="step"
       selected={selected}
-      shapeClassName="rounded-[12px] border shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
-      className="border-[#2a2a2a] bg-[#161616] text-white"
+      shapeClassName="rounded-[8px] border"
+      className="border-border-light bg-surface text-fg"
     />
   );
 });
@@ -524,8 +524,8 @@ const NoteNode = memo(function NoteNode({
       data={data}
       kind="note"
       selected={selected}
-      shapeClassName="rounded-[12px] border border-dashed"
-      className="border-border bg-surface-light text-fg-muted"
+      shapeClassName="rounded-[8px] border border-dashed"
+      className="border-border-light bg-transparent text-fg-muted"
     />
   );
 });
@@ -541,7 +541,7 @@ const CardNode = memo(function CardNode({
   const verticalClass = VERTICAL_JUSTIFY[data.verticalAlign];
   const title = (
     <p
-      className="relative z-[1] font-bold leading-[1.45] tracking-[0.03em]"
+      className="relative z-[1] font-normal leading-[1.5] tracking-[0.06em]"
       style={{ ...alignStyle, fontSize: data.fontSize }}
     >
       {data.label}
@@ -549,9 +549,9 @@ const CardNode = memo(function CardNode({
   );
   const body = data.sublabel ? (
     <p
-      className={`relative z-[1] whitespace-pre-wrap leading-[1.65] tracking-[0.03em] ${nodeMutedTextClass(
+      className={`relative z-[1] whitespace-pre-wrap leading-[1.5] tracking-[0.04em] ${nodeMutedTextClass(
         data.color,
-        "text-fg-caption",
+        "text-fg-muted",
       )}`}
       style={{ ...alignStyle, fontSize: sublabelSize }}
     >
@@ -561,9 +561,9 @@ const CardNode = memo(function CardNode({
 
   return (
     <div
-      className={`relative h-full min-h-[80px] w-full min-w-[160px] rounded-[14px] border px-5 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] ${nodeSurfaceClass(
+      className={`relative h-full min-h-[80px] w-full min-w-[160px] rounded-[14px] border px-5 py-4 ${nodeSurfaceClass(
         data.color,
-        "border-border bg-surface text-fg",
+        "border-border-light bg-surface text-fg",
       )} ${
         selected ? "ring-2 ring-main-100 ring-offset-2 ring-offset-[#101010]" : ""
       }`}
@@ -613,9 +613,9 @@ const DecisionNode = memo(function DecisionNode({
       <ResizeHandles kind="decision" selected={selected} />
       <Ports />
       <div
-        className={`absolute inset-[15%] rotate-45 rounded-[8px] border ${nodeSurfaceClass(
+        className={`absolute inset-[15%] rotate-45 rounded-[6px] border ${nodeSurfaceClass(
           data.color,
-          "border-system-700 bg-[#242424] text-fg",
+          "border-border-light bg-surface text-fg",
         )}`}
       />
       <div

@@ -7,6 +7,7 @@ import {
   useState,
   type FC,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { WorkMarkdownDocument } from "./WorkMarkdown";
 import { buildImageMarkdown, widthToCss, type ImageAlign } from "@/lib/image-layout";
@@ -19,6 +20,7 @@ import { container, type DeviceMode } from "@/lib/design-tokens";
  * - プレビューは公開側と同一の共有レンダラ（WorkMarkdownDocument）で描画
  * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
  * - 画像・リンク・グリッドは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）
+ * - 分割表示では本文欄とプレビューのスクロール位置を割合で連動する
  */
 
 export type RichMarkdownEditorProps = {
@@ -112,8 +114,19 @@ const dBtnGhost =
  * デバイス実寸（Device コレクションの Screen.Width）でプレビューを描画する。
  * コンテンツは Main.Max で中央寄せし、ペインが実寸より狭い場合は縮小表示する。
  */
-function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; half: boolean }) {
-  const paneRef = useRef<HTMLDivElement>(null);
+function PreviewPane({
+  md,
+  device,
+  half,
+  paneRef,
+  onScroll,
+}: {
+  md: string;
+  device: PreviewDevice;
+  half: boolean;
+  paneRef: RefObject<HTMLDivElement | null>;
+  onScroll: () => void;
+}) {
   const [paneW, setPaneW] = useState(0);
 
   useEffect(() => {
@@ -122,13 +135,13 @@ function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; 
     const ro = new ResizeObserver((entries) => setPaneW(entries[0].contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [paneRef]);
 
   const widthClass = half ? "w-1/2" : "w-full";
 
   if (device === "full") {
     return (
-      <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-surface p-6`}>
+      <div ref={paneRef} onScroll={onScroll} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-surface p-6`}>
         {/* 公開ページと同じ最大幅で表示 */}
         <div className="mx-auto max-w-main">
           <WorkMarkdownDocument md={md} />
@@ -142,7 +155,7 @@ function PreviewPane({ md, device, half }: { md: string; device: PreviewDevice; 
   const scale = paneW > 0 ? Math.min(1, (paneW - 24) / screenW) : 1;
 
   return (
-    <div ref={paneRef} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#141414] p-3`}>
+    <div ref={paneRef} onScroll={onScroll} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#141414] p-3`}>
       <p className="pb-2 text-center text-[11px] text-system-700">
         {screenW}px × {container[device].height.screen}px
         {scale < 1 && `（${Math.round(scale * 100)}% 縮小表示）`}
@@ -174,10 +187,70 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   const [mode, setMode] = useState<Mode>("split");
   const [device, setDevice] = useState<PreviewDevice>("full");
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  // 連動スクロールで直前に値を書き込んだ側。その scroll イベントでは折り返さない
+  const syncLock = useRef<HTMLElement | null>(null);
+  // 直近に確認したプレビューのスクロール可能量。変わっていたら高さの変化によるブラウザの位置切り詰めとみなす
+  const previewMax = useRef<number | null>(null);
   const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table">(null);
   const [linkLabel, setLinkLabel] = useState("");
   // リンクの挿入先。ダイアログ表示中に textarea の選択がブラウザ側で変わっても影響されないよう、ボタン押下時に記録する
   const [linkRange, setLinkRange] = useState({ start: 0, end: 0 });
+
+  /** from のスクロール割合を to に写す（分割表示のみ）。写した側の scroll イベントで折り返さないようロックする */
+  const syncScroll = useCallback(
+    (from: HTMLElement | null, to: HTMLElement | null) => {
+      if (mode !== "split" || !from || !to) return;
+      if (syncLock.current === from) {
+        syncLock.current = null;
+        return;
+      }
+      const fromMax = from.scrollHeight - from.clientHeight;
+      // プレビューの高さが変わった直後の scroll イベントはブラウザによる切り詰めなので本文欄へ写さない（ResizeObserver 側で合わせ直す）
+      if (from === previewRef.current && fromMax !== previewMax.current) {
+        previewMax.current = fromMax;
+        return;
+      }
+      if (fromMax <= 0) return;
+      const toMax = to.scrollHeight - to.clientHeight;
+      const target = (from.scrollTop / fromMax) * toMax;
+      if (Math.abs(to.scrollTop - target) < 1) return;
+      const prev = to.scrollTop;
+      syncLock.current = to;
+      to.scrollTop = target;
+      if (to.scrollTop === prev) syncLock.current = null; // 値が変わらず scroll イベントが来ない場合はロックを残さない
+    },
+    [mode]
+  );
+
+  // 分割表示への切替・デバイス幅の変更・画像の読み込みなどでプレビューの高さが変わった時は、
+  // スクロールを待たずに本文欄の位置へプレビューを合わせ直す（observe 直後の初回通知で切替時の同期も兼ねる）
+  useEffect(() => {
+    const pv = previewRef.current;
+    if (mode !== "split" || !pv) return;
+    const ro = new ResizeObserver(() => {
+      previewMax.current = pv.scrollHeight - pv.clientHeight;
+      syncLock.current = null;
+      syncScroll(taRef.current, pv);
+    });
+    ro.observe(pv);
+    Array.from(pv.children).forEach((child) => ro.observe(child));
+    return () => ro.disconnect();
+  }, [mode, device, syncScroll]);
+
+  /**
+   * 挿入後にフォーカスと選択範囲を戻す。フォーカスでスクロールが端へ飛ばないよう位置を先に復元し、
+   * その後の選択でキャレットが画面外にある場合だけブラウザに見える位置までスクロールさせる
+   */
+  const restoreCaret = useCallback(
+    (ta: HTMLTextAreaElement, scrollTop: number, selStart: number, selEnd: number) => {
+      ta.setSelectionRange(selStart, selEnd);
+      ta.scrollTop = scrollTop;
+      ta.blur();
+      ta.focus();
+    },
+    []
+  );
 
   /** 選択範囲を before/after で囲む（未選択時は placeholder を挿入して選択状態にする） */
   const insertAround = useCallback(
@@ -188,14 +261,14 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
       const end = ta.selectionEnd;
       const selected = value.slice(start, end) || ph;
       const next = value.slice(0, start) + before + selected + after + value.slice(end);
+      const scrollTop = ta.scrollTop;
       onChange(next);
       requestAnimationFrame(() => {
-        ta.focus();
         const pos = start + before.length;
-        ta.setSelectionRange(pos, pos + selected.length);
+        restoreCaret(ta, scrollTop, pos, pos + selected.length);
       });
     },
-    [value, onChange]
+    [value, onChange, restoreCaret]
   );
 
   /** start〜end を text で置き換え、カーソルを挿入文字の直後へ置く */
@@ -203,14 +276,14 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
     (text: string, { start, end }: { start: number; end: number }) => {
       const ta = taRef.current;
       if (!ta) return;
+      const scrollTop = ta.scrollTop;
       onChange(value.slice(0, start) + text + value.slice(end));
       requestAnimationFrame(() => {
-        ta.focus();
         const pos = start + text.length;
-        ta.setSelectionRange(pos, pos);
+        restoreCaret(ta, scrollTop, pos, pos);
       });
     },
-    [value, onChange]
+    [value, onChange, restoreCaret]
   );
 
   /** カーソル行の前後に改行を補いつつテキストを行として挿入する */
@@ -223,14 +296,14 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
       const after = value.slice(start);
       const prefix = before.length === 0 || before.endsWith("\n") ? "" : "\n";
       const suffix = after.startsWith("\n") || after.length === 0 ? "" : "\n";
+      const scrollTop = ta.scrollTop;
       onChange(before + prefix + text + suffix + after);
       requestAnimationFrame(() => {
-        ta.focus();
         const pos = before.length + prefix.length + text.length;
-        ta.setSelectionRange(pos, pos);
+        restoreCaret(ta, scrollTop, pos, pos);
       });
     },
-    [value, onChange]
+    [value, onChange, restoreCaret]
   );
 
   return (
@@ -348,6 +421,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
             ref={taRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onScroll={() => syncScroll(taRef.current, previewRef.current)}
             spellCheck={false}
             placeholder={placeholder ?? "Markdown で本文を入力..."}
             className={`${
@@ -366,7 +440,13 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           />
         )}
         {(mode === "preview" || mode === "split") && (
-          <PreviewPane md={value} device={device} half={mode === "split"} />
+          <PreviewPane
+            md={value}
+            device={device}
+            half={mode === "split"}
+            paneRef={previewRef}
+            onScroll={() => syncScroll(previewRef.current, taRef.current)}
+          />
         )}
       </div>
 

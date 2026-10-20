@@ -268,6 +268,27 @@ export type Database = {
         }
         Relationships: []
       }
+      work_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       work_skills: {
         Row: {
           skill_id: string
@@ -407,7 +428,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      rename_work_category: {
+        Args: { p_id: string; p_name: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

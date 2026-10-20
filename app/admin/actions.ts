@@ -2,8 +2,6 @@ import { supabase } from "@/src/lib/supabase";
 import {
   upsertSkillVocab,
   upsertToolVocab,
-  setWorkSkills,
-  setWorkTools,
   setExperienceTools,
   setToolIconUrl,
 } from "@/src/lib/skills-tools-client";
@@ -18,21 +16,26 @@ import {
 export type StorageImage = { name: string; path: string; url: string };
 
 async function listFolderRecursive(prefix: string): Promise<StorageImage[]> {
-  const { data, error } = await supabase.storage
-    .from("Portfolio")
-    .list(prefix, { limit: 1000 });
-  if (error || !data) return [];
   const results: StorageImage[] = [];
-  for (const item of data) {
-    const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
-    if (item.metadata) {
-      const { data: urlData } = supabase.storage
-        .from("Portfolio")
-        .getPublicUrl(fullPath);
-      results.push({ name: item.name, path: fullPath, url: urlData.publicUrl });
-    } else {
-      results.push(...(await listFolderRecursive(fullPath)));
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase.storage
+      .from("Portfolio")
+      .list(prefix, { limit: pageSize, offset });
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error("画像一覧を取得できませんでした");
+    for (const item of data) {
+      const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+      if (item.metadata) {
+        const { data: urlData } = supabase.storage
+          .from("Portfolio")
+          .getPublicUrl(fullPath);
+        results.push({ name: item.name, path: fullPath, url: urlData.publicUrl });
+      } else {
+        results.push(...(await listFolderRecursive(fullPath)));
+      }
     }
+    if (data.length < pageSize) break;
   }
   return results;
 }
@@ -48,7 +51,6 @@ export async function listStorageImages(): Promise<{
     return { data: [], error: e instanceof Error ? e.message : String(e) };
   }
 }
-
 export async function uploadStorageImage(
   formData: FormData,
   folder: string,
@@ -143,8 +145,9 @@ export async function deleteFlowchart(
   id: string,
 ): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("flowcharts").delete().eq("id", id);
+    const { data, error } = await supabase.from("flowcharts").delete().eq("id", id).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "フローチャートを削除できませんでした（権限またはデータを確認してください）" };
     clearFlowchartCache(id);
     return { error: null };
   } catch (e) {
@@ -180,52 +183,27 @@ export async function duplicateFlowchart(id: string): Promise<{
   }
 }
 
-/**
- * Works を 1 件 upsert する。並び順は一覧で管理し、新規は末尾に追加する。
- */
+/** 作品・スキル・ツールを一つの DB トランザクションで保存する。 */
 export async function saveWork(
   payload: WorkRow,
-  options: { isNew: boolean }
+  skills: string[],
+  tools: string[],
 ): Promise<{ error: string | null }> {
   try {
-    let sortOrderField: { sort_order: number } | Record<string, never> = {};
-    if (options.isNew) {
-      const { data: rows, error: maxError } = await supabase
-        .from("works")
-        .select("sort_order")
-        .order("sort_order", { ascending: false, nullsFirst: false })
-        .limit(1);
-      if (maxError) {
-        return { error: maxError.message || maxError.code || String(maxError) };
-      }
-      sortOrderField = { sort_order: (rows?.[0]?.sort_order ?? -1) + 1 };
-    }
-    const { error } = await supabase
-      .from("works")
-      .upsert(
-        {
-          id: payload.id,
-          title: payload.title,
-          category: payload.category ?? null,
-          thumbnail_url: payload.thumbnail_url ?? null,
-          role: payload.role ?? null,
-          period: payload.period ?? null,
-          timeline: payload.timeline ?? null,
-          stakeholders: payload.stakeholders ?? null,
-          hero_brand: payload.hero_brand ?? null,
-          hero_screenshots: payload.hero_screenshots ?? [],
-          hero_bg_color: payload.hero_bg_color ?? null,
-          sections: payload.sections ?? null,
-          stakeholder_breakdown: payload.stakeholder_breakdown ?? null,
-          ...sortOrderField,
-          career_item_id: payload.career_item_id ?? null,
-          is_published: payload.is_published ?? true,
-          ...(payload.created_at ? { created_at: payload.created_at } : {}),
-        },
-        { onConflict: "id" }
-      );
-    if (error) return { error: error.message || error.code || String(error) };
-
+    // The DB types are generated from the deployed schema. Until this migration is
+    // applied and update-types is run, keep the new RPC's signature local.
+    const client = supabase as unknown as {
+      rpc: (
+        name: "save_work_with_relations",
+        args: { p_work: Json; p_skill_labels: string[]; p_tool_names: string[] },
+      ) => Promise<{ error: { message: string } | null }>;
+    };
+    const { error } = await client.rpc("save_work_with_relations", {
+      p_work: payload as unknown as Json,
+      p_skill_labels: skills,
+      p_tool_names: tools,
+    });
+    if (error) return { error: error.message };
     return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -233,13 +211,12 @@ export async function saveWork(
   }
 }
 
-/**
- * Works を 1 件削除（サーバー・サービスロールで実行）
- */
+/** 作品を 1 件削除する。権限は Supabase RLS が判定する。 */
 export async function deleteWork(id: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("works").delete().eq("id", id);
+    const { data, error } = await supabase.from("works").delete().eq("id", id).select("id");
     if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) return { error: "作品を削除できませんでした（権限またはデータを確認してください）" };
     return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -336,8 +313,9 @@ export async function saveSkillCard(card: {
 
 export async function deleteSkillCard(id: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_cards").delete().eq("id", id);
+    const { data, error } = await supabase.from("skill_cards").delete().eq("id", id).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "スキルカードを削除できませんでした（権限またはデータを確認してください）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -365,11 +343,15 @@ export async function moveSkillCards(
   updates: { id: string; sort_order: number }[]
 ): Promise<{ error: string | null }> {
   try {
-    await Promise.all(
+    const results = await Promise.all(
       updates.map(({ id, sort_order }) =>
-        supabase.from("skill_cards").update({ sort_order }).eq("id", id)
+        supabase.from("skill_cards").update({ sort_order }).eq("id", id).select("id")
       )
     );
+    const failed = results.find((result) => result.error || !result.data?.length);
+    if (failed) {
+      return { error: failed.error?.message ?? "並び順を更新できませんでした（権限またはデータを確認してください）" };
+    }
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -417,8 +399,9 @@ export async function saveSkillBar(bar: {
 
 export async function deleteSkillBar(barId: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_experience").delete().eq("id", barId);
+    const { data, error } = await supabase.from("skill_experience").delete().eq("id", barId).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "スキル行を削除できませんでした（権限またはデータを確認してください）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -463,51 +446,6 @@ export async function saveExperienceTools(
       ids.push(vocab.id);
     }
     await setExperienceTools(experienceId, [...new Set(ids)]);
-    return { error: null };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-// ─── work_skills / work_tools 保存 ──────────────────────────────────
-
-/**
- * スキルラベル配列からそのまま work_skills を更新する。
- * labels にないラベルは skills_vocab に自動登録してから保存する。
- */
-export async function saveWorkSkillsByLabels(
-  workId: string,
-  labels: string[]
-): Promise<{ error: string | null }> {
-  try {
-    const skillIds = await Promise.all(
-      labels.map(async (label) => {
-        const vocab = await upsertSkillVocab(label);
-        return vocab.id;
-      })
-    );
-    await setWorkSkills(workId, skillIds);
-    return { error: null };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-/**
- * ツール名配列からそのまま work_tools を更新する。
- */
-export async function saveWorkToolsByNames(
-  workId: string,
-  names: string[]
-): Promise<{ error: string | null }> {
-  try {
-    const toolIds = await Promise.all(
-      names.map(async (name) => {
-        const vocab = await upsertToolVocab(name);
-        return vocab.id;
-      })
-    );
-    await setWorkTools(workId, toolIds);
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };

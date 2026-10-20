@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 別作業用 checkout と、その中の .next/out 生成物は本体の検査対象外。
+    ".claude/worktrees/**",
   ]),
   {
     rules: {

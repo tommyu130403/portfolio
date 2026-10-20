@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
@@ -9,11 +10,19 @@ import { useAuth } from "@/lib/auth";
  * DB 側で許可される。ここでセッションを確認し、未ログインならログインフォームを出す。
  */
 export function SupabaseSessionGate({ children }: { children: React.ReactNode }) {
-  const { supabaseSession } = useAuth();
+  const { supabaseSession, accessRole } = useAuth();
 
-  if (supabaseSession === "loading") return <div className="min-h-screen bg-surface" />;
+  if (supabaseSession === "loading" || (supabaseSession === "signedIn" && accessRole === "loading")) {
+    return <div className="min-h-screen bg-surface" />;
+  }
   if (supabaseSession === "signedOut") return <LoginForm />;
-  return <>{children}</>;
+  if (accessRole === "owner") return <>{children}</>;
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface text-white">
+      <p role="alert">{accessRole === "error" ? "管理権限を確認できませんでした。" : "このアカウントには管理権限がありません。"}</p>
+      <Link href="/" className="text-primary hover:underline">ポートフォリオへ戻る</Link>
+    </div>
+  );
 }
 
 function LoginForm() {

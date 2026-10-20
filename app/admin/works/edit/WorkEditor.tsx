@@ -25,8 +25,6 @@ import { sectionsToMarkdown, markdownToSections } from "@/lib/work-sections";
 import {
   saveWork,
   deleteWork,
-  saveWorkSkillsByLabels,
-  saveWorkToolsByNames,
   addToolNameFromWorks,
   saveToolIconUrl,
   setWorkPublished,
@@ -124,6 +122,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
   const [careerOptions, setCareerOptions] = useState<CareerOption[]>([]);
   const [tab, setTab] = useState<"content" | "settings">("content");
   const [missing, setMissing] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(false);
@@ -181,6 +180,19 @@ export default function WorkEditor({ workId }: { workId: string }) {
         supabase.from("tools_vocab").select("id, name, icon_url").order("name"),
       ]);
 
+      const failure = [
+        "error" in workRes ? workRes.error : null,
+        "error" in skillsRes ? skillsRes.error : null,
+        "error" in toolsRes ? toolsRes.error : null,
+        careerRes.error,
+        skillVocabRes.error,
+        toolVocabRes.error,
+      ].find((error) => error);
+      if (failure) {
+        setLoadError(failure.message);
+        return;
+      }
+
       if (!isNew) {
         const row = (workRes.data as Work | null) ?? null;
         if (!row) {
@@ -211,7 +223,9 @@ export default function WorkEditor({ workId }: { workId: string }) {
         )
       );
     };
-    fetchAll();
+    fetchAll().catch((error: unknown) => {
+      setLoadError(error instanceof Error ? error.message : "作品を読み込めませんでした");
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workId]);
 
@@ -281,22 +295,13 @@ export default function WorkEditor({ workId }: { workId: string }) {
       period: formatPeriod(period),
       sections: markdownToSections(markdown),
     };
-    const saveRes = await saveWork(payload, { isNew });
+    const saveRes = await saveWork(payload, skills, tools);
     if (saveRes.error) {
       setSaving(false);
       setSaveError(saveRes.error);
       return;
     }
-    const [skillsRes, toolsRes] = await Promise.all([
-      saveWorkSkillsByLabels(id, skills),
-      saveWorkToolsByNames(id, tools),
-    ]);
     setSaving(false);
-    const err = skillsRes.error ?? toolsRes.error ?? null;
-    if (err) {
-      setSaveError(err);
-      return;
-    }
     setDirty(false);
     setSavedAt(true);
     setTimeout(() => setSavedAt(false), 2000);
@@ -314,6 +319,17 @@ export default function WorkEditor({ workId }: { workId: string }) {
     }
     router.push("/admin/works");
   };
+
+  if (loadError) {
+    return (
+      <AdminShell section="works">
+        <p className="text-[14px] text-danger-300" role="alert">作品を読み込めませんでした: {loadError}</p>
+        <Link href="/admin/works" className="mt-4 inline-block text-[13px] text-primary hover:underline">
+          ← Works 一覧へ戻る
+        </Link>
+      </AdminShell>
+    );
+  }
 
   if (missing) {
     return (

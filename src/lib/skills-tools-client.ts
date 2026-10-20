@@ -26,20 +26,23 @@ export async function listToolVocab(): Promise<ToolVocab[]> {
  * Works 編集画面のツールアイコン設定から呼ばれる。
  */
 export async function setToolIconUrl(toolId: string, iconUrl: string | null): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tools_vocab")
     .update({ icon_url: iconUrl && iconUrl.trim() ? iconUrl.trim() : null })
-    .eq("id", toolId);
+    .eq("id", toolId)
+    .select("id");
   if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error("ツールアイコンを更新できませんでした（権限またはデータを確認してください）");
 }
 
 export async function upsertSkillVocab(label: string): Promise<SkillVocab> {
   const trimmed = label.trim();
-  const { data: existing } = await supabase
+  const { data: existing, error: lookupError } = await supabase
     .from("skills_vocab")
     .select("id, label, category")
     .ilike("label", trimmed)
     .maybeSingle();
+  if (lookupError) throw new Error(lookupError.message);
   if (existing) return existing;
   const { data, error } = await supabase
     .from("skills_vocab")
@@ -55,11 +58,12 @@ export async function upsertToolVocab(
   fields?: { slug?: string | null; category?: string | null },
 ): Promise<ToolVocab> {
   const trimmed = name.trim();
-  const { data: existing } = await supabase
+  const { data: existing, error: lookupError } = await supabase
     .from("tools_vocab")
     .select("id, name, slug, category")
     .ilike("name", trimmed)
     .maybeSingle();
+  if (lookupError) throw new Error(lookupError.message);
   if (existing) {
     // tools_vocab は全バー・全プロジェクトで共有されるため、空/null では
     // 既存の slug / category を上書きしない（非空の値が来たときだけ更新）。

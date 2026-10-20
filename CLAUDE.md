@@ -125,6 +125,7 @@ Figma データの確認・デザイン変更を伴う作業では、判断を�
 
 検証駆動のオーケストレーション構成。席の定義は `.claude/agents/*.md`、失敗パターンは `.claude/skills/coding-lessons` / `research-lessons`、学びは `learnings/` に置く。
 受付は `.claude/skills/director`（サブエージェントではなくメインセッションで動く skill。依頼を受けた時点で読み込む）。受付段階で起動してよいのは `Explore` と `scope-planner` のみ。他の席は依頼書に合意が出てから起動する。
+着手時のモデル判定（opus（妥当） / Fable スタート推奨 / Opus で十分）も director がゲート表で行う。基準はグローバル `~/.claude/CLAUDE.md` §1-2「モデルの選び方」。Fable への切替はユーザーが新セッションで行い、Claude は上位モデルのセッションを自分では開けない。
 
 ### 6-1. 席の役割分担
 | 席 | model / 実体 | 役割 |

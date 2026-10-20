@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
+import ProtectedImage from "@/components/ProtectedImage";
 import {
   saveSkillCard,
   deleteSkillCard,
@@ -218,7 +219,7 @@ export function ImagePickerModal({
                       : "border-border-light hover:border-system-700"
                   }`}
                 >
-                  <img src={img.url} alt={img.name} className="h-20 w-full object-cover" />
+                  <ProtectedImage src={img.url} alt={img.name} className="h-20 w-full object-cover" />
                   <p className="truncate bg-[#121212] px-1 py-1 text-left text-[9px] text-fg-muted">
                     {img.path}
                   </p>
@@ -461,7 +462,7 @@ export function ImagePickerField({
         </button>
       </div>
       {value && (
-        <img src={value} alt="preview" className={previewClassName} />
+        <ProtectedImage src={value} alt="preview" className={previewClassName} />
       )}
       <ImagePickerModal
         open={open}

@@ -6,6 +6,7 @@ import Tag from "./Tag";
 import Tooltip from "./Tooltip";
 import { resolveLogoSlug } from "@/src/components/SkillsCardGrid";
 import WorkVizModal from "./WorkVizModal";
+import ProtectedImage from "./ProtectedImage";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
 import type { Tables } from "@/src/types/supabase";
 
@@ -59,7 +60,7 @@ const DeviceMock: FC<{ src: string; onClick?: () => void }> = ({ src, onClick })
     aria-label="スクリーンショットを拡大表示"
     className="w-[126px] shrink-0 aspect-[126/257] cursor-zoom-in overflow-hidden rounded-[24px] border-[3px] border-[#0a0a0a] bg-[#0a0a0a] shadow-xl"
   >
-    <img src={src} alt="" className="h-full w-full object-cover" />
+    <ProtectedImage src={src} alt="" className="h-full w-full object-cover" />
   </button>
 );
 
@@ -85,7 +86,7 @@ const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void }> = ({ shot
       onClick={onClose}
     >
       {shots.map((src, i) => (
-        <img
+        <ProtectedImage
           key={i}
           src={src}
           alt=""
@@ -142,7 +143,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
                 const iconSrc = resolveToolIconSrc(t, brokenIcons);
                 return iconSrc ? (
                   <Tooltip key={t.name} label={t.name}>
-                    <img
+                    <ProtectedImage
                       src={iconSrc}
                       alt={t.name}
                       className="h-4 w-4 shrink-0 object-contain"

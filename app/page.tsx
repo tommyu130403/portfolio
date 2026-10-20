@@ -7,6 +7,7 @@ import CareerGanttChart from "@/components/CareerGanttChart";
 import { WorksList } from "@/src/components/WorksList";
 import SkillsCardGrid from "@/src/components/SkillsCardGrid";
 import { AuthGate } from "@/components/AuthGate";
+import ProtectedImage from "@/components/ProtectedImage";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
@@ -203,7 +204,7 @@ function HomeContent() {
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-system-800" />
               ) : (
-                <img src={profile?.hero_image_url} alt="Profile" className="h-full w-full object-cover" />
+                <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" className="h-full w-full object-cover" />
               )}
             </div>
             <div className="flex flex-1 flex-col">

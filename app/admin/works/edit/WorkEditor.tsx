@@ -34,6 +34,7 @@ import {
 import PublishToggle from "@/app/admin/PublishToggle";
 import WorkCategoryField from "./WorkCategoryField";
 import { supabase } from "@/src/lib/supabase";
+import ProtectedImage from "@/components/ProtectedImage";
 import type { Json, Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
@@ -558,7 +559,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
                       }`}
                     >
                       {opt.icon_url && (
-                        <img src={opt.icon_url} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />
+                        <ProtectedImage src={opt.icon_url} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />
                       )}
                       {opt.name}
                     </button>
@@ -604,7 +605,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
                     {selectedTools.map((t) => (
                       <div key={t.id} className="flex items-center gap-2">
                         {t.icon_url ? (
-                          <img src={t.icon_url} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                          <ProtectedImage src={t.icon_url} alt="" className="h-5 w-5 shrink-0 object-contain" />
                         ) : (
                           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#1a1a1a] text-[9px] text-system-700">
                             —

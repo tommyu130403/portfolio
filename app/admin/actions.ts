@@ -272,6 +272,145 @@ export async function setWorkPublished(
   }
 }
 
+// ─── Work categories ──────────────────────────────────────────────────────────
+
+export type WorkCategory = { id: string; name: string; sort_order: number };
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+export async function listWorkCategories(): Promise<{
+  data: WorkCategory[];
+  error: string | null;
+}> {
+  try {
+    const { data, error } = await supabase
+      .from("work_categories")
+      .select("id, name, sort_order")
+      .order("sort_order", { ascending: true })
+      .order("name", { ascending: true });
+    if (error) return { data: [], error: error.message || error.code || String(error) };
+    return { data: data ?? [], error: null };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+/** 同名がすでにあればその行を返す（重複は作らない）。RLS 拒否は 0 行で返るため失敗として扱う。 */
+export async function addWorkCategory(
+  name: string
+): Promise<{ error: string | null; category?: WorkCategory }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "カテゴリ名を入力してください" };
+  try {
+    const { data: existing, error: findError } = await supabase
+      .from("work_categories")
+      .select("id, name, sort_order")
+      .eq("name", trimmed)
+      .limit(1);
+    if (findError) return { error: findError.message || findError.code || String(findError) };
+    if (existing?.length) return { error: null, category: existing[0] };
+
+    const { data: last, error: maxError } = await supabase
+      .from("work_categories")
+      .select("sort_order")
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    if (maxError) return { error: maxError.message || maxError.code || String(maxError) };
+    const next = (last?.[0]?.sort_order ?? 0) + 1;
+
+    const { data, error } = await supabase
+      .from("work_categories")
+      .insert({ name: trimmed, sort_order: next })
+      .select("id, name, sort_order");
+    if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) {
+      return { error: "カテゴリを追加できませんでした（権限がありません）" };
+    }
+    return { error: null, category: data[0] };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+/** 名前変更は DB 関数で work_categories と works.category を同時に更新する。 */
+export async function renameWorkCategory(
+  id: string,
+  name: string
+): Promise<{ error: string | null }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "カテゴリ名を入力してください" };
+  try {
+    const { data: dup, error: dupError } = await supabase
+      .from("work_categories")
+      .select("id")
+      .eq("name", trimmed)
+      .neq("id", id)
+      .limit(1);
+    if (dupError) return { error: dupError.message || dupError.code || String(dupError) };
+    if (dup?.length) return { error: "同じ名前のカテゴリがすでにあります" };
+
+    const { error } = await supabase.rpc("rename_work_category", {
+      p_id: id,
+      p_name: trimmed,
+    });
+    if (error) return { error: error.message || error.code || String(error) };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+/**
+ * カテゴリを使っている作品があれば、削除できない理由を返す（確認ダイアログより前に呼ぶ）。
+ */
+export async function checkWorkCategoryDeletable(name: string): Promise<{ error: string | null }> {
+  try {
+    const { count, error } = await supabase
+      .from("works")
+      .select("id", { count: "exact", head: true })
+      .eq("category", name);
+    if (error) return { error: error.message || error.code || String(error) };
+    if ((count ?? 0) > 0) {
+      return { error: `このカテゴリは ${count} 件の作品で使われているため削除できません` };
+    }
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+/** 作品で使われているカテゴリは削除させない。RLS 拒否は 0 行で返るため失敗として扱う。 */
+export async function deleteWorkCategory(id: string): Promise<{ error: string | null }> {
+  try {
+    const { data: found, error: findError } = await supabase
+      .from("work_categories")
+      .select("name")
+      .eq("id", id)
+      .limit(1);
+    if (findError) return { error: findError.message || findError.code || String(findError) };
+    const name = found?.[0]?.name;
+    if (!name) return { error: "カテゴリが見つかりません" };
+
+    const usage = await checkWorkCategoryDeletable(name);
+    if (usage.error) return usage;
+
+    const { data, error } = await supabase
+      .from("work_categories")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) {
+      return { error: "カテゴリを削除できませんでした（権限がありません）" };
+    }
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
 /**
  * スキルラベルを skills_vocab に追加（Works から新規入力された場合）
  * 旧: skill_bars への書き込みから移行済み。

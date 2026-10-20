@@ -34,6 +34,7 @@ import {
   uploadStorageImage,
 } from "@/app/admin/actions";
 import PublishToggle from "@/app/admin/PublishToggle";
+import WorkCategoryField from "./WorkCategoryField";
 import { supabase } from "@/src/lib/supabase";
 import type { Json, Tables } from "@/src/types/supabase";
 
@@ -436,7 +437,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
           <div className="grid max-w-main grid-cols-2 gap-4">
             <div>
               <FieldLabel>カテゴリ</FieldLabel>
-              <Input value={work.category ?? ""} onChange={(v) => setField("category", v || null)} placeholder="プラットフォーム開発" />
+              <WorkCategoryField value={work.category} onChange={(v) => setField("category", v)} />
             </div>
             <div className="col-span-2">
               <FieldLabel>担当役割</FieldLabel>

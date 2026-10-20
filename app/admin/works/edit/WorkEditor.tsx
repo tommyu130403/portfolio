@@ -13,7 +13,8 @@ import {
   ImagePickerModal,
   Input,
 } from "../../AdminLayout";
-import RichMarkdownEditor from "@/components/RichMarkdownEditor";
+import RichMarkdownEditor, { UPLOAD_PLACEHOLDER } from "@/components/RichMarkdownEditor";
+import { compressImage } from "@/lib/compress-image";
 import {
   parseTimeline,
   parseStakeholders,
@@ -30,6 +31,7 @@ import {
   addToolNameFromWorks,
   saveToolIconUrl,
   setWorkPublished,
+  uploadStorageImage,
 } from "@/app/admin/actions";
 import PublishToggle from "@/app/admin/PublishToggle";
 import WorkCategoryField from "./WorkCategoryField";
@@ -280,7 +282,13 @@ export default function WorkEditor({ workId }: { workId: string }) {
       ...work,
       id,
       period: formatPeriod(period),
-      sections: markdownToSections(markdown),
+      // 画像アップロード中の仮の行が万一残っていても DB には入れない
+      sections: markdownToSections(
+        markdown
+          .split("\n")
+          .filter((l) => l.trim() !== UPLOAD_PLACEHOLDER)
+          .join("\n")
+      ),
     };
     const saveRes = await saveWork(payload, { isNew });
     if (saveRes.error) {
@@ -413,6 +421,12 @@ export default function WorkEditor({ workId }: { workId: string }) {
           }}
           onPickImage={pickImage}
           onPickFlowchart={pickFlowchart}
+          onUploadImage={async (file) => {
+            const fd = new FormData();
+            fd.append("file", await compressImage(file));
+            const { url, error } = await uploadStorageImage(fd, "projects/sections");
+            return { url, error };
+          }}
           className="min-h-0 flex-1"
         />
       )}

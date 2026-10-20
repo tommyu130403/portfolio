@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Claude Code が作る作業用コピー（git worktree）。別ブランチの全ファイルが門の lint に混ざるため除外する
+    ".claude/worktrees/**",
   ]),
   {
     rules: {

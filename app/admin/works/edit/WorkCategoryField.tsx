@@ -1,35 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Input } from "../../AdminLayout";
 import {
   addWorkCategory,
-  checkWorkCategoryDeletable,
-  deleteWorkCategory,
   listWorkCategories,
-  renameWorkCategory,
   type WorkCategory,
 } from "../../actions";
 
 const smallButton =
   "shrink-0 rounded-[6px] border border-border-light px-3 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40";
-const dangerButton =
-  "shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:cursor-not-allowed disabled:opacity-40";
 
 export default function WorkCategoryField({
   value,
   onChange,
+  dirty,
 }: {
   value: string | null;
   onChange: (v: string | null) => void;
+  dirty?: boolean;
 }) {
   const [categories, setCategories] = useState<WorkCategory[]>([]);
   const [newName, setNewName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [managing, setManaging] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
 
   const refresh = useCallback(async () => {
     const res = await listWorkCategories();
@@ -61,41 +56,6 @@ export default function WorkCategoryField({
       onChange(res.category.name);
       setNewName("");
     }
-    setBusy(false);
-  };
-
-  const handleRename = async (c: WorkCategory) => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    const res = await renameWorkCategory(c.id, editingName);
-    if (res.error) {
-      setError(res.error);
-    } else {
-      await refresh();
-      if (value === c.name) onChange(editingName.trim());
-      setEditingId(null);
-    }
-    setBusy(false);
-  };
-
-  const handleDelete = async (c: WorkCategory) => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    const usage = await checkWorkCategoryDeletable(c.name);
-    if (usage.error) {
-      setError(usage.error);
-      setBusy(false);
-      return;
-    }
-    if (!window.confirm(`カテゴリ「${c.name}」を削除しますか？`)) {
-      setBusy(false);
-      return;
-    }
-    const res = await deleteWorkCategory(c.id);
-    if (res.error) setError(res.error);
-    else await refresh();
     setBusy(false);
   };
 
@@ -137,80 +97,15 @@ export default function WorkCategoryField({
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setManaging((v) => !v)}
+      <Link
+        href="/admin/masters"
         className="self-start text-[11px] text-primary hover:underline"
+        onClick={(e) => {
+          if (dirty && !window.confirm("未保存の変更があります。破棄してマスタ管理へ移動しますか？")) e.preventDefault();
+        }}
       >
-        {managing ? "カテゴリの管理を閉じる" : "カテゴリを管理"}
-      </button>
-
-      {managing && (
-        <ul className="flex flex-col gap-1 rounded-[8px] border border-border-light p-2">
-          {categories.length === 0 && (
-            <li className="text-[12px] text-fg-muted">カテゴリはまだありません</li>
-          )}
-          {categories.map((c) => (
-            <li key={c.id} className="flex items-center gap-2">
-              {editingId === c.id ? (
-                <>
-                  <div
-                    className="flex-1"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
-                        e.preventDefault();
-                        void handleRename(c);
-                      }
-                    }}
-                  >
-                    <Input value={editingName} onChange={setEditingName} />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleRename(c)}
-                    disabled={busy || !editingName.trim()}
-                    className={smallButton}
-                  >
-                    保存
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingId(null)}
-                    disabled={busy}
-                    className={smallButton}
-                  >
-                    キャンセル
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="flex-1 text-[13px] text-white">{c.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingId(c.id);
-                      setEditingName(c.name);
-                      setError(null);
-                    }}
-                    disabled={busy}
-                    className={smallButton}
-                  >
-                    名前変更
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(c)}
-                    disabled={busy}
-                    className={dangerButton}
-                  >
-                    削除
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+        カテゴリの改名・削除は「マスタ管理」で
+      </Link>
 
       {error && <p className="text-[12px] text-danger-300">{error}</p>}
     </div>

@@ -5,7 +5,6 @@ import {
   setWorkSkills,
   setWorkTools,
   setExperienceTools,
-  setToolIconUrl,
 } from "@/src/lib/skills-tools-client";
 import type { Json, Tables } from "@/src/types/supabase";
 import {
@@ -411,6 +410,237 @@ export async function deleteWorkCategory(id: string): Promise<{ error: string | 
   }
 }
 
+// ─── Masters (tools_vocab / skills_vocab) ─────────────────────────────────────
+
+export type MasterTool = {
+  id: string; name: string; slug: string | null; category: string | null;
+  icon_url: string | null; workCount: number; skillCount: number;
+};
+export type MasterSkill = { id: string; label: string; workCount: number };
+
+function dbErr(error: { message?: string; code?: string }): string {
+  return error.message || error.code || String(error);
+}
+
+function countBy(rows: { [k: string]: string }[] | null, key: string): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const r of rows ?? []) m.set(r[key], (m.get(r[key]) ?? 0) + 1);
+  return m;
+}
+
+export async function listMasterTools(): Promise<{ data: MasterTool[]; error: string | null }> {
+  try {
+    const [tools, wt, st] = await Promise.all([
+      supabase.from("tools_vocab").select("id, name, slug, category, icon_url").order("name"),
+      supabase.from("work_tools").select("tool_id"),
+      supabase.from("skill_experience_tools").select("tool_id"),
+    ]);
+    const err = tools.error ?? wt.error ?? st.error;
+    if (err) return { data: [], error: dbErr(err) };
+    const workCounts = countBy(wt.data, "tool_id");
+    const skillCounts = countBy(st.data, "tool_id");
+    return {
+      data: (tools.data ?? []).map((t) => ({
+        ...t,
+        workCount: workCounts.get(t.id) ?? 0,
+        skillCount: skillCounts.get(t.id) ?? 0,
+      })),
+      error: null,
+    };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+export async function listMasterSkills(): Promise<{ data: MasterSkill[]; error: string | null }> {
+  try {
+    const [skills, ws] = await Promise.all([
+      supabase.from("skills_vocab").select("id, label").order("label"),
+      supabase.from("work_skills").select("skill_id"),
+    ]);
+    const err = skills.error ?? ws.error;
+    if (err) return { data: [], error: dbErr(err) };
+    const counts = countBy(ws.data, "skill_id");
+    return {
+      data: (skills.data ?? []).map((s) => ({ ...s, workCount: counts.get(s.id) ?? 0 })),
+      error: null,
+    };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+async function hasToolNameConflict(
+  name: string,
+  excludeId?: string,
+): Promise<{ error: string | null; conflict: boolean }> {
+  const { data, error } = await supabase.from("tools_vocab").select("id, name");
+  if (error) return { error: dbErr(error), conflict: false };
+  const lower = name.toLowerCase();
+  const conflict = (data ?? []).some(
+    (r) => r.id !== excludeId && r.name.trim().toLowerCase() === lower,
+  );
+  return { error: null, conflict };
+}
+
+async function hasSkillLabelConflict(
+  label: string,
+  excludeId?: string,
+): Promise<{ error: string | null; conflict: boolean }> {
+  const { data, error } = await supabase.from("skills_vocab").select("id, label");
+  if (error) return { error: dbErr(error), conflict: false };
+  const lower = label.toLowerCase();
+  const conflict = (data ?? []).some(
+    (r) => r.id !== excludeId && r.label.trim().toLowerCase() === lower,
+  );
+  return { error: null, conflict };
+}
+
+export async function addToolVocab(name: string): Promise<{ error: string | null }> {
+  try {
+    const trimmed = name.trim();
+    if (!trimmed) return { error: "ツール名を入力してください" };
+    const dup = await hasToolNameConflict(trimmed);
+    if (dup.error) return { error: dup.error };
+    if (dup.conflict) return { error: "同じ名前のツールがすでにあります" };
+    const { data, error } = await supabase.from("tools_vocab").insert({ name: trimmed }).select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "ツールを追加できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function updateToolVocab(
+  id: string,
+  patch: { name: string; slug: string | null; category: string | null; icon_url: string | null },
+): Promise<{ error: string | null }> {
+  try {
+    const name = patch.name.trim();
+    if (!name) return { error: "ツール名を入力してください" };
+    const dup = await hasToolNameConflict(name, id);
+    if (dup.error) return { error: dup.error };
+    if (dup.conflict) return { error: "同じ名前のツールがすでにあります" };
+
+    const slug = patch.slug?.trim() || null;
+    if (slug) {
+      const { data: taken, error: slugErr } = await supabase
+        .from("tools_vocab")
+        .select("id, name")
+        .eq("slug", slug)
+        .neq("id", id)
+        .limit(1);
+      if (slugErr) return { error: dbErr(slugErr) };
+      if (taken?.length) return { error: `このロゴ（slug）は「${taken[0].name}」で使われています` };
+    }
+
+    const { data, error } = await supabase
+      .from("tools_vocab")
+      .update({
+        name,
+        slug,
+        category: patch.category?.trim() || null,
+        icon_url: patch.icon_url?.trim() || null,
+      })
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "ツールを更新できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+async function countToolUsage(
+  id: string,
+): Promise<{ error: string | null; workCount: number; skillCount: number }> {
+  const [w, s] = await Promise.all([
+    supabase.from("work_tools").select("tool_id", { count: "exact", head: true }).eq("tool_id", id),
+    supabase
+      .from("skill_experience_tools")
+      .select("tool_id", { count: "exact", head: true })
+      .eq("tool_id", id),
+  ]);
+  const err = w.error ?? s.error;
+  if (err) return { error: dbErr(err), workCount: 0, skillCount: 0 };
+  return { error: null, workCount: w.count ?? 0, skillCount: s.count ?? 0 };
+}
+
+export async function deleteToolVocab(id: string): Promise<{ error: string | null }> {
+  try {
+    const usage = await countToolUsage(id);
+    if (usage.error) return { error: usage.error };
+    if (usage.workCount + usage.skillCount > 0) {
+      return {
+        error: `このツールは作品 ${usage.workCount} 件 / スキル項目 ${usage.skillCount} 件で使われているため削除できません`,
+      };
+    }
+    const { data, error } = await supabase.from("tools_vocab").delete().eq("id", id).select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "ツールを削除できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function addSkillVocab(label: string): Promise<{ error: string | null }> {
+  try {
+    const trimmed = label.trim();
+    if (!trimmed) return { error: "スキル名を入力してください" };
+    const dup = await hasSkillLabelConflict(trimmed);
+    if (dup.error) return { error: dup.error };
+    if (dup.conflict) return { error: "同じ名前のスキルがすでにあります" };
+    const { data, error } = await supabase.from("skills_vocab").insert({ label: trimmed }).select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "スキルを追加できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function renameSkillVocab(id: string, label: string): Promise<{ error: string | null }> {
+  try {
+    const trimmed = label.trim();
+    if (!trimmed) return { error: "スキル名を入力してください" };
+    const dup = await hasSkillLabelConflict(trimmed, id);
+    if (dup.error) return { error: dup.error };
+    if (dup.conflict) return { error: "同じ名前のスキルがすでにあります" };
+    const { data, error } = await supabase
+      .from("skills_vocab")
+      .update({ label: trimmed })
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "スキルを更新できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function deleteSkillVocab(id: string): Promise<{ error: string | null }> {
+  try {
+    const { count, error: countErr } = await supabase
+      .from("work_skills")
+      .select("skill_id", { count: "exact", head: true })
+      .eq("skill_id", id);
+    if (countErr) return { error: dbErr(countErr) };
+    if ((count ?? 0) > 0) {
+      return { error: `このスキルは作品 ${count} 件で使われているため削除できません` };
+    }
+    const { data, error } = await supabase.from("skills_vocab").delete().eq("id", id).select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "スキルを削除できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
 /**
  * スキルラベルを skills_vocab に追加（Works から新規入力された場合）
  * 旧: skill_bars への書き込みから移行済み。
@@ -442,22 +672,6 @@ export async function addToolNameFromWorks(
   }
 }
 
-/**
- * ツールのアイコン（tools_vocab.icon_url）を更新（共有語彙のロゴ。空で消去）。
- */
-export async function saveToolIconUrl(
-  toolId: string,
-  iconUrl: string | null
-): Promise<{ error: string | null }> {
-  try {
-    await setToolIconUrl(toolId, iconUrl);
-    return { error: null };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { error: msg };
-  }
-}
-
 // ─── skill_cards CRUD ─────────────────────────────────────────────────────────
 
 export async function saveSkillCard(card: {
@@ -475,8 +689,9 @@ export async function saveSkillCard(card: {
 
 export async function deleteSkillCard(id: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_cards").delete().eq("id", id);
+    const { data, error } = await supabase.from("skill_cards").delete().eq("id", id).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "削除できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -556,8 +771,9 @@ export async function saveSkillBar(bar: {
 
 export async function deleteSkillBar(barId: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_experience").delete().eq("id", barId);
+    const { data, error } = await supabase.from("skill_experience").delete().eq("id", barId).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "削除できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -581,30 +797,39 @@ export async function addSkillBar(cardId: string, sortOrder: number): Promise<{
   }
 }
 
-// ─── skill_experience_tools（スキル行単位のツール）────────────────────────────
-
-/**
- * スキル行（skill_experience）のツール一覧をまとめて保存する。
- *  - 各ツールは名前で tools_vocab を upsert（slug / category も保存）。
- *  - その ID 群で skill_experience_tools を置き換える（順序＝配列順）。
- * 同名ツールは 1 件に集約（中間テーブルの PK 重複を避ける）。
- */
-export async function saveExperienceTools(
-  experienceId: string,
-  tools: { name: string; slug: string | null; category: string | null }[],
+export async function moveSkillBars(
+  updates: { id: string; sort_order: number }[]
 ): Promise<{ error: string | null }> {
   try {
-    const ids: string[] = [];
-    for (const t of tools) {
-      const name = t.name.trim();
-      if (!name) continue;
-      const vocab = await upsertToolVocab(name, { slug: t.slug, category: t.category });
-      ids.push(vocab.id);
+    const results = await Promise.all(
+      updates.map(({ id, sort_order }) =>
+        supabase.from("skill_experience").update({ sort_order }).eq("id", id).select("id")
+      )
+    );
+    // RLS で拒否されるとエラーなしで 0 行更新になるため、更新行が無ければ失敗として返す
+    const failed = results.find((r) => r.error);
+    if (failed?.error) return { error: dbErr(failed.error) };
+    if (results.some((r) => !r.data?.length)) {
+      return { error: "並び順を更新できませんでした（権限またはデータが見つかりません）" };
     }
-    await setExperienceTools(experienceId, [...new Set(ids)]);
     return { error: null };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: errMsg(e) };
+  }
+}
+
+// ─── skill_experience_tools（スキル行単位のツール）────────────────────────────
+
+/** スキル行のツールを tools_vocab の ID 配列（順序＝配列順）で置き換える。 */
+export async function saveExperienceToolIds(
+  experienceId: string,
+  toolIds: string[],
+): Promise<{ error: string | null }> {
+  try {
+    await setExperienceTools(experienceId, [...new Set(toolIds)]);
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
   }
 }
 

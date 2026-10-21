@@ -21,25 +21,15 @@ export async function listToolVocab(): Promise<ToolVocab[]> {
   return data ?? [];
 }
 
-/**
- * tools_vocab.icon_url を更新（共有語彙のロゴ。空文字は null として消去）。
- * Works 編集画面のツールアイコン設定から呼ばれる。
- */
-export async function setToolIconUrl(toolId: string, iconUrl: string | null): Promise<void> {
-  const { error } = await supabase
-    .from("tools_vocab")
-    .update({ icon_url: iconUrl && iconUrl.trim() ? iconUrl.trim() : null })
-    .eq("id", toolId);
-  if (error) throw new Error(error.message);
-}
-
 export async function upsertSkillVocab(label: string): Promise<SkillVocab> {
   const trimmed = label.trim();
-  const { data: existing } = await supabase
+  const pattern = trimmed.replace(/[\\%_]/g, (c) => "\\" + c);
+  const { data: existing, error: findError } = await supabase
     .from("skills_vocab")
     .select("id, label, category")
-    .ilike("label", trimmed)
+    .ilike("label", pattern)
     .maybeSingle();
+  if (findError) throw new Error(findError.message);
   if (existing) return existing;
   const { data, error } = await supabase
     .from("skills_vocab")
@@ -55,11 +45,13 @@ export async function upsertToolVocab(
   fields?: { slug?: string | null; category?: string | null },
 ): Promise<ToolVocab> {
   const trimmed = name.trim();
-  const { data: existing } = await supabase
+  const pattern = trimmed.replace(/[\\%_]/g, (c) => "\\" + c);
+  const { data: existing, error: findError } = await supabase
     .from("tools_vocab")
     .select("id, name, slug, category")
-    .ilike("name", trimmed)
+    .ilike("name", pattern)
     .maybeSingle();
+  if (findError) throw new Error(findError.message);
   if (existing) {
     // tools_vocab は全バー・全プロジェクトで共有されるため、空/null では
     // 既存の slug / category を上書きしない（非空の値が来たときだけ更新）。

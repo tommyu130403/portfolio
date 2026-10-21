@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { NAV_SECTIONS, type AdminSectionId } from "../sections";
+import { getIconCatalog, getLogoSlugs } from "../iconCatalog";
 import AdminSectionClient from "./AdminSectionClient";
 
 /**
@@ -18,5 +19,15 @@ export default async function AdminSectionPage({
   const { section } = await params;
   if (!NAV_SECTIONS.some(({ id }) => id === section)) notFound();
 
-  return <AdminSectionClient section={section as AdminSectionId} />;
+  const logoSlugs = section === "masters" ? getLogoSlugs() : [];
+
+  const iconCatalog = section === "skills-experience" ? getIconCatalog() : [];
+
+  return (
+    <AdminSectionClient
+      section={section as AdminSectionId}
+      logoSlugs={logoSlugs}
+      iconCatalog={iconCatalog}
+    />
+  );
 }

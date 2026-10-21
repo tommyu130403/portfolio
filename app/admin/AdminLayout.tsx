@@ -13,7 +13,9 @@ import {
   saveSkillBar,
   deleteSkillBar,
   addSkillBar,
-  saveExperienceTools,
+  saveExperienceToolIds,
+  moveSkillBars,
+  addToolNameFromWorks,
   listStorageImages,
   uploadStorageImage,
   listFlowcharts,
@@ -30,7 +32,11 @@ import type { Tables } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 import { parseFlowchart } from "@/lib/flowchart";
 import { compressImage } from "@/lib/compress-image";
+import { SkillCard as PublicSkillCard, SKILL_LEVELS, segmentsToLevel, type SkillCardConfig } from "@/src/components/SkillsCardGrid";
 import PublishToggle from "./PublishToggle";
+import MastersSection from "./masters/MastersSection";
+import IconPickerField, { type IconValue } from "./IconPickerField";
+import type { IconCatalog } from "./iconCatalogTypes";
 import { NAV_SECTIONS, type AdminSectionId } from "./sections";
 
 // ─── 型 ───────────────────────────────────────────────
@@ -51,7 +57,7 @@ export { NAV_SECTIONS, type AdminSectionId };
 
 // ─── 共通 UI ──────────────────────────────────────────
 
-function SectionTitle({ label, title }: { label: string; title: string }) {
+export function SectionTitle({ label, title }: { label: string; title: string }) {
   return (
     <div className="mb-8">
       <p className="mb-1 text-[12px] tracking-[0.6px] text-primary">{label}</p>
@@ -495,7 +501,7 @@ export function FormGroupHeader({ children }: { children: React.ReactNode }) {
 }
 
 export function Input({
-  value, onChange, placeholder, className = "", list, disabled,
+  value, onChange, placeholder, className = "", list, disabled, type = "text", min, max,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -503,10 +509,15 @@ export function Input({
   className?: string;
   list?: string;
   disabled?: boolean;
+  type?: "text" | "number";
+  min?: number;
+  max?: number;
 }) {
   return (
     <input
-      type="text"
+      type={type}
+      min={min}
+      max={max}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
@@ -528,6 +539,46 @@ export function Textarea({
       placeholder={placeholder}
       className="w-full resize-y rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] leading-relaxed text-white outline-none transition-colors focus:border-primary"
     />
+  );
+}
+
+/** 配列内の要素を from から to へ移動した新しい配列を返す（範囲外・同位置はコピーのみ） */
+export function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) {
+    return [...list];
+  }
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+export function MoveButtons({
+  index, length, onMove, label, disabled = false,
+}: {
+  index: number;
+  length: number;
+  onMove: (dir: -1 | 1) => void;
+  label: string;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex shrink-0 items-center">
+      <button
+        type="button"
+        onClick={() => onMove(-1)}
+        disabled={disabled || index === 0}
+        aria-label={`${label} を上へ`}
+        className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
+      >↑</button>
+      <button
+        type="button"
+        onClick={() => onMove(1)}
+        disabled={disabled || index === length - 1}
+        aria-label={`${label} を下へ`}
+        className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
+      >↓</button>
+    </div>
   );
 }
 
@@ -553,6 +604,7 @@ export function HeroScreenshotsEditor({
               previewClassName="mt-2 h-24 w-14 rounded-[6px] object-cover"
             />
           </div>
+          <MoveButtons index={i} length={urls.length} label={`画像${i + 1}`} onMove={(d) => onChange(moveItem(urls, i, i + d))} />
           <button
             type="button"
             onClick={() => remove(i)}
@@ -761,7 +813,25 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
         </div>
         <div className="flex flex-col gap-3">
           {form.introduction.map((para, i) => (
-            <div key={i} className="relative">
+            <div key={i}>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[11px] text-system-700">段落 {i + 1}</span>
+                <span className="flex items-center gap-1">
+                  <MoveButtons
+                    index={i}
+                    length={form.introduction.length}
+                    label={`段落${i + 1}`}
+                    onMove={(d) => set("introduction", moveItem(form.introduction, i, i + d))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => set("introduction", form.introduction.filter((_, j) => j !== i))}
+                    className="rounded px-1.5 py-0.5 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
+                  >
+                    削除
+                  </button>
+                </span>
+              </div>
               <Textarea
                 value={para}
                 onChange={(v) => {
@@ -771,13 +841,6 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
                 }}
                 rows={3}
               />
-              <button
-                type="button"
-                onClick={() => set("introduction", form.introduction.filter((_, j) => j !== i))}
-                className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
-              >
-                削除
-              </button>
             </div>
           ))}
         </div>
@@ -1577,14 +1640,9 @@ function FlowchartsSection({
 // ─── SkillsExperience セクション ───────────────────────
 
 // スキル行（skill_experience）に紐づくツール（skill_experience_tools → tools_vocab）。
-// key はローカル編集用の安定キー（既存は tool_id、新規は randomUUID）。
-type BarTool = {
-  key: string;
-  tool_id: string | null;
-  name: string;
-  slug: string;
-  category: string;
-};
+// 並びは選択順（skill_experience_tools.sort_order）。
+type BarTool = { id: string; name: string };
+type ToolChip = { id: string; name: string; icon_url: string | null; slug: string | null; category: string | null };
 type BarWithTools = SkillExperience & { tools: BarTool[] };
 type CardWithRelations = SkillCard & {
   bars: BarWithTools[];
@@ -1593,10 +1651,32 @@ type CardWithRelations = SkillCard & {
 type ExperienceToolLink = {
   experience_id: string;
   sort_order: number;
-  tools_vocab: { id: string; name: string; slug: string | null; category: string | null } | null;
+  tools_vocab: { id: string; name: string } | null;
 };
 
-function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
+// segmentsToLevel で元のレベルに戻る代表値（supabase/seed.sql:23 と同じ）
+const LEVEL_SEGMENTS: Record<number, number> = { 1: 2, 2: 5, 3: 7, 4: 10 };
+const LEVEL_JA: Record<number, string> = { 1: "基礎", 2: "実務", 3: "上級", 4: "専門" };
+
+type PreviewIcon = SkillCardConfig["icon"];
+function toPreviewCard(card: CardWithRelations, toolById: Map<string, ToolChip>): SkillCardConfig {
+  return {
+    id: card.id, icon: { set: card.icon_set as PreviewIcon["set"], name: card.icon_name }, title: card.title, titleJP: card.title_jp,
+    skills: card.bars.map((b) => ({
+      id: b.id, icon: { set: (b.icon_set ?? "Base") as PreviewIcon["set"], name: b.icon_name ?? "system" },
+      label: b.label, labelNote: b.label_note ?? undefined, description: b.description ?? undefined, segments: b.segments,
+      tools: b.tools.map((t) => { const v = toolById.get(t.id); return { name: t.name, slug: v?.slug ?? null, category: v?.category ?? null }; }),
+    })),
+  };
+}
+
+function SkillsExperienceSection({
+  iconCatalog,
+  onDirtyChange,
+}: {
+  iconCatalog: IconCatalog;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
   const [cards, setCards]         = useState<CardWithRelations[]>([]);
   const [fetching, setFetching]   = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -1604,30 +1684,32 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
   const [savedId, setSavedId]     = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState("");
+  const [toolVocab, setToolVocab] = useState<ToolChip[]>([]);
+  const [newToolNames, setNewToolNames] = useState<Record<string, string>>({});
+  const [addingTool, setAddingTool] = useState(false);
+  const [movingBars, setMovingBars] = useState(false);
 
-  const [dirty, setDirty] = useState(false);
-
-  const markDirty = () => {
-    if (!dirty) {
-      setDirty(true);
-      onDirtyChange(true);
-    }
-  };
-
-  const markSaved = () => {
-    setDirty(false);
-    onDirtyChange(false);
-  };
+  const [dirtyCards, setDirtyCards] = useState<Record<string, true>>({});
+  const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
+  const anyDirty = Object.keys(dirtyCards).length > 0;
+  useEffect(() => {
+    onDirtyChange(anyDirty);
+    // onDirtyChange は親が毎回作り直すため deps に入れない（入れると無限ループ）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anyDirty]);
+  const markCardDirty = (cardId: string) => setDirtyCards((p) => (p[cardId] ? p : { ...p, [cardId]: true }));
+  const markCardSaved = (cardId: string) => setDirtyCards((p) => { if (!p[cardId]) return p; const n = { ...p }; delete n[cardId]; return n; });
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [{ data: cardRows }, { data: barRows }, { data: linkRows }] = await Promise.all([
+      const [{ data: cardRows }, { data: barRows }, { data: linkRows }, { data: toolRows }] = await Promise.all([
         supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
         supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
         supabase
           .from("skill_experience_tools")
-          .select("experience_id, sort_order, tools_vocab(id, name, slug, category)")
+          .select("experience_id, sort_order, tools_vocab(id, name)")
           .order("sort_order", { ascending: true }),
+        supabase.from("tools_vocab").select("id, name, icon_url, slug, category").order("name"),
       ]);
       if (!cardRows) { setFetching(false); return; }
 
@@ -1637,7 +1719,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
         const tv = link.tools_vocab;
         if (!tv) continue;
         const arr = toolsByExp.get(link.experience_id) ?? [];
-        arr.push({ key: tv.id, tool_id: tv.id, name: tv.name, slug: tv.slug ?? "", category: tv.category ?? "" });
+        arr.push({ id: tv.id, name: tv.name });
         toolsByExp.set(link.experience_id, arr);
       }
 
@@ -1661,6 +1743,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
           .map((b) => ({ ...b, tools: toolsByExp.get(b.id) ?? [] })),
       }));
       setCards(merged);
+      setToolVocab((toolRows ?? []) as ToolChip[]);
       setFetching(false);
     };
 
@@ -1669,21 +1752,35 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
 
   // ── カード操作 ──────────────────────────────────────
   const updateCard = (id: string, key: keyof SkillCard, val: string | number) => {
-    markDirty();
+    markCardDirty(id);
     setCards((prev) => prev.map((c) => (c.id === id ? { ...c, [key]: val } : c)));
   };
 
-  const handleSaveCard = async (card: CardWithRelations) => {
-    setSavingId(card.id); setGlobalError("");
-    const { error } = await saveSkillCard({
-      id: card.id, title: card.title, title_jp: card.title_jp,
-      icon_set: card.icon_set, icon_name: card.icon_name, sort_order: card.sort_order,
-    });
-    setSavingId(null);
-    if (error) { setGlobalError(error); return; }
-    setSavedId(card.id);
-    setTimeout(() => setSavedId(null), 2000);
-    markSaved();
+  const updateCardIcon = (id: string, v: IconValue) => {
+    markCardDirty(id);
+    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, icon_set: v.set, icon_name: v.name } : c)));
+  };
+
+  const handleSaveCardAll = async (card: CardWithRelations) => {
+    if (savingId) return;
+    // アイコンのセットと名前は「両方入れる」か「両方空」。片方だけだと公開側が存在しないパスを読む
+    const bad = card.bars.findIndex((b) => !!b.icon_set?.trim() !== !!b.icon_name?.trim());
+    if (bad >= 0) { setCardErrors((p) => ({ ...p, [card.id]: `スキルバー #${bad + 1}: アイコンは「セット」と「名前」を両方入力するか、両方空にしてください。` })); return; }
+    setSavingId(card.id); setCardErrors((p) => ({ ...p, [card.id]: "" }));
+    const fail = (msg: string) => setCardErrors((p) => ({ ...p, [card.id]: msg }));
+    try {
+      const c = await saveSkillCard({ id: card.id, title: card.title, title_jp: card.title_jp, icon_set: card.icon_set, icon_name: card.icon_name, sort_order: card.sort_order });
+      if (c.error) { fail(`カード情報: ${c.error}`); return; }
+      for (const [i, bar] of card.bars.entries()) {
+        const name = `スキルバー #${i + 1}（${bar.label || "無題"}）`;
+        const b = await saveSkillBar({ id: bar.id, card_id: card.id, label: bar.label, label_short: bar.label_short, segments: bar.segments, level: bar.level, description: bar.description, sort_order: bar.sort_order, icon_set: bar.icon_set, icon_name: bar.icon_name, label_note: bar.label_note });
+        if (b.error) { fail(`${name}: ${b.error}`); return; }
+        const t = await saveExperienceToolIds(bar.id, bar.tools.map((x) => x.id));
+        if (t.error) { fail(`${name} のツール: ${t.error}`); return; }
+      }
+      markCardSaved(card.id);
+      setSavedId(card.id); setTimeout(() => setSavedId(null), 2000);
+    } finally { setSavingId(null); }
   };
 
   const handleDeleteCard = async (id: string) => {
@@ -1695,9 +1792,14 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
       return;
     }
     setDeletingId(id);
-    await deleteSkillCard(id);
+    const { error } = await deleteSkillCard(id);
     setDeletingId(null);
+    if (error) {
+      setCardErrors((p) => ({ ...p, [id]: `削除に失敗しました: ${error}` }));
+      return;
+    }
     setCards((prev) => prev.filter((c) => c.id !== id));
+    markCardSaved(id);
     if (expandedId === id) setExpandedId(null);
   };
 
@@ -1706,7 +1808,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     if (data) {
       setCards((prev) => [...prev, { ...data, bars: [], tools: [] }]);
       setExpandedId(data.id);
-      markDirty();
+      markCardDirty(data.id);
     }
   };
 
@@ -1727,7 +1829,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     key: keyof SkillExperience,
     val: string | number | null,
   ) => {
-    markDirty();
+    markCardDirty(cardId);
     setCards((prev) =>
       prev.map((c) =>
         c.id !== cardId
@@ -1740,35 +1842,6 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     );
   };
 
-  const handleSaveBar = async (cardId: string, bar: BarWithTools) => {
-    // アイコンは「セット」「名前」を両方入力するか両方空（＝Base/system フォールバック）に。
-    // 片方だけだと公開側で存在しないパス（例 Edit/system.svg）を読み壊れるため弾く。
-    const hasSet = !!bar.icon_set?.trim();
-    const hasName = !!bar.icon_name?.trim();
-    if (hasSet !== hasName) {
-      setGlobalError("アイコンは「セット」と「名前」を両方入力するか、両方空にしてください。");
-      return;
-    }
-    setGlobalError("");
-    const { error } = await saveSkillBar({
-      id: bar.id, card_id: cardId, label: bar.label, label_short: bar.label_short,
-      segments: bar.segments, level: bar.level,
-      description: bar.description, sort_order: bar.sort_order,
-      icon_set: bar.icon_set, icon_name: bar.icon_name, label_note: bar.label_note,
-    });
-    if (error) { setGlobalError(error); return; }
-    // スキル行のツール（skill_experience_tools）も同時に保存
-    const toolsRes = await saveExperienceTools(
-      bar.id,
-      bar.tools.map((t) => ({
-        name: t.name,
-        slug: t.slug.trim() || null,
-        category: t.category.trim() || null,
-      })),
-    );
-    if (toolsRes.error) setGlobalError(toolsRes.error);
-  };
-
   const handleDeleteBar = async (cardId: string, barId: string) => {
     if (
       !window.confirm(
@@ -1777,7 +1850,11 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     ) {
       return;
     }
-    await deleteSkillBar(barId);
+    const { error } = await deleteSkillBar(barId);
+    if (error) {
+      setCardErrors((p) => ({ ...p, [cardId]: `削除に失敗しました: ${error}` }));
+      return;
+    }
     setCards((prev) => prev.map((c) =>
       c.id !== cardId ? c : { ...c, bars: c.bars.filter((b) => b.id !== barId) }
     ));
@@ -1793,7 +1870,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
           c.id !== cardId ? c : { ...c, bars: [...c.bars, { ...data, tools: [] }] },
         ),
       );
-      markDirty();
+      markCardDirty(cardId);
     }
   };
 
@@ -1803,7 +1880,7 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     barId: string,
     update: (bar: BarWithTools) => BarWithTools,
   ) => {
-    markDirty();
+    markCardDirty(cardId);
     setCards((prev) =>
       prev.map((c) =>
         c.id !== cardId
@@ -1813,43 +1890,77 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
     );
   };
 
-  const addBarTool = (cardId: string, barId: string) => {
+  const toggleBarTool = (cardId: string, barId: string, opt: { id: string; name: string }) => {
     updateBarField(cardId, barId, (b) => ({
       ...b,
-      tools: [
-        ...b.tools,
-        { key: crypto.randomUUID(), tool_id: null, name: "", slug: "", category: "" },
-      ],
+      tools: b.tools.some((t) => t.id === opt.id)
+        ? b.tools.filter((t) => t.id !== opt.id)
+        : [...b.tools, { id: opt.id, name: opt.name }],
     }));
   };
 
-  const updateBarTool = (
-    cardId: string,
-    barId: string,
-    toolKey: string,
-    field: "name" | "slug" | "category",
-    val: string,
-  ) => {
-    updateBarField(cardId, barId, (b) => ({
-      ...b,
-      tools: b.tools.map((t) => (t.key === toolKey ? { ...t, [field]: val } : t)),
-    }));
+  const handleAddNewTool = async (cardId: string, barId: string) => {
+    if (addingTool) return;
+    const name = (newToolNames[barId] ?? "").trim();
+    if (!name) return;
+    setAddingTool(true);
+    try {
+      let opt: { id: string; name: string } | undefined = toolVocab.find(
+        (t) => t.name.trim().toLowerCase() === name.toLowerCase(),
+      );
+      if (!opt) {
+        const res = await addToolNameFromWorks(name);
+        if (res.error || !res.id) {
+          setGlobalError(res.error ?? "ツールの追加に失敗しました");
+          return;
+        }
+        const newId = res.id;
+        opt = { id: newId, name };
+        setToolVocab((prev) =>
+          prev.some((t) => t.id === newId)
+            ? prev
+            : [...prev, { id: newId, name, icon_url: null, slug: null, category: null }].sort((a, b) => a.name.localeCompare(b.name)),
+        );
+      }
+      const chosen = opt;
+      updateBarField(cardId, barId, (b) =>
+        b.tools.some((t) => t.id === chosen.id) ? b : { ...b, tools: [...b.tools, { id: chosen.id, name: chosen.name }] },
+      );
+      setNewToolNames((p) => ({ ...p, [barId]: "" }));
+    } finally {
+      setAddingTool(false);
+    }
   };
 
-  const removeBarTool = (cardId: string, barId: string, toolKey: string) => {
-    updateBarField(cardId, barId, (b) => ({
-      ...b,
-      tools: b.tools.filter((t) => t.key !== toolKey),
-    }));
+  const handleMoveBar = async (cardId: string, index: number, dir: -1 | 1) => {
+    const card = cards.find((c) => c.id === cardId);
+    if (!card) return;
+    const target = index + dir;
+    if (target < 0 || target >= card.bars.length) return;
+    const prevBars = card.bars;
+    const nextBars = moveItem(prevBars, index, target).map((b, i) => ({ ...b, sort_order: i }));
+    setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, bars: nextBars } : c)));
+    setMovingBars(true);
+    try {
+      const { error } = await moveSkillBars(nextBars.map(({ id, sort_order }) => ({ id, sort_order })));
+      if (error) {
+        setGlobalError(`並び順の保存に失敗しました: ${error}`);
+        setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, bars: prevBars } : c)));
+      }
+    } finally {
+      setMovingBars(false);
+    }
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
+
+  const toolById = new Map(toolVocab.map((t) => [t.id, t]));
 
   return (
     <section id="skills-experience" className="scroll-mt-8">
       <SectionTitle label="Skills Experience" title="スキルカルーセル" />
       {globalError && <p className="mb-4 text-[13px] text-danger-300">{globalError}</p>}
-      {dirty && (
+      {anyDirty && (
         <p className="mb-3 text-[11px] text-[#f4c248]">
           未保存の変更があります
         </p>
@@ -1869,18 +1980,19 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                   <span className="text-[12px] text-system-700">#{idx + 1}</span>
                   <span className="text-[14px] font-medium text-primary">{card.title}</span>
                   <span className="text-[12px] text-fg-muted">{card.title_jp}</span>
+                  {dirtyCards[card.id] && <span className="text-[11px] text-[#f4c248]">未保存</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, -1); }}
-                    disabled={idx === 0}
+                    disabled={idx === 0 || savingId === card.id}
                     className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                   >↑</button>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, 1); }}
-                    disabled={idx === cards.length - 1}
+                    disabled={idx === cards.length - 1 || savingId === card.id}
                     className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                   >↓</button>
                   <span className="text-[12px] text-system-700">{isOpen ? "▲" : "▼"}</span>
@@ -1891,6 +2003,14 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
               {isOpen && (
                 <div className="border-t border-border-light p-5">
 
+                  <div className="mb-6">
+                    <p className="mb-2 text-[11px] font-semibold tracking-[0.5px] text-fg-muted">公開ページでの見え方（未保存の内容を反映）</p>
+                    <div className="rounded-[12px] border border-border-light bg-surface">
+                      <PublicSkillCard card={toPreviewCard(card, toolById)} />
+                    </div>
+                  </div>
+
+                  <fieldset disabled={savingId === card.id} className="min-w-0">
                   {/* カード基本情報 */}
                   <div className="mb-6 grid grid-cols-2 gap-4">
                     <div>
@@ -1901,34 +2021,16 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                       <FieldLabel>タイトル（JP）</FieldLabel>
                       <Input value={card.title_jp} onChange={(v) => updateCard(card.id, "title_jp", v)} placeholder="制作・実行" />
                     </div>
-                    <div>
-                      <FieldLabel>アイコンセット</FieldLabel>
-                      <Input value={card.icon_set} onChange={(v) => updateCard(card.id, "icon_set", v)} placeholder="Edit" />
+                    <div className="col-span-2">
+                      <FieldLabel>アイコン</FieldLabel>
+                      <IconPickerField
+                        catalog={iconCatalog}
+                        value={{ set: card.icon_set, name: card.icon_name }}
+                        onChange={(v) => {
+                          if (v) updateCardIcon(card.id, v);
+                        }}
+                      />
                     </div>
-                    <div>
-                      <FieldLabel>アイコン名</FieldLabel>
-                      <Input value={card.icon_name} onChange={(v) => updateCard(card.id, "icon_name", v)} placeholder="writing-fluently" />
-                    </div>
-                  </div>
-
-                  <div className="mb-6 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleSaveCard(card)}
-                      disabled={savingId === card.id}
-                      className="rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
-                    >
-                      {savingId === card.id ? "保存中…" : "カード情報を保存"}
-                    </button>
-                    {savedId === card.id && <span className="text-[12px] text-primary">✓ 保存しました</span>}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCard(card.id)}
-                      disabled={deletingId === card.id}
-                      className="ml-auto rounded-[8px] px-3 py-1.5 text-[13px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40"
-                    >
-                      {deletingId === card.id ? "削除中…" : "カードを削除"}
-                    </button>
                   </div>
 
                   {/* スキルバー */}
@@ -1944,37 +2046,49 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                       </button>
                     </div>
                     <div className="flex flex-col gap-3">
-                      {card.bars.map((bar) => (
+                      {card.bars.map((bar, bi) => (
                         <div key={bar.id} className="rounded-[8px] border border-[#363636] bg-[#1a1a1a] p-4">
-                          <div className="grid grid-cols-[1fr_80px_120px] gap-3 mb-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className="text-[11px] text-system-700">#{bi + 1}</span>
+                            <MoveButtons
+                              index={bi}
+                              length={card.bars.length}
+                              disabled={movingBars}
+                              label={bar.label || "スキルバー"}
+                              onMove={(d) => void handleMoveBar(card.id, bi, d)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-[1fr_200px] gap-3 mb-3">
                             <div>
                               <FieldLabel>ラベル</FieldLabel>
                               <Input value={bar.label} onChange={(v) => updateBar(card.id, bar.id, "label", v)} placeholder="UIデザイン" />
                             </div>
                             <div>
-                              <FieldLabel>セグメント (1-10)</FieldLabel>
-                              <input
-                                type="number"
-                                min={1}
-                                max={10}
-                                value={bar.segments}
-                                onChange={(e) => updateBar(card.id, bar.id, "segments", Number(e.target.value))}
+                              <FieldLabel>習熟度</FieldLabel>
+                              <select
+                                value={String(segmentsToLevel(bar.segments))}
+                                onChange={(e) => { const n = Number(e.target.value); updateBarField(card.id, bar.id, (b) => ({ ...b, segments: LEVEL_SEGMENTS[n], level: SKILL_LEVELS[n - 1].en })); }}
                                 className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none focus:border-primary"
-                              />
-                            </div>
-                            <div>
-                              <FieldLabel>レベル</FieldLabel>
-                              <Input value={bar.level} onChange={(v) => updateBar(card.id, bar.id, "level", v)} placeholder="Lv.3 Senior" />
+                              >
+                                {SKILL_LEVELS.map((l) => <option key={l.n} value={l.n}>{l.n}. {l.en}（{LEVEL_JA[l.n]}）</option>)}
+                              </select>
                             </div>
                           </div>
                           <div className="grid grid-cols-3 gap-3 mb-3">
-                            <div>
-                              <FieldLabel>アイコンセット</FieldLabel>
-                              <Input value={bar.icon_set ?? ""} onChange={(v) => updateBar(card.id, bar.id, "icon_set", v || null)} placeholder="Edit" />
-                            </div>
-                            <div>
-                              <FieldLabel>アイコン名</FieldLabel>
-                              <Input value={bar.icon_name ?? ""} onChange={(v) => updateBar(card.id, bar.id, "icon_name", v || null)} placeholder="writing-fluently" />
+                            <div className="col-span-2">
+                              <FieldLabel>アイコン（空なら Base/system）</FieldLabel>
+                              <IconPickerField
+                                catalog={iconCatalog}
+                                allowEmpty
+                                value={bar.icon_set || bar.icon_name ? { set: bar.icon_set ?? "", name: bar.icon_name ?? "" } : null}
+                                onChange={(v) =>
+                                  updateBarField(card.id, bar.id, (b) => ({
+                                    ...b,
+                                    icon_set: v?.set ?? null,
+                                    icon_name: v?.name ?? null,
+                                  }))
+                                }
+                              />
                             </div>
                             <div>
                               <FieldLabel>ラベルノート（JP短）</FieldLabel>
@@ -1993,49 +2107,58 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
 
                           {/* スキル行ツール（skill_experience_tools） */}
                           <div className="mb-3 rounded-[8px] border border-[#2e2e2e] bg-[#161616] p-3">
-                            <div className="mb-2 flex items-center justify-between">
-                              <p className="text-[11px] font-semibold tracking-[0.5px] text-fg-muted">ツール（行単位）</p>
+                            <p className="mb-2 text-[11px] font-semibold tracking-[0.5px] text-fg-muted">ツール（行単位）</p>
+                            <div className="flex flex-wrap gap-2">
+                              {toolVocab.map((opt) => {
+                                const selected = bar.tools.some((t) => t.id === opt.id);
+                                return (
+                                  <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => toggleBarTool(card.id, bar.id, opt)}
+                                    className={`flex items-center gap-1.5 rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${selected ? "border-primary bg-primary/10 text-primary" : "border-border-light bg-[#1a1a1a] text-fg-muted hover:text-white"}`}
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    {opt.icon_url && <img src={opt.icon_url} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />}
+                                    {opt.name}
+                                  </button>
+                                );
+                              })}
+                              {toolVocab.length === 0 && <span className="text-[12px] text-system-700">ツール定義がありません</span>}
+                            </div>
+                            {bar.tools.length > 0 && (
+                              <p className="mt-2 text-[11px] text-fg-muted">表示順: {bar.tools.map((t) => t.name).join(" → ")}</p>
+                            )}
+                            <div
+                              className="mt-2 flex items-center gap-2"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                                  e.preventDefault();
+                                  void handleAddNewTool(card.id, bar.id);
+                                }
+                              }}
+                            >
+                              <Input
+                                value={newToolNames[bar.id] ?? ""}
+                                onChange={(v) => setNewToolNames((p) => ({ ...p, [bar.id]: v }))}
+                                placeholder="新しいツール名"
+                                className="!w-56"
+                              />
                               <button
                                 type="button"
-                                onClick={() => addBarTool(card.id, bar.id)}
-                                className="rounded-[6px] border border-border-light px-2.5 py-0.5 text-[11px] text-fg-muted hover:border-primary hover:text-white"
+                                onClick={() => void handleAddNewTool(card.id, bar.id)}
+                                disabled={addingTool}
+                                className="rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white"
                               >
-                                ＋ ツール
+                                追加
                               </button>
                             </div>
-                            {bar.tools.length === 0 && (
-                              <p className="text-[11px] text-system-700">ツール未設定</p>
-                            )}
-                            <div className="flex flex-col gap-2">
-                              {bar.tools.map((tool) => (
-                                <div key={tool.key} className="grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-2">
-                                  <Input value={tool.name} onChange={(v) => updateBarTool(card.id, bar.id, tool.key, "name", v)} placeholder="Figma" />
-                                  <Input value={tool.slug} onChange={(v) => updateBarTool(card.id, bar.id, tool.key, "slug", v)} placeholder="slug（例: figma）" />
-                                  <Input value={tool.category} onChange={(v) => updateBarTool(card.id, bar.id, tool.key, "category", v)} placeholder="カテゴリー（フォールバック）" />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeBarTool(card.id, bar.id, tool.key)}
-                                    className="shrink-0 rounded-[6px] px-2 py-2 text-[12px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300"
-                                    aria-label="ツールを削除"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
                             <p className="mt-2 text-[10px] leading-[1.5] text-system-700">
-                              slug が public/logos/&lt;slug&gt;.svg と一致するとロゴ表示。無ければカテゴリーアイコンにフォールバック。保存は下の「保存」ボタンでスキル行とまとめて行われます。
+                              選んだ順に表示されます。ロゴ（slug）とカテゴリーは「マスタ管理」で設定します。保存はカード下部の「このカードを保存」でまとめて行われます。
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => handleSaveBar(card.id, bar)}
-                              className="rounded-[6px] bg-primary px-3 py-1 text-[12px] font-semibold text-[#0a0a0a] hover:opacity-80"
-                            >
-                              保存
-                            </button>
+                          <div className="flex items-center justify-end">
                             <button
                               type="button"
                               onClick={() => handleDeleteBar(card.id, bar.id)}
@@ -2047,6 +2170,20 @@ function SkillsExperienceSection({ onDirtyChange }: { onDirtyChange: (dirty: boo
                         </div>
                       ))}
                     </div>
+                  </div>
+                  </fieldset>
+
+                  <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-2 flex flex-wrap items-center gap-3 rounded-b-[12px] border-t border-border-light bg-surface px-5 py-3">
+                    <button type="button" onClick={() => void handleSaveCardAll(card)} disabled={!dirtyCards[card.id] || savingId !== null}
+                      className="rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40">
+                      {savingId === card.id ? "保存中…" : "このカードを保存"}
+                    </button>
+                    {savedId === card.id && <span className="text-[12px] text-primary">✓ 保存しました</span>}
+                    {cardErrors[card.id] && <span className="text-[12px] text-danger-300">{cardErrors[card.id]}</span>}
+                    <button type="button" onClick={() => handleDeleteCard(card.id)} disabled={deletingId === card.id || savingId === card.id}
+                      className="ml-auto rounded-[8px] px-3 py-1.5 text-[13px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40">
+                      {deletingId === card.id ? "削除中…" : "カードを削除"}
+                    </button>
                   </div>
 
                 </div>
@@ -2178,7 +2315,15 @@ export function AdminShell({
 // ─── メインレイアウト ───────────────────────────────────
 // 各設定セクションは /admin/<section> の専用ページとして 1 画面 1 セクションで表示する。
 
-export function AdminLayout({ section }: { section: AdminSectionId }) {
+export function AdminLayout({
+  section,
+  logoSlugs,
+  iconCatalog,
+}: {
+  section: AdminSectionId;
+  logoSlugs: string[];
+  iconCatalog: IconCatalog;
+}) {
   const [dirtySections, setDirtySections] = useState<Record<string, boolean>>({});
 
   const hasUnsavedChanges = Object.values(dirtySections).some(Boolean);
@@ -2217,9 +2362,11 @@ export function AdminLayout({ section }: { section: AdminSectionId }) {
       )}
       {section === "skills-experience" && (
         <SkillsExperienceSection
+          iconCatalog={iconCatalog}
           onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
         />
       )}
+      {section === "masters" && <MastersSection logoSlugs={logoSlugs} />}
 
       <div className="mt-24 border-t border-[#2a2a2a] pt-8">
         <p className="text-[12px] text-system-800">Portfolio Admin</p>

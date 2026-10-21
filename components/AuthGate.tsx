@@ -2,51 +2,52 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-
-async function sha256hex(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(text),
-  );
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+import { supabase } from "@/src/lib/supabase";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { entered, supabaseSession, login } = useAuth();
-  const guestHash = process.env.NEXT_PUBLIC_GUEST_PASSWORD_HASH ?? "";
-
-  if (!guestHash) return <>{children}</>;
-
-  if (entered || supabaseSession === "signedIn") return <>{children}</>;
-
-  return <LoginForm guestHash={guestHash} login={login} />;
+  const { supabaseSession, accessRole } = useAuth();
+  if (supabaseSession === "loading" || (supabaseSession === "signedIn" && accessRole === "loading")) {
+    return <div className="min-h-screen bg-surface" />;
+  }
+  if (supabaseSession === "signedOut") return <LoginForm />;
+  if (accessRole === "owner" || accessRole === "reader") return <>{children}</>;
+  return <AccessDenied error={accessRole === "error"} />;
 }
 
-function LoginForm({
-  guestHash,
-  login,
-}: {
-  guestHash: string;
-  login: () => void;
-}) {
+function AccessDenied({ error }: { error: boolean }) {
+  const { logout } = useAuth();
+  const [logoutError, setLogoutError] = useState("");
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface text-white">
+      <p role="alert">{error ? "閲覧権限を確認できませんでした。" : "このアカウントには閲覧権限がありません。"}</p>
+      <button
+        type="button"
+        onClick={() => {
+          void logout()
+            .then((message) => setLogoutError(message ?? ""))
+            .catch(() => setLogoutError("ログアウトできませんでした"));
+        }}
+        className="text-primary hover:underline"
+      >別のアカウントでログイン</button>
+      {logoutError && <p className="text-danger-300" role="alert">{logoutError}</p>}
+    </div>
+  );
+}
+
+function LoginForm() {
+  const [email, setEmail] = useState("");
   const [input, setInput]       = useState("");
   const [error, setError]       = useState("");
   const [checking, setChecking] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input) return;
+    if (!email || !input) return;
     setChecking(true);
     setError("");
     try {
-      const hash = await sha256hex(input);
-      if (hash === guestHash) {
-        login();
-      } else {
-        setError("パスワードが正しくありません");
-      }
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: input });
+      if (signInError) setError("メールアドレスまたはパスワードが正しくありません");
     } catch {
       setError("エラーが発生しました");
     } finally {
@@ -62,15 +63,23 @@ function LoginForm({
           Yu Tomita
         </p>
         <p className="mb-10 text-[14px] text-fg-muted">
-          アクセスするにはパスワードが必要です
+          アクセスするにはログインが必要です
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="メールアドレス"
+            autoFocus
+            autoComplete="username"
+            className="w-full rounded-[10px] border border-border-light bg-[#1a1a1a] px-4 py-3.5 text-[15px] text-white outline-none transition-colors focus:border-primary"
+          />
           <input
             type="password"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="パスワードを入力"
-            autoFocus
             autoComplete="current-password"
             className="w-full rounded-[10px] border border-border-light bg-[#1a1a1a] px-4 py-3.5 text-[15px] text-white outline-none transition-colors focus:border-primary"
           />
@@ -79,7 +88,7 @@ function LoginForm({
           )}
           <button
             type="submit"
-            disabled={checking || !input}
+            disabled={checking || !email || !input}
             className="mt-1 rounded-[10px] bg-primary py-3.5 text-[15px] font-semibold text-[#0a0a0a] transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             {checking ? "確認中…" : "アクセス"}

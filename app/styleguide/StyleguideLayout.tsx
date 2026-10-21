@@ -15,6 +15,7 @@ import TabBar from "@/components/TabBar";
 import WorkCard from "@/components/WorkCard";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
+import ProtectedImage from "@/components/ProtectedImage";
 import WorkDetailHeader from "@/components/WorkDetailHeader";
 import WorkDetailContent from "@/components/WorkDetailContent";
 import SideMenuBar from "@/components/SideMenuBar";
@@ -874,6 +875,9 @@ function ComponentsSection() {
     <section id="components" className="scroll-mt-8">
       <SectionTitle label="Components" title="コンポーネント" />
       <div className="flex flex-col gap-12">
+        <ComponentPreview title="ProtectedImage" description="Portfolio ストレージの画像は認証後に署名付きURLで表示。ローカル画像や外部画像はそのまま表示する">
+          <ProtectedImage src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/figma.svg`} alt="Figma" className="h-8 w-8" />
+        </ComponentPreview>
         <ComponentPreview title="Headline" description="見出しコンポーネント。default は Title/EN（Avenir Heavy 38px）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）。03 は Figma に存在せず実装のみ">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>

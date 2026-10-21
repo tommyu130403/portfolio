@@ -1,51 +1,53 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 
-// 旧形式 `{ role, expires }` も expires だけを見るので有効
-type StoredEntry = { expires: number } | null;
 export type SupabaseSessionState = "loading" | "signedOut" | "signedIn";
-
-const SESSION_KEY = "portfolio_auth";
-const SESSION_MS  = 24 * 60 * 60 * 1000;
-const IS_DEV      = process.env.NODE_ENV === "development";
+export type PortfolioAccessRole = "loading" | "owner" | "reader" | "denied" | "error";
 
 type AuthContextValue = {
-  entered: boolean;
   supabaseSession: SupabaseSessionState;
-  login:  () => void;
-  logout: () => void;
+  accessRole: PortfolioAccessRole;
+  logout: () => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [entered, setEntered] = useState(IS_DEV);
   const [supabaseSession, setSupabaseSession] = useState<SupabaseSessionState>("loading");
-
-  useEffect(() => {
-    if (IS_DEV) return;
-    try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (!raw) return;
-      const state = JSON.parse(raw) as StoredEntry;
-      if (state && state.expires > Date.now()) {
-        setEntered(true);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+  const [accessRole, setAccessRole] = useState<PortfolioAccessRole>("loading");
+  const [authEpoch, setAuthEpoch] = useState(0);
+  const sessionUserId = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setSupabaseSession(data.session ? "signedIn" : "signedOut");
-    });
+    let authEventSeen = false;
+    supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (!active || authEventSeen) return;
+        const signedIn = !error && !!data.session;
+        sessionUserId.current = signedIn ? data.session!.user.id : null;
+        setSupabaseSession(signedIn ? "signedIn" : "signedOut");
+        if (!signedIn) setAccessRole("denied");
+      })
+      .catch(() => {
+        if (active && !authEventSeen) {
+          sessionUserId.current = null;
+          setSupabaseSession("signedOut");
+          setAccessRole("denied");
+        }
+      });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      authEventSeen = true;
+      const userId = session?.user.id ?? null;
+      if (userId !== sessionUserId.current) {
+        setAccessRole(userId ? "loading" : "denied");
+        setAuthEpoch((epoch) => epoch + 1);
+      }
+      sessionUserId.current = userId;
       setSupabaseSession(session ? "signedIn" : "signedOut");
     });
 
@@ -55,43 +57,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = IS_DEV
-    ? () => {}
-    : () => {
-        const state: StoredEntry = { expires: Date.now() + SESSION_MS };
-        localStorage.setItem(SESSION_KEY, JSON.stringify(state));
-        setEntered(true);
-      };
+  useEffect(() => {
+    if (supabaseSession !== "signedIn") return;
+    let active = true;
+    // The generated DB types are refreshed only after the migration is applied.
+    const client = supabase as unknown as {
+      rpc: (name: "portfolio_access_role") => Promise<{
+        data: "owner" | "reader" | "denied" | null;
+        error: { message: string } | null;
+      }>;
+    };
+    client.rpc("portfolio_access_role")
+      .then(({ data, error }) => {
+        if (active) setAccessRole(error ? "error" : data ?? "error");
+      })
+      .catch(() => {
+        if (active) setAccessRole("error");
+      });
+    return () => { active = false; };
+  }, [supabaseSession, authEpoch]);
 
-  const logout = IS_DEV
-    ? () => {}
-    : () => {
-        localStorage.removeItem(SESSION_KEY);
-        // 通信失敗時 signOut は { error } を返してセッションを消さないので、保存キーを直接消す
-        const clearStoredSession = () => {
-          try {
-            for (const key of Object.keys(localStorage)) {
-              if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
-                localStorage.removeItem(key);
-              }
-            }
-          } catch {
-            // ignore
-          }
-          // 通信失敗時は SIGNED_OUT が通知されないので手動で更新する
-          setSupabaseSession("signedOut");
-        };
-        supabase.auth
-          .signOut({ scope: "local" })
-          .then(({ error }) => {
-            if (error) clearStoredSession();
-          })
-          .catch(clearStoredSession);
-        setEntered(false);
-      };
+  const logout = async (): Promise<string | null> => {
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    return error?.message ?? null;
+  };
 
   return (
-    <AuthContext.Provider value={{ entered, supabaseSession, login, logout }}>
+    <AuthContext.Provider value={{ supabaseSession, accessRole, logout }}>
       {children}
     </AuthContext.Provider>
   );

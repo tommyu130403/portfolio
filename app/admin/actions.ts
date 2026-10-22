@@ -941,9 +941,12 @@ export async function saveCareerItem(item: {
   company: string;
   company_id: string | null;
   period: string;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
   description: string;
   sort_order: number;
-}): Promise<{ error: string | null; company?: string; role?: string }> {
+}): Promise<{ error: string | null; company?: string; role?: string; period?: string }> {
   try {
     // 別タブでの名前変更を上書きしないよう、保存の直前にマスタの最新の名前を取り直す
     let company = item.company;
@@ -969,10 +972,10 @@ export async function saveCareerItem(item: {
     const { data, error } = await supabase
       .from("career_items")
       .upsert({ ...item, company, role }, { onConflict: "id" })
-      .select("id");
+      .select("id, period");
     if (error) return { error: dbErr(error) };
     if (!data?.length) return { error: "経歴を保存できませんでした（権限がありません）" };
-    return { error: null, company, role };
+    return { error: null, company, role, period: data[0].period };
   } catch (e) {
     return { error: errMsg(e) };
   }

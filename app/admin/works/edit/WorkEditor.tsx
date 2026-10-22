@@ -16,7 +16,7 @@ import {
   PeriodFields,
   moveItem,
 } from "../../AdminLayout";
-import { parsePeriod, formatPeriod, validatePeriod, isSamePeriod, isStandardPeriod, type PeriodInputs } from "../../period";
+import { parsePeriod, validatePeriod, isSamePeriod, periodInputsOf, periodColumnsForSave, isLegacyPeriod, type PeriodInputs } from "../../period";
 import RichMarkdownEditor, { UPLOAD_PLACEHOLDER } from "@/components/RichMarkdownEditor";
 import { compressImage } from "@/lib/compress-image";
 import {
@@ -64,6 +64,9 @@ function emptyWork(id: string): Work {
     thumbnail_url: null,
     role: null,
     period: null,
+    start_date: null,
+    end_date: null,
+    is_current: false,
     timeline: null,
     stakeholders: null,
     hero_brand: null,
@@ -227,7 +230,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         }
         setWork(row);
         setMarkdown(sectionsToMarkdown(row.sections));
-        setPeriod(parsePeriod(row.period));
+        setPeriod(periodInputsOf(row));
         setSkills(
           ((skillsRes.data ?? []) as unknown as { skills_vocab: { label: string } | null }[])
             .map((r) => r.skills_vocab?.label)
@@ -399,7 +402,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       setSaveError("タイトルを入力してください");
       return;
     }
-    const periodTouched = !isSamePeriod(period, parsePeriod(work.period));
+    const periodTouched = !isSamePeriod(period, periodInputsOf(work));
     const periodError = periodTouched ? validatePeriod(period) : null;
     if (periodError) {
       setSaveError(periodError);
@@ -439,7 +442,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       id,
       role: derivedRole,
       stakeholder_breakdown: derivedBreakdown,
-      period: periodTouched ? formatPeriod(period) : work.period,
+      ...periodColumnsForSave(work, period, periodTouched),
       // 画像アップロード中の仮の行が万一残っていても DB には入れない
       sections: markdownToSections(
         markdown
@@ -467,13 +470,16 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         ? {
             ...p,
             period: payload.period,
+            start_date: payload.start_date,
+            end_date: payload.end_date,
+            is_current: payload.is_current,
             role: payload.role,
             stakeholder_breakdown: payload.stakeholder_breakdown,
           }
         : p,
     );
     setRoleNotice([]);
-    setPeriod(parsePeriod(payload.period));
+    setPeriod(periodInputsOf(payload));
     setSaving(false);
     setDirty(false);
     setSavedAt(true);
@@ -697,7 +703,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             <div className="col-span-2">
               <FieldLabel>期間</FieldLabel>
               <PeriodFields value={period} disabled={saving} onChange={(p) => { setPeriod(p); markDirty(); }} />
-              {work.period && !isStandardPeriod(work.period) && isSamePeriod(period, parsePeriod(work.period)) && (
+              {isLegacyPeriod(work) && isSamePeriod(period, periodInputsOf(work)) && (
                 <p className="mt-1 text-[11px] text-[#f4c248]">現在の値「{work.period}」は年月の入力欄で読み取れない形式です。入力して保存すると置き換わります。</p>
               )}
             </div>

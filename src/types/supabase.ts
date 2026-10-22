@@ -20,33 +20,42 @@ export type Database = {
           company_id: string | null
           created_at: string | null
           description: string
+          end_date: string | null
           id: string
+          is_current: boolean
           period: string
           role: string
           role_id: string | null
           sort_order: number
+          start_date: string | null
         }
         Insert: {
           company?: string
           company_id?: string | null
           created_at?: string | null
           description?: string
+          end_date?: string | null
           id?: string
+          is_current?: boolean
           period?: string
           role?: string
           role_id?: string | null
           sort_order?: number
+          start_date?: string | null
         }
         Update: {
           company?: string
           company_id?: string | null
           created_at?: string | null
           description?: string
+          end_date?: string | null
           id?: string
+          is_current?: boolean
           period?: string
           role?: string
           role_id?: string | null
           sort_order?: number
+          start_date?: string | null
         }
         Relationships: [
           {
@@ -513,10 +522,12 @@ export type Database = {
           career_item_id: string | null
           category: string | null
           created_at: string | null
+          end_date: string | null
           hero_bg_color: string | null
           hero_brand: string | null
           hero_screenshots: Json | null
           id: string
+          is_current: boolean
           is_published: boolean
           period: string | null
           role: string | null
@@ -524,6 +535,7 @@ export type Database = {
           sort_order: number | null
           stakeholder_breakdown: string | null
           stakeholders: Json | null
+          start_date: string | null
           thumbnail_url: string | null
           timeline: Json | null
           title: string
@@ -532,10 +544,12 @@ export type Database = {
           career_item_id?: string | null
           category?: string | null
           created_at?: string | null
+          end_date?: string | null
           hero_bg_color?: string | null
           hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
+          is_current?: boolean
           is_published?: boolean
           period?: string | null
           role?: string | null
@@ -543,6 +557,7 @@ export type Database = {
           sort_order?: number | null
           stakeholder_breakdown?: string | null
           stakeholders?: Json | null
+          start_date?: string | null
           thumbnail_url?: string | null
           timeline?: Json | null
           title: string
@@ -551,10 +566,12 @@ export type Database = {
           career_item_id?: string | null
           category?: string | null
           created_at?: string | null
+          end_date?: string | null
           hero_bg_color?: string | null
           hero_brand?: string | null
           hero_screenshots?: Json | null
           id?: string
+          is_current?: boolean
           is_published?: boolean
           period?: string | null
           role?: string | null
@@ -562,6 +579,7 @@ export type Database = {
           sort_order?: number | null
           stakeholder_breakdown?: string | null
           stakeholders?: Json | null
+          start_date?: string | null
           thumbnail_url?: string | null
           timeline?: Json | null
           title?: string

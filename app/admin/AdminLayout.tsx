@@ -42,11 +42,11 @@ import MasterSelect from "./MasterSelect";
 import IconPickerField, { type IconValue } from "./IconPickerField";
 import type { IconCatalog } from "./iconCatalogTypes";
 import {
-  parsePeriod,
-  formatPeriod,
+  periodInputsOf,
+  periodColumnsForSave,
+  isLegacyPeriod,
   validatePeriod,
   isSamePeriod,
-  isStandardPeriod,
   EMPTY_PERIOD,
   type PeriodInputs,
 } from "./period";
@@ -941,7 +941,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
         setOriginalItems(rows);
         setCompanies(co.data);
         setRoles(ro.data);
-        setPeriods(Object.fromEntries(rows.map((r) => [r.id, parsePeriod(r.period)])));
+        setPeriods(Object.fromEntries(rows.map((r) => [r.id, periodInputsOf(r)])));
         setFetching(false);
       });
     return () => { cancelled = true; };
@@ -951,7 +951,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   const baseById = new Map(originalItems.map((o) => [o.id, o]));
   const periodOf = (id: string) => periods[id] ?? EMPTY_PERIOD;
   const periodChanged = (it: CareerRow) =>
-    !isSamePeriod(periodOf(it.id), parsePeriod(baseById.get(it.id)?.period ?? null));
+    !isSamePeriod(periodOf(it.id), periodInputsOf(baseById.get(it.id)));
   const isRowDirty = (it: CareerRow) => {
     const b = baseById.get(it.id);
     return (
@@ -1029,7 +1029,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     const sort_order = items.reduce((m, it) => Math.max(m, it.sort_order), -1) + 1;
     setItems((prev) => [
       ...prev,
-      { id, role: "", role_id: null, company: "", company_id: null, period: "", description: "", sort_order, created_at: null, isNew: true },
+      { id, role: "", role_id: null, company: "", company_id: null, period: "", start_date: null, end_date: null, is_current: false, description: "", sort_order, created_at: null, isNew: true },
     ]);
     setPeriods((prev) => ({ ...prev, [id]: { ...EMPTY_PERIOD } }));
   };
@@ -1091,20 +1091,21 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     let failure: { id: string; msg: string } | null = null;
     for (const it of items) {
       if (!isRowDirty(it)) continue;
-      const period = periodChanged(it) ? (formatPeriod(periodOf(it.id)) ?? "") : it.period;
+      const { period: periodText, ...cols } = periodColumnsForSave(baseById.get(it.id) ?? it, periodOf(it.id), periodChanged(it));
+      const period = periodText ?? "";
       const role = (it.role_id ? rolesById.get(it.role_id)?.name : undefined) ?? it.role;
       const company = (it.company_id ? companiesById.get(it.company_id)?.name : undefined) ?? it.company;
       const row: CareerItem = {
-        id: it.id, role, role_id: it.role_id, company, company_id: it.company_id, period,
+        id: it.id, role, role_id: it.role_id, company, company_id: it.company_id, period, ...cols,
         description: it.description, sort_order: it.sort_order, created_at: it.created_at,
       };
       const res = await saveCareerItem({
         id: row.id, role: row.role, role_id: row.role_id, company: row.company, company_id: row.company_id,
-        period: row.period,
+        period: row.period, start_date: row.start_date, end_date: row.end_date, is_current: row.is_current,
         description: row.description, sort_order: row.sort_order,
       });
       if (res.error) { failure = { id: it.id, msg: res.error }; break; }
-      savedRows.push({ ...row, company: res.company ?? row.company, role: res.role ?? row.role });
+      savedRows.push({ ...row, company: res.company ?? row.company, role: res.role ?? row.role, period: res.period ?? row.period });
     }
     setSaving(false);
     if (savedRows.length) {
@@ -1113,7 +1114,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       setOriginalItems((prev) => [...prev.filter((o) => !byId.has(o.id)), ...savedRows]);
       setPeriods((prev) => {
         const n = { ...prev };
-        for (const r of savedRows) n[r.id] = parsePeriod(r.period);
+        for (const r of savedRows) n[r.id] = periodInputsOf(r);
         return n;
       });
     }
@@ -1232,9 +1233,10 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                       <FieldLabel>期間</FieldLabel>
                       <PeriodFields
                         value={periodOf(item.id)}
+                        disabled={saving}
                         onChange={(p) => updatePeriod(item.id, p)}
                       />
-                      {base && base.period.trim() && !isStandardPeriod(base.period) && !periodChanged(item) && (
+                      {base && isLegacyPeriod(base) && !periodChanged(item) && (
                         <p className="mt-1 text-[11px] text-[#f4c248]">
                           現在の値「{base.period}」は年月の入力欄で読み取れない形式です。入力して保存すると置き換わります。
                         </p>

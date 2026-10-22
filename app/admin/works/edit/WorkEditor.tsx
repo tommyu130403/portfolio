@@ -13,8 +13,10 @@ import {
   ImagePickerModal,
   Input,
   MoveButtons,
+  PeriodFields,
   moveItem,
 } from "../../AdminLayout";
+import { parsePeriod, formatPeriod, validatePeriod, isSamePeriod, isStandardPeriod, type PeriodInputs } from "../../period";
 import RichMarkdownEditor, { UPLOAD_PLACEHOLDER } from "@/components/RichMarkdownEditor";
 import { compressImage } from "@/lib/compress-image";
 import {
@@ -90,56 +92,6 @@ const DEFAULT_BODY_MD = `# Overview
 目指すゴールを入力します。
 :::
 `;
-
-type PeriodInputs = { startYear: string; startMonth: string; endYear: string; endMonth: string; isCurrent: boolean };
-
-function parsePeriod(period: string | null): PeriodInputs {
-  const m = (period ?? "").match(/^(\d{4})年(\d{1,2})月\s*-\s*(現在|(\d{4})年(\d{1,2})月)?$/);
-  if (!m) return { startYear: "", startMonth: "", endYear: "", endMonth: "", isCurrent: false };
-  return {
-    startYear: m[1] ?? "",
-    startMonth: m[2] ?? "",
-    endYear: m[4] ?? "",
-    endMonth: m[5] ?? "",
-    isCurrent: m[3] === "現在",
-  };
-}
-
-function formatPeriod(p: PeriodInputs): string | null {
-  const sy = p.startYear.trim();
-  const sm = p.startMonth.trim();
-  if (!sy || !sm) return null;
-  const start = `${sy}年${sm}月`;
-  const end = p.isCurrent ? "現在" : p.endYear.trim() && p.endMonth.trim() ? `${p.endYear.trim()}年${p.endMonth.trim()}月` : "";
-  return end ? `${start} - ${end}` : `${start} - `;
-}
-
-function toHalfWidthDigits(v: string): string {
-  return v.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
-}
-
-function normalizePeriod(p: PeriodInputs): PeriodInputs {
-  return {
-    ...p,
-    startYear: toHalfWidthDigits(p.startYear.trim()),
-    startMonth: toHalfWidthDigits(p.startMonth.trim()),
-    endYear: toHalfWidthDigits(p.endYear.trim()),
-    endMonth: toHalfWidthDigits(p.endMonth.trim()),
-  };
-}
-
-function validatePeriod(p: PeriodInputs): string | null {
-  const inRange = (v: string, min: number, max: number) => /^\d+$/.test(v) && Number(v) >= min && Number(v) <= max;
-  const fields: { label: string; year: string; month: string }[] = [{ label: "開始", year: p.startYear, month: p.startMonth }];
-  if (!p.isCurrent) fields.push({ label: "終了", year: p.endYear, month: p.endMonth });
-  for (const f of fields) {
-    if (f.year && !inRange(f.year, 1900, 2100)) return `${f.label}年は 1900〜2100 の西暦で入力してください`;
-    if (f.month && !inRange(f.month, 1, 12)) return `${f.label}月は 1〜12 で入力してください`;
-    if (f.month && !f.year) return `${f.label}月を入力する場合は${f.label}年も入力してください`;
-    if (f.year && !f.month) return `${f.label}年を入力する場合は${f.label}月も入力してください`;
-  }
-  return null;
-}
 
 type CareerOption = Pick<Tables<"career_items">, "id" | "role" | "company" | "period">;
 type ToolOption = { id: string; name: string; icon_url: string | null };
@@ -345,10 +297,15 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
   const handleSave = async () => {
     if (!work) return;
-    const normalized = normalizePeriod(period);
-    const periodError = validatePeriod(normalized);
+    if (!work.title.trim()) {
+      setSaveError("タイトルを入力してください");
+      return;
+    }
+    const periodTouched = !isSamePeriod(period, parsePeriod(work.period));
+    const periodError = periodTouched ? validatePeriod(period) : null;
     if (periodError) {
       setSaveError(periodError);
+      setTab("settings");
       return;
     }
     setSaving(true);
@@ -356,7 +313,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     const payload: Work = {
       ...work,
       id,
-      period: formatPeriod(normalized),
+      period: periodTouched ? formatPeriod(period) : work.period,
       // 画像アップロード中の仮の行が万一残っていても DB には入れない
       sections: markdownToSections(
         markdown
@@ -371,8 +328,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       setSaveError(saveRes.error);
       return;
     }
+    setWork((p) => (p ? { ...p, period: payload.period } : p));
+    setPeriod(parsePeriod(payload.period));
     setSaving(false);
-    setPeriod(normalized);
     setDirty(false);
     setSavedAt(true);
     setTimeout(() => setSavedAt(false), 2000);
@@ -462,8 +420,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         {dirty && <span className="shrink-0 text-[11px] text-[#f4c248]">未保存の変更があります</span>}
         {savedAt && <span className="shrink-0 text-[12px] text-primary">✓ 保存しました</span>}
         {saveError && (
-          <span className="shrink-0 text-[12px] text-danger-300" title={saveError}>
-            保存に失敗しました
+          <span role="alert" title={saveError} className="min-w-0 max-w-[480px] truncate text-[12px] text-danger-300">
+            {saveError}
           </span>
         )}
         <button
@@ -543,25 +501,10 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             </div>
             <div className="col-span-2">
               <FieldLabel>期間</FieldLabel>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input type="number" min={1900} max={2100} className="!w-24" value={period.startYear} onChange={(v) => { setPeriod((p) => ({ ...p, startYear: v })); markDirty(); }} placeholder="2023" />
-                <span className="text-[12px] text-fg-muted">年</span>
-                <Input type="number" min={1} max={12} className="!w-16" value={period.startMonth} onChange={(v) => { setPeriod((p) => ({ ...p, startMonth: v })); markDirty(); }} placeholder="4" />
-                <span className="text-[12px] text-fg-muted">月 〜</span>
-                <Input type="number" min={1900} max={2100} className="!w-24" value={period.isCurrent ? "" : period.endYear} onChange={(v) => { setPeriod((p) => ({ ...p, endYear: v })); markDirty(); }} placeholder="2024" disabled={period.isCurrent} />
-                <span className="text-[12px] text-fg-muted">年</span>
-                <Input type="number" min={1} max={12} className="!w-16" value={period.isCurrent ? "" : period.endMonth} onChange={(v) => { setPeriod((p) => ({ ...p, endMonth: v })); markDirty(); }} placeholder="3" disabled={period.isCurrent} />
-                <span className="text-[12px] text-fg-muted">月</span>
-                <label className="ml-2 inline-flex items-center gap-2 text-[12px] text-fg-muted">
-                  <input
-                    type="checkbox"
-                    className="h-3 w-3 accent-primary"
-                    checked={period.isCurrent}
-                    onChange={(e) => { setPeriod((p) => ({ ...p, isCurrent: e.target.checked })); markDirty(); }}
-                  />
-                  現在
-                </label>
-              </div>
+              <PeriodFields value={period} disabled={saving} onChange={(p) => { setPeriod(p); markDirty(); }} />
+              {work.period && !isStandardPeriod(work.period) && isSamePeriod(period, parsePeriod(work.period)) && (
+                <p className="mt-1 text-[11px] text-[#f4c248]">現在の値「{work.period}」は年月の入力欄で読み取れない形式です。入力して保存すると置き換わります。</p>
+              )}
             </div>
 
             <FormGroupHeader>デバイスモックアップ</FormGroupHeader>

@@ -36,6 +36,19 @@ function GroupIcon({ icon }: { icon?: string }) {
 
 type Selection = { kind: "group"; gi: number } | { kind: "member"; gi: number; mi: number } | null;
 
+// React key 用の内部 id（保存形式には含めない）。index を key にすると並べ替えでフォーカスが別の項目へ移るため
+let keySeq = 0;
+const newKey = () => `s${++keySeq}`;
+type KeyTree = { group: string; members: string[] }[];
+const keysFor = (v: StakeholdersData): KeyTree => v.groups.map((g) => ({ group: newKey(), members: g.members.map(newKey) }));
+/** value と件数が合わない部分は index で補う（外部から値が差し替わった場合の保険） */
+function alignKeys(k: KeyTree, v: StakeholdersData): KeyTree {
+  return v.groups.map((g, gi) => ({
+    group: k[gi]?.group ?? `g${gi}`,
+    members: g.members.map((_, mi) => k[gi]?.members[mi] ?? `g${gi}m${mi}`),
+  }));
+}
+
 function GroupTile({
   group, selected, onSelect, onLabel,
 }: {
@@ -145,6 +158,8 @@ export default function StakeholdersDiagramEditor({
   iconCatalog: IconCatalog;
 }) {
   const [selection, setSelection] = useState<Selection>(null);
+  const [keys, setKeys] = useState<KeyTree>(() => keysFor(value));
+  const k = alignKeys(keys, value);
   const sel: Selection = (() => {
     if (!selection) return null;
     const g = value.groups[selection.gi];
@@ -158,21 +173,25 @@ export default function StakeholdersDiagramEditor({
 
   const addGroup = () => {
     onChange({ groups: [...value.groups, { label: "", members: [{ label: "" }] }] });
+    setKeys([...k, { group: newKey(), members: [newKey()] }]);
     setSelection({ kind: "group", gi: value.groups.length });
   };
   const addMember = (gi: number) => {
     const g = value.groups[gi];
     onChange(patchGroupAt(value, gi, { members: [...g.members, { label: "" }] }));
+    setKeys(k.map((e, i) => (i === gi ? { ...e, members: [...e.members, newKey()] } : e)));
     setSelection({ kind: "member", gi, mi: g.members.length });
   };
   const removeGroup = (gi: number) => {
     onChange({ groups: value.groups.filter((_, i) => i !== gi) });
+    setKeys(k.filter((_, i) => i !== gi));
     setSelection(null);
   };
   const removeMember = (gi: number, mi: number) => {
     const g = value.groups[gi];
     if (g.members.length <= 1) return;
     onChange(patchGroupAt(value, gi, { members: g.members.filter((_, i) => i !== mi) }));
+    setKeys(k.map((e, i) => (i === gi ? { ...e, members: e.members.filter((_, j) => j !== mi) } : e)));
     setSelection(null);
   };
   const moveMember = (gi: number, mi: number, d: -1 | 1) => {
@@ -180,12 +199,14 @@ export default function StakeholdersDiagramEditor({
     const to = mi + d;
     if (to < 0 || to >= g.members.length) return;
     onChange(patchGroupAt(value, gi, { members: moveItem(g.members, mi, to) }));
+    setKeys(k.map((e, i) => (i === gi ? { ...e, members: moveItem(e.members, mi, to) } : e)));
     setSelection({ kind: "member", gi, mi: to });
   };
   const moveGroup = (gi: number, d: -1 | 1) => {
     const to = gi + d;
     if (to < 0 || to >= value.groups.length) return;
     onChange({ groups: moveItem(value.groups, gi, to) });
+    setKeys(moveItem(k, gi, to));
     setSelection({ kind: "group", gi: to });
   };
 
@@ -209,7 +230,7 @@ export default function StakeholdersDiagramEditor({
         ) : (
           <div onClick={clearIfBg} className="flex flex-col items-start gap-2 md:px-10">
             {value.groups.map((g, gi) => (
-              <div key={gi} className="flex max-w-full items-center gap-1">
+              <div key={k[gi].group} className="flex max-w-full items-center gap-1">
                 <GroupTile
                   group={g}
                   selected={sel?.kind === "group" && sel.gi === gi}
@@ -219,7 +240,7 @@ export default function StakeholdersDiagramEditor({
                 <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-2">
                   {g.members.map((m, mi) => (
                     <MemberPill
-                      key={mi}
+                      key={k[gi].members[mi]}
                       member={m}
                       name={memberName(m, mi)}
                       selected={sel?.kind === "member" && sel.gi === gi && sel.mi === mi}

@@ -1033,6 +1033,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     setSaved(false);
     const errs: Record<string, string> = {};
     for (const it of items) {
+      if (!isRowDirty(it)) continue; // 触っていない既存行は検証しない（DB 上の空行で全体が止まらないように）
       if (!it.role.trim()) errs[it.id] = "役職を入力してください";
       else if (!it.company.trim()) errs[it.id] = "会社名を入力してください";
       else if (periodChanged(it)) {

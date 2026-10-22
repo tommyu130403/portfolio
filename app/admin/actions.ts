@@ -405,12 +405,31 @@ function countBy(rows: { [k: string]: string }[] | null, key: string): Map<strin
   return m;
 }
 
+/** PostgREST の 1 回あたりの行数上限（既定 1000）を超えても全件を読む */
+async function fetchAllIds(
+  table: "work_tools" | "skill_experience_tools" | "work_skills",
+  column: "tool_id" | "skill_id",
+): Promise<{ data: { [k: string]: string }[]; error: { message?: string; code?: string } | null }> {
+  const PAGE = 1000;
+  const all: { [k: string]: string }[] = [];
+  for (let from = 0; ; from += PAGE) {
+    // テーブルごとに列が異なるため、型の組み合わせ検査を外す（列名は呼び出し側で正しく渡す）
+    const q = supabase.from(table as "work_tools").select(column as "tool_id");
+    const { data, error } = await q.range(from, from + PAGE - 1);
+    if (error) return { data: [], error };
+    const rows = (data ?? []) as unknown as { [k: string]: string }[];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return { data: all, error: null };
+}
+
 export async function listMasterTools(): Promise<{ data: MasterTool[]; error: string | null }> {
   try {
     const [tools, wt, st] = await Promise.all([
       supabase.from("tools_vocab").select("id, name, slug, category, icon_url").order("name"),
-      supabase.from("work_tools").select("tool_id"),
-      supabase.from("skill_experience_tools").select("tool_id"),
+      fetchAllIds("work_tools", "tool_id"),
+      fetchAllIds("skill_experience_tools", "tool_id"),
     ]);
     const err = tools.error ?? wt.error ?? st.error;
     if (err) return { data: [], error: dbErr(err) };
@@ -433,7 +452,7 @@ export async function listMasterSkills(): Promise<{ data: MasterSkill[]; error: 
   try {
     const [skills, ws] = await Promise.all([
       supabase.from("skills_vocab").select("id, label").order("label"),
-      supabase.from("work_skills").select("skill_id"),
+      fetchAllIds("work_skills", "skill_id"),
     ]);
     const err = skills.error ?? ws.error;
     if (err) return { data: [], error: dbErr(err) };

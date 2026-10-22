@@ -43,6 +43,9 @@ type DragSession = {
 };
 type DragPreview = { index: number; start: number; span: number };
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+// 行の React key 用の内部 id（保存形式には含めない）。index を key にすると並べ替えでフォーカスが別の行へ移るため
+let keySeq = 0;
+const newKey = () => `p${++keySeq}`;
 
 function computeDrag(s: DragSession, clientX: number, totalUnits: number) {
   const delta = Math.round((clientX - s.startX) / s.colW);
@@ -82,6 +85,9 @@ export default function TimelineGanttEditor({ value, onChange, onInsertTemplate 
   const { totalUnits, phases } = value;
   const [selected, setSelected] = useState<number | null>(null);
   const [preview, setPreview] = useState<DragPreview | null>(null);
+  const [keys, setKeys] = useState<string[]>(() => phases.map(newKey));
+  // 外部から件数が変わった場合（再読込など）は index で補う
+  const rowKey = (i: number) => keys[i] ?? `i${i}`;
   const trackRef = useRef<HTMLDivElement>(null); // 工程行コンテナ（週ヘッダーと同幅）
   const dragRef = useRef<DragSession | null>(null); // ハンドラ内でのみ読み書きする
   const sel = selected !== null && selected < phases.length ? selected : null;
@@ -94,6 +100,7 @@ export default function TimelineGanttEditor({ value, onChange, onInsertTemplate 
   const setUnits = (n: number) => onChange({ ...value, totalUnits: clamp(n, minUnits, maxUnits) });
   const addPhase = () => {
     onChange({ ...value, phases: [...phases, { label: "", start: 1, span: 2, raci: ["R"] }] });
+    setKeys((k) => [...phases.map((_, i) => k[i] ?? `i${i}`), newKey()]);
     setSelected(phases.length);
   };
 
@@ -234,7 +241,7 @@ export default function TimelineGanttEditor({ value, onChange, onInsertTemplate 
                   const width = (p.span / totalUnits) * 100;
                   return (
                     <div
-                      key={i}
+                      key={rowKey(i)}
                       className={`relative h-6 w-full hover:z-[100]! focus-within:z-[100]! ${dragging ? "z-[100]!" : ""}`}
                       style={{ zIndex: phases.length - i }}
                     >
@@ -328,6 +335,7 @@ export default function TimelineGanttEditor({ value, onChange, onInsertTemplate 
                 label={ph.label || `工程${sel + 1}`}
                 onMove={(d) => {
                   onChange({ ...value, phases: moveItem(phases, sel, sel + d) });
+                  setKeys((k) => moveItem(phases.map((_, i) => k[i] ?? `i${i}`), sel, sel + d));
                   setSelected(sel + d);
                 }}
               />
@@ -336,6 +344,7 @@ export default function TimelineGanttEditor({ value, onChange, onInsertTemplate 
                 className={vizDel}
                 onClick={() => {
                   onChange({ ...value, phases: phases.filter((_, j) => j !== sel) });
+                  setKeys((k) => phases.map((_, i) => k[i] ?? `i${i}`).filter((_, j) => j !== sel));
                   setSelected(null);
                 }}
               >

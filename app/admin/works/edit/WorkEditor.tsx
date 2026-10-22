@@ -81,21 +81,28 @@ function emptyWork(id: string): Work {
 }
 
 /**
- * 新規作成時に本文へ既定で入る Overview テンプレート。
- * Overview は専用設定ではなく本文 markdown で管理する
- * （見出しは 見出し02=###、2カラムは ::: grid 指定）。
+ * 新規作成時に本文へ既定で入る構成テンプレート。
+ * `# 見出し` がセクション区切り（markdownToSections）。
  */
-const DEFAULT_BODY_MD = `# Overview
+const DEFAULT_BODY_MD = `# プロジェクト概要
 
 プロジェクトの概要を入力します。
 
-::: grid cols=2 gap=10
-### Problem
-解決したい課題を入力します。
----
-### Goal
-目指すゴールを入力します。
-:::
+# 役割
+
+# 背景と課題
+
+## 背景
+
+## 目的
+
+## ゴール
+
+# 取り組み
+
+# 成果
+
+# 学び
 `;
 
 /** 体制内訳の編集状態。rows = 役割 id と人数の行、legacy = 行の形に読めない旧形式の文字 */

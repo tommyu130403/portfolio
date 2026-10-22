@@ -74,3 +74,61 @@ export function isSamePeriod(a: PeriodInputs, b: PeriodInputs): boolean {
     a.isCurrent === b.isCurrent
   );
 }
+
+export type PeriodColumns = { start_date: string | null; end_date: string | null; is_current: boolean };
+
+const pad2 = (v: string) => v.padStart(2, "0");
+
+/** 入力欄の値を DB の日付 3 列へ変換する（月単位。日は常に 1 日）。開始が空なら全部空。 */
+export function toPeriodColumns(p: PeriodInputs): PeriodColumns {
+  const n = normalizePeriod(p);
+  if (!n.startYear || !n.startMonth) return { start_date: null, end_date: null, is_current: false };
+  const start_date = `${n.startYear}-${pad2(n.startMonth)}-01`;
+  if (n.isCurrent) return { start_date, end_date: null, is_current: true };
+  const end_date = n.endYear && n.endMonth ? `${n.endYear}-${pad2(n.endMonth)}-01` : null;
+  return { start_date, end_date, is_current: false };
+}
+
+function splitDate(d: string | null): { year: string; month: string } {
+  if (!d) return { year: "", month: "" };
+  const [y, m] = d.slice(0, 7).split("-");
+  return { year: y ?? "", month: m ? String(Number(m)) : "" };
+}
+
+/** DB の日付 3 列を入力欄の値へ戻す。 */
+export function fromPeriodColumns(c: PeriodColumns): PeriodInputs {
+  const s = splitDate(c.start_date);
+  const e = c.is_current ? { year: "", month: "" } : splitDate(c.end_date);
+  return { startYear: s.year, startMonth: s.month, endYear: e.year, endMonth: e.month, isCurrent: c.is_current };
+}
+
+type PeriodRow = { period: string | null; start_date: string | null; end_date: string | null; is_current: boolean };
+
+/** 行から入力欄の値を作る。日付があればそれを、無ければ文字を読む（旧形式は空欄）。 */
+export function periodInputsOf(row: PeriodRow | null | undefined): PeriodInputs {
+  if (!row) return { ...EMPTY_PERIOD };
+  if (row.start_date) return fromPeriodColumns(row);
+  return parsePeriod(row.period);
+}
+
+/** 日付が空で、文字だけが入力欄で読めない形の行か。 */
+export function isLegacyPeriod(row: PeriodRow | null | undefined): boolean {
+  return !!row && !row.start_date && (row.period ?? "").trim() !== "" && !isStandardPeriod(row.period);
+}
+
+/**
+ * 保存用の期間 4 列（period 文字 + 日付 3 列）を決める。
+ * 期間欄を触っていない行は変換しない。旧形式の文字や範囲外の値（例: 2022年13月）を
+ * 無関係な保存のついでに日付へ変換すると、DB が生のエラーで弾くため。
+ */
+export function periodColumnsForSave(
+  row: PeriodRow,
+  inputs: PeriodInputs,
+  touched: boolean,
+): PeriodColumns & { period: string | null } {
+  if (touched) return { period: formatPeriod(inputs), ...toPeriodColumns(inputs) };
+  if (row.start_date != null) {
+    return { period: row.period, start_date: row.start_date, end_date: row.end_date, is_current: row.is_current };
+  }
+  return { period: row.period, start_date: null, end_date: null, is_current: false };
+}

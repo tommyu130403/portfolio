@@ -3,6 +3,7 @@
 import { type FC, useState } from "react";
 import Link from "next/link";
 import Icon from "./Icon";
+import ProtectedImage from "./ProtectedImage";
 import { GUIDE_TEXT } from "./WorkBreadcrumb";
 
 type WorkPagerCardProps = {
@@ -58,7 +59,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
     >
       {thumbSrc ? (
         <>
-          <img
+          <ProtectedImage
             src={thumbSrc}
             alt=""
             loading="lazy"

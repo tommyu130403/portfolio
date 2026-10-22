@@ -131,7 +131,7 @@ type ToolVocabLink = {
 };
 
 async function fetchSkillCards(): Promise<SkillCardConfig[]> {
-  const [{ data: cards }, { data: rows }, { data: links }] = await Promise.all([
+  const [cardsResult, rowsResult, linksResult] = await Promise.all([
     supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
     supabase.from("skill_experience").select("*").order("sort_order", { ascending: true }),
     supabase
@@ -139,6 +139,12 @@ async function fetchSkillCards(): Promise<SkillCardConfig[]> {
       .select("experience_id, tools_vocab(name, slug, category)")
       .order("sort_order", { ascending: true }),
   ]);
+
+  const failure = [cardsResult, rowsResult, linksResult].find((result) => result.error);
+  if (failure?.error) throw new Error(failure.error.message);
+  const cards = cardsResult.data;
+  const rows = rowsResult.data;
+  const links = linksResult.data;
 
   if (!cards) return [];
 
@@ -352,12 +358,17 @@ export function SkillCard({ card }: { card: SkillCardConfig }) {
 export default function SkillsCardGrid() {
   const [cards, setCards] = useState<SkillCardConfig[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchSkillCards().then((data) => {
-      setCards(data);
-      setLoading(false);
-    });
+    let active = true;
+    fetchSkillCards()
+      .then((data) => { if (active) setCards(data); })
+      .catch((failure: unknown) => {
+        if (active) setError(failure instanceof Error ? failure.message : "スキルを読み込めませんでした");
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   if (loading) {
@@ -369,6 +380,8 @@ export default function SkillsCardGrid() {
       </div>
     );
   }
+
+  if (error) return <p className="text-[13px] text-danger-300" role="alert">スキルの取得に失敗しました: {error}</p>;
 
   // Figma (Master 502:1344) はカテゴリカードを本文幅 800px の 1 列で縦積みし、
   // カード内のスキル項目を 2 列に並べる。カードを 2 列にするとスキル名が潰れる。

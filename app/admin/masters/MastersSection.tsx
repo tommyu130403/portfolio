@@ -7,8 +7,9 @@ import {
   FormGroupHeader,
   ImagePickerField,
   Input,
-  SectionTitle,
 } from "../AdminLayout";
+import SectionTitle from "../SectionTitle";
+import ProtectedImage from "@/components/ProtectedImage";
 import {
   addSkillVocab,
   addToolVocab,
@@ -285,8 +286,7 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[11px] text-system-700">
                 {t.icon_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={t.icon_url} alt="" className="h-5 w-5 object-contain" />
+                  <ProtectedImage src={t.icon_url} alt="" className="h-5 w-5 object-contain" />
                 ) : t.slug && logoSlugs.includes(t.slug) ? (
                   <ServiceLogo name={t.slug} className="h-5 w-5 object-contain" />
                 ) : (

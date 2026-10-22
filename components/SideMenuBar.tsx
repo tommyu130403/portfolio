@@ -194,7 +194,8 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         onCollapsedChange(typeof v === "function" ? v(collapsed) : v)
     : setInternalCollapsed;
 
-  const { entered, supabaseSession, logout } = useAuth();
+  const { supabaseSession, accessRole, logout } = useAuth();
+  const [logoutError, setLogoutError] = useState("");
 
   return (
     <aside
@@ -320,7 +321,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           </div>
         </nav>
 
-        {(process.env.NODE_ENV === "development" || supabaseSession === "signedIn") && (
+        {accessRole === "owner" && (
           <>
             <div className="h-px w-full rounded-[2px] bg-border shrink-0" />
             <nav
@@ -353,10 +354,15 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           collapsed={collapsed}
         />
 
-        {process.env.NODE_ENV !== "development" && (entered || supabaseSession === "signedIn") && (
+        {supabaseSession === "signedIn" && (
           <button
             type="button"
-            onClick={logout}
+            onClick={() => {
+              setLogoutError("");
+              void logout()
+                .then((error) => { if (error) setLogoutError(error); })
+                .catch(() => setLogoutError("ログアウトできませんでした"));
+            }}
             className="flex items-center gap-2 w-full transition-colors duration-200"
             title="ログアウト"
           >
@@ -371,6 +377,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             </span>
           </button>
         )}
+        {logoutError && <p className="text-[12px] text-danger-300" role="alert">{logoutError}</p>}
       </div>
     </aside>
   );

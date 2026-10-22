@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
+import ProtectedImage from "@/components/ProtectedImage";
 import {
   saveSkillCard,
   deleteSkillCard,
@@ -21,8 +22,6 @@ import {
   listFlowcharts,
   deleteFlowchart,
   duplicateFlowchart,
-  setWorkPublished,
-  saveWorksOrder,
 } from "@/app/admin/actions";
 import type {
   FlowchartRow,
@@ -31,9 +30,10 @@ import type {
 import type { Tables } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
 import { parseFlowchart } from "@/lib/flowchart";
+import SectionTitle from "./SectionTitle";
+import WorksSection from "./WorksSection";
 import { compressImage } from "@/lib/compress-image";
 import { SkillCard as PublicSkillCard, SKILL_LEVELS, segmentsToLevel, type SkillCardConfig } from "@/src/components/SkillsCardGrid";
-import PublishToggle from "./PublishToggle";
 import MastersSection from "./masters/MastersSection";
 import IconPickerField, { type IconValue } from "./IconPickerField";
 import type { IconCatalog } from "./iconCatalogTypes";
@@ -67,16 +67,6 @@ export { NAV_SECTIONS, type AdminSectionId };
 
 // ─── 共通 UI ──────────────────────────────────────────
 
-export function SectionTitle({ label, title }: { label: string; title: string }) {
-  return (
-    <div className="mb-8">
-      <p className="mb-1 text-[12px] tracking-[0.6px] text-primary">{label}</p>
-      <p className="font-mplus text-[32px] leading-[1.5] tracking-[1.6px] text-white">{title}</p>
-      <div className="mt-3 h-[2px] w-10 rounded bg-system-800" />
-    </div>
-  );
-}
-
 // ─── 画像ピッカー モーダル ────────────────────────────────────────────────────
 
 export function ImagePickerModal({
@@ -99,6 +89,7 @@ export function ImagePickerModal({
   const [alt, setAlt] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [listError, setListError] = useState("");
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -110,8 +101,10 @@ export function ImagePickerModal({
       setQuery("");
       setAlt("");
       setUploadError("");
-      listStorageImages().then(({ data }) => {
+      setListError("");
+      listStorageImages().then(({ data, error }) => {
         setImages(data);
+        setListError(error ?? "");
         setLoading(false);
       });
     }, 0);
@@ -134,6 +127,7 @@ export function ImagePickerModal({
     const { url, path, error } = await uploadStorageImage(fd, folder);
     setUploading(false);
     if (error || !url || !path) { setUploadError(error ?? "アップロード失敗"); return; }
+    setListError("");
     const img: StorageImage = { name: file.name, path, url };
     setImages((prev) => [img, ...prev]);
     setSelected(img);
@@ -222,6 +216,8 @@ export function ImagePickerModal({
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {loading ? (
             <p className="py-8 text-center text-[12px] text-system-700">読み込み中…</p>
+          ) : listError ? (
+            <p className="py-8 text-center text-[12px] text-danger-300" role="alert">{listError}</p>
           ) : filtered.length === 0 ? (
             <p className="py-8 text-center text-[12px] text-system-700">
               {query ? "一致する画像がありません" : "画像がありません。上からアップロードしてください。"}
@@ -239,7 +235,7 @@ export function ImagePickerModal({
                       : "border-border-light hover:border-system-700"
                   }`}
                 >
-                  <img src={img.url} alt={img.name} className="h-20 w-full object-cover" />
+                  <ProtectedImage src={img.url} alt={img.name} className="h-20 w-full object-cover" />
                   <p className="truncate bg-[#121212] px-1 py-1 text-left text-[9px] text-fg-muted">
                     {img.path}
                   </p>
@@ -482,7 +478,7 @@ export function ImagePickerField({
         </button>
       </div>
       {value && (
-        <img src={value} alt="preview" className={previewClassName} />
+        <ProtectedImage src={value} alt="preview" className={previewClassName} />
       )}
       <ImagePickerModal
         open={open}
@@ -741,6 +737,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   // 文章チェック
@@ -753,8 +750,9 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
     const text = [form.bio, ...(form.introduction as string[])].filter(Boolean).join("\n\n");
     setProofChecking(true); setProofIssues(null); setProofError("");
     try {
-      const { issues } = await runProofread(text);
-      setProofIssues(issues);
+      const { issues, error } = await runProofread(text);
+      if (error) setProofError(error);
+      else setProofIssues(issues);
     } catch {
       setProofError("チェックに失敗しました");
     } finally {
@@ -763,8 +761,9 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   };
 
   useEffect(() => {
-    supabase.from("profile").select("*").eq("id", 1).single().then(({ data }) => {
-      if (data) setForm({ ...data, introduction: Array.isArray(data.introduction) ? data.introduction as string[] : [] });
+    supabase.from("profile").select("*").eq("id", 1).single().then(({ data, error }) => {
+      if (error || !data) setLoadError(error?.message ?? "プロフィールが見つかりません");
+      else setForm({ ...data, introduction: Array.isArray(data.introduction) ? data.introduction as string[] : [] });
       setFetching(false);
     });
   }, []);
@@ -799,6 +798,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
+  if (loadError) return <p className="text-[13px] text-danger-300" role="alert">プロフィールを読み込めませんでした: {loadError}</p>;
 
   return (
     <section id="profile" className="scroll-mt-8">
@@ -961,8 +961,8 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     setProofCheckingId(item.id);
     setProofResultsMap((prev) => ({ ...prev, [item.id]: { issues: null, error: "" } }));
     try {
-      const { issues } = await runProofread(text);
-      setProofResultsMap((prev) => ({ ...prev, [item.id]: { issues, error: "" } }));
+      const { issues, error } = await runProofread(text);
+      setProofResultsMap((prev) => ({ ...prev, [item.id]: { issues: error ? null : issues, error: error ?? "" } }));
     } catch {
       setProofResultsMap((prev) => ({ ...prev, [item.id]: { issues: null, error: "チェックに失敗しました" } }));
     } finally {
@@ -1094,6 +1094,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
+  if (loadError && items.length === 0) return <p className="text-[13px] text-danger-300" role="alert">経歴を読み込めませんでした: {loadError}</p>;
 
   return (
     <section id="career" className="scroll-mt-8">
@@ -1241,193 +1242,6 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
         {saveError && <span className="text-[12px] text-danger-300">{saveError}</span>}
       </div>
       </fieldset>
-    </section>
-  );
-}
-
-// ─── Projects セクション ───────────────────────────────
-
-// from の要素を to の位置へ移し、sort_order を 0..n-1 で振り直す
-function reorderWorks(list: Tables<"works">[], from: number, to: number): Tables<"works">[] {
-  const next = [...list];
-  const [moved] = next.splice(from, 1);
-  next.splice(to, 0, moved);
-  return next.map((w, i) => ({ ...w, sort_order: i }));
-}
-
-function WorksSection() {
-  const [projects, setProjects] = useState<Tables<"works">[]>([]);
-  const [fetching, setFetching] = useState(true);
-  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
-  const [toggleError, setToggleError] = useState<string | null>(null);
-  const [orderError, setOrderError] = useState<string | null>(null);
-  const [savingOrder, setSavingOrder] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
-
-  const reloadProjects = useCallback(async (): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from("works")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    if (error || !data) return false;
-    setProjects(data);
-    return true;
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    supabase
-      .from("works")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .then(({ data }) => {
-        if (!active) return;
-        if (data) setProjects(data);
-        setFetching(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // 公開状態は即時に画面へ反映し、保存に失敗したらその行だけ元へ戻す
-  const handleTogglePublished = async (id: string, next: boolean) => {
-    const setRow = (value: boolean) =>
-      setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, is_published: value } : p)));
-    setRow(next);
-    setPendingIds((prev) => new Set(prev).add(id));
-    setToggleError(null);
-    const { error } = await setWorkPublished(id, next);
-    if (error) {
-      setRow(!next);
-      setToggleError(error);
-    }
-    setPendingIds((prev) => {
-      const rest = new Set(prev);
-      rest.delete(id);
-      return rest;
-    });
-  };
-
-  // 公開切替の保存中、または並び替えの保存中は、お互いの操作を止める
-  const reorderLocked = savingOrder || pendingIds.size > 0;
-
-  // 並び順は即時に画面へ反映する。失敗したら DB の最新の並びを読み直す（一部の行だけ保存された場合に画面とズレないように）
-  const applyOrder = async (from: number, to: number) => {
-    if (reorderLocked || from === to || to < 0 || to >= projects.length) return;
-    const next = reorderWorks(projects, from, to);
-    const updates = next
-      .map(({ id }, i) => ({ id, sort_order: i }))
-      .filter(({ id, sort_order }) => projects.find((p) => p.id === id)?.sort_order !== sort_order);
-    if (updates.length === 0) return;
-    setProjects(next);
-    setSavingOrder(true);
-    setOrderError(null);
-    const { error } = await saveWorksOrder(updates);
-    if (error) {
-      const reloaded = await reloadProjects();
-      setOrderError(
-        reloaded
-          ? `${error}（最新の状態を読み込み直しました）`
-          : `${error}（最新の状態を読み込めませんでした。ページを再読み込みしてください）`,
-      );
-    }
-    setSavingOrder(false);
-  };
-
-  const clearDrag = () => {
-    setDragIndex(null);
-    setOverIndex(null);
-  };
-
-  if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
-
-  return (
-    <section id="works" className="scroll-mt-8">
-      <SectionTitle label="Works" title="制作・企画" />
-      <p className="mb-6 text-[13px] text-fg-muted">
-        各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。右のスイッチで公開 / 非公開を切り替えられます（すぐに反映されます）。ドラッグまたは ↑↓ で並び順を変更できます（すぐに反映されます）。
-      </p>
-      {toggleError && <p className="mb-3 text-[12px] text-danger-300">公開状態の更新に失敗しました: {toggleError}</p>}
-      {orderError && <p className="mb-3 text-[12px] text-danger-300">並び順の保存に失敗しました: {orderError}</p>}
-      <div className="mb-6 flex flex-col gap-3">
-        {projects.map((project, idx) => (
-          <div
-            key={project.id}
-            draggable={!reorderLocked}
-            onDragStart={(e) => {
-              e.dataTransfer.effectAllowed = "move";
-              e.dataTransfer.setData("application/x-work-id", project.id);
-              setDragIndex(idx);
-            }}
-            onDragOver={(e) => {
-              if (dragIndex === null) return;
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "move";
-              if (overIndex !== idx) setOverIndex(idx);
-            }}
-            onDragLeave={() => {
-              if (overIndex === idx) setOverIndex(null);
-            }}
-            onDragEnd={clearDrag}
-            onDrop={(e) => {
-              e.preventDefault();
-              const from = dragIndex;
-              clearDrag();
-              if (from !== null) void applyOrder(from, idx);
-            }}
-            className={`flex items-center justify-between gap-4 rounded-[12px] border bg-[#161616] px-5 py-4 transition-colors hover:border-primary ${
-              overIndex === idx && dragIndex !== null && dragIndex !== idx ? "border-primary" : "border-border-light"
-            } ${dragIndex === idx ? "opacity-50" : ""}`}
-          >
-            <span aria-hidden="true" className="shrink-0 cursor-grab select-none text-[14px] leading-none text-system-700">⋮⋮</span>
-            <Link href={`/admin/works/edit?id=${project.id}`} draggable={false} className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="shrink-0 text-[12px] font-medium text-primary">{project.category ?? "—"}</span>
-              <span className={`truncate text-[14px] ${project.is_published ? "text-white" : "text-fg-muted"}`}>{project.title}</span>
-            </Link>
-            <PublishToggle
-              checked={project.is_published}
-              disabled={pendingIds.has(project.id) || savingOrder}
-              label={project.title}
-              title="オフにすると公開サイトの一覧・詳細・経歴リンクに出ません（すぐに反映されます）"
-              onChange={(next) => handleTogglePublished(project.id, next)}
-            />
-            <div className="flex shrink-0 items-center">
-              <button
-                type="button"
-                onClick={() => {
-                  if (idx === 0 || reorderLocked) return;
-                  void applyOrder(idx, idx - 1);
-                }}
-                aria-disabled={idx === 0 || reorderLocked}
-                aria-label={`${project.title} を上へ`}
-                className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-30 aria-disabled:hover:text-system-700"
-              >↑</button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (idx === projects.length - 1 || reorderLocked) return;
-                  void applyOrder(idx, idx + 1);
-                }}
-                aria-disabled={idx === projects.length - 1 || reorderLocked}
-                aria-label={`${project.title} を下へ`}
-                className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-30 aria-disabled:hover:text-system-700"
-              >↓</button>
-            </div>
-            <Link href={`/admin/works/edit?id=${project.id}`} draggable={false} className="shrink-0 text-[12px] text-system-700">
-              編集 →
-            </Link>
-          </div>
-        ))}
-        {projects.length === 0 && <p className="text-[13px] text-system-700">プロジェクトがありません</p>}
-      </div>
-      <Link
-        href="/admin/works/edit?id=new"
-        className="block w-full rounded-[12px] border border-dashed border-border-light py-4 text-center text-[14px] text-system-700 transition-colors hover:border-primary hover:text-white"
-      >
-        ＋ プロジェクトを追加
-      </Link>
     </section>
   );
 }
@@ -1632,11 +1446,11 @@ function SkillsExperienceSection({
 }) {
   const [cards, setCards]         = useState<CardWithRelations[]>([]);
   const [fetching, setFetching]   = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [savingId, setSavingId]   = useState<string | null>(null);
   const [savedId, setSavedId]     = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [globalError, setGlobalError] = useState("");
   const [toolVocab, setToolVocab] = useState<ToolChip[]>([]);
   const [newToolNames, setNewToolNames] = useState<Record<string, string>>({});
   const [addingTool, setAddingTool] = useState(false);
@@ -1656,12 +1470,7 @@ function SkillsExperienceSection({
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [
-        { data: cardRows, error: cardErr },
-        { data: barRows, error: barErr },
-        { data: linkRows, error: linkErr },
-        { data: toolRows, error: toolErr },
-      ] = await Promise.all([
+      const [cardResult, barResult, linkResult, toolResult] = await Promise.all([
         supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
         supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
         supabase
@@ -1670,9 +1479,16 @@ function SkillsExperienceSection({
           .order("sort_order", { ascending: true }),
         supabase.from("tools_vocab").select("id, name, icon_url, slug, category").order("name"),
       ]);
-      const loadErr = cardErr ?? barErr ?? linkErr ?? toolErr;
-      if (loadErr) setGlobalError(`読み込みに失敗しました: ${loadErr.message}`);
-      if (!cardRows) { setFetching(false); return; }
+      const failure = [cardResult, barResult, linkResult, toolResult].find((result) => result.error);
+      if (failure?.error || !cardResult.data) {
+        setLoadError(failure?.error?.message ?? "スキルカードを取得できませんでした");
+        setFetching(false);
+        return;
+      }
+      const cardRows = cardResult.data;
+      const barRows = barResult.data;
+      const linkRows = linkResult.data;
+      const toolRows = toolResult.data;
 
       // skill_experience_tools → スキル行 ID ごとのツール配列に整形
       const toolsByExp = new Map<string, BarTool[]>();
@@ -1979,13 +1795,14 @@ function SkillsExperienceSection({
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
+  if (loadError) return <p className="text-[13px] text-danger-300" role="alert">スキルを読み込めませんでした: {loadError}</p>;
 
   const toolById = new Map(toolVocab.map((t) => [t.id, t]));
 
   return (
     <section id="skills-experience" className="scroll-mt-8">
       <SectionTitle label="Skills Experience" title="スキルカルーセル" />
-      {globalError && <p className="mb-4 text-[13px] text-danger-300">{globalError}</p>}
+      {loadError && <p className="mb-4 text-[13px] text-danger-300">{loadError}</p>}
       {anyDirty && (
         <p className="mb-3 text-[11px] text-[#f4c248]">
           未保存の変更があります
@@ -2147,8 +1964,7 @@ function SkillsExperienceSection({
                                     onClick={() => toggleBarTool(card.id, bar.id, opt)}
                                     className={`flex items-center gap-1.5 rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${selected ? "border-primary bg-primary/10 text-primary" : "border-border-light bg-[#1a1a1a] text-fg-muted hover:text-white"}`}
                                   >
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    {opt.icon_url && <img src={opt.icon_url} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />}
+                                    {opt.icon_url && <ProtectedImage src={opt.icon_url} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />}
                                     {opt.name}
                                   </button>
                                 );

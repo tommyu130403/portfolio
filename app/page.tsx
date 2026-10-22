@@ -7,6 +7,7 @@ import CareerGanttChart from "@/components/CareerGanttChart";
 import { WorksList } from "@/src/components/WorksList";
 import SkillsCardGrid from "@/src/components/SkillsCardGrid";
 import { AuthGate } from "@/components/AuthGate";
+import ProtectedImage from "@/components/ProtectedImage";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 
@@ -16,6 +17,14 @@ type Profile = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
 
 export default function Home() {
+  return (
+    <AuthGate>
+      <HomeContent />
+    </AuthGate>
+  );
+}
+
+function HomeContent() {
   const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // lg 未満のモバイルナビ（ハンバーガー → オーバーレイ）の開閉状態
@@ -43,8 +52,9 @@ export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [career, setCareer] = useState<CareerItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
+  const [careerError, setCareerError] = useState(false);
   // Supabase からプロフィール・経歴を取得
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const fetchData = async () => {
       const [profileRes, careerRes] = await Promise.all([
@@ -52,11 +62,19 @@ export default function Home() {
         supabase.from("career_items").select("*").order("sort_order", { ascending: true }),
       ]);
       if (profileRes.data) setProfile(profileRes.data);
+      if (profileRes.error) setProfileError(true);
       if (careerRes.data) setCareer(careerRes.data);
+      if (careerRes.error) setCareerError(true);
       setLoading(false);
     };
     fetchData();
   }, []);
+
+  const introduction = Array.isArray(profile?.introduction)
+    ? profile.introduction.filter((paragraph): paragraph is string =>
+        typeof paragraph === "string" && paragraph.trim().length > 0
+      )
+    : [];
 
   // 別ページから /#works 等で来たとき、Next.js のクライアント遷移はデータ読み込み前の高さで
   // 位置を決める(または移動しない)ため、経歴・作品・スキルが読み込まれて伸びた分だけずれる。
@@ -111,8 +129,7 @@ export default function Home() {
   }, []);
 
   return (
-    <AuthGate>
-      <div className="flex min-h-screen items-start bg-surface text-white">
+    <div className="flex min-h-screen items-start bg-surface text-white">
         {/* Side Menu（lg 以上のみ表示） */}
         <div
           className="sticky top-0 shrink-0 z-[2] hidden lg:block"
@@ -187,7 +204,7 @@ export default function Home() {
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-system-800" />
               ) : (
-                <img src={profile?.hero_image_url} alt="Profile" className="h-full w-full object-cover" />
+                <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" className="h-full w-full object-cover" />
               )}
             </div>
             <div className="flex flex-1 flex-col">
@@ -203,6 +220,7 @@ export default function Home() {
                     {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-system-800" /> : profile?.name_en}
                   </p>
                 </div>
+                {profile?.bio && <p className="text-[15px] leading-6 text-fg-muted">{profile.bio}</p>}
               </div>
             </div>
           </section>
@@ -211,10 +229,16 @@ export default function Home() {
           <section id="introduction" className="w-full max-w-main">
             <Headline label="自己紹介" title="Introduction" />
             <div className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-white">
-              {/* Opening paragraphs */}
               <div className="flex flex-col gap-4">
-                <p>こんにちは。プロダクトデザイナーの山田太郎です。<br />&nbsp;大学では主にIoTの分野を中心に人間工学やHCD(人間中心設計)を学びものづくり全般に関わる専門性を学び、新卒で入社したレバレジーズではWebサイト・アプリケーションの設計と開発、CROの改善など、 幅広いデジタルプロダクトのグロースに携わってきました。</p>
-                <p>デザインは問題解決の手段であると考えており、 常にユーザーの課題とビジネスの目標の両方を意識しながらデザイン制作を行ってきました。 開発チームやセールスチームといったあらゆる専門性との密なコミュニケーションを通じて、「最適解」を徹底的に模索することを心がけています。</p>
+                {loading ? (
+                  <div className="h-16 w-full animate-pulse rounded bg-system-800" />
+                ) : profileError ? (
+                  <p role="alert">自己紹介を読み込めませんでした。</p>
+                ) : introduction.length > 0 ? (
+                  introduction.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+                ) : (
+                  <p>自己紹介はまだ登録されていません。</p>
+                )}
               </div>
               {/* Figma の点は本文と同じ 13px の「•」を字下げ 19.5px の中央に置いたもの。list-disc は 5×5 の図形になるため不使用 */}
               <ul className="list-none text-[13px] leading-[21px] tracking-[0.39px] text-fg-muted" role="list">
@@ -244,6 +268,8 @@ export default function Home() {
                   <span className="inline-block h-16 w-2/3 animate-pulse rounded-[10px] bg-system-800" style={{ marginLeft: "20%" }} />
                   <span className="inline-block h-16 w-1/2 animate-pulse rounded-[10px] bg-system-800" style={{ marginLeft: "40%" }} />
                 </div>
+              ) : careerError ? (
+                <p className="text-[13px] text-danger-300" role="alert">経歴を読み込めませんでした。</p>
               ) : (
                 <CareerGanttChart career={career} />
               )}
@@ -267,6 +293,5 @@ export default function Home() {
         </div>
       </main>
     </div>
-    </AuthGate>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "@/lib/image-layout";
 import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
 import { TableGrid, TableKeyValue } from "./Table";
+import ProtectedImage from "./ProtectedImage";
 
 /**
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
@@ -61,8 +62,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
     if (img) {
       const layout = parseImageAttrs(img[3]?.slice(1, -1), img[2]);
       push(
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <ProtectedImage
           src={layout.base}
           alt={img[1]}
           style={{ width: widthToCss(layout.width), maxWidth: "100%" }}
@@ -186,8 +186,7 @@ const ImageFigure: FC<{
   return (
     <figure className={floatClass} style={figStyle}>
       <div className="overflow-hidden rounded-r16">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <ProtectedImage
           src={url}
           alt={caption ?? ""}
           className="block h-auto w-full"
@@ -223,8 +222,7 @@ const ImageTextRow: FC<{
         className="min-w-0 shrink overflow-hidden rounded-r16"
         style={{ width: widthToCss(width) ?? "200px", maxWidth: "100%" }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <ProtectedImage
           src={url}
           alt={caption ?? ""}
           className="block h-auto w-full"

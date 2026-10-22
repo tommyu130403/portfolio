@@ -22,9 +22,12 @@ import {
   listFlowcharts,
   deleteFlowchart,
   duplicateFlowchart,
+  listNameMaster,
+  addNameMaster,
 } from "@/app/admin/actions";
 import type {
   FlowchartRow,
+  NameMaster,
   StorageImage,
 } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
@@ -35,6 +38,7 @@ import WorksSection from "./WorksSection";
 import { compressImage } from "@/lib/compress-image";
 import { SkillCard as PublicSkillCard, SKILL_LEVELS, segmentsToLevel, type SkillCardConfig } from "@/src/components/SkillsCardGrid";
 import MastersSection from "./masters/MastersSection";
+import MasterSelect from "./MasterSelect";
 import IconPickerField, { type IconValue } from "./IconPickerField";
 import type { IconCatalog } from "./iconCatalogTypes";
 import {
@@ -529,7 +533,7 @@ export function Input({
       placeholder={placeholder}
       list={list}
       disabled={disabled}
-      className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary placeholder:text-system-700 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary placeholder:text-system-750 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
     />
   );
 }
@@ -906,6 +910,8 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
 function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [items, setItems] = useState<CareerRow[]>([]);
   const [originalItems, setOriginalItems] = useState<CareerItem[]>([]);
+  const [companies, setCompanies] = useState<NameMaster[]>([]);
+  const [roles, setRoles] = useState<NameMaster[]>([]);
   const [periods, setPeriods] = useState<Record<string, PeriodInputs>>({});
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -922,14 +928,19 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
 
   useEffect(() => {
     let cancelled = false;
-    supabase
-      .from("career_items").select("*").order("sort_order", { ascending: true })
-      .then(({ data, error }) => {
+    Promise.all([
+      supabase.from("career_items").select("*").order("sort_order", { ascending: true }),
+      listNameMaster("companies"),
+      listNameMaster("roles"),
+    ]).then(([career, co, ro]) => {
         if (cancelled) return;
-        if (error) setLoadError(`読み込みに失敗しました: ${error.message}`);
-        const rows = data ?? [];
+        const failure = career.error?.message ?? co.error ?? ro.error;
+        if (failure) setLoadError(`読み込みに失敗しました: ${failure}`);
+        const rows = career.data ?? [];
         setItems(rows);
         setOriginalItems(rows);
+        setCompanies(co.data);
+        setRoles(ro.data);
         setPeriods(Object.fromEntries(rows.map((r) => [r.id, parsePeriod(r.period)])));
         setFetching(false);
       });
@@ -946,6 +957,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     return (
       !!it.isNew || !b ||
       b.role !== it.role || b.company !== it.company ||
+      b.role_id !== it.role_id || b.company_id !== it.company_id ||
       b.description !== it.description || b.sort_order !== it.sort_order ||
       periodChanged(it)
     );
@@ -980,9 +992,31 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     setSaveError("");
   };
 
-  const updateItem = (id: string, key: "role" | "company" | "description", val: string) => {
+  const updateItem = (id: string, key: "description", val: string) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, [key]: val } : it)));
     clearErr(id);
+  };
+
+  const selectMaster = (id: string, kind: "company" | "role", item: NameMaster | null) => {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it;
+        return kind === "company"
+          ? { ...it, company_id: item?.id ?? null, company: item?.name ?? "" }
+          : { ...it, role_id: item?.id ?? null, role: item?.name ?? "" };
+      }),
+    );
+    clearErr(id);
+  };
+
+  const addMaster = async (kind: "company" | "role", name: string) => {
+    const res = await addNameMaster(kind === "company" ? "companies" : "roles", name);
+    const item = res.item;
+    if (item) {
+      const setList = kind === "company" ? setCompanies : setRoles;
+      setList((prev) => (prev.some((o) => o.id === item.id) ? prev : [...prev, item]));
+    }
+    return res;
   };
 
   const updatePeriod = (id: string, p: PeriodInputs) => {
@@ -995,7 +1029,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     const sort_order = items.reduce((m, it) => Math.max(m, it.sort_order), -1) + 1;
     setItems((prev) => [
       ...prev,
-      { id, role: "", company: "", period: "", description: "", sort_order, created_at: null, isNew: true },
+      { id, role: "", role_id: null, company: "", company_id: null, period: "", description: "", sort_order, created_at: null, isNew: true },
     ]);
     setPeriods((prev) => ({ ...prev, [id]: { ...EMPTY_PERIOD } }));
   };
@@ -1034,8 +1068,8 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     const errs: Record<string, string> = {};
     for (const it of items) {
       if (!isRowDirty(it)) continue; // 触っていない既存行は検証しない（DB 上の空行で全体が止まらないように）
-      if (!it.role.trim()) errs[it.id] = "役職を入力してください";
-      else if (!it.company.trim()) errs[it.id] = "会社名を入力してください";
+      if (!it.role_id) errs[it.id] = "役職を選んでください";
+      else if (!it.company_id) errs[it.id] = "会社名を選んでください";
       else if (periodChanged(it)) {
         const pe = validatePeriod(periodOf(it.id));
         if (pe) errs[it.id] = pe;
@@ -1051,21 +1085,26 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     }
     setRowErrors({});
     setSaving(true);
+    const companiesById = new Map(companies.map((c) => [c.id, c]));
+    const rolesById = new Map(roles.map((r) => [r.id, r]));
     const savedRows: CareerItem[] = [];
     let failure: { id: string; msg: string } | null = null;
     for (const it of items) {
       if (!isRowDirty(it)) continue;
       const period = periodChanged(it) ? (formatPeriod(periodOf(it.id)) ?? "") : it.period;
+      const role = (it.role_id ? rolesById.get(it.role_id)?.name : undefined) ?? it.role;
+      const company = (it.company_id ? companiesById.get(it.company_id)?.name : undefined) ?? it.company;
       const row: CareerItem = {
-        id: it.id, role: it.role, company: it.company, period,
+        id: it.id, role, role_id: it.role_id, company, company_id: it.company_id, period,
         description: it.description, sort_order: it.sort_order, created_at: it.created_at,
       };
-      const { error } = await saveCareerItem({
-        id: row.id, role: row.role, company: row.company, period: row.period,
+      const res = await saveCareerItem({
+        id: row.id, role: row.role, role_id: row.role_id, company: row.company, company_id: row.company_id,
+        period: row.period,
         description: row.description, sort_order: row.sort_order,
       });
-      if (error) { failure = { id: it.id, msg: error }; break; }
-      savedRows.push(row);
+      if (res.error) { failure = { id: it.id, msg: res.error }; break; }
+      savedRows.push({ ...row, company: res.company ?? row.company, role: res.role ?? row.role });
     }
     setSaving(false);
     if (savedRows.length) {
@@ -1100,6 +1139,15 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   return (
     <section id="career" className="scroll-mt-8">
       <SectionTitle label="Career" title="経歴" />
+      <Link
+        href="/admin/masters"
+        className="mb-3 inline-block text-[11px] text-primary hover:underline"
+        onClick={(e) => {
+          if (dirty && !window.confirm("未保存の変更があります。破棄してマスタ管理へ移動しますか？")) e.preventDefault();
+        }}
+      >
+        会社・役職の改名・削除は「マスタ管理」で
+      </Link>
       {loadError && <p className="mb-4 text-[13px] text-danger-300">{loadError}</p>}
       {dirty && <p className="mb-3 text-[11px] text-[#f4c248]">未保存の変更があります</p>}
 
@@ -1113,8 +1161,8 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
           >
             {(() => {
               const base = baseById.get(item.id);
-              const dirtyRole = base && base.role !== item.role;
-              const dirtyCompany = base && base.company !== item.company;
+              const dirtyRole = base && (base.role_id !== item.role_id || base.role !== item.role);
+              const dirtyCompany = base && (base.company_id !== item.company_id || base.company !== item.company);
               const dirtyPeriod = base && periodChanged(item);
               const dirtyDescription = base && base.description !== item.description;
               return (
@@ -1148,9 +1196,14 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <FieldLabel>役職</FieldLabel>
-                      <Input
-                        value={item.role}
-                        onChange={(v) => updateItem(item.id, "role", v)}
+                      <MasterSelect
+                        value={item.role_id}
+                        legacyText={item.role}
+                        options={roles}
+                        onSelect={(m) => selectMaster(item.id, "role", m)}
+                        onAdd={(name) => addMaster("role", name)}
+                        placeholder="（役職を選択）"
+                        addPlaceholder="新しい役職"
                       />
                       {dirtyRole && (
                         <p className="mt-1 text-[11px] text-[#f4c248]">
@@ -1160,9 +1213,14 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                     </div>
                     <div>
                       <FieldLabel>会社名</FieldLabel>
-                      <Input
-                        value={item.company}
-                        onChange={(v) => updateItem(item.id, "company", v)}
+                      <MasterSelect
+                        value={item.company_id}
+                        legacyText={item.company}
+                        options={companies}
+                        onSelect={(m) => selectMaster(item.id, "company", m)}
+                        onAdd={(name) => addMaster("company", name)}
+                        placeholder="（会社を選択）"
+                        addPlaceholder="新しい会社名"
                       />
                       {dirtyCompany && (
                         <p className="mt-1 text-[11px] text-[#f4c248]">
@@ -2090,7 +2148,7 @@ export function AdminShell({
   };
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a]">
+    <div className="admin-root flex h-screen bg-[#0a0a0a]">
       {/* サイドバー */}
       <aside className="sticky top-0 flex h-screen w-[220px] shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0a0a0a] px-4 py-8">
         <div className="mb-8 px-2">

@@ -71,7 +71,7 @@ function GroupTile({
         onChange={(e) => onLabel(e.target.value)}
         placeholder="グループ名"
         aria-label="グループ名"
-        className="w-full min-w-0 bg-transparent px-1 text-center font-sans text-[10px] font-bold leading-normal tracking-[0.5px] text-white outline-none placeholder:text-system-700"
+        className="w-full min-w-0 bg-transparent px-1 text-center font-sans text-[10px] font-bold leading-normal tracking-[0.5px] text-white outline-none placeholder:text-system-750"
       />
     </div>
   );
@@ -116,7 +116,7 @@ function MemberPill({
               onChange={(e) => onLabel(e.target.value)}
               placeholder="名前"
               aria-label={`${name} の名前`}
-              className={`col-start-1 row-start-1 w-full min-w-0 bg-transparent p-0 outline-none placeholder:text-system-700 ${type}`}
+              className={`col-start-1 row-start-1 w-full min-w-0 bg-transparent p-0 outline-none placeholder:text-system-750 ${type}`}
             />
           </span>
         </span>

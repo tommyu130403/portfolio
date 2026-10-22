@@ -5,6 +5,7 @@ import {
   setExperienceTools,
 } from "@/src/lib/skills-tools-client";
 import type { Json, Tables } from "@/src/types/supabase";
+import { parseTimeline } from "@/components/WorkViz";
 import {
   clearFlowchartCache,
   type FlowchartData,
@@ -182,25 +183,24 @@ export async function duplicateFlowchart(id: string): Promise<{
   }
 }
 
-/** 作品・スキル・ツールを一つの DB トランザクションで保存する。 */
+/**
+ * 作品・スキル・ツール・担当役割・体制内訳を一つの DB トランザクションで保存する。
+ * stakeholderCounts が null のときは旧形式の体制内訳（文字のまま）として保存する。
+ */
 export async function saveWork(
   payload: WorkRow,
   skills: string[],
   tools: string[],
+  roleIds: string[],
+  stakeholderCounts: { role_id: string; headcount: number }[] | null,
 ): Promise<{ error: string | null }> {
   try {
-    // The DB types are generated from the deployed schema. Until this migration is
-    // applied and update-types is run, keep the new RPC's signature local.
-    const client = supabase as unknown as {
-      rpc: (
-        name: "save_work_with_relations",
-        args: { p_work: Json; p_skill_labels: string[]; p_tool_names: string[] },
-      ) => Promise<{ error: { message: string } | null }>;
-    };
-    const { error } = await client.rpc("save_work_with_relations", {
+    const { error } = await supabase.rpc("save_work_with_relations", {
       p_work: payload as unknown as Json,
       p_skill_labels: skills,
       p_tool_names: tools,
+      p_role_ids: roleIds,
+      p_stakeholder_counts: stakeholderCounts as unknown as Json,
     });
     if (error) return { error: error.message };
     return { error: null };
@@ -399,25 +399,29 @@ function dbErr(error: { message?: string; code?: string }): string {
   return error.message || error.code || String(error);
 }
 
-function countBy(rows: { [k: string]: string }[] | null, key: string): Map<string, number> {
+function countBy(rows: { [k: string]: string | null }[] | null, key: string): Map<string, number> {
   const m = new Map<string, number>();
-  for (const r of rows ?? []) m.set(r[key], (m.get(r[key]) ?? 0) + 1);
+  for (const r of rows ?? []) {
+    const v = r[key];
+    if (v == null) continue;
+    m.set(v, (m.get(v) ?? 0) + 1);
+  }
   return m;
 }
 
 /** PostgREST の 1 回あたりの行数上限（既定 1000）を超えても全件を読む */
 async function fetchAllIds(
-  table: "work_tools" | "skill_experience_tools" | "work_skills",
-  column: "tool_id" | "skill_id",
-): Promise<{ data: { [k: string]: string }[]; error: { message?: string; code?: string } | null }> {
+  table: "work_tools" | "skill_experience_tools" | "work_skills" | "career_items" | "work_roles" | "work_stakeholder_counts",
+  column: "tool_id" | "skill_id" | "company_id" | "role_id",
+): Promise<{ data: { [k: string]: string | null }[]; error: { message?: string; code?: string } | null }> {
   const PAGE = 1000;
-  const all: { [k: string]: string }[] = [];
+  const all: { [k: string]: string | null }[] = [];
   for (let from = 0; ; from += PAGE) {
     // テーブルごとに列が異なるため、型の組み合わせ検査を外す（列名は呼び出し側で正しく渡す）
     const q = supabase.from(table as "work_tools").select(column as "tool_id");
     const { data, error } = await q.range(from, from + PAGE - 1);
     if (error) return { data: [], error };
-    const rows = (data ?? []) as unknown as { [k: string]: string }[];
+    const rows = (data ?? []) as unknown as { [k: string]: string | null }[];
     all.push(...rows);
     if (rows.length < PAGE) break;
   }
@@ -637,6 +641,266 @@ export async function deleteSkillVocab(id: string): Promise<{ error: string | nu
   }
 }
 
+// ─── Masters (companies / roles / phase_names) ────────────────────────────────
+
+export type NameMasterTable = "companies" | "roles" | "phase_names";
+export type NameMaster = { id: string; name: string; sort_order: number };
+export type MasterCompany = NameMaster & { careerCount: number };
+export type MasterRole = NameMaster & { careerCount: number; workCount: number; breakdownCount: number };
+export type MasterPhaseName = NameMaster & { workCount: number };
+
+const NAME_LABEL = { companies: "会社名", roles: "役割名", phase_names: "工程名" } as const;
+const NAME_NOUN = { companies: "会社", roles: "役割", phase_names: "工程名" } as const;
+const RENAME_RPC = {
+  companies: "rename_company",
+  roles: "rename_role",
+  phase_names: "rename_phase_name",
+} as const;
+
+export async function listNameMaster(
+  table: NameMasterTable,
+): Promise<{ data: NameMaster[]; error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from(table as "roles")
+      .select("id, name, sort_order")
+      .order("sort_order")
+      .order("name");
+    if (error) return { data: [], error: dbErr(error) };
+    return { data: data ?? [], error: null };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+export async function addNameMaster(
+  table: NameMasterTable,
+  name: string,
+): Promise<{ error: string | null; item?: NameMaster; existed?: boolean }> {
+  try {
+    const trimmed = name.trim();
+    if (!trimmed) return { error: `${NAME_LABEL[table]}を入力してください` };
+    const { data: all, error: listErr } = await supabase
+      .from(table as "roles")
+      .select("id, name, sort_order");
+    if (listErr) return { error: dbErr(listErr) };
+    const rows = all ?? [];
+    const lower = trimmed.toLowerCase();
+    const found = rows.find((r) => r.name.trim().toLowerCase() === lower);
+    if (found) return { error: null, item: found, existed: true };
+    const sortOrder = rows.reduce((m, r) => Math.max(m, r.sort_order), 0) + 1;
+    const { data, error } = await supabase
+      .from(table as "roles")
+      .insert({ name: trimmed, sort_order: sortOrder })
+      .select("id, name, sort_order");
+    if (error) {
+      if (error.code === "23505") {
+        const pattern = trimmed.replace(/[\\%_]/g, (c) => "\\" + c);
+        const { data: again, error: againErr } = await supabase
+          .from(table as "roles")
+          .select("id, name, sort_order")
+          .ilike("name", pattern)
+          .limit(1);
+        if (againErr) return { error: dbErr(againErr) };
+        if (again?.length) return { error: null, item: again[0], existed: true };
+      }
+      return { error: dbErr(error) };
+    }
+    if (!data?.length) return { error: `${NAME_NOUN[table]}を追加できませんでした（権限がありません）` };
+    return { error: null, item: data[0] };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function renameNameMaster(
+  table: NameMasterTable,
+  id: string,
+  name: string,
+): Promise<{ error: string | null }> {
+  try {
+    const trimmed = name.trim();
+    if (!trimmed) return { error: `${NAME_LABEL[table]}を入力してください` };
+    const { data: all, error: listErr } = await supabase
+      .from(table as "roles")
+      .select("id, name");
+    if (listErr) return { error: dbErr(listErr) };
+    const lower = trimmed.toLowerCase();
+    if ((all ?? []).some((r) => r.id !== id && r.name.trim().toLowerCase() === lower)) {
+      return { error: `同じ名前の${NAME_NOUN[table]}がすでにあります` };
+    }
+    const { error } = await supabase.rpc(RENAME_RPC[table] as "rename_role", {
+      p_id: id,
+      p_name: trimmed,
+    });
+    if (error) return { error: dbErr(error) };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function listMasterCompanies(): Promise<{ data: MasterCompany[]; error: string | null }> {
+  try {
+    const [list, career] = await Promise.all([
+      listNameMaster("companies"),
+      fetchAllIds("career_items", "company_id"),
+    ]);
+    if (list.error) return { data: [], error: list.error };
+    if (career.error) return { data: [], error: dbErr(career.error) };
+    const counts = countBy(career.data, "company_id");
+    return {
+      data: list.data.map((c) => ({ ...c, careerCount: counts.get(c.id) ?? 0 })),
+      error: null,
+    };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+export async function listMasterRoles(): Promise<{ data: MasterRole[]; error: string | null }> {
+  try {
+    const [list, career, works, breakdown] = await Promise.all([
+      listNameMaster("roles"),
+      fetchAllIds("career_items", "role_id"),
+      fetchAllIds("work_roles", "role_id"),
+      fetchAllIds("work_stakeholder_counts", "role_id"),
+    ]);
+    if (list.error) return { data: [], error: list.error };
+    const err = career.error ?? works.error ?? breakdown.error;
+    if (err) return { data: [], error: dbErr(err) };
+    const careerCounts = countBy(career.data, "role_id");
+    const workCounts = countBy(works.data, "role_id");
+    const breakdownCounts = countBy(breakdown.data, "role_id");
+    return {
+      data: list.data.map((r) => ({
+        ...r,
+        careerCount: careerCounts.get(r.id) ?? 0,
+        workCount: workCounts.get(r.id) ?? 0,
+        breakdownCount: breakdownCounts.get(r.id) ?? 0,
+      })),
+      error: null,
+    };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+/** works.timeline の phases[].label ごとに、使っている作品数を数える（作品内の重複は 1 回） */
+async function countPhaseLabelUsage(): Promise<{ error: string | null; counts: Map<string, number> }> {
+  const counts = new Map<string, number>();
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("works")
+      .select("timeline")
+      .range(from, from + PAGE - 1);
+    if (error) return { error: dbErr(error), counts };
+    const rows = data ?? [];
+    for (const row of rows) {
+      const labels = new Set((parseTimeline(row.timeline)?.phases ?? []).map((p) => p.label));
+      for (const label of labels) counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    if (rows.length < PAGE) break;
+  }
+  return { error: null, counts };
+}
+
+export async function listMasterPhaseNames(): Promise<{ data: MasterPhaseName[]; error: string | null }> {
+  try {
+    const [list, usage] = await Promise.all([listNameMaster("phase_names"), countPhaseLabelUsage()]);
+    if (list.error) return { data: [], error: list.error };
+    if (usage.error) return { data: [], error: usage.error };
+    return {
+      data: list.data.map((p) => ({ ...p, workCount: usage.counts.get(p.name) ?? 0 })),
+      error: null,
+    };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+async function countRows(
+  table: "career_items" | "work_roles" | "work_stakeholder_counts",
+  column: "company_id" | "role_id",
+  id: string,
+): Promise<{ error: string | null; count: number }> {
+  const { count, error } = await supabase
+    .from(table as "work_roles")
+    .select(column as "role_id", { count: "exact", head: true })
+    .eq(column as "role_id", id);
+  if (error) return { error: dbErr(error), count: 0 };
+  return { error: null, count: count ?? 0 };
+}
+
+async function deleteNameMasterRow(
+  table: NameMasterTable,
+  id: string,
+): Promise<{ error: string | null }> {
+  const { data, error } = await supabase
+    .from(table as "roles")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error) return { error: dbErr(error) };
+  if (!data?.length) return { error: `${NAME_NOUN[table]}を削除できませんでした（権限がありません）` };
+  return { error: null };
+}
+
+export async function deleteCompany(id: string): Promise<{ error: string | null }> {
+  try {
+    const c = await countRows("career_items", "company_id", id);
+    if (c.error) return { error: c.error };
+    if (c.count > 0) {
+      return { error: `この会社は経歴 ${c.count} 件で使われているため削除できません` };
+    }
+    return await deleteNameMasterRow("companies", id);
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function deleteRole(id: string): Promise<{ error: string | null }> {
+  try {
+    const [a, b, c] = await Promise.all([
+      countRows("career_items", "role_id", id),
+      countRows("work_roles", "role_id", id),
+      countRows("work_stakeholder_counts", "role_id", id),
+    ]);
+    const err = a.error ?? b.error ?? c.error;
+    if (err) return { error: err };
+    if (a.count + b.count + c.count > 0) {
+      return {
+        error: `この役割は経歴 ${a.count} 件 / 作品の担当役割 ${b.count} 件 / 体制内訳 ${c.count} 件で使われているため削除できません`,
+      };
+    }
+    return await deleteNameMasterRow("roles", id);
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function deletePhaseName(id: string): Promise<{ error: string | null }> {
+  try {
+    const { data: row, error: getErr } = await supabase
+      .from("phase_names")
+      .select("name")
+      .eq("id", id)
+      .maybeSingle();
+    if (getErr) return { error: dbErr(getErr) };
+    if (!row) return { error: "工程名を削除できませんでした（権限がありません）" };
+    const usage = await countPhaseLabelUsage();
+    if (usage.error) return { error: usage.error };
+    const n = usage.counts.get(row.name) ?? 0;
+    if (n > 0) {
+      return { error: `この工程名は作品 ${n} 件のタイムラインで使われているため削除できません` };
+    }
+    return await deleteNameMasterRow("phase_names", id);
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
 /**
  * スキルラベルを skills_vocab に追加（Works から新規入力された場合）
  * 旧: skill_bars への書き込みから移行済み。
@@ -673,19 +937,42 @@ export async function addToolNameFromWorks(
 export async function saveCareerItem(item: {
   id: string;
   role: string;
+  role_id: string | null;
   company: string;
+  company_id: string | null;
   period: string;
   description: string;
   sort_order: number;
-}): Promise<{ error: string | null }> {
+}): Promise<{ error: string | null; company?: string; role?: string }> {
   try {
+    // 別タブでの名前変更を上書きしないよう、保存の直前にマスタの最新の名前を取り直す
+    let company = item.company;
+    let role = item.role;
+    if (item.company_id) {
+      const { data: c, error: cErr } = await supabase
+        .from("companies")
+        .select("name")
+        .eq("id", item.company_id);
+      if (cErr) return { error: dbErr(cErr) };
+      if (!c?.length) return { error: "選択した会社が見つかりません（マスタ管理で削除された可能性があります）" };
+      company = c[0].name;
+    }
+    if (item.role_id) {
+      const { data: r, error: rErr } = await supabase
+        .from("roles")
+        .select("name")
+        .eq("id", item.role_id);
+      if (rErr) return { error: dbErr(rErr) };
+      if (!r?.length) return { error: "選択した役職が見つかりません（マスタ管理で削除された可能性があります）" };
+      role = r[0].name;
+    }
     const { data, error } = await supabase
       .from("career_items")
-      .upsert(item, { onConflict: "id" })
+      .upsert({ ...item, company, role }, { onConflict: "id" })
       .select("id");
     if (error) return { error: dbErr(error) };
     if (!data?.length) return { error: "経歴を保存できませんでした（権限がありません）" };
-    return { error: null };
+    return { error: null, company, role };
   } catch (e) {
     return { error: errMsg(e) };
   }

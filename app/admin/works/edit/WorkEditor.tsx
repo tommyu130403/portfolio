@@ -32,6 +32,8 @@ import {
   addSkillLabelFromWorks,
   setWorkPublished,
   uploadStorageImage,
+  addNameMaster,
+  type NameMaster,
 } from "@/app/admin/actions";
 import PublishToggle from "@/app/admin/PublishToggle";
 import WorkCategoryField from "./WorkCategoryField";
@@ -93,6 +95,14 @@ const DEFAULT_BODY_MD = `# Overview
 :::
 `;
 
+/** 体制内訳の編集状態。rows = 役割 id と人数の行、legacy = 行の形に読めない旧形式の文字 */
+type BreakdownState =
+  | { mode: "rows"; rows: { role_id: string; headcount: number }[] }
+  | { mode: "legacy" };
+
+const ROLE_DELIMITER = /[・、,]/; // works.role は区切りで分割されるため、担当役割の役割名に使えない
+const BREAKDOWN_INVALID = /[0-9・、,]/; // parseStakeholderBreakdown が役割名に使えない文字
+
 type CareerOption = Pick<Tables<"career_items">, "id" | "role" | "company" | "period">;
 type ToolOption = { id: string; name: string; icon_url: string | null };
 
@@ -111,7 +121,13 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const [newSkillLabel, setNewSkillLabel] = useState("");
   const [addingSkill, setAddingSkill] = useState(false);
   const [toolOptions, setToolOptions] = useState<ToolOption[]>([]);
-  const [roleOptions, setRoleOptions] = useState<string[]>([]);
+  const [roles, setRoles] = useState<NameMaster[]>([]);
+  const [phaseNames, setPhaseNames] = useState<NameMaster[]>([]);
+  const [roleIds, setRoleIds] = useState<string[]>([]);
+  const [breakdown, setBreakdown] = useState<BreakdownState>({ mode: "rows", rows: [] });
+  const [roleNotice, setRoleNotice] = useState<string[]>([]);
+  const [addingRole, setAddingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
   const [newToolName, setNewToolName] = useState("");
   const [careerOptions, setCareerOptions] = useState<CareerOption[]>([]);
   const [tab, setTab] = useState<"content" | "settings">("content");
@@ -157,7 +173,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [workRes, skillsRes, toolsRes, careerRes, skillVocabRes, toolVocabRes, breakdownRes] = await Promise.all([
+      const [workRes, skillsRes, toolsRes, careerRes, skillVocabRes, toolVocabRes, rolesRes, phaseNamesRes, workRolesRes, countsRes] = await Promise.all([
         isNew
           ? Promise.resolve({ data: null })
           : supabase.from("works").select("*").eq("id", workId).maybeSingle(),
@@ -172,7 +188,18 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         // （スキルセクションの skill_experience とは疎結合）
         supabase.from("skills_vocab").select("label").order("label"),
         supabase.from("tools_vocab").select("id, name, icon_url").order("name"),
-        supabase.from("works").select("stakeholder_breakdown"),
+        supabase.from("roles").select("id, name, sort_order").order("sort_order").order("name"),
+        supabase.from("phase_names").select("id, name, sort_order").order("sort_order").order("name"),
+        isNew
+          ? Promise.resolve({ data: [] })
+          : supabase.from("work_roles").select("role_id, sort_order").eq("work_id", workId).order("sort_order"),
+        isNew
+          ? Promise.resolve({ data: [] })
+          : supabase
+              .from("work_stakeholder_counts")
+              .select("role_id, headcount, sort_order")
+              .eq("work_id", workId)
+              .order("sort_order"),
       ]);
 
       const failure = [
@@ -182,6 +209,10 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         careerRes.error,
         skillVocabRes.error,
         toolVocabRes.error,
+        rolesRes.error,
+        phaseNamesRes.error,
+        "error" in workRolesRes ? workRolesRes.error : null,
+        "error" in countsRes ? countsRes.error : null,
       ].find((error) => error);
       if (failure) {
         setLoadError(failure.message);
@@ -207,7 +238,32 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             .map((r) => r.tools_vocab?.name)
             .filter((v): v is string => Boolean(v))
         );
+
+        const roleList = (rolesRes.data ?? []) as NameMaster[];
+        const linkedRoleIds = ((workRolesRes.data ?? []) as { role_id: string }[]).map((r) => r.role_id);
+        if (linkedRoleIds.length > 0) {
+          setRoleIds(linkedRoleIds);
+        } else if (row.role?.trim()) {
+          // 紐付けが無い作品は、文字の担当役割を名前の完全一致でマスタに照合する
+          const matched: string[] = [];
+          const unmatched: string[] = [];
+          for (const name of row.role.split(ROLE_DELIMITER).map((n) => n.trim()).filter(Boolean)) {
+            const found = roleList.find((r) => r.name === name);
+            if (!found) unmatched.push(name);
+            else if (!matched.includes(found.id)) matched.push(found.id);
+          }
+          setRoleIds(matched);
+          setRoleNotice(unmatched);
+        }
+        const counts = (countsRes.data ?? []) as { role_id: string; headcount: number }[];
+        if (counts.length > 0) {
+          setBreakdown({ mode: "rows", rows: counts.map((c) => ({ role_id: c.role_id, headcount: c.headcount })) });
+        } else if (row.stakeholder_breakdown?.trim()) {
+          setBreakdown({ mode: "legacy" });
+        }
       }
+      setRoles((rolesRes.data ?? []) as NameMaster[]);
+      setPhaseNames((phaseNamesRes.data ?? []) as NameMaster[]);
       setCareerOptions((careerRes.data ?? []) as CareerOption[]);
       setSkillOptions(
         ((skillVocabRes.data ?? []) as { label: string }[]).map((r) => r.label)
@@ -217,10 +273,6 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           (r) => ({ id: r.id, name: r.name, icon_url: r.icon_url })
         )
       );
-      const roleSet = new Set<string>();
-      for (const r of (breakdownRes.data ?? []) as { stakeholder_breakdown: string | null }[])
-        for (const s of parseStakeholderBreakdown(r.stakeholder_breakdown) ?? []) roleSet.add(s.name);
-      setRoleOptions([...roleSet].sort((a, b) => a.localeCompare(b, "ja")));
     };
     fetchAll().catch((error: unknown) => {
       setLoadError(error instanceof Error ? error.message : "作品を読み込めませんでした");
@@ -243,6 +295,52 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       ? list.filter((s) => s.toLowerCase() !== value.toLowerCase())
       : [...list, value]);
     markDirty();
+  };
+
+  const addRoleToList = async (name: string) => {
+    const res = await addNameMaster("roles", name);
+    const item = res.item;
+    if (item) setRoles((prev) => (prev.some((r) => r.id === item.id) ? prev : [...prev, item]));
+    return res;
+  };
+
+  const toggleRole = (id: string) => {
+    setRoleIds((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
+    markDirty();
+  };
+
+  const handleAddRole = async () => {
+    if (addingRole) return;
+    const name = newRoleName.trim();
+    if (!name) return;
+    if (ROLE_DELIMITER.test(name)) {
+      setSaveError("「・」「、」「,」を含む役割は作品には使えません");
+      return;
+    }
+    setAddingRole(true);
+    try {
+      const res = await addRoleToList(name);
+      if (res.error || !res.item) {
+        setSaveError(res.error ?? "役割を追加できませんでした");
+        return;
+      }
+      const item = res.item;
+      if (!roleIds.includes(item.id)) {
+        setRoleIds((prev) => [...prev, item.id]);
+        markDirty();
+      }
+      setNewRoleName("");
+      setSaveError(null);
+    } finally {
+      setAddingRole(false);
+    }
+  };
+
+  const handleAddPhaseName = async (name: string) => {
+    const res = await addNameMaster("phase_names", name);
+    const item = res.item;
+    if (item) setPhaseNames((prev) => (prev.some((p) => p.id === item.id) ? prev : [...prev, item]));
+    return { error: res.error, name: item?.name };
   };
 
   const handleAddSkill = async () => {
@@ -308,11 +406,39 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       setTab("settings");
       return;
     }
+    if (breakdown.mode === "rows" && breakdown.rows.some((r) => !r.role_id)) {
+      setSaveError("体制内訳で役割が選ばれていない行があります");
+      setTab("settings");
+      return;
+    }
+    if (breakdown.mode === "rows") {
+      const ids = breakdown.rows.map((r) => r.role_id);
+      if (new Set(ids).size !== ids.length) {
+        setSaveError("体制内訳に同じ役割が複数あります");
+        setTab("settings");
+        return;
+      }
+      if (breakdown.rows.some((r) => !Number.isInteger(r.headcount) || r.headcount < 1 || r.headcount > 999)) {
+        setSaveError("体制内訳の人数は 1〜999 で入力してください");
+        setTab("settings");
+        return;
+      }
+    }
     setSaving(true);
     setSaveError(null);
+    // 公開ページが読む文字の列は、選んだ役割から作り直す（DB 側も同じ規則で作り直す）
+    const roleName = new Map(roles.map((r) => [r.id, r.name]));
+    const derivedRole =
+      roleIds.map((rid) => roleName.get(rid)).filter(Boolean).join("・") || null;
+    const derivedBreakdown =
+      breakdown.mode === "rows"
+        ? breakdown.rows.map((r) => `${roleName.get(r.role_id)}${r.headcount}`).join("・") || null
+        : work.stakeholder_breakdown;
     const payload: Work = {
       ...work,
       id,
+      role: derivedRole,
+      stakeholder_breakdown: derivedBreakdown,
       period: periodTouched ? formatPeriod(period) : work.period,
       // 画像アップロード中の仮の行が万一残っていても DB には入れない
       sections: markdownToSections(
@@ -322,13 +448,31 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           .join("\n")
       ),
     };
-    const saveRes = await saveWork(payload, skills, tools);
+    const saveRes = await saveWork(
+      payload,
+      skills,
+      tools,
+      roleIds,
+      breakdown.mode === "rows"
+        ? breakdown.rows.map((r) => ({ role_id: r.role_id, headcount: r.headcount }))
+        : null,
+    );
     if (saveRes.error) {
       setSaving(false);
       setSaveError(saveRes.error);
       return;
     }
-    setWork((p) => (p ? { ...p, period: payload.period } : p));
+    setWork((p) =>
+      p
+        ? {
+            ...p,
+            period: payload.period,
+            role: payload.role,
+            stakeholder_breakdown: payload.stakeholder_breakdown,
+          }
+        : p,
+    );
+    setRoleNotice([]);
     setPeriod(parsePeriod(payload.period));
     setSaving(false);
     setDirty(false);
@@ -482,14 +626,65 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             </div>
             <div className="col-span-2">
               <FieldLabel>担当役割</FieldLabel>
-              <Input value={work.role ?? ""} onChange={(v) => setField("role", v || null)} placeholder="UI/UX Designer" />
+              <div className="flex flex-wrap gap-2">
+                {roles.map((r) => {
+                  const selected = roleIds.includes(r.id);
+                  const invalid = ROLE_DELIMITER.test(r.name);
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      disabled={invalid}
+                      title={invalid ? "「・」「、」「,」を含む役割は作品には使えません" : undefined}
+                      onClick={() => toggleRole(r.id)}
+                      className={`rounded-[999px] border px-3 py-1 text-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                        selected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border-light bg-[#1a1a1a] text-fg-muted hover:text-white"
+                      }`}
+                    >
+                      {r.name}
+                    </button>
+                  );
+                })}
+                {roles.length === 0 && <span className="text-[12px] text-system-700">役割がまだありません。下の入力欄から追加できます</span>}
+              </div>
+              <p className="mt-2 text-[11px] text-fg-muted">
+                選んだ順に「・」でつないで公開ページに表示：
+                {roleIds.map((rid) => roles.find((r) => r.id === rid)?.name).filter(Boolean).join("・") || "—"}
+              </p>
+              {roleNotice.map((n) => (
+                <p key={n} className="mt-1 text-[11px] text-[#f4c248]">
+                  未登録の役割「{n}」は保存すると外れます。マスタに追加して選び直してください
+                </p>
+              ))}
+              <div
+                className="mt-2 flex items-center gap-2"
+                onKeyDown={(e) => {
+                  if ((e.target as HTMLElement).tagName !== "INPUT") return;
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                    e.preventDefault();
+                    if (!addingRole) void handleAddRole();
+                  }
+                }}
+              >
+                <Input value={newRoleName} onChange={setNewRoleName} placeholder="新しい役割" className="!w-56" />
+                <button
+                  type="button"
+                  onClick={() => void handleAddRole()}
+                  disabled={!newRoleName.trim() || addingRole}
+                  className="rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  追加
+                </button>
+              </div>
             </div>
             <div className="col-span-2">
               <FieldLabel>担当経歴（Career）</FieldLabel>
               <select
                 value={work.career_item_id ?? ""}
                 onChange={(e) => setField("career_item_id", e.target.value || null)}
-                className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary"
+                className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] outline-none transition-colors focus:border-primary ${work.career_item_id ? "text-white" : "text-system-750"}`}
               >
                 <option value="">（紐付けなし）</option>
                 {careerOptions.map((c) => (
@@ -625,9 +820,15 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             <div className="col-span-2">
               <FieldLabel>体制内訳（役割と人数。公開ページでは人数付きタグで表示）</FieldLabel>
               <StakeholderBreakdownField
-                value={work.stakeholder_breakdown}
-                onChange={(v) => setField("stakeholder_breakdown", v)}
-                roleOptions={roleOptions}
+                roles={roles}
+                value={breakdown}
+                legacyText={work.stakeholder_breakdown}
+                onChange={(v) => {
+                  setBreakdown(v);
+                  markDirty();
+                }}
+                onLegacyTextChange={(v) => setField("stakeholder_breakdown", v)}
+                onAddRole={addRoleToList}
               />
             </div>
 
@@ -653,6 +854,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   setField("timeline", (v.phases.length ? v : null) as unknown as Work["timeline"]);
                 }}
                 onInsertTemplate={() => setField("timeline", DEFAULT_TIMELINE as unknown as Work["timeline"])}
+                phaseNames={phaseNames.map((p) => p.name)}
+                onAddPhaseName={handleAddPhaseName}
               />
             </div>
 
@@ -727,67 +930,153 @@ const DEFAULT_TIMELINE: TimelineData = {
 };
 const EMPTY_TIMELINE: TimelineData = { totalUnits: DEFAULT_TIMELINE.totalUnits, phases: [] };
 
-type BreakdownRow = { role: string; count: number };
-const ROLE_LIST_ID = "stakeholder-role-options";
-const BREAKDOWN_INVALID = /[0-9・、,]/; // parseStakeholderBreakdown が役割名に使えない文字
-function serializeBreakdown(rows: BreakdownRow[]): string | null {
-  const s = rows.filter((r) => r.role.trim()).map((r) => `${r.role.trim()}${r.count}`).join("・");
-  return s || null;
-}
-function StakeholderBreakdownField({ value, onChange, roleOptions }: { value: string | null; onChange: (v: string | null) => void; roleOptions: string[] }) {
-  const [rows, setRows] = useState<BreakdownRow[] | null>(() => {
-    if (!value?.trim()) return [];
-    const p = parseStakeholderBreakdown(value);
-    return p ? p.map((x) => ({ role: x.name, count: x.count })) : null; // null = 旧形式（文字のまま編集）
-  });
-  const commit = (next: BreakdownRow[]) => { setRows(next); onChange(serializeBreakdown(next)); };
-  const tags = parseStakeholderBreakdown(value);
+function StakeholderBreakdownField({
+  roles,
+  value,
+  legacyText,
+  onChange,
+  onLegacyTextChange,
+  onAddRole,
+}: {
+  roles: NameMaster[];
+  value: BreakdownState;
+  legacyText: string | null;
+  onChange: (v: BreakdownState) => void;
+  onLegacyTextChange: (v: string | null) => void;
+  onAddRole: (name: string) => Promise<{ error: string | null; item?: NameMaster }>;
+}) {
+  const [newRoleName, setNewRoleName] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [unmatched, setUnmatched] = useState<string[]>([]);
+  const legacyTags = parseStakeholderBreakdown(legacyText);
+  const roleName = new Map(roles.map((r) => [r.id, r.name]));
+
+  const setRows = (rows: { role_id: string; headcount: number }[]) => onChange({ mode: "rows", rows });
+
+  const handleAdd = async () => {
+    if (value.mode !== "rows" || adding) return;
+    const name = newRoleName.trim();
+    if (!name) return;
+    if (BREAKDOWN_INVALID.test(name)) {
+      setAddError("役割名に半角数字や「・、,」は使えません（公開ページで人数タグにならないため）");
+      return;
+    }
+    setAdding(true);
+    setAddError(null);
+    const res = await onAddRole(name);
+    if (res.error || !res.item) {
+      setAddError(res.error ?? "役割を追加できませんでした");
+    } else {
+      const item = res.item;
+      if (value.rows.some((r) => r.role_id === item.id)) {
+        setAddError("この役割はすでに選ばれています");
+      } else {
+        setRows([...value.rows, { role_id: item.id, headcount: 1 }]);
+        setNewRoleName("");
+        setUnmatched([]);
+      }
+    }
+    setAdding(false);
+  };
+
   return (
     <div className="flex flex-col gap-2">
-      {rows === null ? (
+      {value.mode === "legacy" ? (
         <div>
-          <Input value={value ?? ""} onChange={(v) => onChange(v || null)} />
+          <Input value={legacyText ?? ""} onChange={(v) => onLegacyTextChange(v || null)} />
           <p className="mt-1 text-[11px] text-[#f4c248]">この内容は「役割＋人数」の形で読み取れないため、文字のまま保存・表示されます。</p>
           <button
             type="button"
             className={`${vizBtn} mt-2`}
-            disabled={!(!value?.trim() || tags)}
-            onClick={() => setRows(tags ? tags.map((t) => ({ role: t.name, count: t.count })) : [])}
+            disabled={!(!legacyText?.trim() || legacyTags)}
+            onClick={() => {
+              const rows: { role_id: string; headcount: number }[] = [];
+              const missing: string[] = [];
+              for (const t of legacyTags ?? []) {
+                const name = t.name.trim();
+                const role = roles.find((r) => r.name.trim() === name);
+                if (!role) {
+                  if (!missing.includes(name)) missing.push(name);
+                  continue;
+                }
+                if (rows.some((r) => r.role_id === role.id)) continue;
+                rows.push({ role_id: role.id, headcount: Math.min(999, Math.max(1, t.count)) });
+              }
+              setUnmatched(missing);
+              setRows(rows);
+            }}
           >
             行形式で入力し直す
           </button>
         </div>
       ) : (
         <>
-          {rows.map((r, i) => (
-            <div key={i} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <Input className="!w-56" list={ROLE_LIST_ID} value={r.role} placeholder="役割（例: デザイナー）" onChange={(v) => commit(rows.map((x, j) => (j === i ? { ...x, role: v } : x)))} />
-                <NumberField className="w-16" value={r.count} min={1} max={999} onCommit={(n) => commit(rows.map((x, j) => (j === i ? { ...x, count: n } : x)))} />
-                <span className="text-[11px] text-fg-muted">名</span>
-                <span className="ml-auto flex items-center gap-1">
-                  <MoveButtons index={i} length={rows.length} label={r.role || `行${i + 1}`} onMove={(d) => commit(moveItem(rows, i, i + d))} />
-                  <button type="button" className={vizDel} onClick={() => commit(rows.filter((_, j) => j !== i))}>削除</button>
-                </span>
-              </div>
-              {BREAKDOWN_INVALID.test(r.role) && (
-                <p className="text-[11px] text-[#f4c248]">役割名に半角数字や「・、,」があると、公開ページで人数タグにならず文字のまま表示されます</p>
-              )}
+          {unmatched.length > 0 && (
+            <p className="text-[11px] text-[#f4c248]">
+              未登録の役割{unmatched.map((n) => `「${n}」`).join("")}は行に入りませんでした。「新しい役割」で追加して選んでください。
+            </p>
+          )}
+          {value.rows.map((r, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <select
+                value={r.role_id}
+                onChange={(e) => setRows(value.rows.map((x, j) => (j === i ? { ...x, role_id: e.target.value } : x)))}
+                className={`!w-56 rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] outline-none transition-colors focus:border-primary ${r.role_id ? "text-white" : "text-system-750"}`}
+              >
+                <option value="">（役割を選択）</option>
+                {roles.map((o) => {
+                  const invalid = BREAKDOWN_INVALID.test(o.name);
+                  const usedElsewhere = value.rows.some((x, j) => j !== i && x.role_id === o.id);
+                  return (
+                    <option key={o.id} value={o.id} disabled={invalid || usedElsewhere}>
+                      {o.name}
+                      {invalid ? "（体制内訳に使えない文字を含む）" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+              <NumberField className="w-16" value={r.headcount} min={1} max={999} onCommit={(n) => setRows(value.rows.map((x, j) => (j === i ? { ...x, headcount: n } : x)))} />
+              <span className="text-[11px] text-fg-muted">名</span>
+              <span className="ml-auto flex items-center gap-1">
+                <MoveButtons index={i} length={value.rows.length} label={roleName.get(r.role_id) || `行${i + 1}`} onMove={(d) => setRows(moveItem(value.rows, i, i + d))} />
+                <button type="button" className={vizDel} onClick={() => setRows(value.rows.filter((_, j) => j !== i))}>削除</button>
+              </span>
             </div>
           ))}
-          <button type="button" className={`${vizBtn} self-start`} onClick={() => setRows([...rows, { role: "", count: 1 }])}>
-            ＋ 行を追加
-          </button>
+          <div
+            className="flex items-center gap-2"
+            onKeyDown={(e) => {
+              if ((e.target as HTMLElement).tagName !== "INPUT") return;
+              if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                e.preventDefault();
+                void handleAdd();
+              }
+            }}
+          >
+            <Input value={newRoleName} onChange={setNewRoleName} placeholder="新しい役割" className="!w-56" />
+            <button type="button" className={vizBtn} disabled={adding || !newRoleName.trim()} onClick={() => void handleAdd()}>
+              追加
+            </button>
+          </div>
+          {addError && <p className="text-[12px] text-danger-300">{addError}</p>}
         </>
       )}
-      <datalist id={ROLE_LIST_ID}>{roleOptions.map((r) => <option key={r} value={r} />)}</datalist>
       <div>
         <p className="mb-1.5 mt-1 text-[11px] text-fg-muted">公開ページでの見え方</p>
         <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-[8px] border border-border-light bg-[#161616] px-4 py-[6px]">
-          {tags ? (
-            tags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
+          {value.mode === "rows" ? (
+            value.rows.some((r) => r.role_id && roleName.has(r.role_id)) ? (
+              value.rows
+                .filter((r) => r.role_id && roleName.has(r.role_id))
+                .map((r) => <Tag key={r.role_id} variant="tool" filled label={roleName.get(r.role_id) ?? ""} count={r.headcount} />)
+            ) : (
+              <span className="min-w-0 truncate text-body-03-jp text-fg-muted">—</span>
+            )
+          ) : legacyTags ? (
+            legacyTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
           ) : (
-            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={value ?? undefined}>{value || "—"}</span>
+            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={legacyText ?? undefined}>{legacyText || "—"}</span>
           )}
         </div>
       </div>

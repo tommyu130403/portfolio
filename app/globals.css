@@ -21,6 +21,13 @@
     color: var(--color-fg-muted);
   }
 
+  /* 管理画面（.admin-root 配下）はヒント文字をさらに落とす。白い入力値と
+     見分けやすくするため（system-750 = #525252）。各要素の placeholder:* は
+     utilities 層なのでこの base 規則より優先される。 */
+  .admin-root ::placeholder {
+    color: var(--color-system-750);
+  }
+
   /* Tailwind v4 の preflight は button の cursor を default にするため、
      押せる要素は全体で pointer に揃える（個別の cursor-* ユーティリティが後勝ち）。 */
   button:not(:disabled),

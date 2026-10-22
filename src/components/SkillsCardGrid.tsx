@@ -10,7 +10,7 @@ import { supabase } from "@/src/lib/supabase";
 // ──────────────────────────────────────────────
 // 4-step proficiency scale（バー点灯色は習熟度で段階的に変化＝Figma準拠）
 // ──────────────────────────────────────────────
-const SKILL_LEVELS = [
+export const SKILL_LEVELS = [
   { n: 1, en: "Beginner",     bar: "#11503C" }, // main/500
   { n: 2, en: "Intermediate", bar: "#1E765A" }, // main/400
   { n: 3, en: "Advanced",     bar: "#2B9E7A" }, // main/300
@@ -18,7 +18,7 @@ const SKILL_LEVELS = [
 ];
 
 // Map existing segments scale (1–10) to 4-step proficiency
-function segmentsToLevel(segments: number): number {
+export function segmentsToLevel(segments: number): number {
   return Math.min(4, Math.max(1, Math.ceil(segments / 2.5)));
 }
 
@@ -100,7 +100,7 @@ function ToolTag({ tool }: { tool: ToolRef }) {
 // ──────────────────────────────────────────────
 // Data types
 // ──────────────────────────────────────────────
-type SkillRowConfig = {
+export type SkillRowConfig = {
   id: string;
   /** スキル行アイコン（16×16・淡色） */
   icon: IconRef;
@@ -113,7 +113,7 @@ type SkillRowConfig = {
   tools: ToolRef[];
 };
 
-type SkillCardConfig = {
+export type SkillCardConfig = {
   id: string;
   icon: IconRef;
   title: string;
@@ -310,7 +310,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 // ──────────────────────────────────────────────
 // SkillCard
 // ──────────────────────────────────────────────
-function SkillCard({ card }: { card: SkillCardConfig }) {
+export function SkillCard({ card }: { card: SkillCardConfig }) {
   return (
     <div
       // 375/390 幅ではスキル名の折返し切れを防ぐため、640px 未満だけ左右余白を 40 → 16 に詰める（Figma にモバイル画面なし）

@@ -9,6 +9,7 @@ export const NAV_SECTIONS = [
   { id: "works",         label: "Works",            labelJa: "制作・企画" },
   { id: "flowcharts",       label: "Flowcharts",       labelJa: "フローチャート" },
   { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
+  { id: "masters",           label: "Masters",          labelJa: "マスタ管理" },
 ] as const;
 
 export type AdminSectionId = (typeof NAV_SECTIONS)[number]["id"];

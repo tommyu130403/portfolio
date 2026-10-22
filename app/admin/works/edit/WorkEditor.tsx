@@ -12,6 +12,8 @@ import {
   ImagePickerField,
   ImagePickerModal,
   Input,
+  MoveButtons,
+  moveItem,
 } from "../../AdminLayout";
 import RichMarkdownEditor, { UPLOAD_PLACEHOLDER } from "@/components/RichMarkdownEditor";
 import { compressImage } from "@/lib/compress-image";
@@ -19,20 +21,25 @@ import {
   parseTimeline,
   parseStakeholders,
   type TimelineData,
-  type StakeholdersData,
-  type RaciKey,
 } from "@/components/WorkViz";
 import { sectionsToMarkdown, markdownToSections } from "@/lib/work-sections";
 import {
   saveWork,
   deleteWork,
   addToolNameFromWorks,
-  saveToolIconUrl,
+  addSkillLabelFromWorks,
   setWorkPublished,
   uploadStorageImage,
 } from "@/app/admin/actions";
 import PublishToggle from "@/app/admin/PublishToggle";
 import WorkCategoryField from "./WorkCategoryField";
+import NumberField from "./NumberField";
+import TimelineGanttEditor from "./TimelineGanttEditor";
+import StakeholdersDiagramEditor from "./StakeholdersDiagramEditor";
+import WorkVizModal from "@/components/WorkVizModal";
+import type { IconCatalog } from "@/app/admin/iconCatalogTypes";
+import Tag from "@/components/Tag";
+import { parseStakeholderBreakdown } from "@/components/WorkDetailHeader";
 import { supabase } from "@/src/lib/supabase";
 import ProtectedImage from "@/components/ProtectedImage";
 import type { Json, Tables } from "@/src/types/supabase";
@@ -107,21 +114,52 @@ function formatPeriod(p: PeriodInputs): string | null {
   return end ? `${start} - ${end}` : `${start} - `;
 }
 
+function toHalfWidthDigits(v: string): string {
+  return v.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+}
+
+function normalizePeriod(p: PeriodInputs): PeriodInputs {
+  return {
+    ...p,
+    startYear: toHalfWidthDigits(p.startYear.trim()),
+    startMonth: toHalfWidthDigits(p.startMonth.trim()),
+    endYear: toHalfWidthDigits(p.endYear.trim()),
+    endMonth: toHalfWidthDigits(p.endMonth.trim()),
+  };
+}
+
+function validatePeriod(p: PeriodInputs): string | null {
+  const inRange = (v: string, min: number, max: number) => /^\d+$/.test(v) && Number(v) >= min && Number(v) <= max;
+  const fields: { label: string; year: string; month: string }[] = [{ label: "開始", year: p.startYear, month: p.startMonth }];
+  if (!p.isCurrent) fields.push({ label: "終了", year: p.endYear, month: p.endMonth });
+  for (const f of fields) {
+    if (f.year && !inRange(f.year, 1900, 2100)) return `${f.label}年は 1900〜2100 の西暦で入力してください`;
+    if (f.month && !inRange(f.month, 1, 12)) return `${f.label}月は 1〜12 で入力してください`;
+    if (f.month && !f.year) return `${f.label}月を入力する場合は${f.label}年も入力してください`;
+    if (f.year && !f.month) return `${f.label}年を入力する場合は${f.label}月も入力してください`;
+  }
+  return null;
+}
+
 type CareerOption = Pick<Tables<"career_items">, "id" | "role" | "company" | "period">;
 type ToolOption = { id: string; name: string; icon_url: string | null };
 
-export default function WorkEditor({ workId }: { workId: string }) {
+export default function WorkEditor({ workId, iconCatalog }: { workId: string; iconCatalog: IconCatalog }) {
   const router = useRouter();
   const isNew = workId === "new";
   const id = useMemo(() => (isNew ? crypto.randomUUID() : workId), [isNew, workId]);
 
   const [work, setWork] = useState<Work | null>(isNew ? emptyWork(id) : null);
   const [markdown, setMarkdown] = useState(isNew ? DEFAULT_BODY_MD : "");
+  const [vizPreview, setVizPreview] = useState<"timeline" | "stakeholders" | null>(null);
   const [period, setPeriod] = useState<PeriodInputs>(parsePeriod(null));
   const [skills, setSkills] = useState<string[]>([]);
   const [tools, setTools] = useState<string[]>([]);
   const [skillOptions, setSkillOptions] = useState<string[]>([]);
+  const [newSkillLabel, setNewSkillLabel] = useState("");
+  const [addingSkill, setAddingSkill] = useState(false);
   const [toolOptions, setToolOptions] = useState<ToolOption[]>([]);
+  const [roleOptions, setRoleOptions] = useState<string[]>([]);
   const [newToolName, setNewToolName] = useState("");
   const [careerOptions, setCareerOptions] = useState<CareerOption[]>([]);
   const [tab, setTab] = useState<"content" | "settings">("content");
@@ -167,7 +205,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [workRes, skillsRes, toolsRes, careerRes, skillVocabRes, toolVocabRes] = await Promise.all([
+      const [workRes, skillsRes, toolsRes, careerRes, skillVocabRes, toolVocabRes, breakdownRes] = await Promise.all([
         isNew
           ? Promise.resolve({ data: null })
           : supabase.from("works").select("*").eq("id", workId).maybeSingle(),
@@ -182,6 +220,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
         // （スキルセクションの skill_experience とは疎結合）
         supabase.from("skills_vocab").select("label").order("label"),
         supabase.from("tools_vocab").select("id, name, icon_url").order("name"),
+        supabase.from("works").select("stakeholder_breakdown"),
       ]);
 
       const failure = [
@@ -226,6 +265,10 @@ export default function WorkEditor({ workId }: { workId: string }) {
           (r) => ({ id: r.id, name: r.name, icon_url: r.icon_url })
         )
       );
+      const roleSet = new Set<string>();
+      for (const r of (breakdownRes.data ?? []) as { stakeholder_breakdown: string | null }[])
+        for (const s of parseStakeholderBreakdown(r.stakeholder_breakdown) ?? []) roleSet.add(s.name);
+      setRoleOptions([...roleSet].sort((a, b) => a.localeCompare(b, "ja")));
     };
     fetchAll().catch((error: unknown) => {
       setLoadError(error instanceof Error ? error.message : "作品を読み込めませんでした");
@@ -250,26 +293,37 @@ export default function WorkEditor({ workId }: { workId: string }) {
     markDirty();
   };
 
-  // ツールアイコン（tools_vocab.icon_url）は共有語彙のため work 保存とは独立に保存する。
-  // テキスト入力は1文字ごとに onChange が発火するため、ローカル状態は即時更新しつつ
-  // DB 書き込みは debounce（最後の値のみ）し、書き込み競合と UPDATE 連打を防ぐ。
-  const iconSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const setToolIcon = (toolId: string, url: string) => {
-    const next = url.trim() || null;
-    const prevVal = toolOptions.find((t) => t.id === toolId)?.icon_url ?? null;
-    setToolOptions((prev) => prev.map((t) => (t.id === toolId ? { ...t, icon_url: next } : t)));
-    if (iconSaveTimers.current[toolId]) clearTimeout(iconSaveTimers.current[toolId]);
-    iconSaveTimers.current[toolId] = setTimeout(async () => {
-      const { error } = await saveToolIconUrl(toolId, next);
-      if (error) {
-        setSaveError(error);
-        // 保存失敗時は楽観更新をロールバック（ローカルと DB の乖離を防ぐ）
-        setToolOptions((prev) => prev.map((t) => (t.id === toolId ? { ...t, icon_url: prevVal } : t)));
+  const handleAddSkill = async () => {
+    const label = newSkillLabel.trim();
+    if (!label || addingSkill) return;
+    setAddingSkill(true);
+    try {
+      let chosen = skillOptions.find((s) => s.toLowerCase() === label.toLowerCase());
+      if (!chosen) {
+        const res = await addSkillLabelFromWorks(label);
+        if (res.error || !res.id) {
+          setSaveError(res.error ?? "スキルの追加に失敗しました");
+          return;
+        }
+        chosen = label;
+        setSkillOptions((prev) =>
+          prev.some((s) => s.toLowerCase() === label.toLowerCase())
+            ? prev
+            : [...prev, label].sort((a, b) => a.localeCompare(b))
+        );
       }
-    }, 600);
+      const c = chosen;
+      if (!skills.some((s) => s.toLowerCase() === c.toLowerCase())) {
+        setSkills((prev) => [...prev, c]);
+        markDirty();
+      }
+      setNewSkillLabel("");
+    } finally {
+      setAddingSkill(false);
+    }
   };
 
-  // 公開状態は本文の保存とは独立に即時反映する（ツールアイコンと同じ扱い）。
+  // 公開状態は本文の保存とは独立に即時反映する。
   // 未保存の新規作品はまだ DB に行が無いので、フォームの値として「保存」時に一緒に送る。
   const handleTogglePublished = async (next: boolean) => {
     if (isNew) {
@@ -291,12 +345,18 @@ export default function WorkEditor({ workId }: { workId: string }) {
 
   const handleSave = async () => {
     if (!work) return;
+    const normalized = normalizePeriod(period);
+    const periodError = validatePeriod(normalized);
+    if (periodError) {
+      setSaveError(periodError);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     const payload: Work = {
       ...work,
       id,
-      period: formatPeriod(period),
+      period: formatPeriod(normalized),
       // 画像アップロード中の仮の行が万一残っていても DB には入れない
       sections: markdownToSections(
         markdown
@@ -312,6 +372,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
       return;
     }
     setSaving(false);
+    setPeriod(normalized);
     setDirty(false);
     setSavedAt(true);
     setTimeout(() => setSavedAt(false), 2000);
@@ -430,22 +491,27 @@ export default function WorkEditor({ workId }: { workId: string }) {
 
       {/* 本文タブ: メインエリア全体をエディタとして使用 */}
       {tab === "content" && (
-        <RichMarkdownEditor
-          value={markdown}
-          onChange={(md) => {
-            setMarkdown(md);
-            markDirty();
-          }}
-          onPickImage={pickImage}
-          onPickFlowchart={pickFlowchart}
-          onUploadImage={async (file) => {
-            const fd = new FormData();
-            fd.append("file", await compressImage(file));
-            const { url, error } = await uploadStorageImage(fd, "projects/sections");
-            return { url, error };
-          }}
-          className="min-h-0 flex-1"
-        />
+        <>
+          {/^:::\s*(timeline|stakeholders)\b/m.test(markdown) && (
+            <p className="mb-2 shrink-0 text-[11px] text-fg-muted">本文に「::: timeline」「::: stakeholders」の行があります。この行は現在は表示に使われません（Timeline / Stakeholders は「設定」タブで編集）。</p>
+          )}
+          <RichMarkdownEditor
+            value={markdown}
+            onChange={(md) => {
+              setMarkdown(md);
+              markDirty();
+            }}
+            onPickImage={pickImage}
+            onPickFlowchart={pickFlowchart}
+            onUploadImage={async (file) => {
+              const fd = new FormData();
+              fd.append("file", await compressImage(file));
+              const { url, error } = await uploadStorageImage(fd, "projects/sections");
+              return { url, error };
+            }}
+            className="min-h-0 flex-1"
+          />
+        </>
       )}
 
       {/* 設定タブ */}
@@ -454,7 +520,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
           <div className="grid max-w-main grid-cols-2 gap-4">
             <div>
               <FieldLabel>カテゴリ</FieldLabel>
-              <WorkCategoryField value={work.category} onChange={(v) => setField("category", v)} />
+              <WorkCategoryField value={work.category} onChange={(v) => setField("category", v)} dirty={dirty} />
             </div>
             <div className="col-span-2">
               <FieldLabel>担当役割</FieldLabel>
@@ -478,13 +544,13 @@ export default function WorkEditor({ workId }: { workId: string }) {
             <div className="col-span-2">
               <FieldLabel>期間</FieldLabel>
               <div className="flex flex-wrap items-center gap-2">
-                <Input className="!w-20" value={period.startYear} onChange={(v) => { setPeriod((p) => ({ ...p, startYear: v })); markDirty(); }} placeholder="2023" />
+                <Input type="number" min={1900} max={2100} className="!w-24" value={period.startYear} onChange={(v) => { setPeriod((p) => ({ ...p, startYear: v })); markDirty(); }} placeholder="2023" />
                 <span className="text-[12px] text-fg-muted">年</span>
-                <Input className="!w-14" value={period.startMonth} onChange={(v) => { setPeriod((p) => ({ ...p, startMonth: v })); markDirty(); }} placeholder="4" />
+                <Input type="number" min={1} max={12} className="!w-16" value={period.startMonth} onChange={(v) => { setPeriod((p) => ({ ...p, startMonth: v })); markDirty(); }} placeholder="4" />
                 <span className="text-[12px] text-fg-muted">月 〜</span>
-                <Input className="!w-20" value={period.isCurrent ? "" : period.endYear} onChange={(v) => { setPeriod((p) => ({ ...p, endYear: v })); markDirty(); }} placeholder="2024" disabled={period.isCurrent} />
+                <Input type="number" min={1900} max={2100} className="!w-24" value={period.isCurrent ? "" : period.endYear} onChange={(v) => { setPeriod((p) => ({ ...p, endYear: v })); markDirty(); }} placeholder="2024" disabled={period.isCurrent} />
                 <span className="text-[12px] text-fg-muted">年</span>
-                <Input className="!w-14" value={period.isCurrent ? "" : period.endMonth} onChange={(v) => { setPeriod((p) => ({ ...p, endMonth: v })); markDirty(); }} placeholder="3" disabled={period.isCurrent} />
+                <Input type="number" min={1} max={12} className="!w-16" value={period.isCurrent ? "" : period.endMonth} onChange={(v) => { setPeriod((p) => ({ ...p, endMonth: v })); markDirty(); }} placeholder="3" disabled={period.isCurrent} />
                 <span className="text-[12px] text-fg-muted">月</span>
                 <label className="ml-2 inline-flex items-center gap-2 text-[12px] text-fg-muted">
                   <input
@@ -539,7 +605,26 @@ export default function WorkEditor({ workId }: { workId: string }) {
                     </button>
                   );
                 })}
-                {skillOptions.length === 0 && <span className="text-[12px] text-system-700">スキル定義がありません</span>}
+                {skillOptions.length === 0 && <span className="text-[12px] text-system-700">スキルがまだありません。下の入力欄から追加できます</span>}
+              </div>
+              <div
+                className="mt-2 flex items-center gap-2"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                    e.preventDefault();
+                    void handleAddSkill();
+                  }
+                }}
+              >
+                <Input value={newSkillLabel} onChange={setNewSkillLabel} placeholder="新しいスキル名" className="!w-56" />
+                <button
+                  type="button"
+                  onClick={() => void handleAddSkill()}
+                  disabled={addingSkill}
+                  className="rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white"
+                >
+                  追加
+                </button>
               </div>
             </div>
             <div className="col-span-2">
@@ -574,7 +659,7 @@ export default function WorkEditor({ workId }: { workId: string }) {
                     const name = newToolName.trim();
                     if (!name) return;
                     if (!toolOptions.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
-                      // 即時に tools_vocab へ登録して id を得る（アイコン設定を直後から可能にする）
+                      // 即時に tools_vocab へ登録して id を得る
                       const res = await addToolNameFromWorks(name);
                       if (res.error || !res.id) {
                         setSaveError(res.error ?? "ツールの追加に失敗しました");
@@ -590,64 +675,62 @@ export default function WorkEditor({ workId }: { workId: string }) {
                   追加
                 </button>
               </div>
-
-              {/* ツールアイコン（共有語彙・任意。未設定時は詳細ページでテキスト表示） */}
-              {(() => {
-                const selectedTools = toolOptions.filter((t) =>
-                  tools.some((n) => n.toLowerCase() === t.name.toLowerCase())
-                );
-                if (selectedTools.length === 0) return null;
-                return (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-[#2a2a2a] pt-3">
-                    <p className="text-[11px] text-fg-muted">
-                      ツールアイコン（共有・任意。未設定なら詳細ページでテキスト表示）
-                    </p>
-                    {selectedTools.map((t) => (
-                      <div key={t.id} className="flex items-center gap-2">
-                        {t.icon_url ? (
-                          <ProtectedImage src={t.icon_url} alt="" className="h-5 w-5 shrink-0 object-contain" />
-                        ) : (
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#1a1a1a] text-[9px] text-system-700">
-                            —
-                          </span>
-                        )}
-                        <span className="w-28 shrink-0 truncate text-[12px] text-white">{t.name}</span>
-                        <div className="flex-1">
-                          <ImagePickerField
-                            value={t.icon_url ?? ""}
-                            onChange={(v) => setToolIcon(t.id, v)}
-                            folder="tools/icons"
-                            previewClassName="hidden"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
+              <p className="mt-2 text-[11px] text-fg-muted">アイコン画像は「マスタ管理」で設定します</p>
             </div>
 
             <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>
             <div className="col-span-2">
-              <FieldLabel>体制内訳（例: 事業責任者1・プロジェクトマネージャー1・デザイナー2・エンジニア4。この形なら人数付きタグで表示）</FieldLabel>
-              <Input
-                value={work.stakeholder_breakdown ?? ""}
-                onChange={(v) => setField("stakeholder_breakdown", v || null)}
-                placeholder="事業責任者1・プロジェクトマネージャー1・デザイナー2・エンジニア4"
+              <FieldLabel>体制内訳（役割と人数。公開ページでは人数付きタグで表示）</FieldLabel>
+              <StakeholderBreakdownField
+                value={work.stakeholder_breakdown}
+                onChange={(v) => setField("stakeholder_breakdown", v)}
+                roleOptions={roleOptions}
               />
             </div>
 
-            <FormGroupHeader>Timeline（左パネルの「全画面」ボタン → モーダルに表示）</FormGroupHeader>
+            <FormGroupHeader>
+              <span className="flex items-center gap-3">
+                Timeline
+                <button
+                  type="button"
+                  className={`${vizBtn} font-normal tracking-normal disabled:cursor-not-allowed disabled:opacity-40`}
+                  disabled={!parsedTimeline}
+                  title={parsedTimeline ? undefined : "工程が 0 件のため、公開ページにはアイコンが出ません"}
+                  onClick={() => setVizPreview("timeline")}
+                >
+                  公開ページでの見え方を確認
+                </button>
+              </span>
+            </FormGroupHeader>
             <div className="col-span-2">
-              <TimelineForm
-                value={parsedTimeline ?? DEFAULT_TIMELINE}
-                onChange={(v) => setField("timeline", (v.phases.length ? v : null) as unknown as Work["timeline"])}
+              <p className="mb-3 text-[11px] text-fg-muted">公開ページの作品詳細・左パネル（期間の行）の全画面アイコンからモーダルで表示されます。工程が 0 件ならアイコンは出ません。右上の「保存」で反映。</p>
+              <TimelineGanttEditor
+                value={parsedTimeline ?? EMPTY_TIMELINE}
+                onChange={(v) => {
+                  setField("timeline", (v.phases.length ? v : null) as unknown as Work["timeline"]);
+                }}
+                onInsertTemplate={() => setField("timeline", DEFAULT_TIMELINE as unknown as Work["timeline"])}
               />
             </div>
 
-            <FormGroupHeader>Stakeholders（左パネルの「全画面」ボタン → モーダルに表示）</FormGroupHeader>
+            <FormGroupHeader>
+              <span className="flex items-center gap-3">
+                Stakeholders
+                <button
+                  type="button"
+                  className={`${vizBtn} font-normal tracking-normal disabled:cursor-not-allowed disabled:opacity-40`}
+                  disabled={!parsedStakeholders}
+                  title={parsedStakeholders ? undefined : "グループが 0 件のため、公開ページにはアイコンが出ません"}
+                  onClick={() => setVizPreview("stakeholders")}
+                >
+                  公開ページでの見え方を確認
+                </button>
+              </span>
+            </FormGroupHeader>
             <div className="col-span-2">
-              <StakeholdersForm
+              <p className="mb-3 text-[11px] text-fg-muted">公開ページの作品詳細・左パネル（体制の行）の全画面アイコンからモーダルで表示されます。グループが 0 件ならアイコンは出ません。右上の「保存」で反映。</p>
+              <StakeholdersDiagramEditor
+                iconCatalog={iconCatalog}
                 value={parsedStakeholders ?? { groups: [] }}
                 onChange={(v) => setField("stakeholders", (v.groups.length ? v : null) as unknown as Work["stakeholders"])}
               />
@@ -669,6 +752,9 @@ export default function WorkEditor({ workId }: { workId: string }) {
         onClose={() => closeFlowchartPicker(null)}
         onSelect={closeFlowchartPicker}
       />
+      {vizPreview && (
+        <WorkVizModal kind={vizPreview} timeline={parsedTimeline} stakeholders={parsedStakeholders} onClose={() => setVizPreview(null)} />
+      )}
     </AdminShell>
   );
 }
@@ -678,7 +764,6 @@ export default function WorkEditor({ workId }: { workId: string }) {
 const vizBtn =
   "rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white";
 const vizDel = "rounded px-2 py-1 text-[11px] text-system-700 hover:text-danger-300";
-const RACI_KEYS: RaciKey[] = ["R", "A", "C", "I"];
 
 /**
  * 新規タイムラインの既定フェーズ一式。
@@ -697,103 +782,72 @@ const DEFAULT_TIMELINE: TimelineData = {
     { label: "Optimization", start: 11, span: 2, raci: ["R"] },
   ],
 };
+const EMPTY_TIMELINE: TimelineData = { totalUnits: DEFAULT_TIMELINE.totalUnits, phases: [] };
 
-/**
- * 数値入力を整数へ。空欄・非数値・min 未満は min に丸める
- * （`Number(v) || 既定値` だと空欄で恣意的な大きい既定へ飛ぶ・0 を握り潰すため）。
- */
-const clampInt = (v: string, min: number): number => {
-  const n = parseInt(v, 10);
-  return Number.isNaN(n) ? min : Math.max(min, n);
-};
-
-function TimelineForm({ value, onChange }: { value: TimelineData; onChange: (v: TimelineData) => void }) {
-  const patch = (i: number, p: Partial<TimelineData["phases"][number]>) =>
-    onChange({ ...value, phases: value.phases.map((ph, idx) => (idx === i ? { ...ph, ...p } : ph)) });
-  // 週数は最後のフェーズの終わりより小さくできない（フェーズ側の位置が先に決まっているため）
-  const minUnits = Math.max(1, ...value.phases.map((p) => p.start + p.span - 1));
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <FieldLabel>週数（W1〜）</FieldLabel>
-        <Input className="!w-20" value={String(value.totalUnits)} onChange={(v) => onChange({ ...value, totalUnits: clampInt(v, 1) })} />
-        {value.phases.length > 0 && (
-          <span className="text-[11px] text-fg-muted">一番遅く終わるフェーズ（W{minUnits}）より小さくはできません</span>
-        )}
-      </div>
-      {value.phases.map((ph, i) => (
-        <div key={i} className="rounded-[8px] border border-border-light bg-[#161616] p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input className="!w-44" value={ph.label} onChange={(v) => patch(i, { label: v })} placeholder="フェーズ名" />
-            <span className="text-[11px] text-fg-muted">開始W</span>
-            <Input className="!w-14" value={String(ph.start)} onChange={(v) => patch(i, { start: clampInt(v, 1) })} />
-            <span className="text-[11px] text-fg-muted">期間</span>
-            <Input className="!w-14" value={String(ph.span)} onChange={(v) => patch(i, { span: clampInt(v, 1) })} />
-            <span className="ml-1 flex items-center gap-1.5">
-              {RACI_KEYS.map((k) => (
-                <label key={k} className="inline-flex items-center gap-0.5 text-[11px] text-fg-muted">
-                  <input
-                    type="checkbox"
-                    className="h-3 w-3 accent-primary"
-                    checked={ph.raci.includes(k)}
-                    onChange={(e) =>
-                      patch(i, { raci: e.target.checked ? [...ph.raci, k] : ph.raci.filter((r) => r !== k) })
-                    }
-                  />
-                  {k}
-                </label>
-              ))}
-            </span>
-            <button type="button" className={`${vizDel} ml-auto`} onClick={() => onChange({ ...value, phases: value.phases.filter((_, idx) => idx !== i) })}>削除</button>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <Input className="!w-44" value={ph.note?.title ?? ""} onChange={(v) => patch(i, { note: { ...ph.note, title: v || undefined } })} placeholder="ツールチップ見出し" />
-            <Input value={ph.note?.body ?? ""} onChange={(v) => patch(i, { note: { ...ph.note, body: v || undefined } })} placeholder="ツールチップ本文" />
-          </div>
-        </div>
-      ))}
-      <button type="button" className={`${vizBtn} self-start`} onClick={() => onChange({ ...value, phases: [...value.phases, { label: "", start: 1, span: 2, raci: ["R"] }] })}>
-        ＋ フェーズを追加
-      </button>
-    </div>
-  );
+type BreakdownRow = { role: string; count: number };
+const ROLE_LIST_ID = "stakeholder-role-options";
+const BREAKDOWN_INVALID = /[0-9・、,]/; // parseStakeholderBreakdown が役割名に使えない文字
+function serializeBreakdown(rows: BreakdownRow[]): string | null {
+  const s = rows.filter((r) => r.role.trim()).map((r) => `${r.role.trim()}${r.count}`).join("・");
+  return s || null;
 }
-
-function StakeholdersForm({ value, onChange }: { value: StakeholdersData; onChange: (v: StakeholdersData) => void }) {
-  const patchGroup = (i: number, p: Partial<StakeholdersData["groups"][number]>) =>
-    onChange({ groups: value.groups.map((g, idx) => (idx === i ? { ...g, ...p } : g)) });
+function StakeholderBreakdownField({ value, onChange, roleOptions }: { value: string | null; onChange: (v: string | null) => void; roleOptions: string[] }) {
+  const [rows, setRows] = useState<BreakdownRow[] | null>(() => {
+    if (!value?.trim()) return [];
+    const p = parseStakeholderBreakdown(value);
+    return p ? p.map((x) => ({ role: x.name, count: x.count })) : null; // null = 旧形式（文字のまま編集）
+  });
+  const commit = (next: BreakdownRow[]) => { setRows(next); onChange(serializeBreakdown(next)); };
+  const tags = parseStakeholderBreakdown(value);
   return (
-    <div className="flex flex-col gap-3">
-      {value.groups.map((g, gi) => (
-        <div key={gi} className="rounded-[8px] border border-border-light bg-[#161616] p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Input className="!w-36" value={g.label} onChange={(v) => patchGroup(gi, { label: v })} placeholder="グループ名" />
-            <Input className="!w-56" value={g.icon ?? ""} onChange={(v) => patchGroup(gi, { icon: v || undefined })} placeholder="アイコン（例: Components/page）" />
-            <button type="button" className={`${vizDel} ml-auto`} onClick={() => onChange({ groups: value.groups.filter((_, idx) => idx !== gi) })}>グループ削除</button>
-          </div>
-          <div className="mt-2 flex flex-col gap-1.5">
-            {g.members.map((m, mi) => (
-              <div key={mi} className="flex items-center gap-2">
-                <Input className="!w-56" value={m.label} onChange={(v) => patchGroup(gi, { members: g.members.map((mm, idx) => (idx === mi ? { ...mm, label: v } : mm)) })} placeholder="メンバー名（役職）" />
-                <label className="inline-flex items-center gap-1 text-[11px] text-fg-muted">
-                  <input
-                    type="checkbox"
-                    className="h-3 w-3 accent-primary"
-                    checked={m.me === true}
-                    onChange={(e) => patchGroup(gi, { members: g.members.map((mm, idx) => (idx === mi ? { ...mm, me: e.target.checked } : mm)) })}
-                  />
-                  me（自分）
-                </label>
-                <button type="button" className={vizDel} onClick={() => patchGroup(gi, { members: g.members.filter((_, idx) => idx !== mi) })}>削除</button>
-              </div>
-            ))}
-            <button type="button" className={`${vizBtn} self-start`} onClick={() => patchGroup(gi, { members: [...g.members, { label: "" }] })}>＋ メンバー</button>
-          </div>
+    <div className="flex flex-col gap-2">
+      {rows === null ? (
+        <div>
+          <Input value={value ?? ""} onChange={(v) => onChange(v || null)} />
+          <p className="mt-1 text-[11px] text-[#f4c248]">この内容は「役割＋人数」の形で読み取れないため、文字のまま保存・表示されます。</p>
+          <button
+            type="button"
+            className={`${vizBtn} mt-2`}
+            disabled={!(!value?.trim() || tags)}
+            onClick={() => setRows(tags ? tags.map((t) => ({ role: t.name, count: t.count })) : [])}
+          >
+            行形式で入力し直す
+          </button>
         </div>
-      ))}
-      <button type="button" className={`${vizBtn} self-start`} onClick={() => onChange({ groups: [...value.groups, { label: "", members: [{ label: "" }] }] })}>
-        ＋ グループを追加
-      </button>
+      ) : (
+        <>
+          {rows.map((r, i) => (
+            <div key={i} className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <Input className="!w-56" list={ROLE_LIST_ID} value={r.role} placeholder="役割（例: デザイナー）" onChange={(v) => commit(rows.map((x, j) => (j === i ? { ...x, role: v } : x)))} />
+                <NumberField className="w-16" value={r.count} min={1} max={999} onCommit={(n) => commit(rows.map((x, j) => (j === i ? { ...x, count: n } : x)))} />
+                <span className="text-[11px] text-fg-muted">名</span>
+                <span className="ml-auto flex items-center gap-1">
+                  <MoveButtons index={i} length={rows.length} label={r.role || `行${i + 1}`} onMove={(d) => commit(moveItem(rows, i, i + d))} />
+                  <button type="button" className={vizDel} onClick={() => commit(rows.filter((_, j) => j !== i))}>削除</button>
+                </span>
+              </div>
+              {BREAKDOWN_INVALID.test(r.role) && (
+                <p className="text-[11px] text-[#f4c248]">役割名に半角数字や「・、,」があると、公開ページで人数タグにならず文字のまま表示されます</p>
+              )}
+            </div>
+          ))}
+          <button type="button" className={`${vizBtn} self-start`} onClick={() => setRows([...rows, { role: "", count: 1 }])}>
+            ＋ 行を追加
+          </button>
+        </>
+      )}
+      <datalist id={ROLE_LIST_ID}>{roleOptions.map((r) => <option key={r} value={r} />)}</datalist>
+      <div>
+        <p className="mb-1.5 mt-1 text-[11px] text-fg-muted">公開ページでの見え方</p>
+        <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-[8px] border border-border-light bg-[#161616] px-4 py-[6px]">
+          {tags ? (
+            tags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
+          ) : (
+            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={value ?? undefined}>{value || "—"}</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

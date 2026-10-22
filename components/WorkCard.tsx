@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import Tag from "./Tag";
+import ProtectedImage from "./ProtectedImage";
 
 type WorkCardProps = {
   category: string;
@@ -25,7 +26,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
       ].join(" ")}
     >
       <div className="relative aspect-[339/190.6875] w-full shrink-0">
-        <img
+        <ProtectedImage
           src={image}
           alt={title}
           className="absolute inset-0 h-full w-full object-cover pointer-events-none"

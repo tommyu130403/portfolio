@@ -11,6 +11,7 @@ import {
   type RefObject,
 } from "react";
 import { WorkMarkdownDocument } from "./WorkMarkdown";
+import ProtectedImage from "./ProtectedImage";
 import { buildImageMarkdown, widthToCss, type ImageAlign } from "@/lib/image-layout";
 import { container, type DeviceMode } from "@/lib/design-tokens";
 
@@ -898,8 +899,7 @@ function ImageDialog({
             className="mx-auto overflow-hidden rounded-[6px]"
             style={{ width: useWidth ? widthToCss(String(width)) : "100%", maxWidth: "100%" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <ProtectedImage
               src={url}
               alt={caption}
               className="block h-auto w-full"

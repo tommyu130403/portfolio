@@ -62,7 +62,8 @@ export function markdownToSections(md: string): Json {
   let heading = "";
   const bodyLines: string[] = [];
   const flush = () => {
-    if (heading) result.push({ heading, body: bodyLines.join("\n").trim() });
+    const body = bodyLines.join("\n").trim();
+    if (heading || body) result.push({ heading, body });
   };
   for (const line of md.split("\n")) {
     if (line.startsWith("# ")) {

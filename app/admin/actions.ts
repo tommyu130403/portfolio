@@ -199,7 +199,7 @@ export async function saveWork(
       }
       sortOrderField = { sort_order: (rows?.[0]?.sort_order ?? -1) + 1 };
     }
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("works")
       .upsert(
         {
@@ -222,8 +222,10 @@ export async function saveWork(
           ...(payload.created_at ? { created_at: payload.created_at } : {}),
         },
         { onConflict: "id" }
-      );
+      )
+      .select("id");
     if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) return { error: "作品を保存できませんでした（権限がありません）" };
 
     return { error: null };
   } catch (e) {
@@ -237,8 +239,9 @@ export async function saveWork(
  */
 export async function deleteWork(id: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("works").delete().eq("id", id);
+    const { data, error } = await supabase.from("works").delete().eq("id", id).select("id");
     if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) return { error: "作品を削除できませんでした（権限またはデータが見つかりません）" };
     return { error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -672,6 +675,44 @@ export async function addToolNameFromWorks(
   }
 }
 
+// ─── career_items ─────────────────────────────────────────────────────────────
+
+export async function saveCareerItem(item: {
+  id: string;
+  role: string;
+  company: string;
+  period: string;
+  description: string;
+  sort_order: number;
+}): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from("career_items")
+      .upsert(item, { onConflict: "id" })
+      .select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "経歴を保存できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function deleteCareerItem(id: string): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from("career_items")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "経歴を削除できませんでした（権限またはデータが見つかりません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
 // ─── skill_cards CRUD ─────────────────────────────────────────────────────────
 
 export async function saveSkillCard(card: {
@@ -679,8 +720,9 @@ export async function saveSkillCard(card: {
   icon_set: string; icon_name: string; sort_order: number;
 }): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_cards").upsert(card);
+    const { data, error } = await supabase.from("skill_cards").upsert(card).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "カードを保存できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -698,35 +740,24 @@ export async function deleteSkillCard(id: string): Promise<{ error: string | nul
   }
 }
 
-export async function addSkillCard(sortOrder: number): Promise<{
-  data: import("@/src/types/supabase").Tables<"skill_cards"> | null;
-  error: string | null;
-}> {
-  try {
-    const { data, error } = await supabase.from("skill_cards").insert({
-      title: "New Card", title_jp: "新しいカード",
-      icon_set: "Edit", icon_name: "writing-fluently",
-      sort_order: sortOrder,
-    }).select().single();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
 export async function moveSkillCards(
   updates: { id: string; sort_order: number }[]
 ): Promise<{ error: string | null }> {
   try {
-    await Promise.all(
+    const results = await Promise.all(
       updates.map(({ id, sort_order }) =>
-        supabase.from("skill_cards").update({ sort_order }).eq("id", id)
+        supabase.from("skill_cards").update({ sort_order }).eq("id", id).select("id")
       )
     );
+    // RLS で拒否されるとエラーなしで 0 行更新になるため、更新行が無ければ失敗として返す
+    const failed = results.find((r) => r.error);
+    if (failed?.error) return { error: dbErr(failed.error) };
+    if (results.some((r) => !r.data?.length)) {
+      return { error: "並び順を更新できませんでした（権限またはデータが見つかりません）" };
+    }
     return { error: null };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: errMsg(e) };
   }
 }
 
@@ -761,8 +792,9 @@ export async function saveSkillBar(bar: {
   icon_set: string | null; icon_name: string | null; label_note: string | null;
 }): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_experience").upsert(bar);
+    const { data, error } = await supabase.from("skill_experience").upsert(bar).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "スキルバーを保存できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -777,23 +809,6 @@ export async function deleteSkillBar(barId: string): Promise<{ error: string | n
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function addSkillBar(cardId: string, sortOrder: number): Promise<{
-  data: import("@/src/types/supabase").Tables<"skill_experience"> | null;
-  error: string | null;
-}> {
-  try {
-    const { data, error } = await supabase.from("skill_experience").insert({
-      card_id: cardId, label: "", label_short: null,
-      segments: 5, level: "Lv.3 Senior", sort_order: sortOrder,
-      icon_set: "Base", icon_name: "system", label_note: null,
-    }).select().single();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
   }
 }
 

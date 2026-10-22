@@ -8,11 +8,11 @@ import { supabase } from "@/src/lib/supabase";
 import {
   saveSkillCard,
   deleteSkillCard,
-  addSkillCard,
   moveSkillCards,
   saveSkillBar,
   deleteSkillBar,
-  addSkillBar,
+  saveCareerItem,
+  deleteCareerItem,
   saveExperienceToolIds,
   moveSkillBars,
   addToolNameFromWorks,
@@ -37,11 +37,21 @@ import PublishToggle from "./PublishToggle";
 import MastersSection from "./masters/MastersSection";
 import IconPickerField, { type IconValue } from "./IconPickerField";
 import type { IconCatalog } from "./iconCatalogTypes";
+import {
+  parsePeriod,
+  formatPeriod,
+  validatePeriod,
+  isSamePeriod,
+  isStandardPeriod,
+  EMPTY_PERIOD,
+  type PeriodInputs,
+} from "./period";
 import { NAV_SECTIONS, type AdminSectionId } from "./sections";
 
 // ─── 型 ───────────────────────────────────────────────
 type Profile    = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
+type CareerRow  = CareerItem & { isNew?: true };
 type SkillCard       = Tables<"skill_cards">;
 type SkillExperience = Tables<"skill_experience">;
 
@@ -523,7 +533,7 @@ export function Input({
       placeholder={placeholder}
       list={list}
       disabled={disabled}
-      className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
+      className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary placeholder:text-system-700 disabled:cursor-not-allowed disabled:opacity-40 ${className}`}
     />
   );
 }
@@ -578,6 +588,35 @@ export function MoveButtons({
         aria-label={`${label} を下へ`}
         className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
       >↓</button>
+    </div>
+  );
+}
+
+/** 期間（開始年月〜終了年月 / 現在）の入力欄 */
+export function PeriodFields({
+  value, onChange, disabled = false,
+}: { value: PeriodInputs; onChange: (next: PeriodInputs) => void; disabled?: boolean }) {
+  const set = (patch: Partial<PeriodInputs>) => onChange({ ...value, ...patch });
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Input type="number" min={1900} max={2100} className="!w-24" value={value.startYear} onChange={(v) => set({ startYear: v })} placeholder="YYYY" disabled={disabled} />
+      <span className="text-[12px] text-fg-muted">年</span>
+      <Input type="number" min={1} max={12} className="!w-16" value={value.startMonth} onChange={(v) => set({ startMonth: v })} placeholder="M" disabled={disabled} />
+      <span className="text-[12px] text-fg-muted">月 〜</span>
+      <Input type="number" min={1900} max={2100} className="!w-24" value={value.isCurrent ? "" : value.endYear} onChange={(v) => set({ endYear: v })} placeholder="YYYY" disabled={disabled || value.isCurrent} />
+      <span className="text-[12px] text-fg-muted">年</span>
+      <Input type="number" min={1} max={12} className="!w-16" value={value.isCurrent ? "" : value.endMonth} onChange={(v) => set({ endMonth: v })} placeholder="M" disabled={disabled || value.isCurrent} />
+      <span className="text-[12px] text-fg-muted">月</span>
+      <label className="ml-2 inline-flex items-center gap-2 text-[12px] text-fg-muted">
+        <input
+          type="checkbox"
+          className="h-3 w-3 accent-primary"
+          checked={value.isCurrent}
+          disabled={disabled}
+          onChange={(e) => set({ isCurrent: e.target.checked })}
+        />
+        現在
+      </label>
     </div>
   );
 }
@@ -865,36 +904,57 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
 // ─── Career セクション ─────────────────────────────────
 
 function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
-  const [items, setItems] = useState<CareerItem[]>([]);
+  const [items, setItems] = useState<CareerRow[]>([]);
   const [originalItems, setOriginalItems] = useState<CareerItem[]>([]);
+  const [periods, setPeriods] = useState<Record<string, PeriodInputs>>({});
   const [fetching, setFetching] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [globalError, setGlobalError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   // 文章チェック（アイテムごと）
   const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
   const [proofResultsMap, setProofResultsMap] = useState<
     Record<string, { issues: ProofreadIssue[] | null; error: string }>
   >({});
 
-  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("career_items").select("*").order("sort_order", { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) setLoadError(`読み込みに失敗しました: ${error.message}`);
+        const rows = data ?? [];
+        setItems(rows);
+        setOriginalItems(rows);
+        setPeriods(Object.fromEntries(rows.map((r) => [r.id, parsePeriod(r.period)])));
+        setFetching(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
-  const recomputeDirty = (nextItems: CareerItem[], nextOriginal: CareerItem[]) => {
-    const hasDiff = nextItems.some((it) => {
-      const base = nextOriginal.find((o) => o.id === it.id);
-      if (!base) return true;
-      return (
-        base.role !== it.role ||
-        base.company !== it.company ||
-        base.period !== it.period ||
-        base.description !== it.description ||
-        base.sort_order !== it.sort_order
-      );
-    });
-    setDirty(hasDiff);
-    onDirtyChange(hasDiff);
+  // 未保存判定は描画中に導出する（早期 return より前に置く）
+  const baseById = new Map(originalItems.map((o) => [o.id, o]));
+  const periodOf = (id: string) => periods[id] ?? EMPTY_PERIOD;
+  const periodChanged = (it: CareerRow) =>
+    !isSamePeriod(periodOf(it.id), parsePeriod(baseById.get(it.id)?.period ?? null));
+  const isRowDirty = (it: CareerRow) => {
+    const b = baseById.get(it.id);
+    return (
+      !!it.isNew || !b ||
+      b.role !== it.role || b.company !== it.company ||
+      b.description !== it.description || b.sort_order !== it.sort_order ||
+      periodChanged(it)
+    );
   };
+  const dirty = items.some(isRowDirty);
+  useEffect(() => {
+    onDirtyChange(dirty);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty]);
 
   const handleProofread = async (item: CareerItem) => {
     const text = item.description;
@@ -910,142 +970,127 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     }
   };
 
-  const fetch = useCallback(async () => {
-    const { data } = await supabase
-      .from("career_items").select("*").order("sort_order", { ascending: true });
-    if (data) {
-      setItems(data);
-      setOriginalItems(data);
-      setDirty(false);
-      onDirtyChange(false);
-    }
-    setFetching(false);
-  }, []);
-
-  useEffect(() => { fetch(); }, [fetch]);
-
-  const updateItem = (id: string, key: keyof CareerItem, val: string | number) => {
-    setItems((prev) => {
-      const next = prev.map((it) => (it.id === id ? { ...it, [key]: val } : it));
-      recomputeDirty(next, originalItems);
-      return next;
+  const clearErr = (id: string) => {
+    setRowErrors((p) => {
+      if (!p[id]) return p;
+      const n = { ...p };
+      delete n[id];
+      return n;
     });
+    setSaveError("");
   };
 
-  const handleSave = async (item: CareerItem) => {
-    setSavingId(item.id); setGlobalError("");
-    const { error } = await supabase.from("career_items").upsert({
-      id: item.id, role: item.role, company: item.company,
-      period: item.period, description: item.description, sort_order: item.sort_order,
-    });
-    setSavingId(null);
-    if (error) { setGlobalError(error.message); return; }
-    setSavedId(item.id);
-    setTimeout(() => setSavedId(null), 2000);
-    // ※ recomputeDirty は onDirtyChange（親 setState）を含むため、state 更新関数の中では
-    //   呼ばない（レンダー中の親 setState 警告を避ける）。次の値を求めてから順に呼ぶ。
-    const existing = originalItems.find((o) => o.id === item.id);
-    const nextOriginal = existing
-      ? originalItems.map((o) => (o.id === item.id ? item : o))
-      : [...originalItems, item];
-    setOriginalItems(nextOriginal);
-    recomputeDirty(items, nextOriginal);
+  const updateItem = (id: string, key: "role" | "company" | "description", val: string) => {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, [key]: val } : it)));
+    clearErr(id);
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        "この経歴を削除します。よろしいですか？\nこの操作は取り消せません。"
-      )
-    ) {
+  const updatePeriod = (id: string, p: PeriodInputs) => {
+    setPeriods((prev) => ({ ...prev, [id]: p }));
+    clearErr(id);
+  };
+
+  const handleAdd = () => {
+    const id = crypto.randomUUID();
+    const sort_order = items.reduce((m, it) => Math.max(m, it.sort_order), -1) + 1;
+    setItems((prev) => [
+      ...prev,
+      { id, role: "", company: "", period: "", description: "", sort_order, created_at: null, isNew: true },
+    ]);
+    setPeriods((prev) => ({ ...prev, [id]: { ...EMPTY_PERIOD } }));
+  };
+
+  // 並び替えは画面上だけ。保存ボタンでまとめて反映する
+  const handleMove = (index: number, dir: -1 | 1) =>
+    setItems((prev) => moveItem(prev, index, index + dir).map((it, i) => ({ ...it, sort_order: i })));
+
+  const handleDelete = async (item: CareerRow) => {
+    if (item.isNew) {
+      if (!window.confirm("未保存の経歴を破棄します。よろしいですか？")) return;
+      setItems((prev) => prev.filter((it) => it.id !== item.id));
+      clearErr(item.id);
       return;
     }
-    setDeletingId(id);
-    await supabase.from("career_items").delete().eq("id", id);
+    if (!window.confirm("この経歴を削除します。よろしいですか？\nこの操作は取り消せません。")) return;
+    setDeletingId(item.id);
+    clearErr(item.id);
+    const { error } = await deleteCareerItem(item.id);
     setDeletingId(null);
-    setItems((prev) => prev.filter((it) => it.id !== id));
-  };
-
-  const handleAdd = async () => {
-    const newItem = {
-      role: "", company: "", period: "", description: "",
-      sort_order: items.length,
-    };
-    const { data } = await supabase.from("career_items").insert(newItem).select().single();
-    if (data) {
-      // 追加直後は DB の値と一致しているので dirty にはしない。
-      // setState 更新関数の中で親 setState を呼ばないよう、次の値を先に確定させてから順に呼ぶ。
-      const next = [...items, data];
-      const nextOriginal = [...originalItems, data];
-      setItems(next);
-      setOriginalItems(nextOriginal);
-      recomputeDirty(next, nextOriginal);
+    if (error) {
+      setRowErrors((p) => ({ ...p, [item.id]: `削除に失敗しました: ${error}` }));
+      return;
     }
+    setItems((prev) => prev.filter((it) => it.id !== item.id));
+    setOriginalItems((prev) => prev.filter((o) => o.id !== item.id));
   };
 
-  const parsePeriod = (period: string | null) => {
-    const text = period ?? "";
-    const m = text.match(
-      /^(\d{4})年(\d{1,2})月\s*-\s*(現在|(\d{4})年(\d{1,2})月)?$/,
-    );
-    if (!m) {
-      return {
-        startYear: "",
-        startMonth: "",
-        endYear: "",
-        endMonth: "",
-        isCurrent: false,
+  const scrollToRow = (id: string) =>
+    document.getElementById(`career-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaveError("");
+    setSaved(false);
+    const errs: Record<string, string> = {};
+    for (const it of items) {
+      if (!it.role.trim()) errs[it.id] = "役職を入力してください";
+      else if (!it.company.trim()) errs[it.id] = "会社名を入力してください";
+      else if (periodChanged(it)) {
+        const pe = validatePeriod(periodOf(it.id));
+        if (pe) errs[it.id] = pe;
+      }
+    }
+    const bad = items.filter((it) => errs[it.id]);
+    if (bad.length) {
+      const i = items.indexOf(bad[0]);
+      setRowErrors(errs);
+      setSaveError(`#${i + 1}: ${errs[bad[0].id]}${bad.length > 1 ? `（ほか ${bad.length - 1} 件）` : ""}`);
+      scrollToRow(bad[0].id);
+      return;
+    }
+    setRowErrors({});
+    setSaving(true);
+    const savedRows: CareerItem[] = [];
+    let failure: { id: string; msg: string } | null = null;
+    for (const it of items) {
+      if (!isRowDirty(it)) continue;
+      const period = periodChanged(it) ? (formatPeriod(periodOf(it.id)) ?? "") : it.period;
+      const row: CareerItem = {
+        id: it.id, role: it.role, company: it.company, period,
+        description: it.description, sort_order: it.sort_order, created_at: it.created_at,
       };
+      const { error } = await saveCareerItem({
+        id: row.id, role: row.role, company: row.company, period: row.period,
+        description: row.description, sort_order: row.sort_order,
+      });
+      if (error) { failure = { id: it.id, msg: error }; break; }
+      savedRows.push(row);
     }
-    const startYear = m[1] ?? "";
-    const startMonth = m[2] ?? "";
-    const isCurrent = m[3] === "現在";
-    const endYear = m[4] ?? "";
-    const endMonth = m[5] ?? "";
-    return {
-      startYear,
-      startMonth,
-      endYear,
-      endMonth,
-      isCurrent,
-    };
-  };
-
-  const formatPeriod = (opts: {
-    startYear: string;
-    startMonth: string;
-    endYear: string;
-    endMonth: string;
-    isCurrent: boolean;
-  }) => {
-    const sy = opts.startYear.trim();
-    const sm = opts.startMonth.trim();
-    const ey = opts.endYear.trim();
-    const em = opts.endMonth.trim();
-    if (!sy || !sm) return "";
-    const start = `${sy}年${sm}月`;
-    const end = opts.isCurrent
-      ? "現在"
-      : ey && em
-        ? `${ey}年${em}月`
-        : "";
-    return end ? `${start} - ${end}` : `${start} - `;
-  };
-
-  const handleMove = async (index: number, dir: -1 | 1) => {
-    const target = index + dir;
-    if (target < 0 || target >= items.length) return;
-    const next = [...items];
-    [next[index], next[target]] = [next[target], next[index]];
-    const updated = next.map((it, i) => ({ ...it, sort_order: i }));
-    setItems(updated);
-    await Promise.all(
-      updated.map(({ id, sort_order }) =>
-        supabase.from("career_items").update({ sort_order }).eq("id", id)
-      )
-    );
-    setOriginalItems(updated);
-    recomputeDirty(updated, updated);
+    setSaving(false);
+    if (savedRows.length) {
+      const byId = new Map(savedRows.map((r) => [r.id, r]));
+      setItems((prev) => prev.map((it) => byId.get(it.id) ?? it));
+      setOriginalItems((prev) => [...prev.filter((o) => !byId.has(o.id)), ...savedRows]);
+      setPeriods((prev) => {
+        const n = { ...prev };
+        for (const r of savedRows) n[r.id] = parsePeriod(r.period);
+        return n;
+      });
+    }
+    if (failure) {
+      const i = items.findIndex((it) => it.id === failure.id);
+      const it = items[i];
+      setRowErrors({ [failure.id]: `保存に失敗しました: ${failure.msg}` });
+      setSaveError(
+        `#${i + 1}（${it.company || it.role || "無題"}）の保存に失敗しました: ${failure.msg}${
+          savedRows.length ? `。それより前の ${savedRows.length} 行は保存済みです` : ""
+        }`,
+      );
+      scrollToRow(failure.id);
+      return;
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
@@ -1053,38 +1098,40 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   return (
     <section id="career" className="scroll-mt-8">
       <SectionTitle label="Career" title="経歴" />
-      {globalError && <p className="mb-4 text-[13px] text-danger-300">{globalError}</p>}
+      {loadError && <p className="mb-4 text-[13px] text-danger-300">{loadError}</p>}
+      {dirty && <p className="mb-3 text-[11px] text-[#f4c248]">未保存の変更があります</p>}
 
+      <fieldset disabled={saving || deletingId !== null} className="min-w-0">
       <div className="mb-6 flex flex-col gap-4">
         {items.map((item, idx) => (
-          <div key={item.id} className="rounded-[12px] border border-border-light bg-surface p-5">
+          <div
+            key={item.id}
+            id={`career-row-${item.id}`}
+            className="scroll-mt-8 rounded-[12px] border border-border-light bg-surface p-5"
+          >
             {(() => {
-              const base = originalItems.find((o) => o.id === item.id);
+              const base = baseById.get(item.id);
               const dirtyRole = base && base.role !== item.role;
               const dirtyCompany = base && base.company !== item.company;
-              const dirtyPeriod = base && base.period !== item.period;
+              const dirtyPeriod = base && periodChanged(item);
               const dirtyDescription = base && base.description !== item.description;
               return (
                 <>
-                  {/* ヘッダー行は既存のまま */}
                   <div className="mb-4 flex items-center justify-between">
-                    <span className="text-[12px] text-system-700">#{idx + 1}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[12px] text-system-700">#{idx + 1}</span>
+                      {item.isNew && <span className="text-[11px] text-[#f4c248]">新規（未保存）</span>}
+                    </div>
                     <div className="flex items-center gap-2">
+                      <MoveButtons
+                        index={idx}
+                        length={items.length}
+                        label={item.company || `経歴${idx + 1}`}
+                        onMove={(d) => handleMove(idx, d)}
+                      />
                       <button
                         type="button"
-                        onClick={() => handleMove(idx, -1)}
-                        disabled={idx === 0}
-                        className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
-                      >↑</button>
-                      <button
-                        type="button"
-                        onClick={() => handleMove(idx, 1)}
-                        disabled={idx === items.length - 1}
-                        className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
-                      >↓</button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => void handleDelete(item)}
                         disabled={deletingId === item.id}
                         className="rounded px-2 py-1 text-[12px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40"
                       >
@@ -1092,6 +1139,9 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                       </button>
                     </div>
                   </div>
+                  {rowErrors[item.id] && (
+                    <p className="mb-3 text-[12px] text-danger-300">{rowErrors[item.id]}</p>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1120,122 +1170,20 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
                     </div>
                     <div className="col-span-2">
                       <FieldLabel>期間</FieldLabel>
-                      {(() => {
-                        const { startYear, startMonth, endYear, endMonth, isCurrent } =
-                          parsePeriod(item.period);
-                        const handleChange = (next: {
-                          startYear?: string;
-                          startMonth?: string;
-                          endYear?: string;
-                          endMonth?: string;
-                          isCurrent?: boolean;
-                        }) => {
-                          const formatted = formatPeriod({
-                            startYear: next.startYear ?? startYear,
-                            startMonth: next.startMonth ?? startMonth,
-                            endYear: next.endYear ?? endYear,
-                            endMonth: next.endMonth ?? endMonth,
-                            isCurrent: next.isCurrent ?? isCurrent,
-                          });
-                          updateItem(item.id, "period", formatted);
-                        };
-                        return (
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="mb-1 text-[11px] text-fg-muted">
-                                  期間開始
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="number"
-                                    min={1900}
-                                    max={2100}
-                                    value={startYear}
-                                    onChange={(e) =>
-                                      handleChange({ startYear: e.target.value })
-                                    }
-                                    placeholder="2022"
-                                    className="w-24 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
-                                  />
-                                  <span className="text-[12px] text-fg-muted">
-                                    年
-                                  </span>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    max={12}
-                                    value={startMonth}
-                                    onChange={(e) =>
-                                      handleChange({ startMonth: e.target.value })
-                                    }
-                                    placeholder="4"
-                                    className="w-16 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none"
-                                  />
-                                  <span className="text-[12px] text-fg-muted">
-                                    月
-                                  </span>
-                                </div>
-                              </div>
-                              <div>
-                                <p className="mb-1 text-[11px] text-fg-muted">
-                                  期間終了
-                                </p>
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="number"
-                                      min={1900}
-                                      max={2100}
-                                      value={isCurrent ? "" : endYear}
-                                      onChange={(e) =>
-                                        handleChange({ endYear: e.target.value })
-                                      }
-                                      placeholder="2024"
-                                      disabled={isCurrent}
-                                      className="w-24 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
-                                    />
-                                    <span className="text-[12px] text-fg-muted">
-                                      年
-                                    </span>
-                                    <input
-                                      type="number"
-                                      min={1}
-                                      max={12}
-                                      value={isCurrent ? "" : endMonth}
-                                      onChange={(e) =>
-                                        handleChange({ endMonth: e.target.value })
-                                      }
-                                      placeholder="3"
-                                      disabled={isCurrent}
-                                      className="w-16 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[13px] text-white outline-none disabled:opacity-40"
-                                    />
-                                    <span className="text-[12px] text-fg-muted">
-                                      月
-                                    </span>
-                                  </div>
-                                  <label className="inline-flex items-center gap-2 text-[12px] text-fg-muted">
-                                    <input
-                                      type="checkbox"
-                                      className="h-3 w-3 accent-primary"
-                                      checked={isCurrent}
-                                      onChange={(e) =>
-                                        handleChange({ isCurrent: e.target.checked })
-                                      }
-                                    />
-                                    <span>現在</span>
-                                  </label>
-                                </div>
-                              </div>
-                            </div>
-                            {dirtyPeriod && (
-                              <p className="mt-1 text-[11px] text-[#f4c248]">
-                                未保存の変更があります
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      <PeriodFields
+                        value={periodOf(item.id)}
+                        onChange={(p) => updatePeriod(item.id, p)}
+                      />
+                      {base && base.period.trim() && !isStandardPeriod(base.period) && !periodChanged(item) && (
+                        <p className="mt-1 text-[11px] text-[#f4c248]">
+                          現在の値「{base.period}」は年月の入力欄で読み取れない形式です。入力して保存すると置き換わります。
+                        </p>
+                      )}
+                      {dirtyPeriod && (
+                        <p className="mt-1 text-[11px] text-[#f4c248]">
+                          未保存の変更があります
+                        </p>
+                      )}
                     </div>
                     <div className="col-span-2">
                       <FieldLabel>説明</FieldLabel>
@@ -1255,15 +1203,6 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
               );
             })()}
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleSave(item)}
-                disabled={savingId === item.id}
-                className="rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
-              >
-                {savingId === item.id ? "保存中…" : "保存"}
-              </button>
-              {savedId === item.id && <span className="text-[12px] text-primary">✓ 保存しました</span>}
               <button
                 type="button"
                 onClick={() => handleProofread(item)}
@@ -1289,6 +1228,19 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       >
         ＋ 経歴を追加
       </button>
+      <div className="sticky bottom-0 z-10 mt-4 flex flex-wrap items-center gap-3 border-t border-border-light bg-[#0a0a0a] py-3">
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!dirty || saving || deletingId !== null}
+          className="rounded-[8px] bg-primary px-4 py-1.5 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80 disabled:opacity-40"
+        >
+          {saving ? "保存中…" : "保存"}
+        </button>
+        {saved && <span className="text-[12px] text-primary">✓ 保存しました</span>}
+        {saveError && <span className="text-[12px] text-danger-300">{saveError}</span>}
+      </div>
+      </fieldset>
     </section>
   );
 }
@@ -1643,9 +1595,10 @@ function FlowchartsSection({
 // 並びは選択順（skill_experience_tools.sort_order）。
 type BarTool = { id: string; name: string };
 type ToolChip = { id: string; name: string; icon_url: string | null; slug: string | null; category: string | null };
-type BarWithTools = SkillExperience & { tools: BarTool[] };
+type BarWithTools = SkillExperience & { tools: BarTool[]; isNew?: true };
 type CardWithRelations = SkillCard & {
   bars: BarWithTools[];
+  isNew?: true;
 };
 
 type ExperienceToolLink = {
@@ -1688,6 +1641,7 @@ function SkillsExperienceSection({
   const [newToolNames, setNewToolNames] = useState<Record<string, string>>({});
   const [addingTool, setAddingTool] = useState(false);
   const [movingBars, setMovingBars] = useState(false);
+  const [movingCards, setMovingCards] = useState(false);
 
   const [dirtyCards, setDirtyCards] = useState<Record<string, true>>({});
   const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
@@ -1702,7 +1656,12 @@ function SkillsExperienceSection({
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [{ data: cardRows }, { data: barRows }, { data: linkRows }, { data: toolRows }] = await Promise.all([
+      const [
+        { data: cardRows, error: cardErr },
+        { data: barRows, error: barErr },
+        { data: linkRows, error: linkErr },
+        { data: toolRows, error: toolErr },
+      ] = await Promise.all([
         supabase.from("skill_cards").select("*").order("sort_order", { ascending: true }),
         supabase.from("skill_experience").select("*").order("sort_order",  { ascending: true }),
         supabase
@@ -1711,6 +1670,8 @@ function SkillsExperienceSection({
           .order("sort_order", { ascending: true }),
         supabase.from("tools_vocab").select("id, name, icon_url, slug, category").order("name"),
       ]);
+      const loadErr = cardErr ?? barErr ?? linkErr ?? toolErr;
+      if (loadErr) setGlobalError(`読み込みに失敗しました: ${loadErr.message}`);
       if (!cardRows) { setFetching(false); return; }
 
       // skill_experience_tools → スキル行 ID ごとのツール配列に整形
@@ -1768,22 +1729,43 @@ function SkillsExperienceSection({
     if (bad >= 0) { setCardErrors((p) => ({ ...p, [card.id]: `スキルバー #${bad + 1}: アイコンは「セット」と「名前」を両方入力するか、両方空にしてください。` })); return; }
     setSavingId(card.id); setCardErrors((p) => ({ ...p, [card.id]: "" }));
     const fail = (msg: string) => setCardErrors((p) => ({ ...p, [card.id]: msg }));
+    let cardPersisted = false;
+    const persistedBarIds = new Set<string>();
     try {
       const c = await saveSkillCard({ id: card.id, title: card.title, title_jp: card.title_jp, icon_set: card.icon_set, icon_name: card.icon_name, sort_order: card.sort_order });
       if (c.error) { fail(`カード情報: ${c.error}`); return; }
+      cardPersisted = true;
       for (const [i, bar] of card.bars.entries()) {
         const name = `スキルバー #${i + 1}（${bar.label || "無題"}）`;
         const b = await saveSkillBar({ id: bar.id, card_id: card.id, label: bar.label, label_short: bar.label_short, segments: bar.segments, level: bar.level, description: bar.description, sort_order: bar.sort_order, icon_set: bar.icon_set, icon_name: bar.icon_name, label_note: bar.label_note });
         if (b.error) { fail(`${name}: ${b.error}`); return; }
+        persistedBarIds.add(bar.id);
         const t = await saveExperienceToolIds(bar.id, bar.tools.map((x) => x.id));
         if (t.error) { fail(`${name} のツール: ${t.error}`); return; }
       }
       markCardSaved(card.id);
       setSavedId(card.id); setTimeout(() => setSavedId(null), 2000);
-    } finally { setSavingId(null); }
+    } finally {
+      if (cardPersisted) {
+        setCards((prev) => prev.map((c) => c.id !== card.id ? c : {
+          ...c,
+          isNew: undefined,
+          bars: c.bars.map((b) => (persistedBarIds.has(b.id) ? { ...b, isNew: undefined } : b)),
+        }));
+      }
+      setSavingId(null);
+    }
   };
 
   const handleDeleteCard = async (id: string) => {
+    const target = cards.find((c) => c.id === id);
+    if (target?.isNew) {
+      if (!window.confirm("未保存のカードを破棄します。よろしいですか？")) return;
+      setCards((prev) => prev.filter((c) => c.id !== id));
+      markCardSaved(id);
+      if (expandedId === id) setExpandedId(null);
+      return;
+    }
     if (
       !window.confirm(
         "このスキルカードを削除します。よろしいですか？\nこの操作は取り消せません。"
@@ -1803,23 +1785,45 @@ function SkillsExperienceSection({
     if (expandedId === id) setExpandedId(null);
   };
 
-  const handleAddCard = async () => {
-    const { data } = await addSkillCard(cards.length);
-    if (data) {
-      setCards((prev) => [...prev, { ...data, bars: [], tools: [] }]);
-      setExpandedId(data.id);
-      markCardDirty(data.id);
-    }
+  const handleAddCard = () => {
+    const id = crypto.randomUUID();
+    const sort_order = cards.reduce((m, c) => Math.max(m, c.sort_order), -1) + 1;
+    setCards((prev) => [...prev, {
+      id, title: "New Card", title_jp: "新しいカード",
+      icon_set: "Edit", icon_name: "writing-fluently",
+      sort_order, created_at: null, bars: [], isNew: true,
+    }]);
+    setExpandedId(id);
+    markCardDirty(id);
   };
 
   const handleMoveCard = async (index: number, dir: -1 | 1) => {
     const target = index + dir;
     if (target < 0 || target >= cards.length) return;
+    const prevCards = cards;
+    const movedId = cards[index].id;
     const next = [...cards];
     [next[index], next[target]] = [next[target], next[index]];
     const updated = next.map((c, i) => ({ ...c, sort_order: i }));
+    const persisted = updated.filter((c) => !c.isNew).map(({ id, sort_order }) => ({ id, sort_order }));
     setCards(updated);
-    await moveSkillCards(updated.map(({ id, sort_order }) => ({ id, sort_order })));
+    if (persisted.length === 0) return;
+    setMovingCards(true);
+    try {
+      const { error } = await moveSkillCards(persisted);
+      if (error) {
+        // 並び順だけ元に戻す（待ち時間中の編集や下書きは残す）
+        const order = new Map(prevCards.map((c, i) => [c.id, i]));
+        setCards((prev) =>
+          [...prev]
+            .sort((a, b) => (order.get(a.id) ?? prev.length) - (order.get(b.id) ?? prev.length))
+            .map((c, i) => ({ ...c, sort_order: i })),
+        );
+        setCardErrors((p) => ({ ...p, [movedId]: `並び順を保存できませんでした: ${error}` }));
+      }
+    } finally {
+      setMovingCards(false);
+    }
   };
 
   // ── スキルバー操作 ────────────────────────────────────
@@ -1843,6 +1847,14 @@ function SkillsExperienceSection({
   };
 
   const handleDeleteBar = async (cardId: string, barId: string) => {
+    const targetBar = cards.find((c) => c.id === cardId)?.bars.find((b) => b.id === barId);
+    if (targetBar?.isNew) {
+      if (!window.confirm("未保存のスキルバーを破棄します。よろしいですか？")) return;
+      setCards((prev) => prev.map((c) =>
+        c.id !== cardId ? c : { ...c, bars: c.bars.filter((b) => b.id !== barId) }
+      ));
+      return;
+    }
     if (
       !window.confirm(
         "このスキルバーを削除します。よろしいですか？\nこの操作は取り消せません。"
@@ -1860,18 +1872,17 @@ function SkillsExperienceSection({
     ));
   };
 
-  const handleAddBar = async (cardId: string) => {
+  const handleAddBar = (cardId: string) => {
     const card = cards.find((c) => c.id === cardId);
     if (!card) return;
-    const { data } = await addSkillBar(cardId, card.bars.length);
-    if (data) {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id !== cardId ? c : { ...c, bars: [...c.bars, { ...data, tools: [] }] },
-        ),
-      );
-      markCardDirty(cardId);
-    }
+    const sort_order = card.bars.reduce((m, b) => Math.max(m, b.sort_order), -1) + 1;
+    const bar: BarWithTools = {
+      id: crypto.randomUUID(), card_id: cardId, label: "", label_short: null,
+      segments: LEVEL_SEGMENTS[2], level: SKILL_LEVELS[1].en, description: null, sort_order,
+      icon_set: "Base", icon_name: "system", label_note: null, tools: [], isNew: true,
+    };
+    setCards((prev) => prev.map((c) => (c.id !== cardId ? c : { ...c, bars: [...c.bars, bar] })));
+    markCardDirty(cardId);
   };
 
   // ── スキル行ツール操作（skill_experience_tools）─────────
@@ -1911,7 +1922,7 @@ function SkillsExperienceSection({
       if (!opt) {
         const res = await addToolNameFromWorks(name);
         if (res.error || !res.id) {
-          setGlobalError(res.error ?? "ツールの追加に失敗しました");
+          setCardErrors((p) => ({ ...p, [cardId]: res.error ?? "ツールの追加に失敗しました" }));
           return;
         }
         const newId = res.id;
@@ -1940,12 +1951,27 @@ function SkillsExperienceSection({
     const prevBars = card.bars;
     const nextBars = moveItem(prevBars, index, target).map((b, i) => ({ ...b, sort_order: i }));
     setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, bars: nextBars } : c)));
+    const persistedBars = nextBars.filter((b) => !b.isNew).map(({ id, sort_order }) => ({ id, sort_order }));
+    if (persistedBars.length === 0) return;
     setMovingBars(true);
     try {
-      const { error } = await moveSkillBars(nextBars.map(({ id, sort_order }) => ({ id, sort_order })));
+      const { error } = await moveSkillBars(persistedBars);
       if (error) {
-        setGlobalError(`並び順の保存に失敗しました: ${error}`);
-        setCards((prev) => prev.map((c) => (c.id === cardId ? { ...c, bars: prevBars } : c)));
+        setCardErrors((p) => ({ ...p, [cardId]: `並び順の保存に失敗しました: ${error}` }));
+        // 並び順だけ元に戻す（待ち時間中の編集や下書きは残す）
+        const order = new Map(prevBars.map((b, i) => [b.id, i]));
+        setCards((prev) =>
+          prev.map((c) =>
+            c.id !== cardId
+              ? c
+              : {
+                  ...c,
+                  bars: [...c.bars]
+                    .sort((a, b) => (order.get(a.id) ?? c.bars.length) - (order.get(b.id) ?? c.bars.length))
+                    .map((b, i) => ({ ...b, sort_order: i })),
+                },
+          ),
+        );
       }
     } finally {
       setMovingBars(false);
@@ -1983,16 +2009,19 @@ function SkillsExperienceSection({
                   {dirtyCards[card.id] && <span className="text-[11px] text-[#f4c248]">未保存</span>}
                 </div>
                 <div className="flex items-center gap-2">
+                  {cardErrors[card.id] && !isOpen && (
+                    <span title={cardErrors[card.id]} className="max-w-[320px] truncate text-[11px] text-danger-300">{cardErrors[card.id]}</span>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, -1); }}
-                    disabled={idx === 0 || savingId === card.id}
+                    disabled={idx === 0 || savingId !== null || movingCards}
                     className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                   >↑</button>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleMoveCard(idx, 1); }}
-                    disabled={idx === cards.length - 1 || savingId === card.id}
+                    disabled={idx === cards.length - 1 || savingId !== null || movingCards}
                     className="rounded px-2 py-1 text-[12px] text-system-700 hover:text-white disabled:opacity-30"
                   >↓</button>
                   <span className="text-[12px] text-system-700">{isOpen ? "▲" : "▼"}</span>
@@ -2182,7 +2211,7 @@ function SkillsExperienceSection({
                     {cardErrors[card.id] && <span className="text-[12px] text-danger-300">{cardErrors[card.id]}</span>}
                     <button type="button" onClick={() => handleDeleteCard(card.id)} disabled={deletingId === card.id || savingId === card.id}
                       className="ml-auto rounded-[8px] px-3 py-1.5 text-[13px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40">
-                      {deletingId === card.id ? "削除中…" : "カードを削除"}
+                      {deletingId === card.id ? "削除中…" : card.isNew ? "カードを破棄" : "カードを削除"}
                     </button>
                   </div>
 

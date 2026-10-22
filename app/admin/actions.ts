@@ -405,12 +405,31 @@ function countBy(rows: { [k: string]: string }[] | null, key: string): Map<strin
   return m;
 }
 
+/** PostgREST の 1 回あたりの行数上限（既定 1000）を超えても全件を読む */
+async function fetchAllIds(
+  table: "work_tools" | "skill_experience_tools" | "work_skills",
+  column: "tool_id" | "skill_id",
+): Promise<{ data: { [k: string]: string }[]; error: { message?: string; code?: string } | null }> {
+  const PAGE = 1000;
+  const all: { [k: string]: string }[] = [];
+  for (let from = 0; ; from += PAGE) {
+    // テーブルごとに列が異なるため、型の組み合わせ検査を外す（列名は呼び出し側で正しく渡す）
+    const q = supabase.from(table as "work_tools").select(column as "tool_id");
+    const { data, error } = await q.range(from, from + PAGE - 1);
+    if (error) return { data: [], error };
+    const rows = (data ?? []) as unknown as { [k: string]: string }[];
+    all.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return { data: all, error: null };
+}
+
 export async function listMasterTools(): Promise<{ data: MasterTool[]; error: string | null }> {
   try {
     const [tools, wt, st] = await Promise.all([
       supabase.from("tools_vocab").select("id, name, slug, category, icon_url").order("name"),
-      supabase.from("work_tools").select("tool_id"),
-      supabase.from("skill_experience_tools").select("tool_id"),
+      fetchAllIds("work_tools", "tool_id"),
+      fetchAllIds("skill_experience_tools", "tool_id"),
     ]);
     const err = tools.error ?? wt.error ?? st.error;
     if (err) return { data: [], error: dbErr(err) };
@@ -433,7 +452,7 @@ export async function listMasterSkills(): Promise<{ data: MasterSkill[]; error: 
   try {
     const [skills, ws] = await Promise.all([
       supabase.from("skills_vocab").select("id, label").order("label"),
-      supabase.from("work_skills").select("skill_id"),
+      fetchAllIds("work_skills", "skill_id"),
     ]);
     const err = skills.error ?? ws.error;
     if (err) return { data: [], error: dbErr(err) };
@@ -649,6 +668,44 @@ export async function addToolNameFromWorks(
   }
 }
 
+// ─── career_items ─────────────────────────────────────────────────────────────
+
+export async function saveCareerItem(item: {
+  id: string;
+  role: string;
+  company: string;
+  period: string;
+  description: string;
+  sort_order: number;
+}): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from("career_items")
+      .upsert(item, { onConflict: "id" })
+      .select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "経歴を保存できませんでした（権限がありません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function deleteCareerItem(id: string): Promise<{ error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from("career_items")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: dbErr(error) };
+    if (!data?.length) return { error: "経歴を削除できませんでした（権限またはデータが見つかりません）" };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
 // ─── skill_cards CRUD ─────────────────────────────────────────────────────────
 
 export async function saveSkillCard(card: {
@@ -656,8 +713,9 @@ export async function saveSkillCard(card: {
   icon_set: string; icon_name: string; sort_order: number;
 }): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_cards").upsert(card);
+    const { data, error } = await supabase.from("skill_cards").upsert(card).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "カードを保存できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -675,23 +733,6 @@ export async function deleteSkillCard(id: string): Promise<{ error: string | nul
   }
 }
 
-export async function addSkillCard(sortOrder: number): Promise<{
-  data: import("@/src/types/supabase").Tables<"skill_cards"> | null;
-  error: string | null;
-}> {
-  try {
-    const { data, error } = await supabase.from("skill_cards").insert({
-      title: "New Card", title_jp: "新しいカード",
-      icon_set: "Edit", icon_name: "writing-fluently",
-      sort_order: sortOrder,
-    }).select().single();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
 export async function moveSkillCards(
   updates: { id: string; sort_order: number }[]
 ): Promise<{ error: string | null }> {
@@ -701,13 +742,15 @@ export async function moveSkillCards(
         supabase.from("skill_cards").update({ sort_order }).eq("id", id).select("id")
       )
     );
-    const failed = results.find((result) => result.error || !result.data?.length);
-    if (failed) {
-      return { error: failed.error?.message ?? "並び順を更新できませんでした（権限またはデータを確認してください）" };
+    // RLS で拒否されるとエラーなしで 0 行更新になるため、更新行が無ければ失敗として返す
+    const failed = results.find((r) => r.error);
+    if (failed?.error) return { error: dbErr(failed.error) };
+    if (results.some((r) => !r.data?.length)) {
+      return { error: "並び順を更新できませんでした（権限またはデータが見つかりません）" };
     }
     return { error: null };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+    return { error: errMsg(e) };
   }
 }
 
@@ -742,8 +785,9 @@ export async function saveSkillBar(bar: {
   icon_set: string | null; icon_name: string | null; label_note: string | null;
 }): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.from("skill_experience").upsert(bar);
+    const { data, error } = await supabase.from("skill_experience").upsert(bar).select("id");
     if (error) return { error: error.message };
+    if (!data?.length) return { error: "スキルバーを保存できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -758,23 +802,6 @@ export async function deleteSkillBar(barId: string): Promise<{ error: string | n
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function addSkillBar(cardId: string, sortOrder: number): Promise<{
-  data: import("@/src/types/supabase").Tables<"skill_experience"> | null;
-  error: string | null;
-}> {
-  try {
-    const { data, error } = await supabase.from("skill_experience").insert({
-      card_id: cardId, label: "", label_short: null,
-      segments: 5, level: "Lv.3 Senior", sort_order: sortOrder,
-      icon_set: "Base", icon_name: "system", label_note: null,
-    }).select().single();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
   }
 }
 

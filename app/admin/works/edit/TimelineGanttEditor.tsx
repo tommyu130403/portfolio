@@ -81,9 +81,29 @@ function RaciToggle({ k, pressed, onToggle }: { k: RaciKey; pressed: boolean; on
   );
 }
 
-export default function TimelineGanttEditor({ value, onChange, onInsertTemplate }: { value: TimelineData; onChange: (v: TimelineData) => void; onInsertTemplate?: () => void }) {
+const phaseSelectClass =
+  "!w-56 rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] outline-none transition-colors focus:border-primary";
+const phaseAddButton =
+  "shrink-0 rounded-[6px] border border-border-light px-3 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40";
+
+export default function TimelineGanttEditor({
+  value,
+  onChange,
+  onInsertTemplate,
+  phaseNames,
+  onAddPhaseName,
+}: {
+  value: TimelineData;
+  onChange: (v: TimelineData) => void;
+  onInsertTemplate?: () => void;
+  phaseNames: string[];
+  onAddPhaseName: (name: string) => Promise<{ error: string | null; name?: string }>;
+}) {
   const { totalUnits, phases } = value;
   const [selected, setSelected] = useState<number | null>(null);
+  const [newPhaseName, setNewPhaseName] = useState("");
+  const [phaseError, setPhaseError] = useState<string | null>(null);
+  const [addingPhase, setAddingPhase] = useState(false);
   const [preview, setPreview] = useState<DragPreview | null>(null);
   const [keys, setKeys] = useState<string[]>(() => phases.map(newKey));
   // 外部から件数が変わった場合（再読込など）は index で補う
@@ -98,6 +118,19 @@ export default function TimelineGanttEditor({ value, onChange, onInsertTemplate 
   const patch = (i: number, p: Partial<TimelinePhase>) =>
     onChange({ ...value, phases: phases.map((ph, idx) => (idx === i ? { ...ph, ...p } : ph)) });
   const setUnits = (n: number) => onChange({ ...value, totalUnits: clamp(n, minUnits, maxUnits) });
+  const handleAddPhaseName = async (index: number) => {
+    if (addingPhase || !newPhaseName.trim()) return;
+    setAddingPhase(true);
+    setPhaseError(null);
+    const res = await onAddPhaseName(newPhaseName);
+    if (res.error || !res.name) {
+      setPhaseError(res.error ?? "工程名を追加できませんでした");
+    } else {
+      patch(index, { label: res.name });
+      setNewPhaseName("");
+    }
+    setAddingPhase(false);
+  };
   const addPhase = () => {
     onChange({ ...value, phases: [...phases, { label: "", start: 1, span: 2, raci: ["R"] }] });
     setKeys((k) => [...phases.map((_, i) => k[i] ?? `i${i}`), newKey()]);
@@ -327,7 +360,42 @@ export default function TimelineGanttEditor({ value, onChange, onInsertTemplate 
       ) : (
         <div key={sel} className="flex flex-col gap-2 rounded-[8px] border border-border-light bg-[#161616] p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Input className="!w-56" value={ph.label} onChange={(v) => patch(sel, { label: v })} placeholder="工程名" />
+            <div className="flex flex-col gap-2">
+              <select
+                className={`${phaseSelectClass} ${ph.label ? "text-white" : "text-system-750"}`}
+                value={ph.label}
+                onChange={(e) => patch(sel, { label: e.target.value })}
+              >
+                <option value="">（工程名を選択）</option>
+                {ph.label && !phaseNames.includes(ph.label) && <option value={ph.label}>{ph.label}（未登録）</option>}
+                {phaseNames.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+              <div
+                className="flex items-center gap-2"
+                onKeyDown={(e) => {
+                  if ((e.target as HTMLElement).tagName !== "INPUT") return;
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                    e.preventDefault();
+                    void handleAddPhaseName(sel);
+                  }
+                }}
+              >
+                <Input className="!w-44" value={newPhaseName} onChange={setNewPhaseName} placeholder="新しい工程名" />
+                <button
+                  type="button"
+                  className={phaseAddButton}
+                  disabled={addingPhase || !newPhaseName.trim()}
+                  onClick={() => void handleAddPhaseName(sel)}
+                >
+                  追加
+                </button>
+              </div>
+              {phaseError && <p className="text-[12px] text-danger-300">{phaseError}</p>}
+            </div>
             <span className="ml-auto flex items-center gap-1">
               <MoveButtons
                 index={sel}

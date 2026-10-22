@@ -66,7 +66,7 @@ export default function WorkCategoryField({
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
-        className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary"
+        className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] outline-none transition-colors focus:border-primary ${value ? "text-white" : "text-system-750"}`}
       >
         <option value="">（未設定）</option>
         {isLegacy && <option value={value}>{value}（未登録）</option>}

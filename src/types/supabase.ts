@@ -10,36 +10,78 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
       career_items: {
         Row: {
           company: string
+          company_id: string | null
           created_at: string | null
           description: string
           id: string
           period: string
           role: string
+          role_id: string | null
           sort_order: number
         }
         Insert: {
           company?: string
+          company_id?: string | null
           created_at?: string | null
           description?: string
           id?: string
           period?: string
           role?: string
+          role_id?: string | null
           sort_order?: number
         }
         Update: {
           company?: string
+          company_id?: string | null
           created_at?: string | null
           description?: string
           id?: string
           period?: string
           role?: string
+          role_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "career_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "career_items_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
           sort_order?: number
         }
         Relationships: []
@@ -68,6 +110,27 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      phase_names: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -101,6 +164,27 @@ export type Database = {
           name_jp?: string
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      roles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -289,6 +373,39 @@ export type Database = {
         }
         Relationships: []
       }
+      work_roles: {
+        Row: {
+          role_id: string
+          sort_order: number
+          work_id: string
+        }
+        Insert: {
+          role_id: string
+          sort_order?: number
+          work_id: string
+        }
+        Update: {
+          role_id?: string
+          sort_order?: number
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_roles_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_skills: {
         Row: {
           skill_id: string
@@ -315,6 +432,42 @@ export type Database = {
           },
           {
             foreignKeyName: "work_skills_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_stakeholder_counts: {
+        Row: {
+          headcount: number
+          role_id: string
+          sort_order: number
+          work_id: string
+        }
+        Insert: {
+          headcount: number
+          role_id: string
+          sort_order?: number
+          work_id: string
+        }
+        Update: {
+          headcount?: number
+          role_id?: string
+          sort_order?: number
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_stakeholder_counts_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_stakeholder_counts_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
             referencedRelation: "works"
@@ -428,8 +581,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      portfolio_access_role: { Args: never; Returns: string }
+      rename_company: {
+        Args: { p_id: string; p_name: string }
+        Returns: undefined
+      }
+      rename_phase_name: {
+        Args: { p_id: string; p_name: string }
+        Returns: undefined
+      }
+      rename_role: {
+        Args: { p_id: string; p_name: string }
+        Returns: undefined
+      }
       rename_work_category: {
         Args: { p_id: string; p_name: string }
+        Returns: undefined
+      }
+      save_work_with_relations: {
+        Args: {
+          p_role_ids: string[]
+          p_skill_labels: string[]
+          p_stakeholder_counts: Json
+          p_tool_names: string[]
+          p_work: Json
+        }
         Returns: undefined
       }
     }
@@ -450,12 +626,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -479,11 +655,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -504,11 +680,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -529,11 +705,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -546,11 +722,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

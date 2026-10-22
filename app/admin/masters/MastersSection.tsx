@@ -11,24 +11,37 @@ import {
 import SectionTitle from "../SectionTitle";
 import ProtectedImage from "@/components/ProtectedImage";
 import {
+  addNameMaster,
   addSkillVocab,
   addToolVocab,
   addWorkCategory,
   checkWorkCategoryDeletable,
+  deleteCompany,
+  deletePhaseName,
+  deleteRole,
   deleteSkillVocab,
   deleteToolVocab,
   deleteWorkCategory,
+  listMasterCompanies,
+  listMasterPhaseNames,
+  listMasterRoles,
   listMasterSkills,
   listMasterTools,
   listWorkCategories,
+  renameNameMaster,
   renameSkillVocab,
   renameWorkCategory,
   updateToolVocab,
+  type MasterCompany,
+  type MasterPhaseName,
+  type MasterRole,
   type MasterSkill,
   type MasterTool,
+  type NameMasterTable,
   type WorkCategory,
 } from "../actions";
 import { TOOL_CATEGORY_KEYS } from "./toolCategories";
+import NameMasterList from "./NameMasterList";
 
 const smallButton =
   "shrink-0 rounded-[6px] border border-border-light px-3 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40";
@@ -67,12 +80,26 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [categoryDraft, setCategoryDraft] = useState("");
 
+  const [companies, setCompanies] = useState<MasterCompany[]>([]);
+  const [roles, setRoles] = useState<MasterRole[]>([]);
+  const [phaseNames, setPhaseNames] = useState<MasterPhaseName[]>([]);
+
   const refresh = useCallback(async () => {
-    const [t, s, c] = await Promise.all([listMasterTools(), listMasterSkills(), listWorkCategories()]);
+    const [t, s, c, co, ro, ph] = await Promise.all([
+      listMasterTools(),
+      listMasterSkills(),
+      listWorkCategories(),
+      listMasterCompanies(),
+      listMasterRoles(),
+      listMasterPhaseNames(),
+    ]);
     if (!t.error) setTools(t.data);
     if (!s.error) setSkills(s.data);
     if (!c.error) setCategories(c.data);
-    setError(t.error ?? s.error ?? c.error);
+    if (!co.error) setCompanies(co.data);
+    if (!ro.error) setRoles(ro.data);
+    if (!ph.error) setPhaseNames(ph.data);
+    setError(t.error ?? s.error ?? c.error ?? co.error ?? ro.error ?? ph.error);
   }, []);
 
   useEffect(() => {
@@ -86,17 +113,21 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
   }, [refresh]);
 
   /** busy ガード付きで操作を実行し、成功なら再読込、失敗ならエラー表示 */
-  const run = async (action: () => Promise<{ error: string | null }>, onSuccess?: () => void) => {
-    if (busy) return;
+  const run = async (
+    action: () => Promise<{ error: string | null }>,
+    onSuccess?: () => void,
+  ): Promise<boolean> => {
+    if (busy) return false;
     setBusy(true);
     try {
       const res = await action();
       if (res.error) {
         setError(res.error);
-        return;
+        return false;
       }
       onSuccess?.();
       await refresh();
+      return true;
     } finally {
       setBusy(false);
     }
@@ -177,13 +208,34 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
     }
   };
 
+  const addName = (table: NameMasterTable) => async (name: string) => {
+    const trimmed = name.trim();
+    let existed = false;
+    const ok = await run(async () => {
+      const res = await addNameMaster(table, name);
+      existed = !!res.existed;
+      return res;
+    });
+    if (ok && existed) setError(`「${trimmed}」はすでにあります`);
+    return ok && !existed;
+  };
+
+  const renameName = (table: NameMasterTable) => (id: string, name: string) =>
+    run(() => renameNameMaster(table, id, name));
+
+  const handleDeleteName = (label: string, remove: (id: string) => Promise<{ error: string | null }>) =>
+    (item: { id: string; name: string }) => {
+      if (!window.confirm(`${label}「${item.name}」を削除しますか？`)) return;
+      void run(() => remove(item.id));
+    };
+
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
 
   return (
     <section id="masters" className="scroll-mt-8">
       <SectionTitle label="Masters" title="マスタ管理" />
       <p className="mb-6 text-[13px] text-fg-muted">
-        ツール・スキル・作品カテゴリの語彙を管理します。使われている語彙は削除できません。
+        ツール・スキル・作品カテゴリ・会社・役割・工程名の語彙を管理します。使われている語彙は削除できません。
       </p>
       {error && <p className="mb-4 text-[13px] text-danger-300">{error}</p>}
 
@@ -454,6 +506,52 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
           );
         })}
       </ul>
+
+      <NameMasterList
+        title="会社（companies）"
+        placeholder="新しい会社名"
+        items={companies.map((c) => ({
+          id: c.id,
+          name: c.name,
+          usage: `経歴 ${c.careerCount} 件`,
+          used: c.careerCount > 0,
+        }))}
+        busy={busy}
+        onAdd={addName("companies")}
+        onRename={renameName("companies")}
+        onDelete={handleDeleteName("会社", deleteCompany)}
+      />
+
+      <NameMasterList
+        title="役割（roles）"
+        placeholder="新しい役割名"
+        hint="作品の担当役割・体制内訳で使う役割名には「・」「、」「,」や半角数字を入れないでください（公開ページで分割されます）"
+        items={roles.map((r) => ({
+          id: r.id,
+          name: r.name,
+          usage: `経歴 ${r.careerCount} / 作品 ${r.workCount} / 体制内訳 ${r.breakdownCount}`,
+          used: r.careerCount + r.workCount + r.breakdownCount > 0,
+        }))}
+        busy={busy}
+        onAdd={addName("roles")}
+        onRename={renameName("roles")}
+        onDelete={handleDeleteName("役割", deleteRole)}
+      />
+
+      <NameMasterList
+        title="工程名（phase_names）"
+        placeholder="新しい工程名"
+        items={phaseNames.map((p) => ({
+          id: p.id,
+          name: p.name,
+          usage: `作品 ${p.workCount} 件`,
+          used: p.workCount > 0,
+        }))}
+        busy={busy}
+        onAdd={addName("phase_names")}
+        onRename={renameName("phase_names")}
+        onDelete={handleDeleteName("工程名", deletePhaseName)}
+      />
     </section>
   );
 }

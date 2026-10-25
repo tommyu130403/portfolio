@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { WorkMarkdownDocument } from "./WorkMarkdown";
+import { WorkMarkdownDocument, isMockupSrc } from "./WorkMarkdown";
 import ProtectedImage from "./ProtectedImage";
 import { buildImageMarkdown, widthToCss, type ImageAlign } from "@/lib/image-layout";
 import { container, type DeviceMode } from "@/lib/design-tokens";
@@ -21,7 +21,7 @@ import { container, type DeviceMode } from "@/lib/design-tokens";
  * - 生 Markdown の textarea ＋ ツールバー ＋ 編集 / 分割 / プレビュー の3モード
  * - プレビューは公開側と同一の共有レンダラ（WorkMarkdownDocument）で描画
  * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
- * - 画像・リンク・グリッド・表・カードは挿入ダイアログから、作品カード（`::: workcard`）は作品ピッカーから（画像は幅 / 配置 / 倍率 / キャプション指定）
+ * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから
  * - 分割表示では本文欄とプレビューのスクロール位置を割合で連動する
  * - 画像は本文欄への貼り付けでもアップロードできる（onUploadImage を渡した場合）。貼り付け画像は画像ダイアログ（配置・横幅・倍率）を経て挿入する
  *   貼り付け時は本文に仮の行（![画像をアップロード中…](uploading)）を置き、挿入時にその行を置き換える（キャンセル・失敗時は除去）。
@@ -259,7 +259,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   const syncLock = useRef<HTMLElement | null>(null);
   // 直近に確認したプレビューのスクロール可能量。変わっていたら高さの変化によるブラウザの位置切り詰めとみなす
   const previewMax = useRef<number | null>(null);
-  const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table" | "card">(null);
+  const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table" | "card" | "mockup">(null);
   const [linkLabel, setLinkLabel] = useState("");
   // リンクの挿入先。ダイアログ表示中に textarea の選択がブラウザ側で変わっても影響されないよう、ボタン押下時に記録する
   const [linkRange, setLinkRange] = useState({ start: 0, end: 0 });
@@ -526,6 +526,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           <TBtn label="グリッド" title="複数カラムのグリッドを挿入" onClick={() => setDialog("grid")} />
           <TBtn label="表" title="表を挿入（項目-値 / グリッド）" onClick={() => setDialog("table")} />
           <TBtn label="カード" title="見出し＋本文のカードを挿入" onClick={() => setDialog("card")} />
+          <TBtn label="モックアップ" title="スマホ / ノートPC のモックアップ枠にスクリーンショットを入れて挿入" onClick={() => setDialog("mockup")} />
           {onPickFlowchart && (
             <TBtn
               label="フローチャート"
@@ -672,6 +673,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
       {dialog === "grid" && <GridDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "table" && <TableDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "card" && <CardDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
+      {dialog === "mockup" && <MockupDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} onPickImage={onPickImage} />}
     </div>
   );
 };
@@ -1015,6 +1017,143 @@ function CardDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
         <DLabel>本文（Markdown）</DLabel>
         <textarea className={`${dInput} min-h-[120px] resize-y`} value={body} onChange={(e) => setBody(e.target.value)} placeholder="本文" />
       </div>
+    </DialogShell>
+  );
+}
+
+/* ─── モックアップダイアログ ─────────────────────── */
+
+function MockupDialog({
+  onClose,
+  onInsert,
+  onPickImage,
+}: {
+  onClose: () => void;
+  onInsert: (md: string) => void;
+  onPickImage?: () => Promise<{ url: string; alt?: string } | null>;
+}) {
+  const [device, setDevice] = useState<"phone" | "laptop">("phone");
+  const [src1, setSrc1] = useState("");
+  const [src2, setSrc2] = useState("");
+  const [browser, setBrowser] = useState(false);
+  const [url, setUrl] = useState("");
+  const [error, setError] = useState("");
+
+  const submit = () => {
+    // 空白は記法の区切りになるため画像 URL / URL 欄から取り除く
+    const clean = (v: string) => v.replace(/\s+/g, "");
+    const cleanSrc = (v: string) => v.trim().replace(/\s+/g, "%20");
+    const srcs = (device === "phone" ? [src1, src2] : [src1]).map(cleanSrc).filter(Boolean);
+    if (srcs.length === 0) {
+      setError("画像を選んでください");
+      return;
+    }
+    if (srcs.some((s) => !isMockupSrc(s))) {
+      setError("画像の URL は http(s)://〜 か /〜 の形で入力してください");
+      return;
+    }
+    const parts = ["::: mockup", device, ...srcs.map((s) => `src=${s}`)];
+    if (device === "laptop" && browser) {
+      parts.push("browser");
+      const u = clean(url);
+      if (u) parts.push(`url=${u}`);
+    }
+    onInsert(parts.join(" "));
+    onClose();
+  };
+
+  const imageField = (label: string, value: string, setValue: (v: string) => void) => (
+    <div>
+      <DLabel>{label}</DLabel>
+      <div className="flex items-center gap-2">
+        <input
+          className={dInput}
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setError("");
+          }}
+          placeholder="https://..."
+        />
+        {onPickImage && (
+          <button
+            type="button"
+            className={`${dBtnGhost} shrink-0 whitespace-nowrap`}
+            onClick={async () => {
+              const picked = await onPickImage();
+              if (picked) {
+                setValue(picked.url);
+                setError("");
+              }
+            }}
+          >
+            📁 選択
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <DialogShell
+      title="モックアップを挿入"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className={dBtnGhost} onClick={onClose}>キャンセル</button>
+          <button type="button" className={dBtnPrimary} onClick={submit}>挿入</button>
+        </>
+      }
+    >
+      <div>
+        <DLabel>デバイス</DLabel>
+        <div className="flex items-center gap-1.5">
+          {(
+            [
+              ["phone", "スマホ"],
+              ["laptop", "ノートPC"],
+            ] as const
+          ).map(([d, label]) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDevice(d)}
+              className={`rounded-[6px] border px-2.5 py-1 text-[11px] transition-colors ${
+                device === d
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border-light text-fg-muted hover:text-white"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {device === "phone" ? (
+        <>
+          {imageField("画像 1", src1, setSrc1)}
+          {imageField("画像 2（任意）", src2, setSrc2)}
+        </>
+      ) : (
+        <>
+          {imageField("画像", src1, setSrc1)}
+          <label className="flex items-center gap-2 text-[12px] text-fg-muted">
+            <input type="checkbox" checked={browser} onChange={(e) => setBrowser(e.target.checked)} className="accent-primary" />
+            ブラウザバーを表示
+          </label>
+          <div>
+            <DLabel>URL（任意・例: example.com）</DLabel>
+            <input
+              className={`${dInput} disabled:opacity-40`}
+              value={url}
+              disabled={!browser}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="example.com"
+            />
+          </div>
+        </>
+      )}
+      {error && <p className="text-[11px] text-danger-300">{error}</p>}
     </DialogShell>
   );
 }

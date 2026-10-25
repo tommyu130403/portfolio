@@ -17,6 +17,7 @@ import InfoCard from "@/components/InfoCard";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
 import ProtectedImage from "@/components/ProtectedImage";
+import { PhoneMock, LaptopMock } from "@/components/DeviceMock";
 import WorkDetailHeader from "@/components/WorkDetailHeader";
 import WorkDetailContent from "@/components/WorkDetailContent";
 import SideMenuBar from "@/components/SideMenuBar";
@@ -154,9 +155,12 @@ const NAV_SECTIONS = [
 const SEMANTIC_SWATCHES = [
   { kind: "bg",     cls: "bg-primary",          token: "semantic.primary",      value: semantic.primary,      figma: "Main/Primary",       ref: "main-base" },
   { kind: "bg",     cls: "bg-secondary",        token: "semantic.secondary",    value: semantic.secondary,    figma: "Main/Secondary",     ref: "main-300" },
-  { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Main",     ref: "system-white" },
-  { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Sub",      ref: "system-500" },
-  { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",       ref: "system-400" },
+  { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Primary",   ref: "system-300" },
+  { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Secondary", ref: "system-500" },
+  { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",        ref: "system-500" },
+  { kind: "text",   cls: "text-fg-subtle",      token: "semantic.fgSubtle",     value: semantic.fgSubtle,     figma: "Text/Body/Tertiary",  ref: "system-700" },
+  { kind: "text",   cls: "text-fg-link",        token: "semantic.fgLink",       value: semantic.fgLink,       figma: "Text/Link",           ref: "main-base" },
+  { kind: "text",   cls: "text-fg-link-hover",  token: "semantic.fgLinkHover",  value: semantic.fgLinkHover,  figma: "Text/Link-hover",     ref: "main-050" },
   { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "system-900" },
   { kind: "bg",     cls: "bg-surface-light",    token: "semantic.surfaceLight", value: semantic.surfaceLight, figma: "Background/Light",   ref: "system-875" },
   { kind: "border", cls: "border-border",       token: "semantic.border",       value: semantic.border,       figma: "Border/Default",     ref: "system-825" },
@@ -844,6 +848,7 @@ function WorkVizModalDemo() {
       {kind && (
         <WorkVizModal
           kind={kind}
+          period={{ start: { year: 2024, month: 4 }, end: { year: 2024, month: 6 }, isCurrent: false }}
           timeline={{ totalUnits: 16, phases: [
             { label: "Research", start: 1, span: 3, raci: ["R", "A"] },
             { label: "Design", start: 3, span: 4, raci: ["C"] },
@@ -882,7 +887,7 @@ function ComponentsSection() {
         <ComponentPreview title="ProtectedImage" description="Portfolio ストレージの画像は認証後に署名付きURLで表示。ローカル画像や外部画像はそのまま表示する">
           <ProtectedImage src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/figma.svg`} alt="Figma" className="h-8 w-8" />
         </ComponentPreview>
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Title/EN（Avenir Heavy 38px）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）。03 は Figma に存在せず実装のみ">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px mint-050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）。03 は Figma に存在せず実装のみ">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
@@ -1074,10 +1079,11 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkProcessChart"
-          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画。Phase 列なし・フェーズ名はバーの中の右端・RACI 12px"
+          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画。目盛りは作品の期間から作る絶対日付の 2 段表示（3 か月以下は 年月 / 週、4 か月以上は 年 / 月）。ツールチップの見出しは工程名。Phase 列なし・フェーズ名はバーの中の右端・RACI 12px"
         >
           <div className="w-full">
             <WorkProcessChart
+              period={{ start: { year: 2024, month: 4 }, end: { year: 2024, month: 6 }, isCurrent: false }}
               data={{ totalUnits: 12, phases: [
                 { label: "Research", start: 1, span: 3, raci: ["R", "A"], note: { title: "調査", body: "ヒアリングを実施" } },
                 { label: "Design", start: 3, span: 4, raci: ["C"] },
@@ -1085,6 +1091,22 @@ function ComponentsSection() {
                 { label: "QA", start: 9, span: 2, raci: ["R"] },
                 { label: "Launch Preparation", start: 11, span: 2, raci: ["A"] },
                 { label: "Release", start: 12, span: 1, raci: ["I"] },
+              ] }}
+            />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkProcessChart（月モード）"
+          description="期間が 4 か月以上のとき。上段が年、下段が月。幅が足りないラベルは間引かれる"
+        >
+          <div className="w-full">
+            <WorkProcessChart
+              period={{ start: { year: 2024, month: 4 }, end: { year: 2024, month: 12 }, isCurrent: false }}
+              data={{ totalUnits: 36, phases: [
+                { label: "Research", start: 1, span: 8, raci: ["R", "A"], note: { body: "ヒアリングと競合調査" } },
+                { label: "Design", start: 9, span: 12, raci: ["C"] },
+                { label: "Development", start: 21, span: 16, raci: ["R"] },
               ] }}
             />
           </div>
@@ -1155,6 +1177,24 @@ function ComponentsSection() {
               <WorkPagerCard category="UI デザイン" title="社内向け管理ツールの刷新（direction なし・作品本文の作品カード）" thumbnail="/window.svg" href="#" />
             </div>
             <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" href="#" />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="DeviceMock"
+          description="スクリーンショットを入れるデバイス枠。PhoneMock は iPhone 風（既定幅 126px・className で上書き。作品詳細の上部は最大2枚横並び）。LaptopMock はノートPC風（黒ベゼルの画面＋土台・親の幅いっぱい・画像は 16:10 で上端から切り取り）で、ブラウザバー（赤黄緑の点＋中央の URL）は任意。作品本文には `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` で挿入する（url を書くとバーも出る・本文のスマホは幅 180px・ノートPCは最大 640px）。Figma のマスターはまだ無い"
+        >
+          <div className="flex w-full flex-col gap-8">
+            <div className="flex items-start gap-6">
+              <PhoneMock src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" className="w-[180px]" />
+              <PhoneMock src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" className="w-[180px]" />
+            </div>
+            <div className="w-full max-w-[640px]">
+              <LaptopMock src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80" />
+            </div>
+            <div className="w-full max-w-[640px]">
+              <LaptopMock src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80" browser url="example.com" />
+            </div>
           </div>
         </ComponentPreview>
 

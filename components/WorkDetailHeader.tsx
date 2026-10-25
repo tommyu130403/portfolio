@@ -1,13 +1,15 @@
 "use client";
 
-import { type FC, useEffect, useMemo, useState } from "react";
+import { type FC, useMemo, useState } from "react";
 import Icon from "./Icon";
 import Tag from "./Tag";
 import Tooltip from "./Tooltip";
 import { resolveLogoSlug } from "@/src/components/SkillsCardGrid";
 import WorkVizModal from "./WorkVizModal";
 import ProtectedImage from "./ProtectedImage";
+import { PhoneMock, ScreenshotLightbox } from "./DeviceMock";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
+import { periodFromRow } from "@/lib/timeline-scale";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
@@ -50,54 +52,6 @@ type WorkDetailHeaderProps = {
 };
 
 /* ------------------------------------------------------------------ *
- * デバイスモック（iPhone 風 CSS フレーム・最大2枚を横並び）
- * ------------------------------------------------------------------ */
-
-const DeviceMock: FC<{ src: string; onClick?: () => void }> = ({ src, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-label="スクリーンショットを拡大表示"
-    className="w-[126px] shrink-0 aspect-[126/257] cursor-zoom-in overflow-hidden rounded-[24px] border-[3px] border-[#0a0a0a] bg-[#0a0a0a] shadow-xl"
-  >
-    <ProtectedImage src={src} alt="" className="h-full w-full object-cover" />
-  </button>
-);
-
-/* ------------------------------------------------------------------ *
- * スクリーンショット拡大ライトボックス（全画面ボタンで開く）
- * ------------------------------------------------------------------ */
-
-const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void }> = ({ shots, onClose }) => {
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center gap-6 overflow-auto p-10"
-      style={{ backgroundColor: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      {shots.map((src, i) => (
-        <ProtectedImage
-          key={i}
-          src={src}
-          alt=""
-          className="max-h-[90vh] w-auto rounded-[24px] border-[3px] border-[#0a0a0a] object-contain"
-        />
-      ))}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ *
  * 上部ブロック本体（Figma 787:9916 / _ProjectContents のブロック①②）
  * ------------------------------------------------------------------ */
 
@@ -110,6 +64,11 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
   // 「全画面」ボタンで開く構造化ビジュアル（データが無ければボタン自体を非表示）。
   // jsonb のパースは該当カラムが変わったときだけ（WorkEditor と同じ useMemo 規約）
   const timeline = useMemo(() => parseTimeline(work.timeline), [work.timeline]);
+  const { start_date, end_date, is_current } = work;
+  const timelinePeriod = useMemo(
+    () => periodFromRow({ start_date, end_date, is_current }),
+    [start_date, end_date, is_current],
+  );
   const stakeholders = useMemo(() => parseStakeholders(work.stakeholders), [work.stakeholders]);
   const roles = (work.role ?? "").split(/[・、,]/).map((r) => r.trim()).filter(Boolean);
   const stakeholderTags = useMemo(() => parseStakeholderBreakdown(work.stakeholder_breakdown), [work.stakeholder_breakdown]);
@@ -120,7 +79,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
       {shots.length > 0 && (
         <div className="flex w-full items-start justify-center gap-6">
           {shots.slice(0, 2).map((src, i) => (
-            <DeviceMock key={i} src={src} onClick={() => setLightboxOpen(true)} />
+            <PhoneMock key={i} src={src} onClick={() => setLightboxOpen(true)} />
           ))}
         </div>
       )}
@@ -247,6 +206,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
         <WorkVizModal
           kind={vizModal}
           timeline={timeline}
+          period={timelinePeriod}
           stakeholders={stakeholders}
           onClose={() => setVizModal(null)}
         />

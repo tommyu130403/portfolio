@@ -1,5 +1,6 @@
-import type { CSSProperties, FC } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FC, type RefObject } from "react";
 import Icon, { ICON_SETS, type IconSet } from "./Icon";
+import { labelStep, scaleForTimeline, type TimelinePeriod, type TimelineScale } from "@/lib/timeline-scale";
 
 /**
  * Work 詳細の構造化ビジュアル（Figma: _Process / _Stakeholder）。
@@ -18,7 +19,7 @@ export type TimelinePhase = {
   raci: RaciKey[];
   /** 進捗率 0-100 */
   progress?: number;
-  /** ホバーツールチップ（title=小見出し / body=本文） */
+  /** ホバーツールチップ（body=本文。見出しは工程名を使う。title は旧データ互換のため保持するが表示しない） */
   note?: { title?: string; body?: string };
 };
 export type TimelineData = { totalUnits: number; phases: TimelinePhase[] };
@@ -112,23 +113,78 @@ function RaciBadge({ k }: { k: RaciKey }) {
   );
 }
 
-export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
-  const { totalUnits, phases } = data;
+/** 要素の幅（px）を監視する。計測前（SSR・初回描画）は 0 */
+export function useElementWidth(ref: RefObject<HTMLElement | null>): number {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return width;
+}
+
+const NO_PERIOD: TimelinePeriod = { start: null, end: null, isCurrent: false };
+
+/** 目盛り 2 段（上段: 年 or 月 / 下段: 月 or 週 or W 番号）。colPx は 1 週あたりの幅（0 なら未計測で全ラベル表示） */
+export const TimelineAxis: FC<{ scale: TimelineScale; colPx: number }> = ({ scale, colPx }) => {
+  const tickPx = colPx * scale.unitsPerTick;
+  const minLabelPx = scale.mode === "month" ? 28 : scale.mode === "week" ? 14 : 22;
+  const step = labelStep(tickPx, minLabelPx);
+  return (
+    <div className="flex flex-col">
+      {scale.groups.length > 0 && (
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${scale.totalUnits}, minmax(0,1fr))` }}>
+          {scale.groups.map((g, gi) => {
+            const showText = colPx <= 0 || g.span * colPx >= g.label.length * 7 + 12;
+            return (
+              <p
+                key={gi}
+                title={g.label}
+                className="font-en overflow-hidden whitespace-nowrap border-l border-border pl-1.5 text-left text-[11px] font-extrabold leading-6 tracking-[0.55px] text-system-700"
+                style={{ gridColumn: `span ${g.span}` }}
+              >
+                {showText ? g.label : ""}
+              </p>
+            );
+          })}
+        </div>
+      )}
+      <div className="grid" style={{ gridTemplateColumns: `repeat(${scale.ticks.length}, minmax(0,1fr))` }}>
+        {scale.ticks.map((t, i) => (
+          <p
+            key={i}
+            className={`font-en overflow-hidden whitespace-nowrap text-center text-[11px] font-extrabold leading-6 tracking-[0.55px] text-system-700 ${
+              scale.groups.length > 0 ? "border-l border-border" : ""
+            }`}
+          >
+            {i % step === 0 ? t.label : ""}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod | null }> = ({ data, period }) => {
+  const { phases } = data;
+  const scale = scaleForTimeline(data, period ?? NO_PERIOD);
+  const { totalUnits } = scale;
+  const axisRef = useRef<HTMLDivElement>(null);
+  const colPx = useElementWidth(axisRef) / totalUnits;
+  // 目盛り 1 つあたり最低 24px。ラベルの間引きを先に効かせ、横スクロールは最後の手段にする
+  const minW = scale.ticks.length * 24 + 50;
   return (
     <div className="w-full max-md:overflow-x-auto">
       <div
         className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-[rgba(0,0,0,0.1)] relative flex flex-col gap-6 rounded-[14px] px-[25px] pt-[25px] pb-[9px] max-md:min-w-[var(--tl-min-w)]"
-        style={{ "--tl-min-w": `${totalUnits * 40 + 50}px` } as CSSProperties}
+        style={{ "--tl-min-w": `${minW}px` } as CSSProperties}
       >
-        <div className="flex flex-col gap-4">
-          {/* 週ラベル行 */}
-          <div className="grid" style={{ gridTemplateColumns: `repeat(${totalUnits}, minmax(0,1fr))` }}>
-            {Array.from({ length: totalUnits }, (_, i) => (
-              <p key={i} className="font-en text-center text-[11px] font-extrabold leading-6 tracking-[0.55px] text-system-700">
-                W{i + 1}
-              </p>
-            ))}
-          </div>
+        <div ref={axisRef} className="flex flex-col gap-4">
+          {/* 目盛り行 */}
+          <TimelineAxis scale={scale} colPx={colPx} />
 
           {/* フェーズ行一覧 */}
           <div className="isolate flex flex-col gap-2">
@@ -165,10 +221,10 @@ export const WorkProcessChart: FC<{ data: TimelineData }> = ({ data }) => {
                       {p.label}
                     </span>
                     {/* ツールチップ */}
-                    {p.note && (p.note.title || p.note.body) && (
+                    {p.note?.body && (
                       <div className={`pointer-events-none absolute ${left >= 50 ? "right-2" : "left-2"} ${i >= Math.ceil(phases.length / 2) ? "bottom-full mb-1.5" : "top-full mt-1.5"} z-10 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-[#0a0a0a] px-3 py-2 group-hover:block`}>
-                        {p.note.title && <p className="text-[10px] tracking-[0.3px] text-fg-muted">{p.note.title}</p>}
-                        {p.note.body && <p className="text-[12px] leading-[1.5] text-white">{p.note.body}</p>}
+                        <p className="text-[10px] tracking-[0.3px] text-fg-muted">{p.label}</p>
+                        <p className="text-[12px] leading-[1.5] text-white">{p.note.body}</p>
                       </div>
                     )}
                   </div>

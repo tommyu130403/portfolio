@@ -7,6 +7,8 @@ import {
   type ImageAlign,
 } from "@/lib/image-layout";
 import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
+import WorkCardEmbed from "./WorkCardEmbed";
+import InfoCard from "./InfoCard";
 import { TableGrid, TableKeyValue } from "./Table";
 import ProtectedImage from "./ProtectedImage";
 
@@ -26,6 +28,7 @@ import ProtectedImage from "./ProtectedImage";
  *  - **太字** / *斜体* / ~~取消線~~ / `インラインコード` / [リンク](url)（外部はアイコン付き）
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
+ *  - `::: card 見出し` 〜 `:::` の汎用カード / `::: workcard id=<uuid>` の作品リンクカード
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
  *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
  */
@@ -272,6 +275,8 @@ type Block =
   | { type: "hr" }
   | { type: "code"; lang: string; content: string }
   | { type: "flowchart"; id: string }
+  | { type: "workcard"; id: string }
+  | { type: "card"; title: string; body: string }
   | { type: "grid"; cols: number; gap: number; cells: string[] }
   | { type: "tableKeyValue"; rows: { label: string; value: string }[] }
   | { type: "tableGrid"; header: string[]; rows: string[][] };
@@ -288,6 +293,12 @@ const isTableSeparator = (line: string) => {
   return cells.length > 0 && cells.every((c) => /^:?-{3,}:?$/.test(c));
 };
 
+/**
+ * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card）。深さの数え上げに使う。
+ * 下の gridOpen / cardOpen と同じ条件にそろえる（\b だと `::: card見出し` も数えてしまい、閉じが見つからず後続を飲み込む）
+ */
+const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$))/;
+
 function parseBlocks(src: string): Block[] {
   const lines = src.split("\n");
   const blocks: Block[] = [];
@@ -299,7 +310,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     /^```/.test(line) ||
-    /^:::\s*(grid|timeline|stakeholders|flowchart)\b/.test(line) ||
+    /^:::\s*(grid|card|workcard|timeline|stakeholders|flowchart)\b/.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
@@ -325,6 +336,47 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
 
+    // 作品リンクカードも1行完結（id は UUID 専用の正規表現で読む。不正な id は段落のまま）
+    const workcard = line.match(
+      /^:::\s*workcard\s+id\s*=\s*([0-9a-fA-F-]{36})\s*$/,
+    );
+    if (workcard) {
+      blocks.push({ type: "workcard", id: workcard[1] });
+      i++;
+      continue;
+    }
+
+    // 汎用カード: ::: card 見出し 〜 :::（ネストした grid / card の入れ子を数えて閉じを探す）
+    const cardOpen = line.match(/^:::\s*card(?:\s+(.*))?$/);
+    if (cardOpen) {
+      const buf: string[] = [];
+      let depth = 0;
+      let inFence = false; // コードブロック内の ::: / --- は数えない
+      i++;
+      while (i < lines.length) {
+        // 開きは ``` で始まる行、閉じは ``` だけの行（code ブロック本体の判定と同じ）
+        if (inFence ? /^```\s*$/.test(lines[i]) : /^```/.test(lines[i])) {
+          inFence = !inFence;
+        } else if (inFence) {
+          // コードの中身はそのまま本文へ
+        } else if (/^:::\s*$/.test(lines[i])) {
+          if (depth === 0) break;
+          depth--;
+        } else if (NESTABLE_OPEN.test(lines[i])) {
+          depth++;
+        }
+        buf.push(lines[i]);
+        i++;
+      }
+      i++; // closing :::（EOF で閉じが無いときは末尾を越えるだけ）
+      blocks.push({
+        type: "card",
+        title: (cardOpen[1] ?? "").trim(),
+        body: buf.join("\n").trim(),
+      });
+      continue;
+    }
+
     // グリッド: ::: grid cols=N gap=M
     const gridOpen = line.match(/^:::\s*grid\s*(.*)$/);
     if (gridOpen) {
@@ -341,9 +393,24 @@ function parseBlocks(src: string): Block[] {
       }
       const cells: string[] = [];
       let buf: string[] = [];
+      let depth = 0;
+      let inFence = false; // コードブロック内の ::: / --- は数えない
       i++;
-      while (i < lines.length && !/^:::\s*$/.test(lines[i])) {
-        if (/^---\s*$/.test(lines[i])) {
+      while (i < lines.length) {
+        // 開きは ``` で始まる行、閉じは ``` だけの行（code ブロック本体の判定と同じ）
+        if (inFence ? /^```\s*$/.test(lines[i]) : /^```/.test(lines[i])) {
+          inFence = !inFence;
+          buf.push(lines[i]);
+        } else if (inFence) {
+          buf.push(lines[i]);
+        } else if (/^:::\s*$/.test(lines[i])) {
+          if (depth === 0) break;
+          depth--;
+          buf.push(lines[i]);
+        } else if (NESTABLE_OPEN.test(lines[i])) {
+          depth++;
+          buf.push(lines[i]);
+        } else if (depth === 0 && /^---\s*$/.test(lines[i])) {
           cells.push(buf.join("\n").trim());
           buf = [];
         } else {
@@ -632,6 +699,16 @@ function RenderBlock({
       );
     case "flowchart":
       return <FlowchartEmbed id={block.id} />;
+    case "workcard":
+      return <WorkCardEmbed id={block.id} />;
+    case "card":
+      return (
+        <div className="mb-4 mt-10">
+          <InfoCard title={block.title ? renderInline(block.title, `${k}-ct`) : undefined}>
+            <MarkdownBody md={block.body} />
+          </InfoCard>
+        </div>
+      );
     case "tableKeyValue":
       return (
         <div className="mb-4 mt-10">
@@ -714,6 +791,8 @@ export const WorkSections: FC<{
           if (!map.has(block.id)) map.set(block.id, map.size + 1);
         } else if (block.type === "grid") {
           block.cells.forEach(collect);
+        } else if (block.type === "card") {
+          collect(block.body);
         }
       }
     };

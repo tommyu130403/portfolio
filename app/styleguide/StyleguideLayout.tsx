@@ -13,6 +13,7 @@ import { ButtonFunction } from "@/components/ButtonFunction";
 import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 import TabBar from "@/components/TabBar";
 import WorkCard from "@/components/WorkCard";
+import InfoCard from "@/components/InfoCard";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
 import ProtectedImage from "@/components/ProtectedImage";
@@ -1042,6 +1043,20 @@ function ComponentsSection() {
         <SubHeading>実装のみ(Figma に対応コンポーネントなし)</SubHeading>
 
         <ComponentPreview
+          title="InfoCard"
+          description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma 未作成(実装先行)"
+        >
+          <div className="flex w-[360px] max-w-full flex-col gap-4">
+            <InfoCard title="見出しあり">
+              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">本文テキストがここに入ります。</p>
+            </InfoCard>
+            <InfoCard>
+              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">見出しなしのカード。</p>
+            </InfoCard>
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
           title="RichMarkdownEditor"
           description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画。onUploadImage を渡すと本文欄への画像の貼り付けでアップロードでき、貼り付けた画像はアップロード後に画像ダイアログ（配置・横幅・倍率）を経て挿入される"
         >
@@ -1123,7 +1138,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkPagerCard"
-          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。実ページと同じく md 以上で 2 列"
+          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkPagerCard direction="prev" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
@@ -1135,6 +1150,9 @@ function ComponentsSection() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" thumbnail="/window.svg" href="#" />
               <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" thumbnail="/window.svg" href="#" />
+            </div>
+            <div className="w-full max-w-[394px]">
+              <WorkPagerCard category="UI デザイン" title="社内向け管理ツールの刷新（direction なし・作品本文の作品カード）" thumbnail="/window.svg" href="#" />
             </div>
             <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" href="#" />
           </div>

@@ -7,7 +7,8 @@ import ProtectedImage from "./ProtectedImage";
 import { GUIDE_TEXT } from "./WorkBreadcrumb";
 
 type WorkPagerCardProps = {
-  direction: "prev" | "next";
+  /** 省略時は方向の行（矢印＋Prev / Next）を出さない（作品本文に埋め込む作品カード用） */
+  direction?: "prev" | "next";
   /** null / 空のときはカテゴリ行ごと出さない */
   category?: string | null;
   title: string;
@@ -35,11 +36,13 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
 
   const body = (
     <>
-      <span className={`flex items-center gap-1 ${GUIDE_TEXT} text-system-500`}>
-        {!isNext && arrow}
-        {isNext ? "Next" : "Prev"}
-        {isNext && arrow}
-      </span>
+      {direction && (
+        <span className={`flex items-center gap-1 ${GUIDE_TEXT} text-system-500`}>
+          {!isNext && arrow}
+          {isNext ? "Next" : "Prev"}
+          {isNext && arrow}
+        </span>
+      )}
       {category && (
         <span className="w-full min-w-0 truncate text-[10px] leading-[12px] tracking-[0.3px] text-main-100">{category}</span>
       )}
@@ -50,7 +53,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
   return (
     <Link
       href={href}
-      aria-label={`${isNext ? "次" : "前"}のWork: ${title}`}
+      aria-label={direction ? `${isNext ? "次" : "前"}のWork: ${title}` : `Work: ${title}`}
       className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border bg-surface-light transition-colors hover:border-system-500 ${
         thumbSrc
           ? `items-stretch ${isNext ? "md:flex-row-reverse" : ""}`

@@ -448,6 +448,173 @@ export function FlowchartPickerModal({
   );
 }
 
+// ─── 作品ピッカー モーダル ──────────────────────────────────────────────────
+
+type WorkPickRow = {
+  id: string;
+  title: string;
+  category: string | null;
+  thumbnail_url: string | null;
+};
+
+export function WorkPickerModal({
+  open,
+  onClose,
+  onSelect,
+  excludeId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (work: { id: string; title: string }) => void;
+  /** 一覧から除く作品 id（編集中の作品自身など） */
+  excludeId?: string;
+}) {
+  const [items, setItems] = useState<WorkPickRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<WorkPickRow | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setQuery("");
+      setSelected(null);
+      setError("");
+      // 非公開の作品は公開ページでカードが表示されないため、公開中のものだけ選べるようにする
+      supabase
+        .from("works")
+        .select("id, title, category, thumbnail_url")
+        .eq("is_published", true)
+        .order("sort_order", { ascending: true })
+        .then(({ data, error: fetchError }) => {
+          setItems(data ?? []);
+          setError(fetchError?.message ?? "");
+          setLoading(false);
+        });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  if (!open) return null;
+
+  const filtered = items.filter(
+    (item) =>
+      item.id !== excludeId &&
+      `${item.title} ${item.category ?? ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[86vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[12px] border border-border-light bg-[#1a1a1a]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-[#2a2a2a] px-5 py-4">
+          <p className="text-[14px] font-semibold text-white">作品を選択</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[18px] text-system-700 hover:text-white"
+            aria-label="閉じる"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="px-5 pt-4">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="タイトル・カテゴリで検索…"
+            className="w-full rounded-[8px] border border-border-light bg-surface px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
+          />
+        </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          {loading ? (
+            <div className="h-64 animate-pulse rounded-[12px] bg-white/[0.03]" />
+          ) : error ? (
+            <p className="py-8 text-center text-[13px] text-danger-300">
+              {error}
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="py-8 text-center text-[13px] text-system-700">
+              {query
+                ? "一致する作品がありません"
+                : "選べる公開中の作品がありません"}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filtered.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelected(item)}
+                  className={`flex items-center gap-3 overflow-hidden rounded-[10px] border bg-[#101010] p-2 text-left transition-colors ${
+                    selected?.id === item.id
+                      ? "border-main-100"
+                      : "border-border-light hover:border-system-700"
+                  }`}
+                >
+                  <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-[6px] bg-[#141414]">
+                    {item.thumbnail_url && (
+                      <ProtectedImage
+                        src={item.thumbnail_url}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+                      />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] text-white">
+                      {item.title}
+                    </p>
+                    <p className="mt-0.5 truncate text-[10px] text-system-700">
+                      {item.category ?? "カテゴリなし"}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between border-t border-[#2a2a2a] px-5 py-3">
+          <p className="truncate text-[11px] text-system-700">
+            {selected ? `選択中: ${selected.title}` : "作品を選択してください"}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-[8px] border border-border-light px-4 py-2 text-[13px] text-fg-muted hover:text-white"
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              disabled={!selected}
+              onClick={() => {
+                if (selected) {
+                  onSelect({ id: selected.id, title: selected.title });
+                }
+              }}
+              className="rounded-[8px] bg-main-100 px-4 py-2 text-[13px] font-semibold text-black disabled:opacity-40"
+            >
+              挿入
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── 画像ピッカー フィールド（URL入力欄の置き換え）────────────────────────────
 
 export function ImagePickerField({

@@ -9,6 +9,7 @@ import {
   FormGroupHeader,
   HeroScreenshotsEditor,
   FlowchartPickerModal,
+  WorkPickerModal,
   ImagePickerField,
   ImagePickerModal,
   Input,
@@ -23,6 +24,7 @@ import {
   parseTimeline,
   parseStakeholders,
   type TimelineData,
+  type StakeholdersData,
 } from "@/components/WorkViz";
 import { sectionsToMarkdown, markdownToSections } from "@/lib/work-sections";
 import {
@@ -55,6 +57,16 @@ type Work = Tables<"works">;
  * 「本文」タブ = メインエリア全体のリッチ Markdown エディタ、「設定」タブ = メタ情報フォーム。
  */
 
+// 新規作成時の Stakeholders 初期値（Figma Master 848:2948）
+const DEFAULT_STAKEHOLDERS: StakeholdersData = {
+  groups: [
+    { label: "Product", icon: "Abstract/application-one", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
+    { label: "Project", icon: "Components/tree-list", members: [{ label: "Project Owner" }, { label: "Project Manager", me: true }] },
+    { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "" }] },
+    { label: "Engineer", icon: "Edit/code", members: [{ label: "Leader" }, { label: "" }, { label: "" }, { label: "" }] },
+  ],
+};
+
 function emptyWork(id: string): Work {
   return {
     id,
@@ -68,7 +80,7 @@ function emptyWork(id: string): Work {
     end_date: null,
     is_current: false,
     timeline: null,
-    stakeholders: null,
+    stakeholders: DEFAULT_STAKEHOLDERS as unknown as Json,
     hero_brand: null,
     hero_screenshots: [] as unknown as Json,
     hero_bg_color: null,
@@ -179,6 +191,22 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     flowchartResolve.current?.(result);
     flowchartResolve.current = null;
     setFlowchartPickerOpen(false);
+  };
+
+  // 作品ピッカー（本文の作品カード挿入用。フローチャートと同じ Promise 方式）
+  const [workPickerOpen, setWorkPickerOpen] = useState(false);
+  const workPickResolve = useRef<
+    ((v: { id: string; title: string } | null) => void) | null
+  >(null);
+  const pickWork = () =>
+    new Promise<{ id: string; title: string } | null>((resolve) => {
+      workPickResolve.current = resolve;
+      setWorkPickerOpen(true);
+    });
+  const closeWorkPicker = (result: { id: string; title: string } | null) => {
+    workPickResolve.current?.(result);
+    workPickResolve.current = null;
+    setWorkPickerOpen(false);
   };
 
   useEffect(() => {
@@ -618,6 +646,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             }}
             onPickImage={pickImage}
             onPickFlowchart={pickFlowchart}
+            onPickWork={pickWork}
             onUploadImage={async (file) => {
               const fd = new FormData();
               fd.append("file", await compressImage(file));
@@ -910,6 +939,12 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         open={flowchartPickerOpen}
         onClose={() => closeFlowchartPicker(null)}
         onSelect={closeFlowchartPicker}
+      />
+      <WorkPickerModal
+        open={workPickerOpen}
+        onClose={() => closeWorkPicker(null)}
+        onSelect={closeWorkPicker}
+        excludeId={id}
       />
       {vizPreview && (
         <WorkVizModal kind={vizPreview} timeline={parsedTimeline} stakeholders={parsedStakeholders} onClose={() => setVizPreview(null)} />

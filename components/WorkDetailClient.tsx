@@ -44,10 +44,9 @@ const WorkDetailSkeleton: FC = () => (
       </div>
       <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
     </div>
-    <div className="h-px bg-border" />
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-4">
-        <div className="h-[30px] w-32 motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-9 w-32 motion-safe:animate-pulse rounded bg-system-800" />
         <div className="h-px flex-1 bg-border" />
       </div>
       <div className="flex flex-col gap-3">

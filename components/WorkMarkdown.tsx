@@ -16,7 +16,7 @@ import ProtectedImage from "./ProtectedImage";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（横線＋Noto Bold 16px mint #B3FFE7・Library Headline type=02 304:302）
+ *  - `## `   → 見出し01（横線＋Noto Bold 16px gray #616161・Library Headline type=02 304:302）
  *  - `### `  → 見出し02（01 と同形）
  *  - `#### ` → 見出し03（Avenir Heavy 17px gray #9e9e9e）
  *  - `##### `→ 小本文 Body02（13px white）
@@ -220,7 +220,7 @@ const ImageTextRow: FC<{
   keyBase: string;
 }> = ({ url, width, scale, caption, text, keyBase }) => (
   <div className="@container mt-10 mb-10">
-    <div className="flex flex-col items-start gap-2 @min-[560px]:flex-row @min-[560px]:gap-10">
+    <div className="flex flex-col items-start gap-2 @min-[560px]:flex-row @min-[560px]:gap-6">
       <div
         className="min-w-0 shrink overflow-hidden rounded-r16"
         style={{ width: widthToCss(width) ?? "200px", maxWidth: "100%" }}
@@ -235,7 +235,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-white">
+            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-system-300">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -609,8 +609,8 @@ function RenderBlock({
     case "h1":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-main-050" />
-          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
+          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-system-700">
             {renderInline(block.content, k)}
           </p>
         </div>
@@ -618,8 +618,8 @@ function RenderBlock({
     case "h2":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-main-050" />
-          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
+          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-system-700">
             {renderInline(block.content, k)}
           </p>
         </div>
@@ -632,13 +632,13 @@ function RenderBlock({
       );
     case "small":
       return (
-        <p className="mb-3 text-[13px] leading-[21px] tracking-[0.39px] text-white">
+        <p className="mb-3 text-[13px] leading-[21px] tracking-[0.39px] text-system-300">
           {renderInline(block.content, k)}
         </p>
       );
     case "paragraph":
       return (
-        <p className={`mb-6 ${bodyTypo(bodyLevel)} text-white`}>
+        <p className={`mb-6 ${bodyTypo(bodyLevel)} text-system-300`}>
           {renderInline(block.content, k)}
         </p>
       );
@@ -675,7 +675,7 @@ function RenderBlock({
       );
     case "ul":
       return (
-        <ul className={`mb-4 list-disc space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-fg-muted`}>
+        <ul className={`mb-4 list-disc space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-system-300 marker:text-fg-muted`}>
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -683,7 +683,7 @@ function RenderBlock({
       );
     case "ol":
       return (
-        <ol className={`mb-4 list-decimal space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-white marker:text-fg-muted`}>
+        <ol className={`mb-4 list-decimal space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-system-300 marker:text-fg-muted`}>
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -808,7 +808,8 @@ export const WorkSections: FC<{
         {sections.map((sec, i) => (
           <section key={i} className="flex w-full flex-col gap-8">
             {sec.heading && <Headline title={sec.heading} variant="section-aside" />}
-            <div className="min-w-0 w-full">
+            {/* 本文は左右 16px 内側（Figma 888:3167） */}
+            <div className="min-w-0 w-full px-4">
               <MarkdownBody md={sec.md} />
             </div>
           </section>

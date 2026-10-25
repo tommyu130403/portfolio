@@ -11,7 +11,7 @@ type WorkDetailContentProps = {
 
 /**
  * Works 詳細・本文（800px カラム）。
- * 上部ブロック（WorkDetailHeader）との間に横罫線を1本挟み、
+ * 上部ブロック（WorkDetailHeader）との間は親カラムの gap 48px だけ（罫線なし・Figma 888:3167）。
  * セクションは 1 カラム（見出し + 右罫線 → 本文、セクション間 80px。WorkSections 参照）。
  * 概要内の「背景／課題」等は markdown の `###`（見出し02・01 と同形）で表現される。
  * Timeline / Stakeholders は上部ブロックの「全画面」ボタン → モーダルで表示する（本文には描画しない）。
@@ -22,12 +22,7 @@ const WorkDetailContent: FC<WorkDetailContentProps> = ({ work }) => {
 
   if (sections.length === 0) return null;
 
-  return (
-    <div className="flex w-full flex-col gap-12">
-      <div className="h-px w-full bg-border" aria-hidden />
-      <WorkSections sections={sections} />
-    </div>
-  );
+  return <WorkSections sections={sections} />;
 };
 
 export default WorkDetailContent;

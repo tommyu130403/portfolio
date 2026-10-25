@@ -24,7 +24,6 @@ import {
   parseTimeline,
   parseStakeholders,
   type TimelineData,
-  type StakeholdersData,
 } from "@/components/WorkViz";
 import { sectionsToMarkdown, markdownToSections } from "@/lib/work-sections";
 import {
@@ -57,16 +56,6 @@ type Work = Tables<"works">;
  * 「本文」タブ = メインエリア全体のリッチ Markdown エディタ、「設定」タブ = メタ情報フォーム。
  */
 
-// 新規作成時の Stakeholders 初期値（Figma Master 848:2948）
-const DEFAULT_STAKEHOLDERS: StakeholdersData = {
-  groups: [
-    { label: "Product", icon: "Abstract/application-one", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
-    { label: "Project", icon: "Components/tree-list", members: [{ label: "Project Owner" }, { label: "Project Manager", me: true }] },
-    { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "" }] },
-    { label: "Engineer", icon: "Edit/code", members: [{ label: "Leader" }, { label: "" }, { label: "" }, { label: "" }] },
-  ],
-};
-
 function emptyWork(id: string): Work {
   return {
     id,
@@ -80,7 +69,7 @@ function emptyWork(id: string): Work {
     end_date: null,
     is_current: false,
     timeline: null,
-    stakeholders: DEFAULT_STAKEHOLDERS as unknown as Json,
+    stakeholders: null,
     hero_brand: null,
     hero_screenshots: [] as unknown as Json,
     hero_bg_color: null,

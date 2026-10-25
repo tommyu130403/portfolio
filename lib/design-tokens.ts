@@ -44,6 +44,8 @@
  *   Semantic: Text/Caption・Border/Main・Action/hover の不透明度
  *             （Action/hover は get_variable_defs が #FFFFFF しか返さず α を持たない）
  *   （TextStyle は 2026-10-14 に Library のローカルスタイル15種を全件照合済み。下の textStyle を参照）
+ *   （Text/* は 2026-10-25 に Library のカラースタイル6種を照合済み。semantic の fg* を参照。
+ *     旧名 Text/Body/Main・Text/Body/Sub は Text/Body/Primary・Text/Body/Secondary に改名されている）
  *   これらの現在値は docs/requests/20260908-styleguide-figma-sync.md 付録 A の実測値が出所。
  *   MCP からは列挙できないため、実際に使うときに個別確認する（2026-09-08 ユーザー合意）。
  *
@@ -150,12 +152,18 @@ export const semantic = {
   primary: color.main.base, //                       Figma: Main/Primary
   /** Main/Secondary — ブランドアクセントのサブカラー */
   secondary: color.main["300"], //                    Figma: Main/Secondary
-  /** Text/Body/Main — 本文の主要テキスト */
-  fg: color.system.white, //                          Figma: Text/Body/Main
-  /** Text/Body/Sub — 補助・弱めテキスト */
-  fgMuted: color.system["500"], //                    Figma: Text/Body/Sub
+  /** Text/Body/Primary — 本文の主要テキスト */
+  fg: color.system["300"], //                         Figma: Text/Body/Primary
+  /** Text/Body/Secondary — 補助・弱めテキスト */
+  fgMuted: color.system["500"], //                    Figma: Text/Body/Secondary
   /** Text/Caption — キャプション用テキスト */
-  fgCaption: color.system["400"], //                  Figma: Text/Caption
+  fgCaption: color.system["500"], //                  Figma: Text/Caption
+  /** Text/Body/Tertiary — 最も弱いテキスト（surface 上 2.6:1。無効表示など読ませない文字だけ） */
+  fgSubtle: color.system["700"], //                   Figma: Text/Body/Tertiary
+  /** Text/Link — テキストリンク */
+  fgLink: color.main.base, //                         Figma: Text/Link
+  /** Text/Link-hover — テキストリンクのホバー */
+  fgLinkHover: color.main["050"], //                  Figma: Text/Link-hover
   /** Background/Default — 標準サーフェス（カード等） */
   surface: color.system["900"], //                    Figma: Background/Default
   /** Background/Light — 一段明るいサーフェス */

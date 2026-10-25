@@ -1,13 +1,13 @@
 import type { FC } from "react";
 
 type HeadlineProps = {
-  /** default の小見出し（日本語サブテキスト・グレー 12px）。SectionTitle のエピグラフ部分 */
+  /** default の小見出し（日本語サブテキスト・mint-050 12px）。SectionTitle のエピグラフ部分 */
   label?: string;
-  /** 見出し本文。default では英語見出し（Title/EN 38px Avenir Heavy 白）、その他 variant では各見出しテキスト */
+  /** 見出し本文。default では英語見出し（Title/EN 38px Avenir Heavy・fg）、その他 variant では各見出しテキスト */
   title: string;
   /**
    * 見出しタイプ
-   * - default: ページ上部のセクション見出し（JP サブ + Title/EN 38px Avenir Heavy。Figma SectionTitle 836:3312）
+   * - default: ページ上部のセクション見出し（Library SectionTitle 20:37・2026-10-25 確認: JP ラベル 12px Noto Regular・ls 3%・Main/050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、gap 12・下余白 24）
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
    * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 20px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
@@ -71,10 +71,10 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   }
 
   return (
-    <div className="flex flex-col items-start pb-8 w-full">
+    <div className="flex flex-col items-start pb-6 w-full">
       <div className="flex flex-col gap-3 w-full [word-break:break-word]">
-        <p className="font-body text-[12px] font-normal leading-[14px] tracking-[0.36px] text-system-500 w-full">{label ?? ""}</p>
-        <p className="text-title-en text-white w-full">{title}</p>
+        <p className="font-body text-[12px] font-normal leading-[14px] tracking-[0.36px] text-main-050 w-full">{label ?? ""}</p>
+        <p className="text-title-en text-fg w-full">{title}</p>
       </div>
     </div>
   );

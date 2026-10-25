@@ -151,13 +151,17 @@ html:has([data-work-detail]) {
 
   /* Semantic（Figma Semantic コレクション）: primitive を意味ベースで参照するエイリアス層。
      エルゴノミック命名。生成ユーティリティ例: bg-primary / bg-secondary / text-fg /
-     text-fg-muted / text-fg-caption / bg-surface / bg-surface-light / border-border /
+     text-fg-muted / text-fg-caption / text-fg-subtle / text-fg-link / bg-surface / bg-surface-light / border-border /
      border-border-light / border-border-main / bg-action-hover。右コメントは対応する Figma semantic 名。 */
   --color-primary:       var(--color-main-base);       /* Main/Primary */
   --color-secondary:     var(--color-main-300);        /* Main/Secondary */
-  --color-fg:            var(--color-system-white);    /* Text/Body/Main */
-  --color-fg-muted:      var(--color-system-500);      /* Text/Body/Sub */
-  --color-fg-caption:    var(--color-system-400);      /* Text/Caption */
+  /* Text/* は Figma Library のカラースタイル（2026-10-25 照合）。 */
+  --color-fg:            var(--color-system-300);      /* Text/Body/Primary */
+  --color-fg-muted:      var(--color-system-500);      /* Text/Body/Secondary */
+  --color-fg-caption:    var(--color-system-500);      /* Text/Caption */
+  --color-fg-subtle:     var(--color-system-700);      /* Text/Body/Tertiary（surface 上 2.6:1。無効表示など読ませない文字だけ） */
+  --color-fg-link:       var(--color-main-base);       /* Text/Link */
+  --color-fg-link-hover: var(--color-main-050);        /* Text/Link-hover */
   --color-surface:       var(--color-system-900);      /* Background/Default */
   --color-surface-light: var(--color-system-875);      /* Background/Light */
   --color-border:        var(--color-system-825);      /* Border/Default */

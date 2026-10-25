@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Icon, { ICON_SETS, type IconSet } from "@/components/Icon";
 import type { IconCatalog } from "./iconCatalogTypes";
 
@@ -42,6 +43,29 @@ export default function IconPickerField({
     names.includes(value.name) &&
     (ICON_SETS as readonly string[]).includes(value.set);
 
+  // アイコン一覧パネル（選択中のセットのアイコンを絵で並べて選べるようにする）
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const canBrowse = !!value && !!entry && (ICON_SETS as readonly string[]).includes(value.set);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const q = query.trim().toLowerCase();
+  const shown = q ? names.filter((n) => n.toLowerCase().includes(q)) : names;
+
   const handleSet = (set: string) => {
     if (set === "") {
       if (allowEmpty) onChange(null);
@@ -54,7 +78,7 @@ export default function IconPickerField({
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div ref={rootRef} className={`relative flex items-center gap-2 ${className}`}>
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-border-light bg-[#1a1a1a]">
         {canPreview ? (
           <Icon
@@ -100,6 +124,55 @@ export default function IconPickerField({
           </option>
         ))}
       </select>
+      <button
+        type="button"
+        aria-label="アイコン一覧から選ぶ"
+        aria-expanded={open}
+        disabled={!canBrowse}
+        onClick={() => {
+          setQuery("");
+          setOpen((o) => !o);
+        }}
+        className="shrink-0 rounded-[8px] border border-border-light bg-[#1a1a1a] px-2 py-1.5 text-[12px] text-system-500 transition-colors hover:border-primary hover:text-white disabled:opacity-40 disabled:hover:border-border-light disabled:hover:text-system-500"
+      >
+        一覧
+      </button>
+      {open && canBrowse && (
+        <div className="absolute right-0 top-full z-50 mt-1 flex w-[344px] flex-col gap-2 rounded-[8px] border border-border-light bg-[#0a0a0a] p-2 shadow-lg">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`${value.set} から名前で絞り込み`}
+            aria-label="アイコン名で絞り込み"
+            className="rounded-[6px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[12px] text-white outline-none focus:border-primary"
+          />
+          <div className="grid max-h-[240px] grid-cols-8 gap-1 overflow-y-auto">
+            {shown.map((n) => {
+              const active = n === value.name;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  title={n}
+                  aria-label={n}
+                  aria-pressed={active}
+                  onClick={() => {
+                    onChange({ set: value.set, name: n });
+                    setOpen(false);
+                  }}
+                  className={`flex size-9 items-center justify-center rounded-[6px] transition-colors ${
+                    active ? "bg-main-100/20 ring-1 ring-primary" : "hover:bg-[#1f1f1f]"
+                  }`}
+                >
+                  <Icon set={value.set as IconSet} name={n} tintColor="var(--color-system-white)" className="h-5 w-5" />
+                </button>
+              );
+            })}
+          </div>
+          {shown.length === 0 && <p className="px-1 text-[11px] text-fg-muted">該当するアイコンがありません</p>}
+        </div>
+      )}
     </div>
   );
 }

@@ -55,7 +55,7 @@ const SAMPLE_WORK_DETAIL = {
     { heading: "見出し01", body: "本文テキスト Body01。プロジェクトで取り組んだ施策の詳細を記載します。" },
     {
       heading: "本文ブロック（検証用）",
-      body: "本文テキスト Body01。画像ブロックの直前の段落です。\n\n![補足テキスト（キャプション）](https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80){width=320 align=left}\n画像の右に並ぶ本文テキスト。Figma Master 994:5656 の画像ブロックに相当します。\n\n### 見出し02\n- 箇条書き1\n- 箇条書き2\n\n> 引用テキスト\n\n#### 見出し03\n見出し03配下の本文。\n\n---\n\n::: grid cols=2 gap=4\n左セル\n---\n右セル\n:::\n\n```ts\nconst example = true;\n```",
+      body: "本文テキスト Body01。画像ブロックの直前の段落です。\n\n![補足テキスト（キャプション）](https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80){width=320 align=left}\n画像の右に並ぶ本文テキスト。Figma Master 994:5656 の画像ブロックに相当します。\n\n### 見出し02\n- 箇条書き1\n- 箇条書き2\n\n> 引用テキスト\n\n---\n\n::: grid cols=2 gap=4\n左セル\n---\n右セル\n:::",
     },
   ],
   stakeholder_breakdown: "事業責任者1・プロジェクトマネージャー1・デザイナー2・エンジニア4",
@@ -887,13 +887,12 @@ function ComponentsSection() {
         <ComponentPreview title="ProtectedImage" description="Portfolio ストレージの画像は認証後に署名付きURLで表示。ローカル画像や外部画像はそのまま表示する">
           <ProtectedImage src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/figma.svg`} alt="Figma" className="h-8 w-8" />
         </ComponentPreview>
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px mint-050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）。03 は Figma に存在せず実装のみ">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px mint-050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
           <div className="w-full"><Headline title="見出し 01（Headline type=02・16px Bold System/700 gray・横線つき）" variant="markdown-h1" /></div>
           <div className="w-full"><Headline title="見出し 02（01 と同形・Library Headline type=02 304:302）" variant="markdown-h2" /></div>
-          <div className="w-full"><Headline title="見出し 03（17px gray・Figma に対応なし）" variant="markdown-h3" /></div>
           <div className="w-full"><Headline title="背景と課題（section-aside・22px Bold 白 + 右罫線。作品詳細のセクション見出し）" variant="section-aside" /></div>
         </ComponentPreview>
 
@@ -902,9 +901,7 @@ function ComponentsSection() {
             <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
             <Headline title="見出し02（### / Headline type=02・横線＋Noto Bold 16px System/700 gray）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
-            <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">旧見出し03（#### / エディタのボタンなし・Avenir Heavy 17px gray）</p>
             <p className="text-[15px] leading-[22px] tracking-[0.45px] text-system-300">Body01（通常段落 / Noto Regular 15px System/300 #E0E0E0）</p>
-            <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">Body02（##### / Noto Regular 13px 白）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
             <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
           </div>

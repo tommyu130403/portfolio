@@ -229,13 +229,24 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
       void run(() => remove(item.id));
     };
 
+  const handleDeleteRole = (item: { id: string; name: string }) => {
+    const role = roles.find((r) => r.id === item.id);
+    if (!role) return;
+    const message =
+      role.careerCount + role.workCount + role.breakdownCount > 0
+        ? `役割「${role.name}」は 経歴 ${role.careerCount} 件 / 作品の担当役割 ${role.workCount} 件 / 体制内訳 ${role.breakdownCount} 件で使われています。\n削除するとこれらから外れ、公開ページの表示も変わります（経歴は文字が残ります）。削除しますか？`
+        : `役割「${role.name}」を削除しますか？`;
+    if (!window.confirm(message)) return;
+    void run(() => deleteRole(item.id));
+  };
+
   if (fetching) return <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />;
 
   return (
     <section id="masters" className="scroll-mt-8">
       <SectionTitle label="Masters" title="マスタ管理" />
       <p className="mb-6 text-[13px] text-fg-muted">
-        ツール・スキル・作品カテゴリ・会社・役割・工程名の語彙を管理します。使われている語彙は削除できません。
+        ツール・スキル・作品カテゴリ・会社・役割・工程名の語彙を管理します。使われている語彙は削除できません（役割だけは使用中でも確認のうえ削除できます）。
       </p>
       {error && <p className="mb-4 text-[13px] text-danger-300">{error}</p>}
 
@@ -535,7 +546,8 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
         busy={busy}
         onAdd={addName("roles")}
         onRename={renameName("roles")}
-        onDelete={handleDeleteName("役割", deleteRole)}
+        onDelete={handleDeleteRole}
+        allowDeleteUsed
       />
 
       <NameMasterList

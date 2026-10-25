@@ -10,8 +10,8 @@ type HeadlineProps = {
    * - default: ページ上部のセクション見出し（JP サブ + Title/EN 38px Avenir Heavy。Figma SectionTitle 836:3312）
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
-   * - section-aside: 作品詳細の左列見出し（Figma Master 994:4821・16px Noto Sans JP Bold 白）。幅は親が指定する
-   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（h1・h2 は Library 304:302 の Headline 1種類。03 は Figma に無い）
+   * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 20px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
+   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（h1・h2 は Library Headline type=02・304:302 の 16px mint。03 は Figma に無い）
    */
   variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2" | "markdown-h3";
 };
@@ -36,12 +36,15 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Figma Master 994:4821: 作品詳細の左列見出し（16px Bold・lh1.5・tracking 0.8px・白）
+  // 作品詳細のセクション見出し（Library Headline type=01・425:416: 20px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
   if (variant === "section-aside") {
     return (
-      <p className="w-full text-[16px] font-bold leading-[1.5] tracking-[0.8px] text-white [word-break:break-word]">
-        {title}
-      </p>
+      <div className="flex w-full items-center gap-4">
+        <p className="min-w-0 text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-white [word-break:break-word]">
+          {title}
+        </p>
+        <span aria-hidden className="h-px min-w-4 flex-1 bg-border" />
+      </div>
     );
   }
 
@@ -55,12 +58,12 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Library 304:302（Headline は1種類のみ・2026-10-14 確認）: 横線 16×1px + Noto Sans JP Bold 13px System/500。h1・h2 とも同形
+  // Library Headline type=02（304:302・2026-10-25 確認）: 横線 16×1px Main/050 + Noto Sans JP Bold 16px・lh 150%・ls 5%・Main/050、gap 8。h1・h2 とも同形
   if (variant === "markdown-h1" || variant === "markdown-h2") {
     return (
       <div className="flex w-full items-center gap-2">
-        <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
-        <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
+        <span aria-hidden className="h-px w-4 shrink-0 bg-main-050" />
+        <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
           {title}
         </p>
       </div>

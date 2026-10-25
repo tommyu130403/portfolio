@@ -886,16 +886,16 @@ function ComponentsSection() {
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
-          <div className="w-full"><Headline title="見出し 01（Headline 13px Bold・横線つき）" variant="markdown-h1" /></div>
-          <div className="w-full"><Headline title="見出し 02（01 と同形・Library 304:302）" variant="markdown-h2" /></div>
+          <div className="w-full"><Headline title="見出し 01（Headline type=02・16px Bold mint・横線つき）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="見出し 02（01 と同形・Library Headline type=02 304:302）" variant="markdown-h2" /></div>
           <div className="w-full"><Headline title="見出し 03（17px gray・Figma に対応なし）" variant="markdown-h3" /></div>
-          <div className="w-[160px]"><Headline title="背景と課題（section-aside・16px Bold 白。作品詳細の左列見出し）" variant="section-aside" /></div>
+          <div className="w-full"><Headline title="背景と課題（section-aside・20px Bold 白 + 右罫線。作品詳細のセクション見出し）" variant="section-aside" /></div>
         </ComponentPreview>
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
-            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">見出し01（# / Headline type=01・作品詳細では左列の見出し・16px Noto Bold 白。Headline section-aside）</p>
-            <Headline title="見出し02（### / Headline type=02・横線＋Noto Bold 13px gray）" variant="markdown-h2" />
+            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・20px Noto Bold 白 + 右罫線。Headline section-aside）</p>
+            <Headline title="見出し02（### / Headline type=02・横線＋Noto Bold 16px mint）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
             <p className="font-en text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">旧見出し03（#### / エディタのボタンなし・Avenir Heavy 17px gray）</p>
             <p className="text-[15px] leading-[24px] tracking-[0.45px] text-white">Body01（通常段落 / Noto Regular 15px 白）</p>
@@ -1160,7 +1160,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。セクションは左に見出し（160px・16px Bold 白）・右に本文 markdown の 2 列（Figma 787:9916。容器幅 720px 未満は縦積み）。2 列時、左の見出しはスクロール中も上部固定ヘッダーの直下（top 56px）に貼り付く。上部ブロックとの境界とセクション間に横罫線を引き、罫線の上下は 48px。align=left の画像は画像 320・角丸 16＋右列（本文 13px → キャプション、gap 8）。見出し02→本文 8 / 本文→見出し02 32"
+          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・20px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロックとの境界にだけ横罫線を引き、罫線の上下は 48px。align=left の画像は画像 320・角丸 16＋右列（本文 13px → キャプション、gap 8）。見出し02→本文 8 / 本文→見出し02 32"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

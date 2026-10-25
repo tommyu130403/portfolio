@@ -17,6 +17,7 @@ import InfoCard from "@/components/InfoCard";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
 import ProtectedImage from "@/components/ProtectedImage";
+import { PhoneMock, LaptopMock } from "@/components/DeviceMock";
 import WorkDetailHeader from "@/components/WorkDetailHeader";
 import WorkDetailContent from "@/components/WorkDetailContent";
 import SideMenuBar from "@/components/SideMenuBar";
@@ -1155,6 +1156,24 @@ function ComponentsSection() {
               <WorkPagerCard category="UI デザイン" title="社内向け管理ツールの刷新（direction なし・作品本文の作品カード）" thumbnail="/window.svg" href="#" />
             </div>
             <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" href="#" />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="DeviceMock"
+          description="スクリーンショットを入れるデバイス枠。PhoneMock は iPhone 風（既定幅 126px・className で上書き。作品詳細の上部は最大2枚横並び）。LaptopMock はノートPC風（黒ベゼルの画面＋土台・親の幅いっぱい・画像は 16:10 で上端から切り取り）で、ブラウザバー（赤黄緑の点＋中央の URL）は任意。作品本文には `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` で挿入する（url を書くとバーも出る・本文のスマホは幅 180px・ノートPCは最大 640px）。Figma のマスターはまだ無い"
+        >
+          <div className="flex w-full flex-col gap-8">
+            <div className="flex items-start gap-6">
+              <PhoneMock src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" className="w-[180px]" />
+              <PhoneMock src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" className="w-[180px]" />
+            </div>
+            <div className="w-full max-w-[640px]">
+              <LaptopMock src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80" />
+            </div>
+            <div className="w-full max-w-[640px]">
+              <LaptopMock src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80" browser url="example.com" />
+            </div>
           </div>
         </ComponentPreview>
 

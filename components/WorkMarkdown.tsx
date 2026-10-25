@@ -8,6 +8,7 @@ import {
 } from "@/lib/image-layout";
 import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
 import WorkCardEmbed from "./WorkCardEmbed";
+import MockupEmbed from "./MockupEmbed";
 import InfoCard from "./InfoCard";
 import { TableGrid, TableKeyValue } from "./Table";
 import ProtectedImage from "./ProtectedImage";
@@ -29,6 +30,7 @@ import ProtectedImage from "./ProtectedImage";
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
  *  - `::: card 見出し` 〜 `:::` の汎用カード / `::: workcard id=<uuid>` の作品リンクカード
+ *  - `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
  *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
  */
@@ -276,6 +278,7 @@ type Block =
   | { type: "code"; lang: string; content: string }
   | { type: "flowchart"; id: string }
   | { type: "workcard"; id: string }
+  | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null }
   | { type: "card"; title: string; body: string }
   | { type: "grid"; cols: number; gap: number; cells: string[] }
   | { type: "tableKeyValue"; rows: { label: string; value: string }[] }
@@ -310,7 +313,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     /^```/.test(line) ||
-    /^:::\s*(grid|card|workcard|timeline|stakeholders|flowchart)\b/.test(line) ||
+    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart)\b/.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
@@ -344,6 +347,37 @@ function parseBlocks(src: string): Block[] {
       blocks.push({ type: "workcard", id: workcard[1] });
       i++;
       continue;
+    }
+
+    // デバイスモックも1行完結。種別が不明 / 有効な src が無い行は段落のまま（後続を飲み込まない）
+    const mockup = line.match(/^:::\s*mockup\s+(phone|laptop)((?:\s+\S+)*)\s*$/);
+    if (mockup) {
+      const device = mockup[1] as "phone" | "laptop";
+      const srcs: string[] = [];
+      let browser = false;
+      let url: string | null = null;
+      for (const tok of mockup[2].split(/\s+/).filter(Boolean)) {
+        const src = tok.match(/^src=(.+)$/);
+        if (src) {
+          if (/^(https?:\/\/|\/(?![\/\\]))/i.test(src[1])) srcs.push(src[1]);
+        } else if (tok === "browser") {
+          browser = true;
+        } else if (tok.startsWith("url=") && tok.length > 4) {
+          url = tok.slice(4);
+          browser = true;
+        }
+      }
+      if (srcs.length > 0) {
+        blocks.push({
+          type: "mockup",
+          device,
+          srcs: device === "phone" ? srcs.slice(0, 2) : srcs.slice(0, 1),
+          browser: device === "laptop" && browser,
+          url: device === "laptop" ? url : null,
+        });
+        i++;
+        continue;
+      }
     }
 
     // 汎用カード: ::: card 見出し 〜 :::（ネストした grid / card の入れ子を数えて閉じを探す）
@@ -701,6 +735,8 @@ function RenderBlock({
       return <FlowchartEmbed id={block.id} />;
     case "workcard":
       return <WorkCardEmbed id={block.id} />;
+    case "mockup":
+      return <MockupEmbed device={block.device} srcs={block.srcs} browser={block.browser} url={block.url} />;
     case "card":
       return (
         <div className="mb-4 mt-10">

@@ -8,6 +8,7 @@ import {
   type TimelineData,
   type StakeholdersData,
 } from "./WorkViz";
+import type { TimelinePeriod } from "@/lib/timeline-scale";
 
 /**
  * Work 詳細・メタ表の「全画面」ボタンで開く構造化ビジュアルのモーダル。
@@ -19,6 +20,7 @@ import {
 type WorkVizModalProps = {
   kind: "timeline" | "stakeholders";
   timeline?: TimelineData | null;
+  period?: TimelinePeriod | null;
   stakeholders?: StakeholdersData | null;
   onClose: () => void;
 };
@@ -28,7 +30,7 @@ const HEADING: Record<WorkVizModalProps["kind"], string> = {
   stakeholders: "stakeholder",
 };
 
-const WorkVizModal: FC<WorkVizModalProps> = ({ kind, timeline, stakeholders, onClose }) => (
+const WorkVizModal: FC<WorkVizModalProps> = ({ kind, timeline, period, stakeholders, onClose }) => (
   <Modal onClose={onClose} width={kind === "stakeholders" ? "content" : "full"}>
     {/* Slot（Figma I839:3764;120:367）: gap-16 / p-40 */}
     <div className="flex flex-col gap-4 p-10">
@@ -37,7 +39,7 @@ const WorkVizModal: FC<WorkVizModalProps> = ({ kind, timeline, stakeholders, onC
         {HEADING[kind]}
       </p>
       {kind === "timeline"
-        ? timeline && <WorkProcessChart data={timeline} />
+        ? timeline && <WorkProcessChart data={timeline} period={period} />
         : stakeholders && <WorkStakeholderDiagram data={stakeholders} />}
     </div>
   </Modal>

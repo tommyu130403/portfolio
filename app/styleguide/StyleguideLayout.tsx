@@ -844,6 +844,7 @@ function WorkVizModalDemo() {
       {kind && (
         <WorkVizModal
           kind={kind}
+          period={{ start: { year: 2024, month: 4 }, end: { year: 2024, month: 6 }, isCurrent: false }}
           timeline={{ totalUnits: 16, phases: [
             { label: "Research", start: 1, span: 3, raci: ["R", "A"] },
             { label: "Design", start: 3, span: 4, raci: ["C"] },
@@ -1074,10 +1075,11 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkProcessChart"
-          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画。Phase 列なし・フェーズ名はバーの中の右端・RACI 12px"
+          description="Work 詳細の Timeline（Figma _Process）。メタ表の全画面ボタン → WorkVizModal 内に works.timeline を描画。目盛りは作品の期間から作る絶対日付の 2 段表示（3 か月以下は 年月 / 週、4 か月以上は 年 / 月）。ツールチップの見出しは工程名。Phase 列なし・フェーズ名はバーの中の右端・RACI 12px"
         >
           <div className="w-full">
             <WorkProcessChart
+              period={{ start: { year: 2024, month: 4 }, end: { year: 2024, month: 6 }, isCurrent: false }}
               data={{ totalUnits: 12, phases: [
                 { label: "Research", start: 1, span: 3, raci: ["R", "A"], note: { title: "調査", body: "ヒアリングを実施" } },
                 { label: "Design", start: 3, span: 4, raci: ["C"] },
@@ -1085,6 +1087,22 @@ function ComponentsSection() {
                 { label: "QA", start: 9, span: 2, raci: ["R"] },
                 { label: "Launch Preparation", start: 11, span: 2, raci: ["A"] },
                 { label: "Release", start: 12, span: 1, raci: ["I"] },
+              ] }}
+            />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkProcessChart（月モード）"
+          description="期間が 4 か月以上のとき。上段が年、下段が月。幅が足りないラベルは間引かれる"
+        >
+          <div className="w-full">
+            <WorkProcessChart
+              period={{ start: { year: 2024, month: 4 }, end: { year: 2024, month: 12 }, isCurrent: false }}
+              data={{ totalUnits: 36, phases: [
+                { label: "Research", start: 1, span: 8, raci: ["R", "A"], note: { body: "ヒアリングと競合調査" } },
+                { label: "Design", start: 9, span: 12, raci: ["C"] },
+                { label: "Development", start: 21, span: 16, raci: ["R"] },
               ] }}
             />
           </div>

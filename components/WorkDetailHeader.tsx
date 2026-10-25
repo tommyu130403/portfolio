@@ -8,6 +8,7 @@ import { resolveLogoSlug } from "@/src/components/SkillsCardGrid";
 import WorkVizModal from "./WorkVizModal";
 import ProtectedImage from "./ProtectedImage";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
+import { periodFromRow } from "@/lib/timeline-scale";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
@@ -110,6 +111,11 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
   // 「全画面」ボタンで開く構造化ビジュアル（データが無ければボタン自体を非表示）。
   // jsonb のパースは該当カラムが変わったときだけ（WorkEditor と同じ useMemo 規約）
   const timeline = useMemo(() => parseTimeline(work.timeline), [work.timeline]);
+  const { start_date, end_date, is_current } = work;
+  const timelinePeriod = useMemo(
+    () => periodFromRow({ start_date, end_date, is_current }),
+    [start_date, end_date, is_current],
+  );
   const stakeholders = useMemo(() => parseStakeholders(work.stakeholders), [work.stakeholders]);
   const roles = (work.role ?? "").split(/[・、,]/).map((r) => r.trim()).filter(Boolean);
   const stakeholderTags = useMemo(() => parseStakeholderBreakdown(work.stakeholder_breakdown), [work.stakeholder_breakdown]);
@@ -247,6 +253,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
         <WorkVizModal
           kind={vizModal}
           timeline={timeline}
+          period={timelinePeriod}
           stakeholders={stakeholders}
           onClose={() => setVizModal(null)}
         />

@@ -43,6 +43,7 @@ import NumberField from "./NumberField";
 import TimelineGanttEditor from "./TimelineGanttEditor";
 import StakeholdersDiagramEditor from "./StakeholdersDiagramEditor";
 import WorkVizModal from "@/components/WorkVizModal";
+import { periodFromInputs } from "@/lib/timeline-scale";
 import type { IconCatalog } from "@/app/admin/iconCatalogTypes";
 import Tag from "@/components/Tag";
 import { parseStakeholderBreakdown } from "@/components/WorkDetailHeader";
@@ -896,6 +897,12 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   setField("timeline", (v.phases.length ? v : null) as unknown as Work["timeline"]);
                 }}
                 onInsertTemplate={() => setField("timeline", DEFAULT_TIMELINE as unknown as Work["timeline"])}
+                period={period}
+                disabled={saving}
+                onPeriodChange={(p) => {
+                  setPeriod(p);
+                  markDirty();
+                }}
                 phaseNames={phaseNames.map((p) => p.name)}
                 onAddPhaseName={handleAddPhaseName}
               />
@@ -947,7 +954,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         excludeId={id}
       />
       {vizPreview && (
-        <WorkVizModal kind={vizPreview} timeline={parsedTimeline} stakeholders={parsedStakeholders} onClose={() => setVizPreview(null)} />
+        <WorkVizModal kind={vizPreview} timeline={parsedTimeline} period={periodFromInputs(period)} stakeholders={parsedStakeholders} onClose={() => setVizPreview(null)} />
       )}
     </AdminShell>
   );

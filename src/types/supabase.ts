@@ -599,6 +599,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_role: { Args: { p_id: string }; Returns: undefined }
       portfolio_access_role: { Args: never; Returns: string }
       rename_company: {
         Args: { p_id: string; p_name: string }

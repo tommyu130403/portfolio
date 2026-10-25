@@ -862,19 +862,9 @@ export async function deleteCompany(id: string): Promise<{ error: string | null 
 
 export async function deleteRole(id: string): Promise<{ error: string | null }> {
   try {
-    const [a, b, c] = await Promise.all([
-      countRows("career_items", "role_id", id),
-      countRows("work_roles", "role_id", id),
-      countRows("work_stakeholder_counts", "role_id", id),
-    ]);
-    const err = a.error ?? b.error ?? c.error;
-    if (err) return { error: err };
-    if (a.count + b.count + c.count > 0) {
-      return {
-        error: `この役割は経歴 ${a.count} 件 / 作品の担当役割 ${b.count} 件 / 体制内訳 ${c.count} 件で使われているため削除できません`,
-      };
-    }
-    return await deleteNameMasterRow("roles", id);
+    const { error } = await supabase.rpc("delete_role", { p_id: id });
+    if (error) return { error: dbErr(error) };
+    return { error: null };
   } catch (e) {
     return { error: errMsg(e) };
   }

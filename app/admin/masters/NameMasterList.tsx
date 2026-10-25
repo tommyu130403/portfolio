@@ -31,6 +31,7 @@ export default function NameMasterList({
   onAdd,
   onRename,
   onDelete,
+  allowDeleteUsed,
 }: {
   title: string;
   placeholder: string;
@@ -40,6 +41,7 @@ export default function NameMasterList({
   onAdd: (name: string) => Promise<boolean>;
   onRename: (id: string, name: string) => Promise<boolean>;
   onDelete: (item: NameMasterListItem) => void;
+  allowDeleteUsed?: boolean;
 }) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -110,8 +112,8 @@ export default function NameMasterList({
               <button
                 type="button"
                 onClick={() => onDelete(it)}
-                disabled={busy || it.used}
-                title={it.used ? "使用中のため削除できません" : undefined}
+                disabled={busy || (it.used && !allowDeleteUsed)}
+                title={it.used && !allowDeleteUsed ? "使用中のため削除できません" : undefined}
                 className={dangerButton}
               >
                 削除

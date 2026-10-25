@@ -123,14 +123,14 @@ function MemberPill({
         <button
           type="button"
           aria-pressed={me}
-          aria-label={`${name} を自分（me）にする`}
-          title="自分の立ち位置（me）"
+          aria-label={`${name} を担当（自分）にする`}
+          title="自分の立ち位置（担当）"
           onClick={onToggleMe}
-          className={`font-en rounded-full px-1.5 py-1 text-[10px] font-normal leading-none tracking-[0.3px] transition-colors ${
+          className={`font-sans rounded-full px-1.5 py-1 text-[10px] font-normal leading-none tracking-[0.3px] transition-colors ${
             me ? "bg-main-100 text-system-900" : "bg-transparent text-system-700 ring-1 ring-inset ring-border-light hover:text-white"
           }`}
         >
-          me
+          担当
         </button>
         {canDelete && (
           <button
@@ -278,7 +278,7 @@ export default function StakeholdersDiagramEditor({
       <div className="flex flex-wrap items-center gap-2 rounded-[8px] border border-border-light bg-[#161616] p-3">
         {!sel || !selGroup ? (
           <p className="text-[11px] text-fg-muted">
-            グループ（四角）やメンバー（丸）をクリックすると、ここでアイコン・並び替え・削除を編集できます。名前は図の上で直接入力できます。「me」を押すと自分の立ち位置になります
+            グループ（四角）やメンバー（丸）をクリックすると、ここでアイコン・並び替え・削除を編集できます。名前は図の上で直接入力できます。「担当」を押すと自分の立ち位置になります
           </p>
         ) : sel.kind === "group" ? (
           <>
@@ -322,7 +322,7 @@ export default function StakeholdersDiagramEditor({
                 checked={selMember.me === true}
                 onChange={(e) => onChange(patchMemberAt(value, sel.gi, sel.mi, { me: e.target.checked }))}
               />
-              me（自分）
+              担当（自分）
             </label>
             <span className="ml-auto flex items-center gap-1">
               <button

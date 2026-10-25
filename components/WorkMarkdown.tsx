@@ -263,6 +263,14 @@ type ImageBlock = {
   scale: number;
 };
 
+/**
+ * モックアップの画像 URL として受け付けるか。http(s):// ＋ホスト、または / ＋パス（`//` `/\` は外部扱いになるので除く）。
+ * 中身のない `https://` や `/` は弾く。エディタのモックアップダイアログも同じ判定を使う
+ */
+export function isMockupSrc(src: string): boolean {
+  return /^(https?:\/\/[^\s/?#]+|\/(?![/\\])\S+)/i.test(src);
+}
+
 type Block =
   | { type: "h1"; content: string }
   | { type: "h2"; content: string }
@@ -359,7 +367,7 @@ function parseBlocks(src: string): Block[] {
       for (const tok of mockup[2].split(/\s+/).filter(Boolean)) {
         const src = tok.match(/^src=(.+)$/);
         if (src) {
-          if (/^(https?:\/\/|\/(?![\/\\]))/i.test(src[1])) srcs.push(src[1]);
+          if (isMockupSrc(src[1])) srcs.push(src[1]);
         } else if (tok === "browser") {
           browser = true;
         } else if (tok.startsWith("url=") && tok.length > 4) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { type FC, useEffect } from "react";
+import { createPortal } from "react-dom";
 import ProtectedImage from "./ProtectedImage";
 
 /* ------------------------------------------------------------------ *
@@ -65,10 +66,16 @@ export const LaptopMock: FC<{ src: string; browser?: boolean; url?: string; onCl
 );
 
 /* ------------------------------------------------------------------ *
- * スクリーンショット拡大ライトボックス（全画面ボタンで開く）
+ * スクリーンショット拡大ライトボックス（全画面ボタンで開く）。
+ * body 直下へ portal で出す（admin プレビューの zoom 縮小枠の中で開いても全画面を覆うように）。
+ * frame=laptop は横長のスクショなので、スマホ用の大きな角丸・黒枠を付けない
  * ------------------------------------------------------------------ */
 
-export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void }> = ({ shots, onClose }) => {
+export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void; frame?: "phone" | "laptop" }> = ({
+  shots,
+  onClose,
+  frame = "phone",
+}) => {
   useEffect(() => {
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -79,7 +86,7 @@ export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void }> = 
     };
   }, [onClose]);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center gap-6 overflow-auto p-10"
       style={{ backgroundColor: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
@@ -90,9 +97,12 @@ export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void }> = 
           key={i}
           src={src}
           alt=""
-          className="max-h-[90vh] w-auto max-w-full rounded-[24px] border-[3px] border-[#0a0a0a] object-contain"
+          className={`max-h-[90vh] w-auto max-w-full object-contain ${
+            frame === "laptop" ? "rounded-[8px]" : "rounded-[24px] border-[3px] border-[#0a0a0a]"
+          }`}
         />
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 };

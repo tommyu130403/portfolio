@@ -10,7 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { WorkMarkdownDocument } from "./WorkMarkdown";
+import { WorkMarkdownDocument, isMockupSrc } from "./WorkMarkdown";
 import ProtectedImage from "./ProtectedImage";
 import { buildImageMarkdown, widthToCss, type ImageAlign } from "@/lib/image-layout";
 import { container, type DeviceMode } from "@/lib/design-tokens";
@@ -21,7 +21,7 @@ import { container, type DeviceMode } from "@/lib/design-tokens";
  * - 生 Markdown の textarea ＋ ツールバー ＋ 編集 / 分割 / プレビュー の3モード
  * - プレビューは公開側と同一の共有レンダラ（WorkMarkdownDocument）で描画
  * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
- * - 画像・リンク・グリッド・表・カードは挿入ダイアログから、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）
+ * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから
  * - 分割表示では本文欄とプレビューのスクロール位置を割合で連動する
  * - 画像は本文欄への貼り付けでもアップロードできる（onUploadImage を渡した場合）。貼り付け画像は画像ダイアログ（配置・横幅・倍率）を経て挿入する
  *   貼り付け時は本文に仮の行（![画像をアップロード中…](uploading)）を置き、挿入時にその行を置き換える（キャンセル・失敗時は除去）。
@@ -1048,8 +1048,8 @@ function MockupDialog({
       setError("画像を選んでください");
       return;
     }
-    if (srcs.some((s) => !/^(https?:\/\/|\/(?![\/\\]))/i.test(s))) {
-      setError("画像の URL は https:// か / で始めてください");
+    if (srcs.some((s) => !isMockupSrc(s))) {
+      setError("画像の URL は http(s)://〜 か /〜 の形で入力してください");
       return;
     }
     const parts = ["::: mockup", device, ...srcs.map((s) => `src=${s}`)];

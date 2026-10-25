@@ -29,7 +29,7 @@ const MockupEmbed: FC<MockupEmbedProps> = ({ device, srcs, browser, url }) => {
           <LaptopMock src={srcs[0]} browser={browser} url={url ?? undefined} onClick={() => setOpen(true)} />
         </div>
       )}
-      {open && <ScreenshotLightbox shots={srcs} onClose={() => setOpen(false)} />}
+      {open && <ScreenshotLightbox shots={srcs} frame={device} onClose={() => setOpen(false)} />}
     </div>
   );
 };

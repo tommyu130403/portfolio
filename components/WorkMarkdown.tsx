@@ -16,7 +16,7 @@ import ProtectedImage from "./ProtectedImage";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（横線＋Noto Bold 13px gray #9e9e9e・Library Headline 304:302）
+ *  - `## `   → 見出し01（横線＋Noto Bold 16px mint #B3FFE7・Library Headline type=02 304:302）
  *  - `### `  → 見出し02（01 と同形）
  *  - `#### ` → 見出し03（Avenir Heavy 17px gray #9e9e9e）
  *  - `##### `→ 小本文 Body02（13px white）
@@ -609,8 +609,8 @@ function RenderBlock({
     case "h1":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
-          <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-main-050" />
+          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
             {renderInline(block.content, k)}
           </p>
         </div>
@@ -618,8 +618,8 @@ function RenderBlock({
     case "h2":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-system-500" />
-          <p className="flex-1 text-[13px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-main-050" />
+          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
             {renderInline(block.content, k)}
           </p>
         </div>
@@ -800,32 +800,19 @@ export const WorkSections: FC<{
     return map;
   }, [sections]);
 
-  // 容器幅 720px 以上で左に見出し・右に本文、セクション間に罫線（Figma 787:9916）。
-  // 2列切替は画面幅ではなく容器幅で判定する（admin の 390px モバイルプレビュー枠でも縦積みにするため。
-  // 720px = 画面 768px から左右 px-6 を引いた本文幅。ImageTextRow と同じ @container 方式）
+  // 1カラム。見出し（Headline section-aside = Library Headline type=01 + 右罫線）→ 32px → 本文。セクション間 80px。
+  // 区切り線は見出しの罫線が兼ねる（Claude Design「Works 詳細 1カラム 提案」B案）
   return (
     <FlowchartFigureContext.Provider value={figureNumbers}>
-      <div className="@container flex flex-col gap-12">
-      {sections.map((sec, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <div className="h-px w-full bg-border" aria-hidden />}
-          <section className="flex w-full flex-col gap-4 @min-[720px]:flex-row">
-            {/* 見出しが空でも 2 列時は左列の幅を確保し、本文の左端を他セクションと揃える */}
-            {sec.heading ? (
-              // 2 列時は上部固定ヘッダーの直下に貼り付く。--work-header-h は作品詳細ページでだけ定義される
-              // （globals.css）ため、スタイルガイド・admin プレビューでは top が auto になり貼り付かない
-              <div className="shrink-0 @min-[720px]:sticky @min-[720px]:top-[var(--work-header-h)] @min-[720px]:w-[160px] @min-[720px]:self-start">
-                <Headline title={sec.heading} variant="section-aside" />
-              </div>
-            ) : (
-              <div className="hidden shrink-0 @min-[720px]:block @min-[720px]:w-[160px]" aria-hidden />
-            )}
-            <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-20">
+        {sections.map((sec, i) => (
+          <section key={i} className="flex w-full flex-col gap-8">
+            {sec.heading && <Headline title={sec.heading} variant="section-aside" />}
+            <div className="min-w-0 w-full">
               <MarkdownBody md={sec.md} />
             </div>
           </section>
-        </React.Fragment>
-      ))}
+        ))}
       </div>
     </FlowchartFigureContext.Provider>
   );
@@ -839,7 +826,7 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   const sections: WorkSection[] = [];
   let current: { heading: string; body: string[] } | null = null;
   const flush = () => {
-    // 見出しも本文も空のセクション（先頭の空行など）は捨てる。残すと先頭に罫線だけが出る
+    // 見出しも本文も空のセクション（先頭の空行など）は捨てる。残すと空のセクション分の余白（80px）だけが出る
     if (current && (current.heading || current.body.join("").trim())) sections.push({ heading: current.heading, md: current.body.join("\n").trim() });
   };
   for (const line of md.split("\n")) {
@@ -855,6 +842,6 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   if (sections.length === 0) {
     return <p className="text-[13px] text-fg-muted">本文がありません</p>;
   }
-  // 公開側（WorkDetailContent）と同じ 2 列（見出し左・本文右）・罫線・セクション間隔で描画する
+  // 公開側（WorkDetailContent）と同じ 1 カラム（見出し + 右罫線 → 本文）・セクション間隔で描画する
   return <WorkSections sections={sections} />;
 };

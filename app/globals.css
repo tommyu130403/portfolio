@@ -41,9 +41,8 @@ html {
 }
 
 /* 作品詳細（WorkDetailClient の data-work-detail）だけ、上部固定ヘッダーの高さを変数で持つ。
-   - ヘッダー（WorkBreadcrumb）の高さ、本文 2 列時の左見出しの貼り付け位置（WorkSections）がこれを参照する
-   - フォーカス移動・アンカー移動で要素が固定ヘッダーの下に隠れないよう scroll-padding-top も同じ値にする
-   変数が無いページ（スタイルガイド・admin プレビュー）では左見出しは貼り付かない（top が auto になる） */
+   - ヘッダー（WorkBreadcrumb）の高さがこれを参照する
+   - フォーカス移動・アンカー移動で要素が固定ヘッダーの下に隠れないよう scroll-padding-top も同じ値にする */
 html:has([data-work-detail]) {
   --work-header-h: 3.5rem;
   scroll-padding-top: var(--work-header-h);

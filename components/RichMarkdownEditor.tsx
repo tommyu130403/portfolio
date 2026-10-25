@@ -480,7 +480,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           <>
           {/* 見出しは Library Headline（305:265）の 2 種のみ: type=01 = 見出01（#）/ type=02 = 見出02（###） */}
           <TBtn label="見出01" title="# 見出し01（Headline type=01・16px 白・セクション区切り）" onClick={() => insertLine("# 見出し")} />
-          <TBtn label="見出02" title="### 見出し02（Headline type=02・横線＋13px gray）" onClick={() => insertLine("### 見出し")} />
+          <TBtn label="見出02" title="### 見出し02（Headline type=02・横線＋16px mint）" onClick={() => insertLine("### 見出し")} />
           <TSep />
           <TBtn label={<strong>B</strong>} title="太字 (Ctrl+B)" onClick={() => insertAround("**", "**", "太字")} />
           <TBtn label={<em>I</em>} title="斜体 (Ctrl+I)" onClick={() => insertAround("*", "*", "斜体")} />

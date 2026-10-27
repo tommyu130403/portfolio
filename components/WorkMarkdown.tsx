@@ -214,7 +214,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-system-300">
+            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-fg">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -604,7 +604,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "paragraph":
       return (
-        <p className="mb-6 text-[15px] leading-[24px] tracking-[0.45px] text-system-300">
+        <p className="mb-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
           {renderInline(block.content, k)}
         </p>
       );
@@ -641,7 +641,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "ul":
       return (
-        <ul className="mb-4 list-disc space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-system-300 marker:text-fg-muted">
+        <ul className="mb-4 list-disc space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg marker:text-fg-muted">
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -649,7 +649,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "ol":
       return (
-        <ol className="mb-4 list-decimal space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-system-300 marker:text-fg-muted">
+        <ol className="mb-4 list-decimal space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg marker:text-fg-muted">
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}

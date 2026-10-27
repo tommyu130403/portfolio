@@ -198,7 +198,6 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
         {showNav && (
           <>
-            <div className="h-px bg-border" />
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {prev && (
                 <WorkPagerCard

@@ -161,7 +161,7 @@ const SEMANTIC_SWATCHES = [
   { kind: "text",   cls: "text-fg-subtle",      token: "semantic.fgSubtle",     value: semantic.fgSubtle,     figma: "Text/Body/Tertiary",  ref: "system-700" },
   { kind: "text",   cls: "text-fg-link",        token: "semantic.fgLink",       value: semantic.fgLink,       figma: "Text/Link",           ref: "main-base" },
   { kind: "text",   cls: "text-fg-link-hover",  token: "semantic.fgLinkHover",  value: semantic.fgLinkHover,  figma: "Text/Link-hover",     ref: "main-050" },
-  { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "system-900" },
+  { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "system-925" },
   { kind: "bg",     cls: "bg-surface-light",    token: "semantic.surfaceLight", value: semantic.surfaceLight, figma: "Background/Light",   ref: "system-875" },
   { kind: "border", cls: "border-border",       token: "semantic.border",       value: semantic.border,       figma: "Border/Default",     ref: "system-825" },
   { kind: "border", cls: "border-border-light", token: "semantic.borderLight",  value: semantic.borderLight,  figma: "Border/Light",       ref: "system-800" },
@@ -938,7 +938,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ・カード/作品詳細・背景なし・border-main・10px main-050)/category(Figma Library Tag-single・カードのカテゴリ。bg main-600・p8・r8・10px)/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ））/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -954,6 +954,7 @@ function ComponentsSection() {
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="機能開発" variant="category" />
+            <Tag label="機能開発" variant="category" size="sm" />
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
@@ -993,7 +994,7 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="Tooltip" description="アイコンの下に出る名前ラベル。hover とキーボード focus で表示（Figma 900:9214）。bg-surface・border・10px・white/80。作品詳細の Tools 一覧で使用">
+        <ComponentPreview title="Tooltip" description="アイコンの下に出る名前ラベル。hover とキーボード focus で表示（Library Tooltip 60:558: bg-surface・border・余白 10/12・角丸 4・影 shadow-base・10px・white/80）。作品詳細の Tools 一覧で使用">
           <div className="pb-8">
             <Tooltip label="Figma">
               <ServiceLogo name="figma" className="h-4 w-4 shrink-0 object-contain" />
@@ -1193,7 +1194,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkBreadcrumb"
-          description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずと件数＋前後矢印を半透明（Figma Background/Dark-α25 = bg-surface/25）＋ぼかしの囲みに入れる。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」、md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
+          description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずと件数＋前後矢印を半透明（Figma Background/Dark-α25 = bg-system-900/25（#212121 の 25%。ページ背景 surface は system-925 なので surface は使わない））＋ぼかしの囲みに入れる。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」、md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={2} total={8} prevHref="#" nextHref="#" />

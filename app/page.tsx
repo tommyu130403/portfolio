@@ -228,7 +228,7 @@ function HomeContent() {
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
             <Headline label="自己紹介" title="Introduction" />
-            <div className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-white">
+            <div className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
               <div className="flex flex-col gap-4">
                 {loading ? (
                   <div className="h-16 w-full animate-pulse rounded bg-system-800" />

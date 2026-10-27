@@ -242,7 +242,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
             tintColor="#B3FFE7"
             className="w-4 h-4 shrink-0"
           />
-          <span className="font-en flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-normal text-white">
+          <span className="font-en flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-normal text-fg">
             {skill.label}
           </span>
         </span>
@@ -329,7 +329,7 @@ export function SkillCard({ card }: { card: SkillCardConfig }) {
           <Icon set={card.icon.set} name={card.icon.name} tintColor="#48F4BE" className="w-6 h-6 shrink-0" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-white">{card.title}</span>
+          <span className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-fg">{card.title}</span>
           <span
             className="font-body text-[13px] leading-[21px] tracking-[0.39px]"
             style={{ color: "#757575" }}

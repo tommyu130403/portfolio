@@ -739,13 +739,13 @@ function ComponentPreview({ title, description, children }: {
   );
 }
 
-function MarkdownEditorDemo() {
+function MarkdownEditorDemo({ defaultMode }: { defaultMode?: "edit" | "split" | "preview" }) {
   const [md, setMd] = useState(
     "# プロジェクト概要\n\n本文テキストを **太字** や *斜体*、[リンク](https://example.com) 付きで入力できます。\n\n### 見出し02\n\n- 箇条書き\n- 項目",
   );
   return (
     <div className="w-full">
-      <RichMarkdownEditor value={md} onChange={setMd} className="h-[420px]" />
+      <RichMarkdownEditor value={md} onChange={setMd} defaultMode={defaultMode} className="h-[420px]" />
     </div>
   );
 }
@@ -1064,9 +1064,16 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="RichMarkdownEditor"
-          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画。onUploadImage を渡すと本文欄への画像の貼り付けでアップロードでき、貼り付けた画像はアップロード後に画像ダイアログ（配置・横幅・倍率）を経て挿入される"
+          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画。onUploadImage を渡すと本文欄への画像の貼り付けでアップロードでき、貼り付けた画像はアップロード後に画像ダイアログ（配置・横幅・倍率）を経て挿入される。defaultMode（edit か split か preview、既定は split）で表示モードの初期値を指定できる"
         >
           <MarkdownEditorDemo />
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="RichMarkdownEditor（defaultMode=edit）"
+          description="表示モードの初期値を編集のみにした例。作品エディタのように、本文欄の外側に公開ページ全体のプレビューを置く場合に使う。モード切替ボタンで分割・プレビューへは従来どおり切り替えられる"
+        >
+          <MarkdownEditorDemo defaultMode="edit" />
         </ComponentPreview>
 
         <ComponentPreview

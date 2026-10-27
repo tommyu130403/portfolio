@@ -484,8 +484,6 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           <TSep />
           <TBtn label={<strong>B</strong>} title="太字 (Ctrl+B)" onClick={() => insertAround("**", "**", "太字")} />
           <TBtn label={<em>I</em>} title="斜体 (Ctrl+I)" onClick={() => insertAround("*", "*", "斜体")} />
-          <TBtn label={<s>S</s>} title="取り消し線" onClick={() => insertAround("~~", "~~", "取消")} />
-          <TBtn label={<code className="text-[10px]">{"</>"}</code>} title="インラインコード" onClick={() => insertAround("`", "`", "code")} />
           <TSep />
           <TBtn label="・リスト" title="箇条書き" onClick={() => insertLine("- 項目")} />
           <TBtn label="1. リスト" title="番号付きリスト" onClick={() => insertLine("1. 項目")} />
@@ -755,7 +753,7 @@ function ImageDialog({
     setDraft(String(v));
     return v;
   };
-  const commitWidth = () => commitNumber(widthDraft, width, 120, 624, setWidth, setWidthDraft);
+  const commitWidth = () => commitNumber(widthDraft, width, 120, 768, setWidth, setWidthDraft);
   const commitScale = () => commitNumber(scaleDraft, scale, 0.1, 3, setScale, setScaleDraft);
 
   const useWidth = align !== "full";
@@ -837,13 +835,13 @@ function ImageDialog({
               <input
                 type="number"
                 min={120}
-                max={624}
+                max={768}
                 step={10}
                 value={widthDraft}
                 onChange={(e) => {
                   setWidthDraft(e.target.value);
                   const n = e.target.value.trim() === "" ? NaN : Number(e.target.value);
-                  if (Number.isFinite(n)) setWidth(clamp(n, 120, 624));
+                  if (Number.isFinite(n)) setWidth(clamp(n, 120, 768));
                 }}
                 onBlur={commitWidth}
                 className={`${dInput} !w-[72px] !px-2 !py-1 text-right`}
@@ -854,8 +852,8 @@ function ImageDialog({
           <input
             type="range"
             min={120}
-            // 本文欄の最大幅（max-w-main 800px − 左見出し 160px − gap 16px）。これより広げても切り詰められるため
-            max={624}
+            // 上限 768 = 800px カラム − 左右 16px。これより広げても切り詰められるため
+            max={768}
             step={10}
             value={width}
             onChange={(e) => {

@@ -11,9 +11,9 @@ type HeadlineProps = {
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
    * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 22px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
-   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（h1・h2 は Library Headline type=02・304:302 の 16px System/700 gray。03 は Figma に無い）
+   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px System/700 gray）
    */
-  variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2" | "markdown-h3";
+  variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2";
 };
 
 const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
@@ -45,16 +45,6 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
         </p>
         <span aria-hidden className="h-px min-w-4 flex-1 bg-border" />
       </div>
-    );
-  }
-
-  // Library 305:265 / 03: Avenir(Body/EN) Heavy 17px #9e9e9e
-  // ※ Figma の Headline に 03 は存在しない。実装側のみの見出し。
-  if (variant === "markdown-h3") {
-    return (
-      <p className="font-en w-full text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
-        {title}
-      </p>
     );
   }
 

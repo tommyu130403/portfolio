@@ -19,15 +19,10 @@ import ProtectedImage from "./ProtectedImage";
  * タイポ体系（Figma 457:2366）:
  *  - `## `   → 見出し01（横線＋Noto Bold 16px gray #616161・Library Headline type=02 304:302）
  *  - `### `  → 見出し02（01 と同形）
- *  - `#### ` → 見出し03（Avenir Heavy 17px gray #9e9e9e）
- *  - `##### `→ 小本文 Body02（13px white）
  *  - `> `    → 引用（13px system-400 #BDBDBD・左ボーダー、連続行対応）
- *  - 段落・リスト → 直前の見出しに応じて本文サイズを切替
- *      ・見出し01（`## `）配下 / 見出し02（`### `）配下 → Body01（15px / 0.45px）
- *      ・見出し03（`#### `）配下 → Body02（13px / 0.39px）
  * 拡張記法:
- *  - **太字** / *斜体* / ~~取消線~~ / `インラインコード` / [リンク](url)（外部はアイコン付き）
- *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
+ *  - **太字** / *斜体* / [リンク](url)（外部はアイコン付き）
+ *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
  *  - `::: card 見出し` 〜 `:::` の汎用カード / `::: workcard id=<uuid>` の作品リンクカード
  *  - `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
@@ -96,19 +91,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
       continue;
     }
 
-    // インラインコード
-    const code = rest.match(/^`([^`]+)`/);
-    if (code) {
-      push(
-        <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">
-          {code[1]}
-        </code>
-      );
-      i += code[0].length;
-      continue;
-    }
-
-    // 太字 / 斜体 / 取消線
+    // 太字 / 斜体
     const bold = rest.match(/^\*\*([^*]+)\*\*/);
     if (bold) {
       push(<strong className="font-bold">{renderInlineLine(bold[1], `${keyBase}-b${key}`)}</strong>);
@@ -119,12 +102,6 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
     if (italic) {
       push(<em className="italic">{renderInlineLine(italic[1], `${keyBase}-i${key}`)}</em>);
       i += italic[0].length;
-      continue;
-    }
-    const strike = rest.match(/^~~([^~]+)~~/);
-    if (strike) {
-      push(<s>{renderInlineLine(strike[1], `${keyBase}-s${key}`)}</s>);
-      i += strike[0].length;
       continue;
     }
 
@@ -148,7 +125,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
 
     // プレーンテキスト（次の特殊トークンまで）
     let next = text.length;
-    for (const s of ["![", "[", "`", "**", "*", "~~", "http"]) {
+    for (const s of ["![", "[", "**", "*", "http"]) {
       const idx = text.indexOf(s, i + 1);
       if (idx !== -1 && idx < next) next = idx;
     }
@@ -237,7 +214,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-system-300">
+            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-fg">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -274,8 +251,6 @@ export function isMockupSrc(src: string): boolean {
 type Block =
   | { type: "h1"; content: string }
   | { type: "h2"; content: string }
-  | { type: "h3"; content: string }
-  | { type: "small"; content: string }
   | { type: "paragraph"; content: string }
   | { type: "quote"; content: string }
   | ImageBlock
@@ -283,7 +258,6 @@ type Block =
   | { type: "ul"; items: string[] }
   | { type: "ol"; items: string[] }
   | { type: "hr" }
-  | { type: "code"; lang: string; content: string }
   | { type: "flowchart"; id: string }
   | { type: "workcard"; id: string }
   | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null }
@@ -316,11 +290,10 @@ function parseBlocks(src: string): Block[] {
   let i = 0;
 
   const isBlockStart = (line: string) =>
-    /^#{2,5}\s+/.test(line) ||
+    /^#{2,3}\s+/.test(line) ||
     /^>\s?/.test(line) ||
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
-    /^```/.test(line) ||
     /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart)\b/.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
@@ -492,20 +465,6 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
 
-    // コードブロック
-    const codeOpen = line.match(/^```(\w*)\s*$/);
-    if (codeOpen) {
-      const buf: string[] = [];
-      i++;
-      while (i < lines.length && !/^```\s*$/.test(lines[i])) {
-        buf.push(lines[i]);
-        i++;
-      }
-      i++;
-      blocks.push({ type: "code", lang: codeOpen[1], content: buf.join("\n") });
-      continue;
-    }
-
     // 画像（単独行）
     const imgOnly = line.trim().match(/^!\[([^\]]*)\]\(([^)\s]+)\)(\{[^}]*\})?$/);
     if (imgOnly) {
@@ -522,19 +481,11 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
 
-    // 見出し（## / ### / #### / #####）。# はセクション分割記号のため本文では段落扱い
-    const h = line.match(/^(#{2,5})\s+(.*)$/);
+    // 見出し（## / ###）。# はセクション分割記号のため本文では段落扱い
+    const h = line.match(/^(#{2,3})\s+(.*)$/);
     if (h) {
       const level = h[1].length;
-      blocks.push(
-        level === 2
-          ? { type: "h1", content: h[2] }
-          : level === 3
-            ? { type: "h2", content: h[2] }
-            : level === 4
-              ? { type: "h3", content: h[2] }
-              : { type: "small", content: h[2] }
-      );
+      blocks.push(level === 2 ? { type: "h1", content: h[2] } : { type: "h2", content: h[2] });
       i++;
       continue;
     }
@@ -630,22 +581,7 @@ function groupImageText(blocks: Block[]): Block[] {
  * ブロック描画
  * ------------------------------------------------------------------ */
 
-/** 本文サイズ（直前の見出しレベルで決まる）。01=15px（見出し01・02 配下）/ 02=13px（見出し03 配下） */
-type BodyLevel = "01" | "02";
-
-/** 本文（段落・リスト）の Body01 / Body02 タイポクラス */
-const bodyTypo = (level: BodyLevel) =>
-  level === "02" ? "text-[13px] leading-[21px] tracking-[0.39px]" : "text-[15px] leading-[24px] tracking-[0.45px]";
-
-function RenderBlock({
-  block,
-  idx,
-  bodyLevel = "01",
-}: {
-  block: Block;
-  idx: number;
-  bodyLevel?: BodyLevel;
-}) {
+function RenderBlock({ block, idx }: { block: Block; idx: number }) {
   const k = `b-${idx}`;
   switch (block.type) {
     case "h1":
@@ -666,21 +602,9 @@ function RenderBlock({
           </p>
         </div>
       );
-    case "h3":
-      return (
-        <p className="font-en mb-4 mt-10 text-[17px] font-extrabold leading-normal tracking-[0.85px] text-fg-muted">
-          {renderInline(block.content, k)}
-        </p>
-      );
-    case "small":
-      return (
-        <p className="mb-3 text-[13px] leading-[21px] tracking-[0.39px] text-system-300">
-          {renderInline(block.content, k)}
-        </p>
-      );
     case "paragraph":
       return (
-        <p className={`mb-6 ${bodyTypo(bodyLevel)} text-system-300`}>
+        <p className="mb-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
           {renderInline(block.content, k)}
         </p>
       );
@@ -717,7 +641,7 @@ function RenderBlock({
       );
     case "ul":
       return (
-        <ul className={`mb-4 list-disc space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-system-300 marker:text-fg-muted`}>
+        <ul className="mb-4 list-disc space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg marker:text-fg-muted">
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -725,7 +649,7 @@ function RenderBlock({
       );
     case "ol":
       return (
-        <ol className={`mb-4 list-decimal space-y-1 pl-6 ${bodyTypo(bodyLevel)} text-system-300 marker:text-fg-muted`}>
+        <ol className="mb-4 list-decimal space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg marker:text-fg-muted">
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -733,12 +657,6 @@ function RenderBlock({
       );
     case "hr":
       return <hr className="my-6 border-border-light" />;
-    case "code":
-      return (
-        <pre className="mb-4 mt-10 overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-system-300">
-          <code>{block.content}</code>
-        </pre>
-      );
     case "flowchart":
       return <FlowchartEmbed id={block.id} />;
     case "workcard":
@@ -795,20 +713,12 @@ function RenderBlock({
 /** 本文 markdown を描画する（flow-root で float 画像を内包し回り込みを成立させる） */
 export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
   const blocks = groupImageText(parseBlocks(md));
-  // 各ブロックの本文サイズを直前の見出しから事前算出（見出し01・02 配下=Body01、見出し03 配下=Body02）
-  const bodyLevels: BodyLevel[] = [];
-  let level: BodyLevel = "01";
-  for (const b of blocks) {
-    if (b.type === "h1" || b.type === "h2") level = "01";
-    else if (b.type === "h3") level = "02";
-    bodyLevels.push(level);
-  }
   // flow-root の先頭ブロックの mt（ブロック区切り 40）はセクション gap が担うため打ち消す。
   // 末尾ブロックの mb はセクション間 gap / カラム下端 padding が担うため打ち消す
   return (
     <div style={{ display: "flow-root" }} className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       {blocks.map((b, i) => (
-        <RenderBlock key={i} block={b} idx={i} bodyLevel={bodyLevels[i]} />
+        <RenderBlock key={i} block={b} idx={i} />
       ))}
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -24,7 +24,7 @@ import RichMarkdownEditor, {
   DeviceSwitcher,
   type PreviewDevice,
 } from "@/components/RichMarkdownEditor";
-import WorkDetailHeader, { type WorkToolItem } from "@/components/WorkDetailHeader";
+import WorkDetailHeader, { type WorkToolItem, type WorkDetailEditRegion } from "@/components/WorkDetailHeader";
 import WorkCard from "@/components/WorkCard";
 import WorkDetailContent from "@/components/WorkDetailContent";
 import { parseScreenshots, DEFAULT_IMAGE } from "@/lib/work-content";
@@ -192,6 +192,35 @@ function composePublicWork({
   };
 }
 
+/**
+ * textarea の中で `textBefore` が占める高さ（px）を測る。折り返しを含めた実際の行位置を得るために、
+ * 同じ幅・フォント・左右余白の見えない要素へ流し込んで高さを読む。
+ */
+function measureTextareaOffset(ta: HTMLTextAreaElement, textBefore: string): number {
+  if (!textBefore) return 0;
+  const cs = getComputedStyle(ta);
+  const mirror = document.createElement("div");
+  for (const prop of [
+    "fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "tabSize",
+    "paddingLeft", "paddingRight", "overflowWrap", "wordBreak",
+  ] as const) {
+    mirror.style[prop] = cs[prop];
+  }
+  mirror.style.position = "absolute";
+  mirror.style.visibility = "hidden";
+  mirror.style.pointerEvents = "none";
+  mirror.style.whiteSpace = "pre-wrap";
+  mirror.style.boxSizing = "border-box";
+  mirror.style.width = `${ta.clientWidth}px`; // clientWidth は内側余白込み・枠線なし（box-sizing: border-box で合わせる）
+  // 末尾の改行は div では行にならないため、ゼロ幅文字を足して「前の行の終わり」まで高さに含める
+  mirror.textContent = `${textBefore}\n\u200b`;
+  document.body.appendChild(mirror);
+  const lineHeight = parseFloat(cs.lineHeight) || 20;
+  const height = mirror.offsetHeight - lineHeight; // 足した 1 行分を戻す
+  mirror.remove();
+  return Math.max(0, height);
+}
+
 export default function WorkEditor({ workId, iconCatalog }: { workId: string; iconCatalog: IconCatalog }) {
   const router = useRouter();
   const isNew = workId === "new";
@@ -227,6 +256,28 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   // 保存時の検証エラーで該当欄まで左ペインをスクロールするための参照
   const periodFieldRef = useRef<HTMLDivElement>(null);
   const breakdownFieldRef = useRef<HTMLDivElement>(null);
+  // プレビューの編集ボタンから左カラムの該当欄へ移動するための参照
+  const leftPaneRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const screenshotsFieldRef = useRef<HTMLDivElement>(null);
+  const titleFieldRef = useRef<HTMLDivElement>(null);
+  const tagsFieldRef = useRef<HTMLDivElement>(null);
+  const rolesFieldRef = useRef<HTMLDivElement>(null);
+  const bodyFieldRef = useRef<HTMLDivElement>(null);
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+  }, []);
+  const ringClass = (key: string) =>
+    `rounded-[8px] transition-shadow ${highlight === key ? "ring-2 ring-inset ring-primary/60" : ""}`;
+  /** 該当欄を画面中央へスクロールし、1.6 秒だけ枠で強調する */
+  const focusField = (key: string, ref: RefObject<HTMLElement | null>) => {
+    ref.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    setHighlight(key);
+    if (highlightTimer.current) clearTimeout(highlightTimer.current);
+    highlightTimer.current = setTimeout(() => setHighlight(null), 1600);
+  };
 
   // 画像ピッカー（RichMarkdownEditor からは Promise で URL を受け取る）
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -512,6 +563,57 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     setPublishPending(false);
   };
 
+  /** プレビューの編集ボタン → 左カラムの該当欄へ移動して強調する */
+  const handlePreviewEdit = (region: WorkDetailEditRegion) => {
+    if (region === "title") {
+      // タイトル入力は上部のヘッダー行にあるため、左カラムを先頭へ戻して入力欄にフォーカスする
+      leftPaneRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      titleInputRef.current?.focus();
+      focusField("title", titleFieldRef);
+      return;
+    }
+    const target = {
+      screenshots: screenshotsFieldRef,
+      tags: tagsFieldRef,
+      period: periodFieldRef,
+      roles: rolesFieldRef,
+      stakeholders: breakdownFieldRef,
+    }[region];
+    focusField(region === "stakeholders" ? "breakdown" : region, target);
+  };
+
+  /** プレビューの見出しの編集ボタン → 本文エディタの該当 `# 見出し` 行にカーソルを置く */
+  const handleEditSection = (index: number) => {
+    // WorkDetailContent と同じ並び（markdownToSections の結果から見出しも本文も空のものを除く）を、行番号付きで再現する
+    // textarea は値を LF に揃えるため、文字位置の計算も LF 基準にする（DB 由来の CRLF でずれない）
+    const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
+    const found: { line: number; heading: string; body: string[] }[] = [];
+    let cur: { line: number; heading: string; body: string[] } | null = null;
+    lines.forEach((l, i) => {
+      if (l.startsWith("# ")) {
+        if (cur) found.push(cur);
+        cur = { line: i, heading: l.slice(2).trim(), body: [] };
+      } else if (l.trim() !== UPLOAD_PLACEHOLDER) {
+        if (!cur) cur = { line: 0, heading: "", body: [] };
+        cur.body.push(l);
+      }
+    });
+    if (cur) found.push(cur);
+    const target = found.filter((s) => s.heading || s.body.join("\n").trim())[index];
+    focusField("body", bodyFieldRef);
+    if (!target) return;
+    // 本文エディタは textarea の位置を外へ公開していないため、API を増やさず DOM から直接取る（この画面専用の最小対応）
+    const ta = bodyFieldRef.current?.querySelector("textarea");
+    if (!ta) return;
+    const start = lines.slice(0, target.line).reduce((n, l) => n + l.length + 1, 0);
+    const end = start + lines[target.line].length;
+    ta.focus({ preventScroll: true });
+    ta.setSelectionRange(start, end);
+    // 選択行が見える位置まで textarea 内をスクロールする。折り返しで行番号×行高の概算は大きく外れるため、
+    // textarea と同じ幅・フォント・余白の見えない要素に「選択行より前の本文」を流し込み、その高さを実際の行位置として使う
+    ta.scrollTop = Math.max(0, measureTextareaOffset(ta, lines.slice(0, target.line).join("\n")) - ta.clientHeight / 3);
+  };
+
   const handleSave = async () => {
     if (!work) return;
     if (!work.title.trim()) {
@@ -522,26 +624,26 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     const periodError = periodTouched ? validatePeriod(period) : null;
     if (periodError) {
       setSaveError(periodError);
-      periodFieldRef.current?.scrollIntoView({ block: "center" });
+      focusField("period", periodFieldRef);
       return;
     }
     // 役割未選択の行と、マスタに無い役割 id の行（別画面で削除された等）はどちらも保存しない
     const knownRole = new Set(roles.map((r) => r.id));
     if (breakdown.mode === "rows" && breakdown.rows.some((r) => !knownRole.has(r.role_id))) {
       setSaveError("体制内訳に、役割が未選択か、マスタから削除された役割の行があります");
-      breakdownFieldRef.current?.scrollIntoView({ block: "center" });
+      focusField("breakdown", breakdownFieldRef);
       return;
     }
     if (breakdown.mode === "rows") {
       const ids = breakdown.rows.map((r) => r.role_id);
       if (new Set(ids).size !== ids.length) {
         setSaveError("体制内訳に同じ役割が複数あります");
-        breakdownFieldRef.current?.scrollIntoView({ block: "center" });
+        focusField("breakdown", breakdownFieldRef);
         return;
       }
       if (breakdown.rows.some((r) => !Number.isInteger(r.headcount) || r.headcount < 1 || r.headcount > 999)) {
         setSaveError("体制内訳の人数は 1〜999 で入力してください");
-        breakdownFieldRef.current?.scrollIntoView({ block: "center" });
+        focusField("breakdown", breakdownFieldRef);
         return;
       }
     }
@@ -640,6 +742,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           ← Works
         </Link>
         <input
+          ref={titleInputRef}
           value={work.title}
           onChange={(e) => setField("title", e.target.value)}
           placeholder="プロジェクトタイトル"
@@ -683,13 +786,13 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             <DeviceSwitcher device={settingsDevice} onChange={setSettingsDevice} />
           </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
-          <div className="w-full shrink-0 pb-12 xl:min-h-0 xl:w-1/2 xl:shrink xl:overflow-y-auto xl:pr-4">
+          <div ref={leftPaneRef} className="w-full shrink-0 pb-12 xl:min-h-0 xl:w-1/2 xl:shrink xl:overflow-y-auto xl:pr-4">
           <div className="flex max-w-main min-w-0 flex-col gap-4">
-            <div>
+            <div ref={titleFieldRef} className={ringClass("title")}>
               <FieldLabel>カテゴリ</FieldLabel>
               <WorkCategoryField value={work.category} onChange={(v) => setField("category", v)} dirty={dirty} />
             </div>
-            <div>
+            <div ref={rolesFieldRef} className={ringClass("roles")}>
               <FieldLabel>担当役割</FieldLabel>
               <div className="flex flex-wrap gap-2">
                 {roles.map((r) => {
@@ -759,7 +862,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 ))}
               </select>
             </div>
-            <div ref={periodFieldRef}>
+            <div ref={periodFieldRef} className={ringClass("period")}>
               <FieldLabel>期間</FieldLabel>
               <PeriodFields value={period} disabled={saving} onChange={(p) => { setPeriod(p); markDirty(); }} />
               {isLegacyPeriod(work) && isSamePeriod(period, periodInputsOf(work)) && (
@@ -770,7 +873,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             <FormGroupHeader>デバイスモックアップ</FormGroupHeader>
             {/* 旧 Hero の hero_brand / hero_bg_color は新詳細ページ（/works）で未使用のため入力を撤去。
                 カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
-            <div>
+            <div ref={screenshotsFieldRef} className={ringClass("screenshots")}>
               <FieldLabel>スクリーンショット（左パネルのデバイスモックアップ・先頭2枚を表示）</FieldLabel>
               <HeroScreenshotsEditor
                 value={(work.hero_screenshots ?? []) as string[]}
@@ -788,6 +891,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
               />
             </div>
+            <div ref={tagsFieldRef} className={`flex flex-col gap-4 ${ringClass("tags")}`}>
             <div>
               <FieldLabel>制作内容</FieldLabel>
               <div className="flex flex-wrap gap-2">
@@ -880,9 +984,10 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               </div>
               <p className="mt-2 text-[11px] text-fg-muted">アイコン画像は「マスタ管理」で設定します</p>
             </div>
+            </div>
 
             <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>
-            <div ref={breakdownFieldRef}>
+            <div ref={breakdownFieldRef} className={ringClass("breakdown")}>
               <FieldLabel>体制内訳（役割と人数。公開ページでは人数付きタグで表示）</FieldLabel>
               <StakeholderBreakdownField
                 roles={roles}
@@ -954,7 +1059,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             </div>
 
             <FormGroupHeader>本文</FormGroupHeader>
-            <div className="flex flex-col gap-2">
+            <div ref={bodyFieldRef} className={`flex flex-col gap-2 ${ringClass("body")}`}>
               {/^:::\s*(timeline|stakeholders)\b/m.test(markdown) && (
                 <p className="text-[11px] text-fg-muted">本文に「::: timeline」「::: stakeholders」の行があります。この行は現在は表示に使われません（Timeline / Stakeholders は上の設定欄で編集）。</p>
               )}
@@ -988,8 +1093,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                     contents={contents}
                     tools={previewTools}
                     screenshots={previewScreenshots}
+                    onEdit={handlePreviewEdit}
                   />
-                  <WorkDetailContent work={previewWork} />
+                  <WorkDetailContent work={previewWork} onEditSection={handleEditSection} />
                   <section className="flex flex-col gap-3">
                     <p className="text-[11px] text-fg-muted">一覧カードでの見え方</p>
                     <div className="max-w-[339px]">

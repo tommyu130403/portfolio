@@ -7,6 +7,8 @@ type Work = Tables<"works">;
 
 type WorkDetailContentProps = {
   work: Work;
+  /** admin プレビュー専用。見出しの編集ボタンを出す（引数 = 空セクションを除いた並びでの何番目か） */
+  onEditSection?: (index: number) => void;
 };
 
 /**
@@ -16,13 +18,13 @@ type WorkDetailContentProps = {
  * 概要内の「背景／課題」等は markdown の `###`（見出し02・01 と同形）で表現される。
  * Timeline / Stakeholders は上部ブロックの「全画面」ボタン → モーダルで表示する（本文には描画しない）。
  */
-const WorkDetailContent: FC<WorkDetailContentProps> = ({ work }) => {
+const WorkDetailContent: FC<WorkDetailContentProps> = ({ work, onEditSection }) => {
   // 見出しも本文も空のセクション（旧データ）は捨てる。残すと空のセクション分の余白（80px）だけが出る（admin プレビューと同じ扱い）
   const sections = normalizeSections(work.sections).filter((s) => s.heading || s.md.trim());
 
   if (sections.length === 0) return null;
 
-  return <WorkSections sections={sections} />;
+  return <WorkSections sections={sections} onEditSection={onEditSection} />;
 };
 
 export default WorkDetailContent;

@@ -102,11 +102,11 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
         </div>
       )}
 
-      {/* カテゴリ + タイトル + 制作内容/Tools（gap-6）→ メタ表（48px 空け） */}
-      <div className="flex w-full flex-col gap-12">
-        <div className="flex w-full flex-col gap-6">
+      {/* カテゴリ + タイトル + 制作内容/Tools（gap-8）→ メタ表（gap-8）。Figma 787:9916 の Frame 427318239 は 3 要素とも gap 32 */}
+      <div className="flex w-full flex-col gap-8">
+        <div className="flex w-full flex-col gap-8">
           <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
-            {work.category && <p className="text-body-01-jp text-primary">{work.category}</p>}
+            {work.category && <Tag variant="category" label={work.category} className="self-start" />}
             <p className="text-title-pj text-fg">{work.title}</p>
             {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
           </div>

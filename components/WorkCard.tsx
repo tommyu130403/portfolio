@@ -40,7 +40,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, contents, period, image,
               長いカテゴリは省略し、期間（右端）は折り返さない */}
           {(category || period) && (
             <div className="flex items-center justify-between gap-2">
-              {category ? <Tag variant="category" label={category} className="min-w-0" /> : null}
+              {category ? <Tag variant="category" label={category} size="sm" className="min-w-0" /> : null}
               {period ? (
                 <p className="ml-auto shrink-0 font-en text-[11px] font-extrabold leading-none tracking-[0.33px] text-fg-subtle whitespace-nowrap [text-box:trim-both_cap_alphabetic]">
                   {period}

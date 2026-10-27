@@ -3,6 +3,7 @@
 import { type FC, useState } from "react";
 import Link from "next/link";
 import Icon from "./Icon";
+import Tag from "./Tag";
 import ProtectedImage from "./ProtectedImage";
 import { GUIDE_TEXT } from "./WorkBreadcrumb";
 
@@ -43,9 +44,8 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
           {isNext && arrow}
         </span>
       )}
-      {category && (
-        <span className="w-full min-w-0 truncate text-[10px] leading-[12px] tracking-[0.3px] text-main-100">{category}</span>
-      )}
+      {/* カテゴリは Tag-single チップ（Figma Master 973:2190） */}
+      {category && <Tag variant="category" label={category} size="sm" />}
       <span className="line-clamp-2 w-full min-w-0 text-body-02-jp-bold text-system-white [overflow-wrap:anywhere]">{title}</span>
     </>
   );
@@ -54,7 +54,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
     <Link
       href={href}
       aria-label={direction ? `${isNext ? "次" : "前"}のWork: ${title}` : `Work: ${title}`}
-      className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border bg-surface-light transition-colors hover:border-system-500 ${
+      className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border transition-colors hover:border-system-500 ${
         thumbSrc
           ? `items-stretch ${isNext ? "md:flex-row-reverse" : ""}`
           : `flex-col gap-[6px] px-4 py-[14px] ${align}`

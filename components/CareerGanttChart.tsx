@@ -31,20 +31,20 @@ const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
-  cardBg: "#212121", // Background/Default（Figma 770:6652。ページ背景と同色・影なし）
+  cardBg: "#191919", // Background/Default = System/925（Figma 770:6652。ページ背景と同色・影なし）
   cardBorder: "#3a3a3a", // Border/Default（System/825）
   cardBorderOpen: "#424242", // Border/Light
   period: "#9e9e9e", // System/500
-  role: "#ffffff",
+  role: "#e0e0e0", // Text/Body/Primary（System/300）
   company: "#616161", // System/700
   desc: "#9e9e9e", // System/500
   worksLabel: "#616161", // System/700
-  worksLink: "#b3ffe7", // Main/050
-  worksLinkHover: "#39c89b", // Main/200
+  worksLink: "#39c89b", // Main/200
+  worksLinkHover: "#b3ffe7", // Main/050（Figma に hover 定義なし・明るい側へ）
   iconArrow: "#757575", // System/600
   iconArrowCurrent: "#2b9e7a", // Main/300
   badgeBg: "#48f4be",
-  badgeText: "#212121",
+  badgeText: "#191919", // Background/Default（System/925）
   divider: "#3a3a3a",
   dot: "#3a3a3a", // Border/Default（System/825）
   dotOpen: "#424242", // Border/Light

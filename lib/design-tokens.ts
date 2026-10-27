@@ -37,9 +37,10 @@
  *   TextStyle: Title/PJ・Body/01/JP/Regular・Body/02/JP/Regular・Body/02/JP/Bold・
  *              Body/03/JP/Regular・Body/03/EN/Regular・Caption/01/JP
  *   Effect: shadow・shadow-wisper
+ *   2026-10-27: Background/Default は System/925（#191919）へ変更済みを Library の paint style と Master 4 画面で確認（semantic.surface を追従）
  *
  * 未照合（Library には変数として存在するが Master のどのノードも使っていないため値が取れない）
- *   System: 025 / 075 / 150 / 250 / 350 / 400 / 450 / 550 / 650 / 750 / 850 / 925 / 950 / 1000 / Black
+ *   System: 025 / 075 / 150 / 250 / 350 / 400 / 450 / 550 / 650 / 750 / 850 / 950 / 1000 / Black
  *   Main:   400 / 500 / 600 ／ danger 全段 ／ warning 全段
  *   Semantic: Text/Caption・Border/Main・Action/hover の不透明度
  *             （Action/hover は get_variable_defs が #FFFFFF しか返さず α を持たない）
@@ -165,7 +166,7 @@ export const semantic = {
   /** Text/Link-hover — テキストリンクのホバー */
   fgLinkHover: color.main["050"], //                  Figma: Text/Link-hover
   /** Background/Default — 標準サーフェス（カード等） */
-  surface: color.system["900"], //                    Figma: Background/Default
+  surface: color.system["925"], //                    Figma: Background/Default
   /** Background/Light — 一段明るいサーフェス */
   surfaceLight: color.system["875"], //               Figma: Background/Light
   /** Border/Default — 標準ボーダー */

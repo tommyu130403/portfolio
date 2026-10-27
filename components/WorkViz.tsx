@@ -93,9 +93,9 @@ const RefIcon: FC<{ icon?: string; tint: string; className: string }> = ({ icon,
 
 // RACI バッジ（Figma 814:3872〜3875）
 const RACI_STYLE: Record<RaciKey, string> = {
-  R: "bg-main-100 text-system-900",
-  A: "bg-white text-system-900",
-  C: "bg-system-600 text-system-900",
+  R: "bg-main-100 text-surface",
+  A: "bg-white text-surface",
+  C: "bg-system-600 text-surface",
   I: "bg-system-800 text-system-500",
 };
 const RACI_LEGEND: { key: RaciKey; label: string }[] = [
@@ -293,7 +293,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
                     )}
                   </span>
                   {m.me && (
-                    <span className="font-sans rounded-full bg-main-100 px-1.5 py-1 text-[10px] font-normal leading-none tracking-[0.3px] text-system-900">
+                    <span className="font-sans rounded-full bg-main-100 px-1.5 py-1 text-[10px] font-normal leading-none tracking-[0.3px] text-surface">
                       担当
                     </span>
                   )}

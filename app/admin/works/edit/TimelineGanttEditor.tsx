@@ -9,9 +9,9 @@ import NumberField from "./NumberField";
 
 // components/WorkViz.tsx:94-99 RACI_STYLE の複製（components/ を触らないため。色を変えるときは両方直す）
 const RACI_STYLE: Record<RaciKey, string> = {
-  R: "bg-main-100 text-system-900",
-  A: "bg-white text-system-900",
-  C: "bg-system-600 text-system-900",
+  R: "bg-main-100 text-surface",
+  A: "bg-white text-surface",
+  C: "bg-system-600 text-surface",
   I: "bg-system-800 text-system-500",
 };
 const RACI_KEYS: RaciKey[] = ["R", "A", "C", "I"];

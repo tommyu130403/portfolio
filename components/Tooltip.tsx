@@ -11,7 +11,7 @@ type TooltipProps = {
 };
 
 /**
- * 子要素の下に出る小さな説明ラベル（Figma 900:9214 の Tooltip）。
+ * 子要素の下に出る小さな説明ラベル（Figma Library Tooltip 60:558: 余白 10/12・角丸 4・Background/Default + Border/Default・影 shadow）。
  * hover / キーボード focus で表示。アイコンだけのツール一覧などで名前を補う。
  *
  * 使用例:
@@ -48,7 +48,7 @@ const Tooltip: FC<TooltipProps> = ({ label, children, focusable = true, classNam
         ref={tipRef}
         id={id}
         role="tooltip"
-        className={`pointer-events-none absolute top-full z-10 mt-1 hidden whitespace-nowrap rounded-[4px] border border-border bg-surface px-2 py-[6px] font-en text-[10px] leading-none text-white/80 drop-shadow-[1px_1px_8px_rgba(0,0,0,0.25)] group-hover/tooltip:block group-focus-visible/tooltip:block ${alignRight ? "right-0" : "left-0"}`}
+        className={`pointer-events-none absolute top-full z-10 mt-1 hidden whitespace-nowrap rounded-[4px] border border-border bg-surface px-3 py-[10px] font-en text-[10px] leading-none text-white/80 shadow-base group-hover/tooltip:block group-focus-visible/tooltip:block ${alignRight ? "right-0" : "left-0"}`}
       >
         {label}
       </span>

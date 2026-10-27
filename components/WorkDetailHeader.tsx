@@ -9,6 +9,7 @@ import WorkVizModal from "./WorkVizModal";
 import ProtectedImage from "./ProtectedImage";
 import { PhoneMock, ScreenshotLightbox } from "./DeviceMock";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
+import { EditButton } from "./WorkMarkdown";
 import { periodFromRow } from "@/lib/timeline-scale";
 import type { Tables } from "@/src/types/supabase";
 
@@ -44,18 +45,23 @@ export const parseStakeholderBreakdown = (
   return items;
 };
 
+/** admin プレビューで「編集」ボタンを出せる領域（クリックで左カラムの該当入力欄へ移動する） */
+export type WorkDetailEditRegion = "screenshots" | "title" | "tags" | "period" | "roles" | "stakeholders";
+
 type WorkDetailHeaderProps = {
   work: Work;
   contents: string[];
   tools: WorkToolItem[];
   screenshots: string[];
+  /** admin プレビュー専用。渡すと各領域に編集ボタンを重ねる（公開ページでは渡さない＝見た目は変わらない） */
+  onEdit?: (region: WorkDetailEditRegion) => void;
 };
 
 /* ------------------------------------------------------------------ *
  * 上部ブロック本体（Figma 787:9916 / _ProjectContents のブロック①②）
  * ------------------------------------------------------------------ */
 
-const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, screenshots }) => {
+const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, screenshots, onEdit }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [vizModal, setVizModal] = useState<"timeline" | "stakeholders" | null>(null);
   // 読み込みに失敗したアイコン URL。失敗したら次の候補（手元のロゴ → 文字 Tag）へ進む
@@ -73,28 +79,41 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
   const roles = (work.role ?? "").split(/[・、,]/).map((r) => r.trim()).filter(Boolean);
   const stakeholderTags = useMemo(() => parseStakeholderBreakdown(work.stakeholder_breakdown), [work.stakeholder_breakdown]);
 
+  // 編集ボタンを重ねる領域の基準位置（onEdit が無いときは何も足さず、公開ページの見た目を変えない）
+  const rel = onEdit ? "relative " : "";
+  // 文字やタグが右端まで届く領域は、ボタンの幅ぶん右に余白を取って重ならないようにする
+  const relPad = onEdit ? "relative pr-10 " : "";
+
   return (
     <div className="flex w-full flex-col gap-12">
       {/* デバイスモック（最大2枚） */}
       {shots.length > 0 && (
-        <div className="flex w-full items-start justify-center gap-6">
+        <div className={`${rel}flex w-full items-start justify-center gap-6`}>
           {shots.slice(0, 2).map((src, i) => (
             <PhoneMock key={i} src={src} onClick={() => setLightboxOpen(true)} />
           ))}
+          {onEdit && <EditButton label="スクリーンショット" onClick={() => onEdit("screenshots")} />}
+        </div>
+      )}
+      {shots.length === 0 && onEdit && (
+        <div className="relative flex min-h-10 items-center justify-center text-[12px] text-fg-muted">
+          スクリーンショット未設定
+          <EditButton label="スクリーンショット" onClick={() => onEdit("screenshots")} />
         </div>
       )}
 
       {/* カテゴリ + タイトル + 制作内容/Tools（gap-6）→ メタ表（48px 空け） */}
       <div className="flex w-full flex-col gap-12">
         <div className="flex w-full flex-col gap-6">
-          <div className="flex w-full flex-col gap-4 [word-break:break-word]">
+          <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
             {work.category && <p className="text-body-01-jp text-primary">{work.category}</p>}
             <p className="text-title-pj text-fg">{work.title}</p>
+            {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
           </div>
 
           {/* 制作内容 → Tools を 1 行で並べる（Tools は icon_url があればアイコン、無ければ文字 Tag） */}
           {(contents.length > 0 || tools.length > 0) && (
-            <div className="flex w-full flex-wrap items-center gap-2">
+            <div className={`${relPad}flex w-full flex-wrap items-center gap-2`}>
               {contents.map((s) => (
                 <Tag key={s} label={s} variant="content" />
               ))}
@@ -113,6 +132,13 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
                   <Tag key={t.name} label={t.name} variant="small" />
                 );
               })}
+              {onEdit && <EditButton label="制作内容・ツール" onClick={() => onEdit("tags")} />}
+            </div>
+          )}
+          {contents.length === 0 && tools.length === 0 && onEdit && (
+            <div className="relative flex min-h-10 items-center justify-center text-[12px] text-fg-muted">
+              制作内容・ツール未設定
+              <EditButton label="制作内容・ツール" onClick={() => onEdit("tags")} />
             </div>
           )}
         </div>
@@ -150,6 +176,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
                 />
               </button>
             )}
+            {onEdit && <EditButton label="期間" onClick={() => onEdit("period")} className="ml-auto shrink-0" />}
           </div>
 
           {/* 役割 */}
@@ -164,6 +191,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
             ) : (
               <span className="min-w-0 truncate text-body-03-jp text-fg-muted">—</span>
             )}
+            {onEdit && <EditButton label="役割" onClick={() => onEdit("roles")} className="ml-auto shrink-0" />}
           </div>
 
           {/* 関係者 */}
@@ -196,6 +224,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
                 />
               </button>
             )}
+            {onEdit && <EditButton label="関係者" onClick={() => onEdit("stakeholders")} className="ml-auto shrink-0" />}
           </div>
         </div>
       </div>

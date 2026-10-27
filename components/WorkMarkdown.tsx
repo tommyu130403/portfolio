@@ -1,6 +1,7 @@
 import type { CSSProperties, FC, ReactNode } from "react";
 import React, { useMemo } from "react";
 import Headline from "./Headline";
+import Icon from "./Icon";
 import {
   parseImageAttrs,
   widthToCss,
@@ -728,13 +729,34 @@ export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
 export type WorkSection = { heading: string; md: string };
 
 /**
+ * admin プレビュー上の編集ボタン（鉛筆）。公開ページでは使わない。
+ * className 未指定なら領域の右上角に重ねる（領域側に `relative` が要る）
+ */
+export const EditButton: FC<{ label: string; onClick: () => void; className?: string }> = ({
+  label,
+  onClick,
+  className = "absolute -right-2 -top-2 z-[1]",
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={`${label}を編集`}
+    className={`flex size-7 items-center justify-center rounded-full border border-border-light bg-surface/90 text-system-500 shadow-base transition-colors hover:border-primary hover:text-primary ${className}`}
+  >
+    <Icon set="Edit" name="edit" tintColor="currentColor" className="size-3.5" aria-hidden />
+  </button>
+);
+
+/**
  * 見出し＋本文セクションの並びを描画する共有レンダラ。
  * 公開ページ（WorkDetailContent）と admin プレビュー（WorkMarkdownDocument）が
  * 同じ「Headline + MarkdownBody」ループを共有し、片方だけ崩れる乖離を防ぐ。
  */
 export const WorkSections: FC<{
   sections: WorkSection[];
-}> = ({ sections }) => {
+  /** admin プレビュー専用。見出しの編集ボタンを出す（引数 = sections 内の何番目か）。渡さなければ見た目は変わらない */
+  onEditSection?: (index: number) => void;
+}> = ({ sections, onEditSection }) => {
   // 本文全体で登場順にフローチャートへ Fig. 番号を振る（同じ id は最初の番号を使う）
   const figureNumbers = useMemo(() => {
     const map = new Map<string, number>();
@@ -761,7 +783,18 @@ export const WorkSections: FC<{
       <div className="flex flex-col gap-20">
         {sections.map((sec, i) => (
           <section key={i} className="flex w-full flex-col gap-8">
-            {sec.heading && <Headline title={sec.heading} variant="section-aside" />}
+            {onEditSection ? (
+              <div className="relative">
+                {sec.heading ? (
+                  <Headline title={sec.heading} variant="section-aside" />
+                ) : (
+                  <p className="text-[12px] text-fg-muted">見出しなし</p>
+                )}
+                <EditButton label={sec.heading || "見出しなしのセクション"} onClick={() => onEditSection(i)} />
+              </div>
+            ) : (
+              sec.heading && <Headline title={sec.heading} variant="section-aside" />
+            )}
             {/* 本文は左右 16px 内側（Figma 888:3167） */}
             <div className="min-w-0 w-full px-4">
               <MarkdownBody md={sec.md} />

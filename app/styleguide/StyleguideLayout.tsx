@@ -739,13 +739,27 @@ function ComponentPreview({ title, description, children }: {
   );
 }
 
-function MarkdownEditorDemo({ defaultMode }: { defaultMode?: "edit" | "split" | "preview" }) {
+function MarkdownEditorDemo({ defaultMode, controlled }: { defaultMode?: "edit" | "split" | "preview"; controlled?: boolean }) {
+  // controlled のときはモードを親が持ち、外のボタンからも切り替えられることを示す
+  const [mode, setMode] = useState<"edit" | "split" | "preview">(defaultMode ?? "split");
   const [md, setMd] = useState(
     "# プロジェクト概要\n\n本文テキストを **太字** や *斜体*、[リンク](https://example.com) 付きで入力できます。\n\n### 見出し02\n\n- 箇条書き\n- 項目",
   );
   return (
     <div className="w-full">
-      <RichMarkdownEditor value={md} onChange={setMd} defaultMode={defaultMode} className="h-[420px]" />
+      {controlled && (
+        <p className="mb-2 text-[11px] text-fg-muted">
+          親が持つモード: {mode}
+          <button type="button" onClick={() => setMode("edit")} className="ml-3 rounded-[6px] border border-border-light px-2 py-0.5 text-fg-muted hover:text-white">
+            外から編集モードへ
+          </button>
+        </p>
+      )}
+      {controlled ? (
+        <RichMarkdownEditor value={md} onChange={setMd} mode={mode} onModeChange={setMode} className="h-[420px]" />
+      ) : (
+        <RichMarkdownEditor value={md} onChange={setMd} defaultMode={defaultMode} className="h-[420px]" />
+      )}
     </div>
   );
 }
@@ -1064,7 +1078,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="RichMarkdownEditor"
-          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画。onUploadImage を渡すと本文欄への画像の貼り付けでアップロードでき、貼り付けた画像はアップロード後に画像ダイアログ（配置・横幅・倍率）を経て挿入される。defaultMode（edit か split か preview、既定は split）で表示モードの初期値を指定できる"
+          description="Work 本文編集用のリッチ Markdown エディタ。生 Markdown ＋ 編集 / 分割 / プレビュー の3モード。プレビューは公開側と同一の WorkMarkdown レンダラで描画。onUploadImage を渡すと本文欄への画像の貼り付けでアップロードでき、貼り付けた画像はアップロード後に画像ダイアログ（配置・横幅・倍率）を経て挿入される。defaultMode（edit か split か preview、既定は split）で表示モードの初期値を指定できる。mode と onModeChange を渡すとモードを外から制御できる（作品エディタがプレビューの見出しボタンで編集モードへ戻すのに使う）"
         >
           <MarkdownEditorDemo />
         </ComponentPreview>
@@ -1074,6 +1088,13 @@ function ComponentsSection() {
           description="表示モードの初期値を編集のみにした例。作品エディタのように、本文欄の外側に公開ページ全体のプレビューを置く場合に使う。モード切替ボタンで分割・プレビューへは従来どおり切り替えられる"
         >
           <MarkdownEditorDemo defaultMode="edit" />
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="RichMarkdownEditor（mode / onModeChange で外から制御）"
+          description="モードを親の状態で持つ例。エディタ内の切替ボタンは onModeChange を呼び、親からも切り替えられる。作品エディタはこれを使って、プレビュー表示中に右側の見出しボタンが押されたら編集モードへ戻している"
+        >
+          <MarkdownEditorDemo defaultMode="preview" controlled />
         </ComponentPreview>
 
         <ComponentPreview
@@ -1156,6 +1177,21 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview
+          title="WorkDetailHeader（onEdit 付き・admin プレビュー用）"
+          description="admin の作品エディタ右側プレビュー専用。onEdit を渡すと、スクリーンショット・カテゴリ/タイトル・制作内容/ツール・期間・役割・関係者の各領域に編集ボタン（円形・鉛筆アイコン）が重なる。押すと左カラムの該当入力欄へ移動して強調する。公開ページでは渡さないので見た目は変わらない"
+        >
+          <div className="rounded-[12px] border border-border-light bg-surface px-6">
+            <WorkDetailHeader
+              work={SAMPLE_WORK_DETAIL}
+              contents={["UI Design", "UX Research", "PJ Management"]}
+              tools={[{ name: "Figma", icon_url: null }, { name: "React", icon_url: null }]}
+              screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
+              onEdit={() => {}}
+            />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
           title="WorkBreadcrumb"
           description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずと件数＋前後矢印を半透明（Figma Background/Dark-α25 = bg-surface/25）＋ぼかしの囲みに入れる。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」、md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
         >
@@ -1203,6 +1239,15 @@ function ComponentsSection() {
             <div className="w-full max-w-[640px]">
               <LaptopMock src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80" browser url="example.com" />
             </div>
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkDetailContent（onEditSection 付き・admin プレビュー用）"
+          description="admin の作品エディタ右側プレビュー専用。onEditSection を渡すと、各セクション見出しの右上に編集ボタンが重なり、押すと本文エディタの該当見出し行にカーソルが移る。見出しが空のセクションは見出しなしと表示してボタンだけ残す。公開ページでは渡さない"
+        >
+          <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
+            <WorkDetailContent work={SAMPLE_WORK_DETAIL} onEditSection={() => {}} />
           </div>
         </ComponentPreview>
 

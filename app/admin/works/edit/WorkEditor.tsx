@@ -23,6 +23,7 @@ import RichMarkdownEditor, {
   PreviewPane,
   DeviceSwitcher,
   type PreviewDevice,
+  type EditorMode,
 } from "@/components/RichMarkdownEditor";
 import WorkDetailHeader, { type WorkToolItem, type WorkDetailEditRegion } from "@/components/WorkDetailHeader";
 import WorkCard from "@/components/WorkCard";
@@ -36,7 +37,7 @@ import {
   type TimelineData,
   type StakeholdersData,
 } from "@/components/WorkViz";
-import { sectionsToMarkdown, markdownToSections } from "@/lib/work-sections";
+import { sectionsToMarkdown, markdownToSections, sectionStartLines } from "@/lib/work-sections";
 import {
   saveWork,
   deleteWork,
@@ -218,7 +219,8 @@ function measureTextareaOffset(ta: HTMLTextAreaElement, textBefore: string): num
   const lineHeight = parseFloat(cs.lineHeight) || 20;
   const height = mirror.offsetHeight - lineHeight; // 足した 1 行分を戻す
   mirror.remove();
-  return Math.max(0, height);
+  // textarea の中では上余白のぶん下に描かれるので、その分を足す
+  return Math.max(0, height) + (parseFloat(cs.paddingTop) || 0);
 }
 
 export default function WorkEditor({ workId, iconCatalog }: { workId: string; iconCatalog: IconCatalog }) {
@@ -257,7 +259,6 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const periodFieldRef = useRef<HTMLDivElement>(null);
   const breakdownFieldRef = useRef<HTMLDivElement>(null);
   // プレビューの編集ボタンから左カラムの該当欄へ移動するための参照
-  const leftPaneRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const screenshotsFieldRef = useRef<HTMLDivElement>(null);
   const titleFieldRef = useRef<HTMLDivElement>(null);
@@ -269,8 +270,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   useEffect(() => () => {
     if (highlightTimer.current) clearTimeout(highlightTimer.current);
   }, []);
-  const ringClass = (key: string) =>
-    `rounded-[8px] transition-shadow ${highlight === key ? "ring-2 ring-inset ring-primary/60" : ""}`;
+  const ringClass = (key: string) => (highlight === key ? "rounded-[8px] ring-2 ring-inset ring-primary/60" : "");
+  // 本文エディタの表示モード。プレビューの見出しボタンから textarea へ飛ぶために外から制御する
+  const [bodyMode, setBodyMode] = useState<EditorMode>("edit");
   /** 該当欄を画面中央へスクロールし、1.6 秒だけ枠で強調する */
   const focusField = (key: string, ref: RefObject<HTMLElement | null>) => {
     ref.current?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -566,9 +568,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   /** プレビューの編集ボタン → 左カラムの該当欄へ移動して強調する */
   const handlePreviewEdit = (region: WorkDetailEditRegion) => {
     if (region === "title") {
-      // タイトル入力は上部のヘッダー行にあるため、左カラムを先頭へ戻して入力欄にフォーカスする
-      leftPaneRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-      titleInputRef.current?.focus();
+      // タイトル入力は上部のヘッダー行（スクロール領域の外）にあるため、入力欄にフォーカスしつつ
+      // 左カラムは先頭のカテゴリ欄まで戻す（先頭要素への center スクロールは 0 に丸まる）
+      titleInputRef.current?.focus({ preventScroll: true });
       focusField("title", titleFieldRef);
       return;
     }
@@ -584,35 +586,37 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
   /** プレビューの見出しの編集ボタン → 本文エディタの該当 `# 見出し` 行にカーソルを置く */
   const handleEditSection = (index: number) => {
-    // WorkDetailContent と同じ並び（markdownToSections の結果から見出しも本文も空のものを除く）を、行番号付きで再現する
-    // textarea は値を LF に揃えるため、文字位置の計算も LF 基準にする（DB 由来の CRLF でずれない）
-    const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
-    const found: { line: number; heading: string; body: string[] }[] = [];
-    let cur: { line: number; heading: string; body: string[] } | null = null;
-    lines.forEach((l, i) => {
-      if (l.startsWith("# ")) {
-        if (cur) found.push(cur);
-        cur = { line: i, heading: l.slice(2).trim(), body: [] };
-      } else if (l.trim() !== UPLOAD_PLACEHOLDER) {
-        if (!cur) cur = { line: 0, heading: "", body: [] };
-        cur.body.push(l);
-      }
-    });
-    if (cur) found.push(cur);
-    const target = found.filter((s) => s.heading || s.body.join("\n").trim())[index];
+    // textarea は値を LF に揃えるため、行の計算も LF 基準にする（DB 由来の CRLF でずれない）
+    const normalized = markdown.replace(/\r\n?/g, "\n");
+    // プレビュー（WorkDetailContent）と同じ区切り規則で、n 番目のセクションの先頭行を得る。
+    // 仮の行（画像アップロード中）は保存時と同じく本文として数えない
+    const line = sectionStartLines(normalized, (l) => l.trim() === UPLOAD_PLACEHOLDER)[index];
     focusField("body", bodyFieldRef);
-    if (!target) return;
+    if (line === undefined) return;
+    // プレビュー表示中は textarea が無いので編集モードへ戻す。カーソル移動は描画後（effect）に行う
+    if (bodyMode === "preview") setBodyMode("edit");
+    pendingJump.current = { text: normalized, line };
+    setJumpSeq((n) => n + 1);
+  };
+  // 見出しジャンプの実行。描画が終わって textarea が確実にある状態で動かすため effect にしている
+  const pendingJump = useRef<{ text: string; line: number } | null>(null);
+  const [jumpSeq, setJumpSeq] = useState(0);
+  useEffect(() => {
+    const jump = pendingJump.current;
+    if (!jump) return;
+    pendingJump.current = null;
     // 本文エディタは textarea の位置を外へ公開していないため、API を増やさず DOM から直接取る（この画面専用の最小対応）
     const ta = bodyFieldRef.current?.querySelector("textarea");
     if (!ta) return;
-    const start = lines.slice(0, target.line).reduce((n, l) => n + l.length + 1, 0);
-    const end = start + lines[target.line].length;
+    const lines = jump.text.split("\n");
+    const start = lines.slice(0, jump.line).reduce((n, l) => n + l.length + 1, 0);
+    const end = start + lines[jump.line].length;
     ta.focus({ preventScroll: true });
     ta.setSelectionRange(start, end);
     // 選択行が見える位置まで textarea 内をスクロールする。折り返しで行番号×行高の概算は大きく外れるため、
     // textarea と同じ幅・フォント・余白の見えない要素に「選択行より前の本文」を流し込み、その高さを実際の行位置として使う
-    ta.scrollTop = Math.max(0, measureTextareaOffset(ta, lines.slice(0, target.line).join("\n")) - ta.clientHeight / 3);
-  };
+    ta.scrollTop = Math.max(0, measureTextareaOffset(ta, lines.slice(0, jump.line).join("\n")) - ta.clientHeight / 3);
+  }, [jumpSeq]);
 
   const handleSave = async () => {
     if (!work) return;
@@ -786,7 +790,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             <DeviceSwitcher device={settingsDevice} onChange={setSettingsDevice} />
           </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
-          <div ref={leftPaneRef} className="w-full shrink-0 pb-12 xl:min-h-0 xl:w-1/2 xl:shrink xl:overflow-y-auto xl:pr-4">
+          <div className="w-full shrink-0 pb-12 xl:min-h-0 xl:w-1/2 xl:shrink xl:overflow-y-auto xl:pr-4">
           <div className="flex max-w-main min-w-0 flex-col gap-4">
             <div ref={titleFieldRef} className={ringClass("title")}>
               <FieldLabel>カテゴリ</FieldLabel>
@@ -1078,7 +1082,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   const { url, error } = await uploadStorageImage(fd, "projects/sections");
                   return { url, error };
                 }}
-                defaultMode="edit"
+                mode={bodyMode}
+                onModeChange={setBodyMode}
                 className="h-[640px]"
               />
             </div>

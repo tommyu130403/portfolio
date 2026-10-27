@@ -48,13 +48,17 @@ export type RichMarkdownEditorProps = {
     id: string;
     title: string;
   } | null>;
-  /** 表示モードの初期値（既定は分割） */
+  /** 表示モードの初期値（既定は分割）。mode を渡す場合は無視される */
   defaultMode?: Mode;
+  /** 表示モードを外から制御する（渡すと controlled。切替ボタンは onModeChange を呼ぶ） */
+  mode?: Mode;
+  onModeChange?: (mode: Mode) => void;
   /** ルート要素の追加クラス（高さは親から指定する） */
   className?: string;
 };
 
-type Mode = "edit" | "split" | "preview";
+export type EditorMode = "edit" | "split" | "preview";
+type Mode = EditorMode;
 
 /** プレビューのデバイス幅。"full" はペイン幅いっぱい（実寸指定なし） */
 export type PreviewDevice = "full" | DeviceMode;
@@ -283,9 +287,16 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   onPickWork,
   onUploadImage,
   defaultMode = "split",
+  mode: modeProp,
+  onModeChange,
   className,
 }) => {
-  const [mode, setMode] = useState<Mode>(defaultMode);
+  const [innerMode, setInnerMode] = useState<Mode>(defaultMode);
+  const mode = modeProp ?? innerMode;
+  const setMode = (m: Mode) => {
+    setInnerMode(m);
+    onModeChange?.(m);
+  };
   const [device, setDevice] = useState<PreviewDevice>("full");
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [uploadStatus, setUploadStatus] = useState<null | { kind: "uploading" } | { kind: "error"; message: string }>(

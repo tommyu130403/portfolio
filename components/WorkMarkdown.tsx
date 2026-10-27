@@ -1,7 +1,7 @@
 import type { CSSProperties, FC, ReactNode } from "react";
 import React, { useMemo } from "react";
 import Headline from "./Headline";
-import { EditButton } from "./WorkDetailHeader";
+import Icon from "./Icon";
 import {
   parseImageAttrs,
   widthToCss,
@@ -727,6 +727,25 @@ export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
 
 /** セクション（見出し＋本文 markdown）。公開ページ / admin プレビューで共有 */
 export type WorkSection = { heading: string; md: string };
+
+/**
+ * admin プレビュー上の編集ボタン（鉛筆）。公開ページでは使わない。
+ * className 未指定なら領域の右上角に重ねる（領域側に `relative` が要る）
+ */
+export const EditButton: FC<{ label: string; onClick: () => void; className?: string }> = ({
+  label,
+  onClick,
+  className = "absolute -right-2 -top-2 z-[1]",
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={`${label}を編集`}
+    className={`flex size-7 items-center justify-center rounded-full border border-border-light bg-surface/90 text-system-500 shadow-base transition-colors hover:border-primary hover:text-primary ${className}`}
+  >
+    <Icon set="Edit" name="edit" tintColor="currentColor" className="size-3.5" aria-hidden />
+  </button>
+);
 
 /**
  * 見出し＋本文セクションの並びを描画する共有レンダラ。

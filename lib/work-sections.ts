@@ -56,24 +56,53 @@ export function sectionsToMarkdown(sections: unknown): string {
     .join("\n\n");
 }
 
-/** markdown 全文を `# 見出し` 区切りで sections(jsonb) 形へ */
+type RawSection = { heading: string; bodyLines: string[]; line: number };
+
+/**
+ * markdown 全文を `# 見出し` 行で区切る（共通ロジック）。line は見出し行の行番号。
+ * 先頭に見出しの無い本文があれば heading="" のセクションになり、line はその最初の空でない行。
+ */
+function splitSections(md: string): RawSection[] {
+  const result: RawSection[] = [];
+  let cur: RawSection = { heading: "", bodyLines: [], line: 0 };
+  let firstBodySet = false;
+  md.split("\n").forEach((line, i) => {
+    if (line.startsWith("# ")) {
+      result.push(cur);
+      cur = { heading: line.slice(2).trim(), bodyLines: [], line: i };
+      firstBodySet = true;
+    } else {
+      if (!firstBodySet && line.trim()) {
+        cur.line = i;
+        firstBodySet = true;
+      }
+      cur.bodyLines.push(line);
+    }
+  });
+  result.push(cur);
+  return result;
+}
+
+/** markdown 全文を `# 見出し` 区切りで sections(jsonb) 形へ（見出しも本文も空のものは落とす） */
 export function markdownToSections(md: string): Json {
   const result: SectionItem[] = [];
-  let heading = "";
-  const bodyLines: string[] = [];
-  const flush = () => {
-    const body = bodyLines.join("\n").trim();
-    if (heading || body) result.push({ heading, body });
-  };
-  for (const line of md.split("\n")) {
-    if (line.startsWith("# ")) {
-      flush();
-      heading = line.slice(2).trim();
-      bodyLines.length = 0;
-    } else {
-      bodyLines.push(line);
-    }
+  for (const s of splitSections(md)) {
+    const body = s.bodyLines.join("\n").trim();
+    if (s.heading || body) result.push({ heading: s.heading, body });
   }
-  flush();
   return result as unknown as Json;
+}
+
+/**
+ * markdownToSections が残す各セクションの先頭行の行番号を、同じ並びで返す。
+ * ignoreLine を渡すと、その行は「本文が空か」の判定から外す（例: 画像アップロード中の仮の行）。
+ * エディタ側で「プレビューの n 番目のセクション」と「本文の行」を対応づけるために使う。
+ */
+export function sectionStartLines(md: string, ignoreLine?: (line: string) => boolean): number[] {
+  const lines: number[] = [];
+  for (const s of splitSections(md)) {
+    const body = s.bodyLines.filter((l) => !ignoreLine?.(l)).join("\n").trim();
+    if (s.heading || body) lines.push(s.line);
+  }
+  return lines;
 }

@@ -9,6 +9,7 @@ import WorkVizModal from "./WorkVizModal";
 import ProtectedImage from "./ProtectedImage";
 import { PhoneMock, ScreenshotLightbox } from "./DeviceMock";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
+import { EditButton } from "./WorkMarkdown";
 import { periodFromRow } from "@/lib/timeline-scale";
 import type { Tables } from "@/src/types/supabase";
 
@@ -56,22 +57,6 @@ type WorkDetailHeaderProps = {
   onEdit?: (region: WorkDetailEditRegion) => void;
 };
 
-/** プレビュー上の編集ボタン（admin 専用）。className 未指定なら領域の右上角に重ねる */
-export const EditButton: FC<{ label: string; onClick: () => void; className?: string }> = ({
-  label,
-  onClick,
-  className = "absolute -right-2 -top-2 z-[1]",
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-label={`${label}を編集`}
-    className={`flex size-7 items-center justify-center rounded-full border border-border-light bg-surface/90 text-system-500 shadow-base transition-colors hover:border-primary hover:text-primary ${className}`}
-  >
-    <Icon set="Edit" name="edit" tintColor="currentColor" className="size-3.5" aria-hidden />
-  </button>
-);
-
 /* ------------------------------------------------------------------ *
  * 上部ブロック本体（Figma 787:9916 / _ProjectContents のブロック①②）
  * ------------------------------------------------------------------ */
@@ -96,6 +81,8 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
 
   // 編集ボタンを重ねる領域の基準位置（onEdit が無いときは何も足さず、公開ページの見た目を変えない）
   const rel = onEdit ? "relative " : "";
+  // 文字やタグが右端まで届く領域は、ボタンの幅ぶん右に余白を取って重ならないようにする
+  const relPad = onEdit ? "relative pr-10 " : "";
 
   return (
     <div className="flex w-full flex-col gap-12">
@@ -118,7 +105,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
       {/* カテゴリ + タイトル + 制作内容/Tools（gap-6）→ メタ表（48px 空け） */}
       <div className="flex w-full flex-col gap-12">
         <div className="flex w-full flex-col gap-6">
-          <div className={`${rel}flex w-full flex-col gap-4 [word-break:break-word]`}>
+          <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
             {work.category && <p className="text-body-01-jp text-primary">{work.category}</p>}
             <p className="text-title-pj text-fg">{work.title}</p>
             {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
@@ -126,7 +113,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
 
           {/* 制作内容 → Tools を 1 行で並べる（Tools は icon_url があればアイコン、無ければ文字 Tag） */}
           {(contents.length > 0 || tools.length > 0) && (
-            <div className={`${rel}flex w-full flex-wrap items-center gap-2`}>
+            <div className={`${relPad}flex w-full flex-wrap items-center gap-2`}>
               {contents.map((s) => (
                 <Tag key={s} label={s} variant="content" />
               ))}

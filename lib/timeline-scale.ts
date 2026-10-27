@@ -29,7 +29,7 @@ export type TimelineScale = {
 
 const EMPTY_PERIOD: TimelinePeriod = { start: null, end: null, isCurrent: false };
 
-function ymFromDate(d: string | null): YearMonth | null {
+export function ymFromDate(d: string | null): YearMonth | null {
   if (!d) return null;
   const m = d.match(/^(\d{4})-(\d{1,2})/);
   if (!m) return null;

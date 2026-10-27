@@ -62,7 +62,7 @@ const WorkDetailSkeleton: FC = () => (
 const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const router = useRouter();
   const [work, setWork] = useState<Work | null>(null);
-  const [skills, setSkills] = useState<string[]>([]);
+  const [contents, setContents] = useState<string[]>([]);
   const [tools, setTools] = useState<WorkToolItem[]>([]);
   const [order, setOrder] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,13 +85,13 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
       const [
         { data: workData, error: workError },
-        { data: skillRows },
+        { data: contentRows },
         { data: toolRows },
       ] = await Promise.all([
         supabase.from("works").select("*").eq("id", id).eq("is_published", true).single(),
         supabase
-          .from("work_skills")
-          .select("sort_order, skills_vocab(label)")
+          .from("work_contents")
+          .select("sort_order, contents_vocab(label)")
           .eq("work_id", id)
           .order("sort_order"),
         supabase
@@ -111,9 +111,9 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       }
 
       setWork(workData);
-      setSkills(
-        (skillRows ?? [])
-          .map((r) => (r.skills_vocab as { label: string } | null)?.label)
+      setContents(
+        (contentRows ?? [])
+          .map((r) => (r.contents_vocab as { label: string } | null)?.label)
           .filter((l): l is string => Boolean(l))
       );
       setTools(
@@ -193,7 +193,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
             nextHref={next ? workHref(next.id) : undefined}
           />
         </div>
-        <WorkDetailHeader work={work} skills={skills} tools={tools} screenshots={screenshots} />
+        <WorkDetailHeader work={work} contents={contents} tools={tools} screenshots={screenshots} />
         <WorkDetailContent work={work} />
 
         {showNav && (

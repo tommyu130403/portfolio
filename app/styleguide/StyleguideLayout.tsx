@@ -924,7 +924,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="スキル・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ skill(作品詳細のスキル・WorkCard のタグ・背景なし・border-main・10px main-050)/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ・カード/作品詳細・背景なし・border-main・10px main-050)/category(Figma Library Tag-single・カードのカテゴリ。bg main-600・p8・r8・10px)/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -935,8 +935,11 @@ function ComponentsSection() {
             <Tag label="UX Research" variant="small" />
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
-            <Tag label="UI Design" variant="skill" />
-            <Tag label="UX Research" variant="skill" />
+            <Tag label="UI Design" variant="content" />
+            <Tag label="UX Research" variant="content" />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            <Tag label="機能開発" variant="category" />
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
@@ -1029,13 +1032,14 @@ function ComponentsSection() {
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。タグは Tag skill variant">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。Figma Master 494:1363。カテゴリチップ・期間・作品名・制作内容タグ">
           {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
           <div className="w-[256px] max-w-full">
           <WorkCard
-            category="プラットフォーム開発"
-            title="キャリアチケットスカウトサービス"
-            tags={["UI Design", "UX Research", "Figma"]}
+            category="機能開発"
+            title="ECサイトリニューアル"
+            period="2023.4 - 2023.9"
+            contents={["Product Design", "BtoC", "SaaS", "Mobile Application"]}
             image="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80"
             onClick={() => {}}
           />
@@ -1132,12 +1136,12 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailHeader"
-          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック / カテゴリ・タイトル / Skills・Tools(タイトル直下の1行)/ メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)"
+          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック / カテゴリ・タイトル / 制作内容・Tools(タイトル直下の1行)/ メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)"
         >
           <div className="rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailHeader
               work={SAMPLE_WORK_DETAIL}
-              skills={["UI Design", "UX Research", "PJ Management"]}
+              contents={["UI Design", "UX Research", "PJ Management"]}
               tools={[{ name: "Figma", icon_url: null }, { name: "React", icon_url: null }]}
               screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
             />

@@ -46,7 +46,7 @@ export const parseStakeholderBreakdown = (
 
 type WorkDetailHeaderProps = {
   work: Work;
-  skills: string[];
+  contents: string[];
   tools: WorkToolItem[];
   screenshots: string[];
 };
@@ -55,7 +55,7 @@ type WorkDetailHeaderProps = {
  * 上部ブロック本体（Figma 787:9916 / _ProjectContents のブロック①②）
  * ------------------------------------------------------------------ */
 
-const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, screenshots }) => {
+const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, screenshots }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [vizModal, setVizModal] = useState<"timeline" | "stakeholders" | null>(null);
   // 読み込みに失敗したアイコン URL。失敗したら次の候補（手元のロゴ → 文字 Tag）へ進む
@@ -84,7 +84,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
         </div>
       )}
 
-      {/* カテゴリ + タイトル + Skills/Tools（gap-6）→ メタ表（48px 空け） */}
+      {/* カテゴリ + タイトル + 制作内容/Tools（gap-6）→ メタ表（48px 空け） */}
       <div className="flex w-full flex-col gap-12">
         <div className="flex w-full flex-col gap-6">
           <div className="flex w-full flex-col gap-4 [word-break:break-word]">
@@ -92,11 +92,11 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
             <p className="text-title-pj text-fg">{work.title}</p>
           </div>
 
-          {/* Skills → Tools を 1 行で並べる（Tools は icon_url があればアイコン、無ければ文字 Tag） */}
-          {(skills.length > 0 || tools.length > 0) && (
+          {/* 制作内容 → Tools を 1 行で並べる（Tools は icon_url があればアイコン、無ければ文字 Tag） */}
+          {(contents.length > 0 || tools.length > 0) && (
             <div className="flex w-full flex-wrap items-center gap-2">
-              {skills.map((s) => (
-                <Tag key={s} label={s} variant="skill" />
+              {contents.map((s) => (
+                <Tag key={s} label={s} variant="content" />
               ))}
               {tools.map((t) => {
                 const iconSrc = resolveToolIconSrc(t, brokenIcons);

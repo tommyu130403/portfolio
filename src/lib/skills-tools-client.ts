@@ -1,12 +1,13 @@
 import { supabase } from "@/src/lib/supabase";
 
-export type SkillVocab = { id: string; label: string; category?: string | null };
+export type ContentVocab = { id: string; label: string };
 export type ToolVocab = { id: string; name: string; slug?: string | null; category?: string | null; icon_url?: string | null };
 
-export async function listSkillVocab(): Promise<SkillVocab[]> {
+export async function listContentVocab(): Promise<ContentVocab[]> {
   const { data, error } = await supabase
-    .from("skills_vocab")
-    .select("id, label, category")
+    .from("contents_vocab")
+    .select("id, label")
+    .order("sort_order")
     .order("label");
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -21,20 +22,20 @@ export async function listToolVocab(): Promise<ToolVocab[]> {
   return data ?? [];
 }
 
-export async function upsertSkillVocab(label: string): Promise<SkillVocab> {
+export async function upsertContentVocab(label: string): Promise<ContentVocab> {
   const trimmed = label.trim();
   const pattern = trimmed.replace(/[\\%_]/g, (c) => "\\" + c);
   const { data: existing, error: findError } = await supabase
-    .from("skills_vocab")
-    .select("id, label, category")
+    .from("contents_vocab")
+    .select("id, label")
     .ilike("label", pattern)
     .maybeSingle();
   if (findError) throw new Error(findError.message);
   if (existing) return existing;
   const { data, error } = await supabase
-    .from("skills_vocab")
+    .from("contents_vocab")
     .insert({ label: trimmed })
-    .select("id, label, category")
+    .select("id, label")
     .single();
   if (error) throw new Error(error.message);
   return data;
@@ -78,22 +79,6 @@ export async function upsertToolVocab(
     .single();
   if (error) throw new Error(error.message);
   return data;
-}
-
-export async function setWorkSkills(workId: string, skillIds: string[]): Promise<void> {
-  const { error: delError } = await supabase
-    .from("work_skills")
-    .delete()
-    .eq("work_id", workId);
-  if (delError) throw new Error(delError.message);
-  if (skillIds.length === 0) return;
-  const rows = skillIds.map((skill_id, idx) => ({
-    work_id: workId,
-    skill_id,
-    sort_order: idx,
-  }));
-  const { error: insError } = await supabase.from("work_skills").insert(rows);
-  if (insError) throw new Error(insError.message);
 }
 
 export async function setWorkTools(workId: string, toolIds: string[]): Promise<void> {

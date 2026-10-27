@@ -6,10 +6,11 @@ type TagProps = {
   /**
    * default: 従来の main 系（プロジェクトカード等）
    * small:   Figma Tag/Small（bg black/25・12px white）
-   * skill:   作品詳細のスキルタグ（Figma Master 989:4804・背景なし・border-main 1px・10px main-050・折り返さない。WorkCard のタグも同じ（Figma Master 50:174））
+   * content:  作品の制作内容タグ（Figma Master 494:1363 のカード・作品詳細）。背景なし・border-main 1px・10px main-050・折り返さない
+   * category: Figma Library Tag-single。カードのカテゴリ表示
    * tool:    Figma Slot-Tool（border付き・グレー文字・16pxアイコン前置。スキル展開パネル用）
    */
-  variant?: "default" | "small" | "tool" | "skill";
+  variant?: "default" | "small" | "tool" | "content" | "category";
   prefix?: ReactNode;
   suffix?: ReactNode;
   /** tool のみ: 背景を bg-surface で塗る（Figma 900:9214 の役割・関係者タグ。未指定は背景なし） */
@@ -18,11 +19,26 @@ type TagProps = {
   count?: number;
 };
 
-/** skill / tool 共通: 内側に枠線を描く疑似要素（枠の色は呼び出し側でリテラルのまま足す。Tailwind が拾えるように） */
+/** content / tool 共通: 内側に枠線を描く疑似要素（枠の色は呼び出し側でリテラルのまま足す。Tailwind が拾えるように） */
 const INNER_RING = "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-['']";
 
 const Tag: FC<TagProps> = ({ label, className, variant = "default", prefix, suffix, filled, count }) => {
-  if (variant === "skill") {
+  if (variant === "category") {
+    return (
+      <div className={`flex max-w-full items-center justify-center rounded-r8 bg-main-600 p-2 ${className ?? ""}`}>
+        {/* Figma は text-box-trim で行の上下余白を字の高さ（cap）まで削る。対応ブラウザではチップが 23px、
+            未対応では leading-none の 26px に収まる（leading 1.6 のままだと 32px に太る） */}
+        <p
+          className="min-w-0 truncate text-[10px] leading-none tracking-[0.3px] text-primary [text-box:trim-both_cap_alphabetic]"
+          title={label}
+        >
+          {label}
+        </p>
+      </div>
+    );
+  }
+
+  if (variant === "content") {
     return (
       <div
         className={`relative flex max-w-full shrink-0 items-center rounded-full px-[10px] py-[6px] ${INNER_RING} after:border-border-main ${className ?? ""}`}

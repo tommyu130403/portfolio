@@ -901,7 +901,7 @@ function ComponentsSection() {
             <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
             <Headline title="見出し02（### / Headline type=02・横線＋Noto Bold 16px System/700 gray）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
-            <p className="text-[15px] leading-[22px] tracking-[0.45px] text-system-300">Body01（通常段落 / Noto Regular 15px System/300 #E0E0E0）</p>
+            <p className="text-[15px] leading-[22px] tracking-[0.45px] text-fg">Body01（通常段落 / Noto Regular 15px text-fg = Text/Body/Primary #E0E0E0）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
             <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
           </div>
@@ -1197,7 +1197,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は System/300。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 10px、gap 8）。見出し02→本文 24 / 小ブロック間 40"
+          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg（Text/Body/Primary #E0E0E0）。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 10px、gap 8）。見出し02→本文 24 / 小ブロック間 40"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

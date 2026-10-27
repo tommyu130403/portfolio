@@ -12,30 +12,30 @@ import SectionTitle from "../SectionTitle";
 import ProtectedImage from "@/components/ProtectedImage";
 import {
   addNameMaster,
-  addSkillVocab,
+  addContentVocab,
   addToolVocab,
   addWorkCategory,
   checkWorkCategoryDeletable,
   deleteCompany,
   deletePhaseName,
   deleteRole,
-  deleteSkillVocab,
+  deleteContentVocab,
   deleteToolVocab,
   deleteWorkCategory,
   listMasterCompanies,
   listMasterPhaseNames,
   listMasterRoles,
-  listMasterSkills,
+  listMasterContents,
   listMasterTools,
   listWorkCategories,
   renameNameMaster,
-  renameSkillVocab,
+  renameContentVocab,
   renameWorkCategory,
   updateToolVocab,
   type MasterCompany,
   type MasterPhaseName,
   type MasterRole,
-  type MasterSkill,
+  type MasterContent,
   type MasterTool,
   type NameMasterTable,
   type WorkCategory,
@@ -65,16 +65,16 @@ function onEnter(run: () => void) {
 
 export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
   const [tools, setTools] = useState<MasterTool[]>([]);
-  const [skills, setSkills] = useState<MasterSkill[]>([]);
+  const [contents, setContents] = useState<MasterContent[]>([]);
   const [fetching, setFetching] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newToolName, setNewToolName] = useState("");
-  const [newSkillLabel, setNewSkillLabel] = useState("");
+  const [newContentLabel, setNewContentLabel] = useState("");
   const [editingToolId, setEditingToolId] = useState<string | null>(null);
   const [toolDraft, setToolDraft] = useState<ToolDraft>({ name: "", slug: "", category: "", icon_url: "" });
-  const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
-  const [skillDraft, setSkillDraft] = useState("");
+  const [editingContentId, setEditingContentId] = useState<string | null>(null);
+  const [contentDraft, setContentDraft] = useState("");
   const [categories, setCategories] = useState<WorkCategory[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
@@ -87,14 +87,14 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
   const refresh = useCallback(async () => {
     const [t, s, c, co, ro, ph] = await Promise.all([
       listMasterTools(),
-      listMasterSkills(),
+      listMasterContents(),
       listWorkCategories(),
       listMasterCompanies(),
       listMasterRoles(),
       listMasterPhaseNames(),
     ]);
     if (!t.error) setTools(t.data);
-    if (!s.error) setSkills(s.data);
+    if (!s.error) setContents(s.data);
     if (!c.error) setCategories(c.data);
     if (!co.error) setCompanies(co.data);
     if (!ro.error) setRoles(ro.data);
@@ -166,18 +166,18 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
     void run(() => deleteToolVocab(t.id));
   };
 
-  const handleAddSkill = () => {
-    if (!newSkillLabel.trim()) return;
-    void run(() => addSkillVocab(newSkillLabel), () => setNewSkillLabel(""));
+  const handleAddContent = () => {
+    if (!newContentLabel.trim()) return;
+    void run(() => addContentVocab(newContentLabel), () => setNewContentLabel(""));
   };
 
-  const handleSaveSkill = (id: string) => {
-    void run(() => renameSkillVocab(id, skillDraft), () => setEditingSkillId(null));
+  const handleSaveContent = (id: string) => {
+    void run(() => renameContentVocab(id, contentDraft), () => setEditingContentId(null));
   };
 
-  const handleDeleteSkill = (s: MasterSkill) => {
-    if (!window.confirm(`スキル「${s.label}」を削除しますか？`)) return;
-    void run(() => deleteSkillVocab(s.id));
+  const handleDeleteContent = (s: MasterContent) => {
+    if (!window.confirm(`制作内容「${s.label}」を削除しますか？`)) return;
+    void run(() => deleteContentVocab(s.id));
   };
 
   const handleAddCategory = () => {
@@ -246,7 +246,7 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
     <section id="masters" className="scroll-mt-8">
       <SectionTitle label="Masters" title="マスタ管理" />
       <p className="mb-6 text-[13px] text-fg-muted">
-        ツール・スキル・作品カテゴリ・会社・役割・工程名の語彙を管理します。使われている語彙は削除できません（役割だけは使用中でも確認のうえ削除できます）。
+        ツール・制作内容・作品カテゴリ・会社・役割・工程名の語彙を管理します。使われている語彙は削除できません（役割だけは使用中でも確認のうえ削除できます）。
       </p>
       {error && <p className="mb-4 text-[13px] text-danger-300">{error}</p>}
 
@@ -379,36 +379,36 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
         })}
       </ul>
 
-      <FormGroupHeader>スキル（skills_vocab）</FormGroupHeader>
-      <div className="mt-3 flex items-center gap-2" onKeyDown={onEnter(handleAddSkill)}>
-        <Input value={newSkillLabel} onChange={setNewSkillLabel} placeholder="新しいスキル名" />
+      <FormGroupHeader>制作内容（contents_vocab）</FormGroupHeader>
+      <div className="mt-3 flex items-center gap-2" onKeyDown={onEnter(handleAddContent)}>
+        <Input value={newContentLabel} onChange={setNewContentLabel} placeholder="新しい制作内容" />
         <button
           type="button"
-          onClick={handleAddSkill}
-          disabled={busy || !newSkillLabel.trim()}
+          onClick={handleAddContent}
+          disabled={busy || !newContentLabel.trim()}
           className={smallButton}
         >
           追加
         </button>
       </div>
       <ul className="mt-3 mb-10 flex flex-col gap-2">
-        {skills.map((s) => {
+        {contents.map((s) => {
           const used = s.workCount > 0;
-          if (editingSkillId === s.id) {
+          if (editingContentId === s.id) {
             return (
               <li
                 key={s.id}
                 className="flex items-center gap-2 rounded-[8px] border border-primary/40 bg-surface p-3"
               >
-                <div className="min-w-0 flex-1" onKeyDown={onEnter(() => handleSaveSkill(s.id))}>
-                  <Input value={skillDraft} onChange={setSkillDraft} />
+                <div className="min-w-0 flex-1" onKeyDown={onEnter(() => handleSaveContent(s.id))}>
+                  <Input value={contentDraft} onChange={setContentDraft} />
                 </div>
-                <button type="button" onClick={() => handleSaveSkill(s.id)} disabled={busy} className={smallButton}>
+                <button type="button" onClick={() => handleSaveContent(s.id)} disabled={busy} className={smallButton}>
                   保存
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditingSkillId(null)}
+                  onClick={() => setEditingContentId(null)}
                   disabled={busy}
                   className={smallButton}
                 >
@@ -429,8 +429,8 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
               <button
                 type="button"
                 onClick={() => {
-                  setEditingSkillId(s.id);
-                  setSkillDraft(s.label);
+                  setEditingContentId(s.id);
+                  setContentDraft(s.label);
                 }}
                 disabled={busy}
                 className={smallButton}
@@ -439,7 +439,7 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
               </button>
               <button
                 type="button"
-                onClick={() => handleDeleteSkill(s)}
+                onClick={() => handleDeleteContent(s)}
                 disabled={busy || used}
                 title={used ? "使用中のため削除できません" : undefined}
                 className={dangerButton}

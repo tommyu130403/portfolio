@@ -3,14 +3,15 @@ import Tag from "./Tag";
 import ProtectedImage from "./ProtectedImage";
 
 type WorkCardProps = {
-  category: string;
+  category?: string | null;
   title: string;
-  tags: string[];
+  contents: string[];
+  period?: string | null;
   image: string;
   onClick?: () => void;
 };
 
-const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) => {
+const WorkCard: FC<WorkCardProps> = ({ category, title, contents, period, image, onClick }) => {
   return (
     <div
       onClick={onClick}
@@ -32,18 +33,28 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, tags, image, onClick }) 
           className="absolute inset-0 h-full w-full object-cover pointer-events-none"
         />
       </div>
-      <div className="flex flex-col gap-4 min-h-[160px] p-4 min-w-0">
+      {/* Figma Master 494:1363: 本文 p16・gap24。上段（カテゴリチップ＋期間 / 作品名）gap4、下段に制作内容タグ */}
+      <div className="flex min-h-[160px] min-w-0 flex-col gap-6 p-4">
         <div className="flex flex-col gap-1">
-          <p className="text-[10px] leading-[12px] tracking-[0.3px] text-main-100">
-            {category}
-          </p>
-          <p className="text-body-02-jp-bold text-system-white">
+          {/* カテゴリも期間も無ければ行ごと出さない（親の gap-1 で 4px の空きが残らないように）。
+              長いカテゴリは省略し、期間（右端）は折り返さない */}
+          {(category || period) && (
+            <div className="flex items-center justify-between gap-2">
+              {category ? <Tag variant="category" label={category} className="min-w-0" /> : null}
+              {period ? (
+                <p className="ml-auto shrink-0 font-en text-[11px] font-extrabold leading-none tracking-[0.33px] text-fg-subtle whitespace-nowrap [text-box:trim-both_cap_alphabetic]">
+                  {period}
+                </p>
+              ) : null}
+            </div>
+          )}
+          <p className="text-[15px] font-bold leading-[1.6] tracking-[0.45px] text-fg">
             {title}
           </p>
         </div>
         <div className="flex flex-wrap gap-1">
-          {tags.map((tag) => (
-            <Tag key={tag} label={tag} variant="skill" />
+          {contents.map((content) => (
+            <Tag key={content} label={content} variant="content" />
           ))}
         </div>
       </div>

@@ -7,6 +7,7 @@ import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 import WorkCard from "@/components/WorkCard";
 import { DEFAULT_IMAGE } from "@/lib/work-content";
+import { workPeriodLabel } from "@/lib/work-period";
 
 type Work = Tables<"works">;
 
@@ -15,30 +16,30 @@ export const WorksList: FC = () => {
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [workSkillsMap, setWorkSkillsMap] = useState<Record<string, string[]>>({});
+  const [workContentsMap, setWorkContentsMap] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const fetchWorks = async () => {
       setLoading(true);
       setError(null);
 
-      const [{ data, error: fetchError }, { data: workSkillsRows }] = await Promise.all([
+      const [{ data, error: fetchError }, { data: workContentsRows }] = await Promise.all([
         supabase.from("works").select("*").eq("is_published", true).order("sort_order", { ascending: true }),
         supabase
-          .from("work_skills")
-          .select("work_id, sort_order, skills_vocab(label)")
+          .from("work_contents")
+          .select("work_id, sort_order, contents_vocab(label)")
           .order("sort_order"),
       ]);
 
-      // Build per-work skills map（カードのタグ表示用）
-      const skillsMap: Record<string, string[]> = {};
-      for (const row of workSkillsRows ?? []) {
-        const label = (row.skills_vocab as { label: string } | null)?.label;
+      // 作品ごとの制作内容マップ（カードのタグ表示用）
+      const contentsMap: Record<string, string[]> = {};
+      for (const row of workContentsRows ?? []) {
+        const label = (row.contents_vocab as { label: string } | null)?.label;
         if (label) {
-          skillsMap[row.work_id] = [...(skillsMap[row.work_id] ?? []), label];
+          contentsMap[row.work_id] = [...(contentsMap[row.work_id] ?? []), label];
         }
       }
-      setWorkSkillsMap(skillsMap);
+      setWorkContentsMap(contentsMap);
 
       if (fetchError) {
         console.error("Failed to fetch works:", fetchError);
@@ -99,9 +100,10 @@ export const WorksList: FC = () => {
       {works.map((work) => (
         <WorkCard
           key={work.id}
-          category={work.category ?? "カテゴリなし"}
+          category={work.category}
           title={work.title}
-          tags={workSkillsMap[work.id] ?? []}
+          contents={workContentsMap[work.id] ?? []}
+          period={workPeriodLabel(work)}
           image={work.thumbnail_url ?? DEFAULT_IMAGE}
           onClick={() => openWork(work.id)}
         />

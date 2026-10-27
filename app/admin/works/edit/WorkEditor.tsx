@@ -31,7 +31,7 @@ import {
   saveWork,
   deleteWork,
   addToolNameFromWorks,
-  addSkillLabelFromWorks,
+  addContentLabelFromWorks,
   setWorkPublished,
   uploadStorageImage,
   addNameMaster,
@@ -138,11 +138,11 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const [markdown, setMarkdown] = useState(isNew ? DEFAULT_BODY_MD : "");
   const [vizPreview, setVizPreview] = useState<"timeline" | "stakeholders" | null>(null);
   const [period, setPeriod] = useState<PeriodInputs>(parsePeriod(null));
-  const [skills, setSkills] = useState<string[]>([]);
+  const [contents, setContents] = useState<string[]>([]);
   const [tools, setTools] = useState<string[]>([]);
-  const [skillOptions, setSkillOptions] = useState<string[]>([]);
-  const [newSkillLabel, setNewSkillLabel] = useState("");
-  const [addingSkill, setAddingSkill] = useState(false);
+  const [contentOptions, setContentOptions] = useState<string[]>([]);
+  const [newContentLabel, setNewContentLabel] = useState("");
+  const [addingContent, setAddingContent] = useState(false);
   const [toolOptions, setToolOptions] = useState<ToolOption[]>([]);
   const [roles, setRoles] = useState<NameMaster[]>([]);
   const [phaseNames, setPhaseNames] = useState<NameMaster[]>([]);
@@ -212,20 +212,20 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [workRes, skillsRes, toolsRes, careerRes, skillVocabRes, toolVocabRes, rolesRes, phaseNamesRes, workRolesRes, countsRes] = await Promise.all([
+      const [workRes, contentsRes, toolsRes, careerRes, contentVocabRes, toolVocabRes, rolesRes, phaseNamesRes, workRolesRes, countsRes] = await Promise.all([
         isNew
           ? Promise.resolve({ data: null })
           : supabase.from("works").select("*").eq("id", workId).maybeSingle(),
         isNew
           ? Promise.resolve({ data: [] })
-          : supabase.from("work_skills").select("sort_order, skills_vocab(label)").eq("work_id", workId).order("sort_order"),
+          : supabase.from("work_contents").select("sort_order, contents_vocab(label)").eq("work_id", workId).order("sort_order"),
         isNew
           ? Promise.resolve({ data: [] })
           : supabase.from("work_tools").select("sort_order, tools_vocab(name)").eq("work_id", workId).order("sort_order"),
         supabase.from("career_items").select("id, role, company, period").order("sort_order"),
-        // Work タグ用のスキル語彙は専用マスタ skills_vocab を単一ソースとする
+        // Work タグ用の制作内容語彙は専用マスタ contents_vocab を単一ソースとする
         // （スキルセクションの skill_experience とは疎結合）
-        supabase.from("skills_vocab").select("label").order("label"),
+        supabase.from("contents_vocab").select("label").order("sort_order").order("label"),
         supabase.from("tools_vocab").select("id, name, icon_url").order("name"),
         supabase.from("roles").select("id, name, sort_order").order("sort_order").order("name"),
         supabase.from("phase_names").select("id, name, sort_order").order("sort_order").order("name"),
@@ -243,10 +243,10 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
       const failure = [
         "error" in workRes ? workRes.error : null,
-        "error" in skillsRes ? skillsRes.error : null,
+        "error" in contentsRes ? contentsRes.error : null,
         "error" in toolsRes ? toolsRes.error : null,
         careerRes.error,
-        skillVocabRes.error,
+        contentVocabRes.error,
         toolVocabRes.error,
         rolesRes.error,
         phaseNamesRes.error,
@@ -267,9 +267,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         setWork(row);
         setMarkdown(sectionsToMarkdown(row.sections));
         setPeriod(periodInputsOf(row));
-        setSkills(
-          ((skillsRes.data ?? []) as unknown as { skills_vocab: { label: string } | null }[])
-            .map((r) => r.skills_vocab?.label)
+        setContents(
+          ((contentsRes.data ?? []) as unknown as { contents_vocab: { label: string } | null }[])
+            .map((r) => r.contents_vocab?.label)
             .filter((v): v is string => Boolean(v))
         );
         setTools(
@@ -304,8 +304,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       setRoles((rolesRes.data ?? []) as NameMaster[]);
       setPhaseNames((phaseNamesRes.data ?? []) as NameMaster[]);
       setCareerOptions((careerRes.data ?? []) as CareerOption[]);
-      setSkillOptions(
-        ((skillVocabRes.data ?? []) as { label: string }[]).map((r) => r.label)
+      setContentOptions(
+        ((contentVocabRes.data ?? []) as { label: string }[]).map((r) => r.label)
       );
       setToolOptions(
         ((toolVocabRes.data ?? []) as { id: string; name: string; icon_url: string | null }[]).map(
@@ -382,33 +382,33 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     return { error: res.error, name: item?.name };
   };
 
-  const handleAddSkill = async () => {
-    const label = newSkillLabel.trim();
-    if (!label || addingSkill) return;
-    setAddingSkill(true);
+  const handleAddContent = async () => {
+    const label = newContentLabel.trim();
+    if (!label || addingContent) return;
+    setAddingContent(true);
     try {
-      let chosen = skillOptions.find((s) => s.toLowerCase() === label.toLowerCase());
+      let chosen = contentOptions.find((s) => s.toLowerCase() === label.toLowerCase());
       if (!chosen) {
-        const res = await addSkillLabelFromWorks(label);
+        const res = await addContentLabelFromWorks(label);
         if (res.error || !res.id) {
-          setSaveError(res.error ?? "スキルの追加に失敗しました");
+          setSaveError(res.error ?? "制作内容の追加に失敗しました");
           return;
         }
         chosen = label;
-        setSkillOptions((prev) =>
+        setContentOptions((prev) =>
           prev.some((s) => s.toLowerCase() === label.toLowerCase())
             ? prev
             : [...prev, label].sort((a, b) => a.localeCompare(b))
         );
       }
       const c = chosen;
-      if (!skills.some((s) => s.toLowerCase() === c.toLowerCase())) {
-        setSkills((prev) => [...prev, c]);
+      if (!contents.some((s) => s.toLowerCase() === c.toLowerCase())) {
+        setContents((prev) => [...prev, c]);
         markDirty();
       }
-      setNewSkillLabel("");
+      setNewContentLabel("");
     } finally {
-      setAddingSkill(false);
+      setAddingContent(false);
     }
   };
 
@@ -489,7 +489,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     };
     const saveRes = await saveWork(
       payload,
-      skills,
+      contents,
       tools,
       roleIds,
       breakdown.mode === "rows"
@@ -756,7 +756,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               />
             </div>
 
-            <FormGroupHeader>一覧・タグ設定（一覧サムネ / スキル / ツール）</FormGroupHeader>
+            <FormGroupHeader>一覧・タグ設定（一覧サムネ / 制作内容 / ツール）</FormGroupHeader>
             <div className="col-span-2">
               <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
               <ImagePickerField
@@ -767,15 +767,15 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               />
             </div>
             <div className="col-span-2">
-              <FieldLabel>スキル</FieldLabel>
+              <FieldLabel>制作内容</FieldLabel>
               <div className="flex flex-wrap gap-2">
-                {skillOptions.map((label) => {
-                  const selected = skills.some((s) => s.toLowerCase() === label.toLowerCase());
+                {contentOptions.map((label) => {
+                  const selected = contents.some((s) => s.toLowerCase() === label.toLowerCase());
                   return (
                     <button
                       key={label}
                       type="button"
-                      onClick={() => toggle(skills, setSkills, label)}
+                      onClick={() => toggle(contents, setContents, label)}
                       className={`rounded-[999px] border px-3 py-1 text-[12px] transition-colors ${
                         selected
                           ? "border-primary bg-primary/10 text-primary"
@@ -786,22 +786,22 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                     </button>
                   );
                 })}
-                {skillOptions.length === 0 && <span className="text-[12px] text-system-700">スキルがまだありません。下の入力欄から追加できます</span>}
+                {contentOptions.length === 0 && <span className="text-[12px] text-system-700">制作内容がまだありません。下の入力欄から追加できます</span>}
               </div>
               <div
                 className="mt-2 flex items-center gap-2"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
                     e.preventDefault();
-                    void handleAddSkill();
+                    void handleAddContent();
                   }
                 }}
               >
-                <Input value={newSkillLabel} onChange={setNewSkillLabel} placeholder="新しいスキル名" className="!w-56" />
+                <Input value={newContentLabel} onChange={setNewContentLabel} placeholder="新しい制作内容" className="!w-56" />
                 <button
                   type="button"
-                  onClick={() => void handleAddSkill()}
-                  disabled={addingSkill}
+                  onClick={() => void handleAddContent()}
+                  disabled={addingContent}
                   className="rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white"
                 >
                   追加

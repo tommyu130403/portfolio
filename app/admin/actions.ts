@@ -1,6 +1,6 @@
 import { supabase } from "@/src/lib/supabase";
 import {
-  upsertSkillVocab,
+  upsertContentVocab,
   upsertToolVocab,
   setExperienceTools,
 } from "@/src/lib/skills-tools-client";
@@ -184,12 +184,12 @@ export async function duplicateFlowchart(id: string): Promise<{
 }
 
 /**
- * 作品・スキル・ツール・担当役割・体制内訳を一つの DB トランザクションで保存する。
+ * 作品・制作内容・ツール・担当役割・体制内訳を一つの DB トランザクションで保存する。
  * stakeholderCounts が null のときは旧形式の体制内訳（文字のまま）として保存する。
  */
 export async function saveWork(
   payload: WorkRow,
-  skills: string[],
+  contents: string[],
   tools: string[],
   roleIds: string[],
   stakeholderCounts: { role_id: string; headcount: number }[] | null,
@@ -197,7 +197,7 @@ export async function saveWork(
   try {
     const { error } = await supabase.rpc("save_work_with_relations", {
       p_work: payload as unknown as Json,
-      p_skill_labels: skills,
+      p_content_labels: contents,
       p_tool_names: tools,
       p_role_ids: roleIds,
       p_stakeholder_counts: stakeholderCounts as unknown as Json,
@@ -387,13 +387,13 @@ export async function deleteWorkCategory(id: string): Promise<{ error: string | 
   }
 }
 
-// ─── Masters (tools_vocab / skills_vocab) ─────────────────────────────────────
+// ─── Masters (tools_vocab / contents_vocab) ─────────────────────────────────────
 
 export type MasterTool = {
   id: string; name: string; slug: string | null; category: string | null;
   icon_url: string | null; workCount: number; skillCount: number;
 };
-export type MasterSkill = { id: string; label: string; workCount: number };
+export type MasterContent = { id: string; label: string; workCount: number };
 
 function dbErr(error: { message?: string; code?: string }): string {
   return error.message || error.code || String(error);
@@ -411,8 +411,8 @@ function countBy(rows: { [k: string]: string | null }[] | null, key: string): Ma
 
 /** PostgREST の 1 回あたりの行数上限（既定 1000）を超えても全件を読む */
 async function fetchAllIds(
-  table: "work_tools" | "skill_experience_tools" | "work_skills" | "career_items" | "work_roles" | "work_stakeholder_counts",
-  column: "tool_id" | "skill_id" | "company_id" | "role_id",
+  table: "work_tools" | "skill_experience_tools" | "work_contents" | "career_items" | "work_roles" | "work_stakeholder_counts",
+  column: "tool_id" | "content_id" | "company_id" | "role_id",
 ): Promise<{ data: { [k: string]: string | null }[]; error: { message?: string; code?: string } | null }> {
   const PAGE = 1000;
   const all: { [k: string]: string | null }[] = [];
@@ -452,17 +452,17 @@ export async function listMasterTools(): Promise<{ data: MasterTool[]; error: st
   }
 }
 
-export async function listMasterSkills(): Promise<{ data: MasterSkill[]; error: string | null }> {
+export async function listMasterContents(): Promise<{ data: MasterContent[]; error: string | null }> {
   try {
-    const [skills, ws] = await Promise.all([
-      supabase.from("skills_vocab").select("id, label").order("label"),
-      fetchAllIds("work_skills", "skill_id"),
+    const [contents, ws] = await Promise.all([
+      supabase.from("contents_vocab").select("id, label").order("sort_order").order("label"),
+      fetchAllIds("work_contents", "content_id"),
     ]);
-    const err = skills.error ?? ws.error;
+    const err = contents.error ?? ws.error;
     if (err) return { data: [], error: dbErr(err) };
-    const counts = countBy(ws.data, "skill_id");
+    const counts = countBy(ws.data, "content_id");
     return {
-      data: (skills.data ?? []).map((s) => ({ ...s, workCount: counts.get(s.id) ?? 0 })),
+      data: (contents.data ?? []).map((s) => ({ ...s, workCount: counts.get(s.id) ?? 0 })),
       error: null,
     };
   } catch (e) {
@@ -483,11 +483,11 @@ async function hasToolNameConflict(
   return { error: null, conflict };
 }
 
-async function hasSkillLabelConflict(
+async function hasContentLabelConflict(
   label: string,
   excludeId?: string,
 ): Promise<{ error: string | null; conflict: boolean }> {
-  const { data, error } = await supabase.from("skills_vocab").select("id, label");
+  const { data, error } = await supabase.from("contents_vocab").select("id, label");
   if (error) return { error: dbErr(error), conflict: false };
   const lower = label.toLowerCase();
   const conflict = (data ?? []).some(
@@ -586,55 +586,55 @@ export async function deleteToolVocab(id: string): Promise<{ error: string | nul
   }
 }
 
-export async function addSkillVocab(label: string): Promise<{ error: string | null }> {
+export async function addContentVocab(label: string): Promise<{ error: string | null }> {
   try {
     const trimmed = label.trim();
-    if (!trimmed) return { error: "スキル名を入力してください" };
-    const dup = await hasSkillLabelConflict(trimmed);
+    if (!trimmed) return { error: "制作内容を入力してください" };
+    const dup = await hasContentLabelConflict(trimmed);
     if (dup.error) return { error: dup.error };
-    if (dup.conflict) return { error: "同じ名前のスキルがすでにあります" };
-    const { data, error } = await supabase.from("skills_vocab").insert({ label: trimmed }).select("id");
+    if (dup.conflict) return { error: "同じ名前の制作内容がすでにあります" };
+    const { data, error } = await supabase.from("contents_vocab").insert({ label: trimmed }).select("id");
     if (error) return { error: dbErr(error) };
-    if (!data?.length) return { error: "スキルを追加できませんでした（権限がありません）" };
+    if (!data?.length) return { error: "制作内容を追加できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: errMsg(e) };
   }
 }
 
-export async function renameSkillVocab(id: string, label: string): Promise<{ error: string | null }> {
+export async function renameContentVocab(id: string, label: string): Promise<{ error: string | null }> {
   try {
     const trimmed = label.trim();
-    if (!trimmed) return { error: "スキル名を入力してください" };
-    const dup = await hasSkillLabelConflict(trimmed, id);
+    if (!trimmed) return { error: "制作内容を入力してください" };
+    const dup = await hasContentLabelConflict(trimmed, id);
     if (dup.error) return { error: dup.error };
-    if (dup.conflict) return { error: "同じ名前のスキルがすでにあります" };
+    if (dup.conflict) return { error: "同じ名前の制作内容がすでにあります" };
     const { data, error } = await supabase
-      .from("skills_vocab")
+      .from("contents_vocab")
       .update({ label: trimmed })
       .eq("id", id)
       .select("id");
     if (error) return { error: dbErr(error) };
-    if (!data?.length) return { error: "スキルを更新できませんでした（権限がありません）" };
+    if (!data?.length) return { error: "制作内容を更新できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: errMsg(e) };
   }
 }
 
-export async function deleteSkillVocab(id: string): Promise<{ error: string | null }> {
+export async function deleteContentVocab(id: string): Promise<{ error: string | null }> {
   try {
     const { count, error: countErr } = await supabase
-      .from("work_skills")
-      .select("skill_id", { count: "exact", head: true })
-      .eq("skill_id", id);
+      .from("work_contents")
+      .select("content_id", { count: "exact", head: true })
+      .eq("content_id", id);
     if (countErr) return { error: dbErr(countErr) };
     if ((count ?? 0) > 0) {
-      return { error: `このスキルは作品 ${count} 件で使われているため削除できません` };
+      return { error: `この制作内容は作品 ${count} 件で使われているため削除できません` };
     }
-    const { data, error } = await supabase.from("skills_vocab").delete().eq("id", id).select("id");
+    const { data, error } = await supabase.from("contents_vocab").delete().eq("id", id).select("id");
     if (error) return { error: dbErr(error) };
-    if (!data?.length) return { error: "スキルを削除できませんでした（権限がありません）" };
+    if (!data?.length) return { error: "制作内容を削除できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: errMsg(e) };
@@ -892,14 +892,14 @@ export async function deletePhaseName(id: string): Promise<{ error: string | nul
 }
 
 /**
- * スキルラベルを skills_vocab に追加（Works から新規入力された場合）
+ * 制作内容ラベルを contents_vocab に追加（Works から新規入力された場合）
  * 旧: skill_bars への書き込みから移行済み。
  */
-export async function addSkillLabelFromWorks(
+export async function addContentLabelFromWorks(
   label: string
 ): Promise<{ error: string | null; id?: string }> {
   try {
-    const vocab = await upsertSkillVocab(label);
+    const vocab = await upsertContentVocab(label);
     return { error: null, id: vocab.id };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

@@ -95,6 +95,27 @@ export type Database = {
         }
         Relationships: []
       }
+      contents_vocab: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       flowcharts: {
         Row: {
           created_at: string | null
@@ -310,30 +331,6 @@ export type Database = {
           },
         ]
       }
-      skills_vocab: {
-        Row: {
-          category: string | null
-          created_at: string
-          id: string
-          label: string
-          label_short: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          id?: string
-          label: string
-          label_short?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          id?: string
-          label?: string
-          label_short?: string | null
-        }
-        Relationships: []
-      }
       tools_vocab: {
         Row: {
           category: string | null
@@ -382,6 +379,39 @@ export type Database = {
         }
         Relationships: []
       }
+      work_contents: {
+        Row: {
+          content_id: string
+          sort_order: number | null
+          work_id: string
+        }
+        Insert: {
+          content_id: string
+          sort_order?: number | null
+          work_id: string
+        }
+        Update: {
+          content_id?: string
+          sort_order?: number | null
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_contents_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents_vocab"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_contents_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_roles: {
         Row: {
           role_id: string
@@ -408,39 +438,6 @@ export type Database = {
           },
           {
             foreignKeyName: "work_roles_work_id_fkey"
-            columns: ["work_id"]
-            isOneToOne: false
-            referencedRelation: "works"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      work_skills: {
-        Row: {
-          skill_id: string
-          sort_order: number | null
-          work_id: string
-        }
-        Insert: {
-          skill_id: string
-          sort_order?: number | null
-          work_id: string
-        }
-        Update: {
-          skill_id?: string
-          sort_order?: number | null
-          work_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_skills_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "skills_vocab"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_skills_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
             referencedRelation: "works"
@@ -619,8 +616,8 @@ export type Database = {
       }
       save_work_with_relations: {
         Args: {
+          p_content_labels: string[]
           p_role_ids: string[]
-          p_skill_labels: string[]
           p_stakeholder_counts: Json
           p_tool_names: string[]
           p_work: Json

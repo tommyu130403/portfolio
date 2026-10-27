@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Icon from "@/components/Icon";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
+import { formatPeriodLabel } from "@/lib/work-period";
 
 type CareerItem = Tables<"career_items">;
 type EnrichedItem = CareerItem & {
@@ -93,17 +94,6 @@ function parsePeriod(period: string): {
   const endVal = endYear - CHART_START + endMonth / 12;
 
   return { startVal, endVal, startYear, endYear, isCurrent };
-}
-
-/* 表示用に Figma 表記へ整形： "2023年12月" / "2022.04" → "2023.12" / "2022.4"（ゼロ埋めなし） */
-function formatPeriod(period: string): string {
-  return period
-    // YYYY年M月 / YYYY.MM → YYYY.M（ゼロ埋め除去）
-    .replace(/(\d{4})\s*[年.]\s*(\d{1,2})\s*月?/g, (_, y, m) => `${y}.${parseInt(m, 10)}`)
-    // 月欠落の YYYY年 → YYYY（和暦表記の取り残しを防ぐ）
-    .replace(/(\d{4})\s*年/g, "$1")
-    // 区切りを正規化
-    .replace(/\s*[-–−~〜]\s*/g, " - ");
 }
 
 function useMediaQuery(query: string) {
@@ -242,7 +232,7 @@ function CareerCard({
                   textBox: "trim-both cap alphabetic",
                 }}
               >
-                {formatPeriod(item.period)}
+                {formatPeriodLabel(item.period)}
               </span>
             </div>
             {isCurrent && (

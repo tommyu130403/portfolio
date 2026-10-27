@@ -89,7 +89,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, skills, tools, scre
         <div className="flex w-full flex-col gap-6">
           <div className="flex w-full flex-col gap-4 [word-break:break-word]">
             {work.category && <p className="text-body-01-jp text-primary">{work.category}</p>}
-            <p className="text-title-pj text-white">{work.title}</p>
+            <p className="text-title-pj text-system-300">{work.title}</p>
           </div>
 
           {/* Skills → Tools を 1 行で並べる（Tools は icon_url があればアイコン、無ければ文字 Tag） */}

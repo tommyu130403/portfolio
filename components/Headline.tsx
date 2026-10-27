@@ -10,8 +10,8 @@ type HeadlineProps = {
    * - default: ページ上部のセクション見出し（Library SectionTitle 20:37・2026-10-25 確認: JP ラベル 12px Noto Regular・ls 3%・Main/050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、gap 12・下余白 24）
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
-   * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416・2026-10-25 確認: 24px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
-   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（h1・h2 は Library Headline type=02・304:302 の 16px mint。03 は Figma に無い）
+   * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 22px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
+   * - markdown-h1 / -h2 / -h3: コンテンツ内見出し（h1・h2 は Library Headline type=02・304:302 の 16px System/700 gray。03 は Figma に無い）
    */
   variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2" | "markdown-h3";
 };
@@ -36,11 +36,11 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // 作品詳細のセクション見出し（Library Headline type=01・425:416・2026-10-25 確認: 24px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
+  // 作品詳細のセクション見出し（Library Headline type=01・425:416: 22px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
   if (variant === "section-aside") {
     return (
       <div className="flex w-full items-center gap-4">
-        <p className="min-w-0 text-[24px] font-bold leading-[1.5] tracking-[0.05em] text-white [word-break:break-word]">
+        <p className="min-w-0 text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-white [word-break:break-word]">
           {title}
         </p>
         <span aria-hidden className="h-px min-w-4 flex-1 bg-border" />
@@ -62,8 +62,8 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   if (variant === "markdown-h1" || variant === "markdown-h2") {
     return (
       <div className="flex w-full items-center gap-2">
-        <span aria-hidden className="h-px w-4 shrink-0 bg-main-050" />
-        <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
+        <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
+        <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-system-700">
           {title}
         </p>
       </div>

@@ -18,7 +18,17 @@ import {
   moveItem,
 } from "../../AdminLayout";
 import { parsePeriod, validatePeriod, isSamePeriod, periodInputsOf, periodColumnsForSave, isLegacyPeriod, type PeriodInputs } from "../../period";
-import RichMarkdownEditor, { UPLOAD_PLACEHOLDER } from "@/components/RichMarkdownEditor";
+import RichMarkdownEditor, {
+  UPLOAD_PLACEHOLDER,
+  PreviewPane,
+  DeviceSwitcher,
+  type PreviewDevice,
+} from "@/components/RichMarkdownEditor";
+import WorkDetailHeader, { type WorkToolItem } from "@/components/WorkDetailHeader";
+import WorkCard from "@/components/WorkCard";
+import WorkDetailContent from "@/components/WorkDetailContent";
+import { parseScreenshots, DEFAULT_IMAGE } from "@/lib/work-content";
+import { workPeriodLabel } from "@/lib/work-period";
 import { compressImage } from "@/lib/compress-image";
 import {
   parseTimeline,
@@ -55,7 +65,8 @@ type Work = Tables<"works">;
 
 /**
  * Work 1件の全画面エディタ（/admin/works/edit?id=xxx、id 省略 or "new" で新規作成）。
- * 「本文」タブ = メインエリア全体のリッチ Markdown エディタ、「設定」タブ = メタ情報フォーム。
+ * 左 = メタ情報フォーム → 本文のリッチ Markdown エディタ（1 本でスクロール）、
+ * 右 = 公開ページ全体（上部ブロック・本文・一覧カード）を未保存の値で描くプレビュー。xl 未満では縦積み。
  */
 
 // 新規作成時の Stakeholders 初期値（Figma Master 848:2948）
@@ -127,7 +138,59 @@ const ROLE_DELIMITER = /[・、,]/; // works.role は区切りで分割される
 const BREAKDOWN_INVALID = /[0-9・、,]/; // parseStakeholderBreakdown が役割名に使えない文字
 
 type CareerOption = Pick<Tables<"career_items">, "id" | "role" | "company" | "period">;
-type ToolOption = { id: string; name: string; icon_url: string | null };
+type ToolOption = { id: string; name: string; icon_url: string | null; slug: string | null };
+
+/** 期間の入力欄が読み込み時の値から変わっているか（保存時の検証とプレビューで同じ判定を使う） */
+const isPeriodTouched = (work: Work, period: PeriodInputs) => !isSamePeriod(period, periodInputsOf(work));
+
+/**
+ * 編集中の状態から、保存する（公開ページが読む）Work 行を組み立てる純粋関数。
+ * 保存（handleSave）と右側のプレビューが同じ結果を共有する。
+ */
+function composePublicWork({
+  work,
+  id,
+  roles,
+  roleIds,
+  breakdown,
+  period,
+  markdown,
+}: {
+  work: Work;
+  id: string;
+  roles: NameMaster[];
+  roleIds: string[];
+  breakdown: BreakdownState;
+  period: PeriodInputs;
+  markdown: string;
+}): Work {
+  const periodTouched = isPeriodTouched(work, period);
+  // 公開ページが読む文字の列は、選んだ役割から作り直す（DB 側も同じ規則で作り直す）
+  const roleName = new Map(roles.map((r) => [r.id, r.name]));
+  const derivedRole =
+    roleIds.map((rid) => roleName.get(rid)).filter(Boolean).join("・") || null;
+  const derivedBreakdown =
+    breakdown.mode === "rows"
+      ? breakdown.rows
+          .filter((r) => roleName.has(r.role_id)) // 役割未選択の行は保存前に弾かれる。プレビューに "undefined" を出さない
+          .map((r) => `${roleName.get(r.role_id)}${r.headcount}`)
+          .join("・") || null
+      : work.stakeholder_breakdown;
+  return {
+    ...work,
+    id,
+    role: derivedRole,
+    stakeholder_breakdown: derivedBreakdown,
+    ...periodColumnsForSave(work, period, periodTouched),
+    // 画像アップロード中の仮の行が万一残っていても DB には入れない
+    sections: markdownToSections(
+      markdown
+        .split("\n")
+        .filter((l) => l.trim() !== UPLOAD_PLACEHOLDER)
+        .join("\n")
+    ),
+  };
+}
 
 export default function WorkEditor({ workId, iconCatalog }: { workId: string; iconCatalog: IconCatalog }) {
   const router = useRouter();
@@ -153,7 +216,6 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const [newRoleName, setNewRoleName] = useState("");
   const [newToolName, setNewToolName] = useState("");
   const [careerOptions, setCareerOptions] = useState<CareerOption[]>([]);
-  const [tab, setTab] = useState<"content" | "settings">("content");
   const [missing, setMissing] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -161,6 +223,10 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const [savedAt, setSavedAt] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [publishPending, setPublishPending] = useState(false);
+  const [settingsDevice, setSettingsDevice] = useState<PreviewDevice>("full");
+  // 保存時の検証エラーで該当欄まで左ペインをスクロールするための参照
+  const periodFieldRef = useRef<HTMLDivElement>(null);
+  const breakdownFieldRef = useRef<HTMLDivElement>(null);
 
   // 画像ピッカー（RichMarkdownEditor からは Promise で URL を受け取る）
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -226,7 +292,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         // Work タグ用の制作内容語彙は専用マスタ contents_vocab を単一ソースとする
         // （スキルセクションの skill_experience とは疎結合）
         supabase.from("contents_vocab").select("label").order("sort_order").order("label"),
-        supabase.from("tools_vocab").select("id, name, icon_url").order("name"),
+        supabase.from("tools_vocab").select("id, name, icon_url, slug").order("name"),
         supabase.from("roles").select("id, name, sort_order").order("sort_order").order("name"),
         supabase.from("phase_names").select("id, name, sort_order").order("sort_order").order("name"),
         isNew
@@ -307,11 +373,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       setContentOptions(
         ((contentVocabRes.data ?? []) as { label: string }[]).map((r) => r.label)
       );
-      setToolOptions(
-        ((toolVocabRes.data ?? []) as { id: string; name: string; icon_url: string | null }[]).map(
-          (r) => ({ id: r.id, name: r.name, icon_url: r.icon_url })
-        )
-      );
+      setToolOptions((toolVocabRes.data ?? []) as ToolOption[]);
     };
     fetchAll().catch((error: unknown) => {
       setLoadError(error instanceof Error ? error.message : "作品を読み込めませんでした");
@@ -324,6 +386,24 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     setDirty(true);
   };
   const markDirty = () => setDirty(true);
+
+  // 右側のプレビュー用。保存と同じ組み立て規則で、未保存の編集状態から作る
+  const previewWork = useMemo(
+    () => (work ? composePublicWork({ work, id, roles, roleIds, breakdown, period, markdown }) : null),
+    [work, id, roles, roleIds, breakdown, period, markdown]
+  );
+  const previewTools = useMemo<WorkToolItem[]>(
+    () =>
+      tools.map((name) => {
+        const opt = toolOptions.find((t) => t.name.toLowerCase() === name.toLowerCase());
+        return { name, icon_url: opt?.icon_url ?? null, slug: opt?.slug ?? null };
+      }),
+    [tools, toolOptions]
+  );
+  const previewScreenshots = useMemo(
+    () => parseScreenshots(previewWork?.hero_screenshots),
+    [previewWork?.hero_screenshots]
+  );
 
   // jsonb のパースは work の該当カラムが変わったときだけ（毎レンダー・毎キーストロークの再パースを防ぐ）
   const parsedTimeline = useMemo(() => parseTimeline(work?.timeline), [work?.timeline]);
@@ -438,55 +518,36 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       setSaveError("タイトルを入力してください");
       return;
     }
-    const periodTouched = !isSamePeriod(period, periodInputsOf(work));
+    const periodTouched = isPeriodTouched(work, period);
     const periodError = periodTouched ? validatePeriod(period) : null;
     if (periodError) {
       setSaveError(periodError);
-      setTab("settings");
+      periodFieldRef.current?.scrollIntoView({ block: "center" });
       return;
     }
-    if (breakdown.mode === "rows" && breakdown.rows.some((r) => !r.role_id)) {
-      setSaveError("体制内訳で役割が選ばれていない行があります");
-      setTab("settings");
+    // 役割未選択の行と、マスタに無い役割 id の行（別画面で削除された等）はどちらも保存しない
+    const knownRole = new Set(roles.map((r) => r.id));
+    if (breakdown.mode === "rows" && breakdown.rows.some((r) => !knownRole.has(r.role_id))) {
+      setSaveError("体制内訳に、役割が未選択か、マスタから削除された役割の行があります");
+      breakdownFieldRef.current?.scrollIntoView({ block: "center" });
       return;
     }
     if (breakdown.mode === "rows") {
       const ids = breakdown.rows.map((r) => r.role_id);
       if (new Set(ids).size !== ids.length) {
         setSaveError("体制内訳に同じ役割が複数あります");
-        setTab("settings");
+        breakdownFieldRef.current?.scrollIntoView({ block: "center" });
         return;
       }
       if (breakdown.rows.some((r) => !Number.isInteger(r.headcount) || r.headcount < 1 || r.headcount > 999)) {
         setSaveError("体制内訳の人数は 1〜999 で入力してください");
-        setTab("settings");
+        breakdownFieldRef.current?.scrollIntoView({ block: "center" });
         return;
       }
     }
     setSaving(true);
     setSaveError(null);
-    // 公開ページが読む文字の列は、選んだ役割から作り直す（DB 側も同じ規則で作り直す）
-    const roleName = new Map(roles.map((r) => [r.id, r.name]));
-    const derivedRole =
-      roleIds.map((rid) => roleName.get(rid)).filter(Boolean).join("・") || null;
-    const derivedBreakdown =
-      breakdown.mode === "rows"
-        ? breakdown.rows.map((r) => `${roleName.get(r.role_id)}${r.headcount}`).join("・") || null
-        : work.stakeholder_breakdown;
-    const payload: Work = {
-      ...work,
-      id,
-      role: derivedRole,
-      stakeholder_breakdown: derivedBreakdown,
-      ...periodColumnsForSave(work, period, periodTouched),
-      // 画像アップロード中の仮の行が万一残っていても DB には入れない
-      sections: markdownToSections(
-        markdown
-          .split("\n")
-          .filter((l) => l.trim() !== UPLOAD_PLACEHOLDER)
-          .join("\n")
-      ),
-    };
+    const payload = composePublicWork({ work, id, roles, roleIds, breakdown, period, markdown });
     const saveRes = await saveWork(
       payload,
       contents,
@@ -565,18 +626,6 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     );
   }
 
-  const tabBtn = (key: "content" | "settings", label: string) => (
-    <button
-      type="button"
-      onClick={() => setTab(key)}
-      className={`rounded-[8px] px-3 py-1.5 text-[13px] transition-colors ${
-        tab === key ? "bg-primary/10 text-primary" : "text-fg-muted hover:text-white"
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <AdminShell section="works" wide hasUnsavedChanges={dirty}>
       {/* ヘッダー（戻る / タイトル / 保存・削除） */}
@@ -627,47 +676,20 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         </button>
       </div>
 
-      {/* タブ */}
-      <div className="mb-4 flex shrink-0 items-center gap-1 rounded-[10px] border border-[#2a2a2a] bg-[#141414] p-1 self-start">
-        {tabBtn("content", "本文")}
-        {tabBtn("settings", "設定")}
-      </div>
-
-      {/* 本文タブ: メインエリア全体をエディタとして使用 */}
-      {tab === "content" && (
-        <>
-          {/^:::\s*(timeline|stakeholders)\b/m.test(markdown) && (
-            <p className="mb-2 shrink-0 text-[11px] text-fg-muted">本文に「::: timeline」「::: stakeholders」の行があります。この行は現在は表示に使われません（Timeline / Stakeholders は「設定」タブで編集）。</p>
-          )}
-          <RichMarkdownEditor
-            value={markdown}
-            onChange={(md) => {
-              setMarkdown(md);
-              markDirty();
-            }}
-            onPickImage={pickImage}
-            onPickFlowchart={pickFlowchart}
-            onPickWork={pickWork}
-            onUploadImage={async (file) => {
-              const fd = new FormData();
-              fd.append("file", await compressImage(file));
-              const { url, error } = await uploadStorageImage(fd, "projects/sections");
-              return { url, error };
-            }}
-            className="min-h-0 flex-1"
-          />
-        </>
-      )}
-
-      {/* 設定タブ */}
-      {tab === "settings" && (
-        <div className="min-h-0 flex-1 overflow-y-auto pb-12">
-          <div className="grid max-w-main grid-cols-2 gap-4">
+      {/* 設定フォーム＋本文エディタ（左）/ 公開ページ全体のプレビュー（右） */}
+      <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center justify-between gap-3 pb-3">
+            <p className="text-[11px] text-fg-muted">公開ページでの見え方（保存前の値で描画）</p>
+            <DeviceSwitcher device={settingsDevice} onChange={setSettingsDevice} />
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
+          <div className="w-full shrink-0 pb-12 xl:min-h-0 xl:w-1/2 xl:shrink xl:overflow-y-auto xl:pr-4">
+          <div className="flex max-w-main min-w-0 flex-col gap-4">
             <div>
               <FieldLabel>カテゴリ</FieldLabel>
               <WorkCategoryField value={work.category} onChange={(v) => setField("category", v)} dirty={dirty} />
             </div>
-            <div className="col-span-2">
+            <div>
               <FieldLabel>担当役割</FieldLabel>
               <div className="flex flex-wrap gap-2">
                 {roles.map((r) => {
@@ -722,7 +744,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 </button>
               </div>
             </div>
-            <div className="col-span-2">
+            <div>
               <FieldLabel>担当経歴（Career）</FieldLabel>
               <select
                 value={work.career_item_id ?? ""}
@@ -737,7 +759,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 ))}
               </select>
             </div>
-            <div className="col-span-2">
+            <div ref={periodFieldRef}>
               <FieldLabel>期間</FieldLabel>
               <PeriodFields value={period} disabled={saving} onChange={(p) => { setPeriod(p); markDirty(); }} />
               {isLegacyPeriod(work) && isSamePeriod(period, periodInputsOf(work)) && (
@@ -748,7 +770,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             <FormGroupHeader>デバイスモックアップ</FormGroupHeader>
             {/* 旧 Hero の hero_brand / hero_bg_color は新詳細ページ（/works）で未使用のため入力を撤去。
                 カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
-            <div className="col-span-2">
+            <div>
               <FieldLabel>スクリーンショット（左パネルのデバイスモックアップ・先頭2枚を表示）</FieldLabel>
               <HeroScreenshotsEditor
                 value={(work.hero_screenshots ?? []) as string[]}
@@ -757,7 +779,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             </div>
 
             <FormGroupHeader>一覧・タグ設定（一覧サムネ / 制作内容 / ツール）</FormGroupHeader>
-            <div className="col-span-2">
+            <div>
               <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
               <ImagePickerField
                 value={work.thumbnail_url ?? ""}
@@ -766,7 +788,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
               />
             </div>
-            <div className="col-span-2">
+            <div>
               <FieldLabel>制作内容</FieldLabel>
               <div className="flex flex-wrap gap-2">
                 {contentOptions.map((label) => {
@@ -808,7 +830,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 </button>
               </div>
             </div>
-            <div className="col-span-2">
+            <div>
               <FieldLabel>ツール</FieldLabel>
               <div className="flex flex-wrap gap-2">
                 {toolOptions.map((opt) => {
@@ -846,7 +868,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                         setSaveError(res.error ?? "ツールの追加に失敗しました");
                         return;
                       }
-                      setToolOptions((prev) => [...prev, { id: res.id!, name, icon_url: null }]);
+                      setToolOptions((prev) => [...prev, { id: res.id!, name, icon_url: null, slug: null }]);
                     }
                     toggle(tools, setTools, name);
                     setNewToolName("");
@@ -860,7 +882,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             </div>
 
             <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>
-            <div className="col-span-2">
+            <div ref={breakdownFieldRef}>
               <FieldLabel>体制内訳（役割と人数。公開ページでは人数付きタグで表示）</FieldLabel>
               <StakeholderBreakdownField
                 roles={roles}
@@ -889,7 +911,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 </button>
               </span>
             </FormGroupHeader>
-            <div className="col-span-2">
+            <div>
               <p className="mb-3 text-[11px] text-fg-muted">公開ページの作品詳細・左パネル（期間の行）の全画面アイコンからモーダルで表示されます。工程が 0 件ならアイコンは出ません。右上の「保存」で反映。</p>
               <TimelineGanttEditor
                 value={parsedTimeline ?? EMPTY_TIMELINE}
@@ -922,7 +944,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 </button>
               </span>
             </FormGroupHeader>
-            <div className="col-span-2">
+            <div>
               <p className="mb-3 text-[11px] text-fg-muted">公開ページの作品詳細・左パネル（体制の行）の全画面アイコンからモーダルで表示されます。グループが 0 件ならアイコンは出ません。右上の「保存」で反映。</p>
               <StakeholdersDiagramEditor
                 iconCatalog={iconCatalog}
@@ -930,9 +952,65 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 onChange={(v) => setField("stakeholders", (v.groups.length ? v : null) as unknown as Work["stakeholders"])}
               />
             </div>
+
+            <FormGroupHeader>本文</FormGroupHeader>
+            <div className="flex flex-col gap-2">
+              {/^:::\s*(timeline|stakeholders)\b/m.test(markdown) && (
+                <p className="text-[11px] text-fg-muted">本文に「::: timeline」「::: stakeholders」の行があります。この行は現在は表示に使われません（Timeline / Stakeholders は上の設定欄で編集）。</p>
+              )}
+              <RichMarkdownEditor
+                value={markdown}
+                onChange={(md) => {
+                  setMarkdown(md);
+                  markDirty();
+                }}
+                onPickImage={pickImage}
+                onPickFlowchart={pickFlowchart}
+                onPickWork={pickWork}
+                onUploadImage={async (file) => {
+                  const fd = new FormData();
+                  fd.append("file", await compressImage(file));
+                  const { url, error } = await uploadStorageImage(fd, "projects/sections");
+                  return { url, error };
+                }}
+                defaultMode="edit"
+                className="h-[640px]"
+              />
+            </div>
+          </div>
+          </div>
+          <div className="h-[640px] w-full shrink-0 xl:h-auto xl:min-h-0 xl:w-1/2 xl:shrink">
+            <PreviewPane device={settingsDevice}>
+              {previewWork && (
+                <div className="flex flex-col gap-12 text-white">
+                  <WorkDetailHeader
+                    work={previewWork}
+                    contents={contents}
+                    tools={previewTools}
+                    screenshots={previewScreenshots}
+                  />
+                  <WorkDetailContent work={previewWork} />
+                  <section className="flex flex-col gap-3">
+                    <p className="text-[11px] text-fg-muted">一覧カードでの見え方</p>
+                    <div className="max-w-[339px]">
+                      <WorkCard
+                        category={previewWork.category}
+                        title={previewWork.title}
+                        contents={contents}
+                        period={workPeriodLabel(previewWork)}
+                        image={previewWork.thumbnail_url ?? DEFAULT_IMAGE}
+                      />
+                    </div>
+                  </section>
+                  <p className="text-[11px] text-fg-muted">
+                    担当経歴（Career）の紐付けはトップページの経歴欄に出るため、ここには表示しません
+                  </p>
+                </div>
+              )}
+            </PreviewPane>
+          </div>
           </div>
         </div>
-      )}
 
       {/* 画像ピッカー（本文エディタの画像ダイアログから Promise で呼ばれる） */}
       <ImagePickerModal

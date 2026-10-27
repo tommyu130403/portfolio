@@ -48,6 +48,8 @@ export type RichMarkdownEditorProps = {
     id: string;
     title: string;
   } | null>;
+  /** 表示モードの初期値（既定は分割） */
+  defaultMode?: Mode;
   /** ルート要素の追加クラス（高さは親から指定する） */
   className?: string;
 };
@@ -55,7 +57,7 @@ export type RichMarkdownEditorProps = {
 type Mode = "edit" | "split" | "preview";
 
 /** プレビューのデバイス幅。"full" はペイン幅いっぱい（実寸指定なし） */
-type PreviewDevice = "full" | DeviceMode;
+export type PreviewDevice = "full" | DeviceMode;
 
 const DEVICE_OPTIONS: { key: PreviewDevice; label: string }[] = [
   { key: "full", label: "フル" },
@@ -170,43 +172,77 @@ function removePlaceholder(current: string) {
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
+/** デバイス幅切替（Device コレクション = container トークン参照） */
+export function DeviceSwitcher({
+  device,
+  onChange,
+}: {
+  device: PreviewDevice;
+  onChange: (d: PreviewDevice) => void;
+}) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-[8px] border border-border-light bg-[#1a1a1a] p-0.5">
+      {DEVICE_OPTIONS.map(({ key, label }) => (
+        <button
+          key={key}
+          type="button"
+          title={
+            key === "full"
+              ? "ペイン幅いっぱいで表示"
+              : `${container[key].width.screen}px（Device/${label} Screen.Width）`
+          }
+          onClick={() => onChange(key)}
+          className={`rounded-[6px] px-2.5 py-1 text-[11px] transition-colors ${
+            device === key ? "bg-primary/10 text-primary" : "text-fg-muted hover:text-white"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ─── プレビューペイン（デバイス幅切替）────────────────── */
 
 /**
  * デバイス実寸（Device コレクションの Screen.Width）でプレビューを描画する。
  * コンテンツは Main.Max で中央寄せし、ペインが実寸より狭い場合は縮小表示する。
  */
-function PreviewPane({
-  md,
+export function PreviewPane({
+  children,
   device,
-  half,
+  half = false,
   paneRef,
   onScroll,
 }: {
-  md: string;
+  children: ReactNode;
   device: PreviewDevice;
-  half: boolean;
-  paneRef: RefObject<HTMLDivElement | null>;
-  onScroll: () => void;
+  half?: boolean;
+  /** スクロール連動用（分割表示）。省略時は内部で持つ */
+  paneRef?: RefObject<HTMLDivElement | null>;
+  onScroll?: () => void;
 }) {
   const [paneW, setPaneW] = useState(0);
+  const ownRef = useRef<HTMLDivElement>(null);
+  const ref = paneRef ?? ownRef;
 
   useEffect(() => {
-    const el = paneRef.current;
+    const el = ref.current;
     if (!el) return;
     const ro = new ResizeObserver((entries) => setPaneW(entries[0].contentRect.width));
     ro.observe(el);
     return () => ro.disconnect();
-  }, [paneRef]);
+  }, [ref]);
 
   const widthClass = half ? "w-1/2" : "w-full";
 
   if (device === "full") {
     return (
-      <div ref={paneRef} onScroll={onScroll} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-surface p-6`}>
+      <div ref={ref} onScroll={onScroll} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-surface p-6`}>
         {/* 公開ページと同じ最大幅で表示 */}
         <div className="mx-auto max-w-main">
-          <WorkMarkdownDocument md={md} />
+          {children}
         </div>
       </div>
     );
@@ -217,7 +253,7 @@ function PreviewPane({
   const scale = paneW > 0 ? Math.min(1, (paneW - 24) / screenW) : 1;
 
   return (
-    <div ref={paneRef} onScroll={onScroll} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#141414] p-3`}>
+    <div ref={ref} onScroll={onScroll} className={`${widthClass} h-full min-h-[320px] overflow-auto bg-[#141414] p-3`}>
       <p className="pb-2 text-center text-[11px] text-system-700">
         {screenW}px × {container[device].height.screen}px
         {scale < 1 && `（${Math.round(scale * 100)}% 縮小表示）`}
@@ -229,7 +265,7 @@ function PreviewPane({
       >
         {/* メインコンテンツ幅（Main.Max）で中央寄せ */}
         <div style={{ maxWidth: mainMax }} className="mx-auto px-6">
-          <WorkMarkdownDocument md={md} />
+          {children}
         </div>
       </div>
     </div>
@@ -246,9 +282,10 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   onPickFlowchart,
   onPickWork,
   onUploadImage,
+  defaultMode = "split",
   className,
 }) => {
-  const [mode, setMode] = useState<Mode>("split");
+  const [mode, setMode] = useState<Mode>(defaultMode);
   const [device, setDevice] = useState<PreviewDevice>("full");
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [uploadStatus, setUploadStatus] = useState<null | { kind: "uploading" } | { kind: "error"; message: string }>(
@@ -555,25 +592,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         {/* デバイス幅切替（プレビュー表示時のみ。Device コレクション = container トークン参照） */}
         <div className="ml-auto flex items-center gap-2">
           {mode !== "edit" && (
-            <div className="flex items-center gap-0.5 rounded-[8px] border border-border-light bg-[#1a1a1a] p-0.5">
-              {DEVICE_OPTIONS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  title={
-                    key === "full"
-                      ? "ペイン幅いっぱいで表示"
-                      : `${container[key].width.screen}px（Device/${label} Screen.Width）`
-                  }
-                  onClick={() => setDevice(key)}
-                  className={`rounded-[6px] px-2.5 py-1 text-[11px] transition-colors ${
-                    device === key ? "bg-primary/10 text-primary" : "text-fg-muted hover:text-white"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <DeviceSwitcher device={device} onChange={setDevice} />
           )}
 
           {/* モード切替 */}
@@ -648,12 +667,13 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
         )}
         {(mode === "preview" || mode === "split") && (
           <PreviewPane
-            md={value}
             device={device}
             half={mode === "split"}
             paneRef={previewRef}
             onScroll={() => syncScroll(previewRef.current, taRef.current)}
-          />
+          >
+            <WorkMarkdownDocument md={value} />
+          </PreviewPane>
         )}
       </div>
 

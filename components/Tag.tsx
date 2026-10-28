@@ -1,5 +1,5 @@
 import type { FC, ReactNode } from "react";
-import { workCategoryTagStyle } from "@/lib/work-category-color";
+import { normalizeWorkCategoryHue, workCategoryTagStyle } from "@/lib/work-category-color";
 
 type TagProps = {
   label: string;
@@ -30,11 +30,13 @@ const INNER_RING = "after:pointer-events-none after:absolute after:inset-0 after
 const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md", prefix, suffix, filled, count, hue }) => {
   if (variant === "category") {
     const fs = size === "sm" ? "text-[10px]" : "text-[13px]";
-    const colored = typeof hue === "number";
+    // 範囲外・NaN は「色なし」に倒す（クラスと style の判定を同じ値から決める）
+    const safeHue = normalizeWorkCategoryHue(hue);
+    const colored = safeHue !== null;
     return (
       <div
         className={`flex max-w-full items-center justify-center rounded-r4 ${colored ? "" : "bg-main-600 "}p-2 ${className ?? ""}`}
-        style={workCategoryTagStyle(hue)}
+        style={workCategoryTagStyle(safeHue)}
       >
         {/* Figma Tag-single（Library 552:650・2026-10-27）: 角丸 4・余白 8・Noto 13px 字間 3%・Main/600 地に Main/base。Figma は text-box-trim で行の上下余白を字の高さ（cap）まで削り、チップは 26px。未対応ブラウザでは leading-none の 29px に収まる。sm は 10px・高さ 23（Master の作品カード・前後ナビ） */}
         <p

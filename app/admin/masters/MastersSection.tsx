@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import ServiceLogo from "@/components/ServiceLogo";
 import {
   FieldLabel,
@@ -61,7 +61,8 @@ function CategoryColorControl({
 }: {
   hue: number | null;
   disabled: boolean;
-  onChange: (hue: number | null) => void;
+  /** 保存して true、失敗（権限・通信・busy）なら false を返す */
+  onChange: (hue: number | null) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState(hue === null ? "" : String(hue));
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,6 +71,10 @@ function CategoryColorControl({
     const prev = hue === null ? "" : String(hue);
     setDraft(prev);
     if (inputRef.current) inputRef.current.value = prev;
+  };
+  /** 保存に失敗したら欄を元に戻す（成功時は親の key 差し替えで作り直される） */
+  const save = async (next: number | null) => {
+    if (!(await onChange(next))) revert();
   };
   const commit = () => {
     // type="number" は「e」「-」などの不正入力を value="" で返す（空欄と区別できない）。
@@ -80,7 +85,7 @@ function CategoryColorControl({
     }
     const trimmed = draft.trim();
     if (trimmed === "") {
-      if (hue !== null) onChange(null);
+      if (hue !== null) void save(null);
       return;
     }
     const n = Number(trimmed);
@@ -88,8 +93,10 @@ function CategoryColorControl({
       revert();
       return;
     }
-    if (n !== hue) onChange(n);
+    if (n !== hue) void save(n);
   };
+  /** 見本・「なし」を押すとき、数値欄の blur（＝打ちかけの値の保存）を起こさない。打ちかけは捨てて押した色を優先する */
+  const keepFocus = (e: MouseEvent) => e.preventDefault();
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -99,7 +106,11 @@ function CategoryColorControl({
           type="button"
           aria-label={`色相 ${h}`}
           disabled={disabled}
-          onClick={() => onChange(h)}
+          onMouseDown={keepFocus}
+          onClick={() => {
+            revert();
+            void save(h);
+          }}
           aria-pressed={hue === h}
           title={`色相 ${h}`}
           className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[12px] font-bold leading-none transition-transform disabled:cursor-not-allowed disabled:opacity-40 ${hue === h ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#1a1a1a]" : "opacity-70 hover:opacity-100"}`}
@@ -112,7 +123,11 @@ function CategoryColorControl({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => onChange(null)}
+        onMouseDown={keepFocus}
+        onClick={() => {
+          revert();
+          void save(null);
+        }}
         className={`${smallButton} ${hue === null ? "border-primary text-white" : ""}`}
       >
         なし
@@ -126,6 +141,8 @@ function CategoryColorControl({
         disabled={disabled}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
+        // フォーカス中のホイールで値が動く（Chrome の標準動作）のを防ぐ。ホイール前にフォーカスを外す
+        onWheel={(e) => e.currentTarget.blur()}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -583,12 +600,14 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
               className="flex items-center gap-3 rounded-[8px] border border-border-light bg-surface px-3 py-2"
             >
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="text-[13px] text-white">{c.name}</span>
+                {/* 公開サイトでの見え方（作品カードと同じ sm） */}
                 <Tag variant="category" size="sm" label={c.name} hue={c.color_hue} className="min-w-0" />
                 <CategoryColorControl
                   key={c.color_hue ?? "none"}
                   hue={c.color_hue}
                   disabled={busy}
-                  onChange={(hue) => void run(() => setWorkCategoryColor(c.id, hue))}
+                  onChange={(hue) => run(() => setWorkCategoryColor(c.id, hue))}
                 />
               </div>
               <button

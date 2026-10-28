@@ -36,9 +36,12 @@ export function useWorkCategoryHues(): HueMap {
   const [hues, setHues] = useState<HueMap>({});
   useEffect(() => {
     let cancelled = false;
+    // 取り直しが重なったとき、古い取得が後から解決して新しい結果を上書きしないよう、最新の取得だけを採用する
+    let latest = 0;
     const load = () => {
+      const seq = ++latest;
       fetchWorkCategoryHues().then((m) => {
-        if (!cancelled) setHues(m);
+        if (!cancelled && seq === latest) setHues(m);
       });
     };
     load();

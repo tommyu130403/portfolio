@@ -1,10 +1,10 @@
 "use client";
 
-import { WORK_CATEGORY_PRESET_HUES } from "@/lib/work-category-color";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import ServiceLogo from "@/components/ServiceLogo";
+import { WORK_CATEGORY_PRESET_HUES } from "@/lib/work-category-color";
 import Tag from "@/components/Tag";
 import Tooltip from "@/components/Tooltip";
 import { TableGrid, TableKeyValue } from "@/components/Table";
@@ -910,6 +910,11 @@ function WorkVizModalDemo() {
   );
 }
 
+/** カテゴリ色の見本: プリセット 8 色（D案）と仮のカテゴリ名を 1 対 1 で組にする */
+const CATEGORY_HUE_SAMPLES = ["プラットフォーム開発", "業務システム", "toC アプリ", "Web サイト", "デザインシステム", "リサーチ", "ブランディング", "新規事業"].map(
+  (label, i) => ({ label, hue: WORK_CATEGORY_PRESET_HUES[i] as number })
+);
+
 function ComponentsSection() {
   return (
     <section id="components" className="scroll-mt-8">
@@ -974,14 +979,8 @@ function ComponentsSection() {
             <Tag label="機能開発" variant="category" size="sm" />
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
-            {WORK_CATEGORY_PRESET_HUES.map((h, i) => (
-              <Tag
-                key={h}
-                label={["プラットフォーム開発", "業務システム", "toC アプリ", "Web サイト", "デザインシステム", "リサーチ", "ブランディング", "新規事業"][i]}
-                variant="category"
-                size="sm"
-                hue={h}
-              />
+            {CATEGORY_HUE_SAMPLES.map(({ hue, label }) => (
+              <Tag key={hue} label={label} variant="category" size="sm" hue={hue} />
             ))}
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">

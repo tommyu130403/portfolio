@@ -33,6 +33,7 @@ const workBase = {
   stakeholders: null,
   timeline: null,
   period: null,
+  thumbnail: null,
   thumbnail_url: PLACEHOLDER,
   role: "デザイン・開発",
   created_at: CREATED_AT,

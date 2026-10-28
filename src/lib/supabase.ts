@@ -16,11 +16,12 @@ const supabaseAnonKey = IS_DEV
   ? process.env.NEXT_PUBLIC_DEV_SUPABASE_ANON_KEY
   : (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_PRO_SUPABASE_ANON_KEY);
 
-const hasEnv = Boolean(supabaseUrl?.trim() && supabaseAnonKey?.trim());
+const url = supabaseUrl?.trim();
+const anonKey = supabaseAnonKey?.trim();
 
 type PortfolioSupabaseClient = ReturnType<typeof createClient<Database>>;
 
 export const supabase: PortfolioSupabaseClient =
-  supabaseUrl && supabaseAnonKey && hasEnv
-    ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+  url && anonKey
+    ? createClient<Database>(url, anonKey)
     : (createFixtureClient() as unknown as PortfolioSupabaseClient);

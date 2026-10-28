@@ -99,6 +99,7 @@ export const FIXTURE_TABLES: {
   works: [
     {
       ...workBase,
+      period: "2023.04 - 2023.09",
       id: W1,
       title: "サンプル作品A",
       category: "Web",
@@ -118,6 +119,7 @@ export const FIXTURE_TABLES: {
     },
     {
       ...workBase,
+      period: "2024.01 - 現在",
       id: W2,
       title: "サンプル作品B",
       category: "Mobile",
@@ -137,6 +139,7 @@ export const FIXTURE_TABLES: {
     },
     {
       ...workBase,
+      period: "2021.10 - 2022.03",
       id: W3,
       title: "サンプル作品C",
       category: "Design System",

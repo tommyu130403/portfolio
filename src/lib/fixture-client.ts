@@ -156,7 +156,9 @@ function createQuery(table: string) {
     if (a === b) return 0;
     if (typeof a === "number" && typeof b === "number") return a - b;
     if (typeof a === "boolean" && typeof b === "boolean") return Number(a) - Number(b);
-    return String(a) < String(b) ? -1 : 1;
+    const sa = String(a);
+    const sb = String(b);
+    return sa < sb ? -1 : sa > sb ? 1 : 0;
   }
 
   async function execute(): Promise<unknown> {
@@ -244,8 +246,7 @@ export function createFixtureClient(): unknown {
     auth: {
       getSession: () => Promise.resolve({ data: { session: FIXTURE_SESSION }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-      signOut: () =>
-        Promise.resolve({ error: { message: "フィクスチャモードではログアウトできません" } }),
+      signOut: () => Promise.resolve({ error: null }),
       signInWithPassword: () =>
         Promise.resolve({
           data: { user: null, session: null },

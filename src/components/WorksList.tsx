@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 import WorkCard from "@/components/WorkCard";
-import { DEFAULT_IMAGE } from "@/lib/work-content";
+import { DEFAULT_IMAGE, parseThumbnail } from "@/lib/work-content";
 import { workPeriodLabel } from "@/lib/work-period";
 
 type Work = Tables<"works">;
@@ -105,6 +105,8 @@ export const WorksList: FC = () => {
           contents={workContentsMap[work.id] ?? []}
           period={workPeriodLabel(work)}
           image={work.thumbnail_url ?? DEFAULT_IMAGE}
+          thumbnail={parseThumbnail(work.thumbnail)}
+          serviceName={work.hero_brand}
           onClick={() => openWork(work.id)}
         />
       ))}

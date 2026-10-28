@@ -34,3 +34,36 @@ export function parseScreenshots(raw: unknown): string[] {
 /** サムネイル未登録の作品に出す既定画像（一覧カード・前後ナビ共通） */
 export const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
+
+/** 構成サムネイル（works.thumbnail）のレイアウト種別 */
+export const THUMBNAIL_LAYOUTS = ["a1", "a2", "a3", "d"] as const;
+export type ThumbnailLayout = (typeof THUMBNAIL_LAYOUTS)[number];
+
+/** 構成サムネイルの整形済みデータ。空き枠は mobile_urls / capture_urls の "" で位置を保つ */
+export type WorkThumbnailData = {
+  layout: ThumbnailLayout;
+  logo_url: string | null;
+  desktop_url: string | null;
+  mobile_urls: string[];
+  capture_urls: string[];
+};
+
+/** works.thumbnail（Json）を WorkThumbnailData へ整形する。不正な値は null */
+export function parseThumbnail(raw: unknown): WorkThumbnailData | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as Record<string, unknown>;
+  const layout = THUMBNAIL_LAYOUTS.find((l) => l === obj.layout);
+  if (!layout) return null;
+  const str = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
+  const slots = (v: unknown): string[] =>
+    Array.isArray(v)
+      ? v.map((s) => (typeof s === "string" ? s : "")).slice(0, 2)
+      : [];
+  return {
+    layout,
+    logo_url: str(obj.logo_url),
+    desktop_url: str(obj.desktop_url),
+    mobile_urls: slots(obj.mobile_urls),
+    capture_urls: slots(obj.capture_urls),
+  };
+}

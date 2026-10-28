@@ -1,17 +1,24 @@
 import type { FC } from "react";
 import Tag from "./Tag";
 import ProtectedImage from "./ProtectedImage";
+import WorkThumbnail from "./WorkThumbnail";
+import { DEFAULT_IMAGE, type WorkThumbnailData } from "@/lib/work-content";
 
 type WorkCardProps = {
   category?: string | null;
   title: string;
   contents: string[];
   period?: string | null;
-  image: string;
+  /** 1枚画像。構成サムネイルが無いときに使う（未設定なら既定画像） */
+  image?: string | null;
+  /** 構成サムネイル。あれば image より優先 */
+  thumbnail?: WorkThumbnailData | null;
+  /** 構成サムネイルのサービス名 */
+  serviceName?: string | null;
   onClick?: () => void;
 };
 
-const WorkCard: FC<WorkCardProps> = ({ category, title, contents, period, image, onClick }) => {
+const WorkCard: FC<WorkCardProps> = ({ category, title, contents, period, image, thumbnail, serviceName, onClick }) => {
   return (
     <div
       onClick={onClick}
@@ -27,11 +34,24 @@ const WorkCard: FC<WorkCardProps> = ({ category, title, contents, period, image,
       ].join(" ")}
     >
       <div className="relative aspect-[339/190.6875] w-full shrink-0">
-        <ProtectedImage
-          src={image}
-          alt={title}
-          className="absolute inset-0 h-full w-full object-cover pointer-events-none"
-        />
+        {thumbnail ? (
+          <WorkThumbnail
+            className="pointer-events-none"
+            layout={thumbnail.layout}
+            logoUrl={thumbnail.logo_url}
+            desktopUrl={thumbnail.desktop_url}
+            mobileUrls={thumbnail.mobile_urls}
+            captureUrls={thumbnail.capture_urls}
+            serviceName={serviceName}
+            title={title}
+          />
+        ) : (
+          <ProtectedImage
+            src={image || DEFAULT_IMAGE}
+            alt={title}
+            className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+          />
+        )}
       </div>
       {/* Figma Master 494:1363: 本文 p16・gap24。上段（カテゴリチップ＋期間 / 作品名）gap4、下段に制作内容タグ */}
       <div className="flex min-h-[160px] min-w-0 flex-col gap-6 p-4">

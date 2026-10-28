@@ -16,6 +16,7 @@ import WorkCard from "@/components/WorkCard";
 import InfoCard from "@/components/InfoCard";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
+import WorkThumbnail from "@/components/WorkThumbnail";
 import ProtectedImage from "@/components/ProtectedImage";
 import { PhoneMock, LaptopMock } from "@/components/DeviceMock";
 import WorkDetailHeader from "@/components/WorkDetailHeader";
@@ -29,6 +30,20 @@ import Modal from "@/components/Modal";
 import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
 import type { FlowchartData } from "@/lib/flowchart";
 import type { Tables } from "@/src/types/supabase";
+import type { WorkThumbnailData } from "@/lib/work-content";
+
+// 構成サムネイル（WorkThumbnail / WorkCard / WorkPagerCard）のプレビュー用サンプル
+const THUMB_SHOT_DESKTOP = "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80";
+const THUMB_SHOT_MOBILE = "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80";
+const THUMB_LOGO = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
+const SAMPLE_THUMBNAILS: WorkThumbnailData[] = [
+  { layout: "a1", logo_url: THUMB_LOGO, desktop_url: THUMB_SHOT_DESKTOP, mobile_urls: [THUMB_SHOT_MOBILE], capture_urls: [] },
+  { layout: "a2", logo_url: null, desktop_url: THUMB_SHOT_DESKTOP, mobile_urls: [], capture_urls: [] },
+  { layout: "a3", logo_url: null, desktop_url: null, mobile_urls: [THUMB_SHOT_MOBILE, ""], capture_urls: [] },
+  { layout: "d", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [THUMB_SHOT_DESKTOP, THUMB_SHOT_DESKTOP] },
+];
+const SAMPLE_THUMB_TITLE = "キャリアチケットスカウトサービスの立ち上げ";
+const SAMPLE_THUMB_SERVICE = "Career Ticket";
 
 // Works 詳細ページのプレビュー用サンプルデータ
 const SAMPLE_WORK_DETAIL = {
@@ -37,6 +52,7 @@ const SAMPLE_WORK_DETAIL = {
   title: "キャリアチケットスカウトサービスの立ち上げ",
   category: "プラットフォーム開発",
   thumbnail_url: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80",
+  thumbnail: null,
   role: "リードUI/UXデザイナー・プロジェクトマネージャー",
   period: "2023年4月 - 2023年9月（6ヶ月）",
   start_date: null,
@@ -1047,7 +1063,7 @@ function ComponentsSection() {
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。Figma Master 494:1363。カテゴリチップ・期間・作品名・制作内容タグ">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。Figma Master 494:1363。カテゴリチップ・期間・作品名・制作内容タグ。画像は thumbnail（構成）があれば WorkThumbnail、無ければ image、無ければ既定画像">
           {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
           <div className="w-[256px] max-w-full">
           <WorkCard
@@ -1058,6 +1074,56 @@ function ComponentsSection() {
             image="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80"
             onClick={() => {}}
           />
+          </div>
+          {/* thumbnail（構成サムネイル）あり: 画像エリアに WorkThumbnail を描く。image は無視される */}
+          <div className="w-[256px] max-w-full">
+          <WorkCard
+            category="プラットフォーム開発"
+            title="キャリアチケットスカウトサービスの立ち上げ"
+            period="2023.4 - 2023.9"
+            contents={["Product Design", "BtoB", "SaaS"]}
+            thumbnail={SAMPLE_THUMBNAILS[0]}
+            serviceName="Career Ticket"
+            onClick={() => {}}
+          />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkThumbnail"
+          description="構成サムネイル（works.thumbnail）。4 レイアウト・1280×720 基準を cqw で縮尺・空き枠は system-900・ロゴ未設定は LOGO 枠。Figma のマスターは未確認"
+        >
+          <div className="flex w-full flex-col gap-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {SAMPLE_THUMBNAILS.map((t) => (
+                <div key={t.layout} className="relative aspect-video w-[339px] max-w-full overflow-hidden rounded-[14px]">
+                  <WorkThumbnail
+                    layout={t.layout}
+                    logoUrl={t.logo_url}
+                    desktopUrl={t.desktop_url}
+                    mobileUrls={t.mobile_urls}
+                    captureUrls={t.capture_urls}
+                    serviceName={SAMPLE_THUMB_SERVICE}
+                    title={SAMPLE_THUMB_TITLE}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-4">
+              {SAMPLE_THUMBNAILS.map((t) => (
+                <div key={t.layout} className="relative aspect-video w-[128px] overflow-hidden">
+                  <WorkThumbnail
+                    layout={t.layout}
+                    logoUrl={t.logo_url}
+                    desktopUrl={t.desktop_url}
+                    mobileUrls={t.mobile_urls}
+                    captureUrls={t.capture_urls}
+                    serviceName={SAMPLE_THUMB_SERVICE}
+                    title={SAMPLE_THUMB_TITLE}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </ComponentPreview>
 
@@ -1205,7 +1271,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkPagerCard"
-          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
+          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。composedThumbnail（構成サムネイル）ありは 128px 枠に 16:9 で縦中央・上下は system-950。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkPagerCard direction="prev" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
@@ -1217,6 +1283,10 @@ function ComponentsSection() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" thumbnail="/window.svg" href="#" />
               <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" thumbnail="/window.svg" href="#" />
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <WorkPagerCard direction="prev" category="プラットフォーム開発" title={SAMPLE_THUMB_TITLE} composedThumbnail={SAMPLE_THUMBNAILS[0]} serviceName={SAMPLE_THUMB_SERVICE} href="#" />
+              <WorkPagerCard direction="next" category="プラットフォーム開発" title={SAMPLE_THUMB_TITLE} composedThumbnail={SAMPLE_THUMBNAILS[0]} serviceName={SAMPLE_THUMB_SERVICE} href="#" />
             </div>
             <div className="w-full max-w-[394px]">
               <WorkPagerCard category="UI デザイン" title="社内向け管理ツールの刷新（direction なし・作品本文の作品カード）" thumbnail="/window.svg" href="#" />

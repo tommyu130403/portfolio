@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
-import { DEFAULT_IMAGE } from "@/lib/work-content";
+import type { Json } from "@/src/types/supabase";
+import { DEFAULT_IMAGE, parseThumbnail } from "@/lib/work-content";
 import WorkPagerCard from "./WorkPagerCard";
 
 type EmbedWork = {
   category: string | null;
   title: string;
   thumbnail_url: string | null;
+  thumbnail: Json | null;
+  hero_brand: string | null;
 };
 
 /**
@@ -28,7 +31,7 @@ export default function WorkCardEmbed({ id }: { id: string }) {
     (async () => {
       const { data: row, error } = await supabase
         .from("works")
-        .select("category, title, thumbnail_url")
+        .select("category, title, thumbnail_url, thumbnail, hero_brand")
         .eq("id", id)
         .eq("is_published", true)
         .maybeSingle();
@@ -70,6 +73,8 @@ export default function WorkCardEmbed({ id }: { id: string }) {
         category={work.category}
         title={work.title}
         thumbnail={work.thumbnail_url ?? DEFAULT_IMAGE}
+        composedThumbnail={parseThumbnail(work.thumbnail)}
+        serviceName={work.hero_brand}
         href={`/works?id=${id}`}
       />
     </div>

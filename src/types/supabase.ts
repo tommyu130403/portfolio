@@ -533,6 +533,7 @@ export type Database = {
           stakeholder_breakdown: string | null
           stakeholders: Json | null
           start_date: string | null
+          thumbnail: Json | null
           thumbnail_url: string | null
           timeline: Json | null
           title: string
@@ -555,6 +556,7 @@ export type Database = {
           stakeholder_breakdown?: string | null
           stakeholders?: Json | null
           start_date?: string | null
+          thumbnail?: Json | null
           thumbnail_url?: string | null
           timeline?: Json | null
           title: string
@@ -577,6 +579,7 @@ export type Database = {
           stakeholder_breakdown?: string | null
           stakeholders?: Json | null
           start_date?: string | null
+          thumbnail?: Json | null
           thumbnail_url?: string | null
           timeline?: Json | null
           title?: string

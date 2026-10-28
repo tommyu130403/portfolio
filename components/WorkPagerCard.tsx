@@ -5,7 +5,9 @@ import Link from "next/link";
 import Icon from "./Icon";
 import Tag from "./Tag";
 import ProtectedImage from "./ProtectedImage";
+import WorkThumbnail from "./WorkThumbnail";
 import { GUIDE_TEXT } from "./WorkBreadcrumb";
+import type { WorkThumbnailData } from "@/lib/work-content";
 
 type WorkPagerCardProps = {
   /** 省略時は方向の行（矢印＋Prev / Next）を出さない（作品本文に埋め込む作品カード用） */
@@ -15,14 +17,20 @@ type WorkPagerCardProps = {
   title: string;
   /** 値があるとき左（next は md 以上で右）にサムネイルを出す */
   thumbnail?: string | null;
+  /** 構成サムネイル。あれば thumbnail（1枚画像）より優先し、128px 枠に 16:9 で縦中央に置く */
+  composedThumbnail?: WorkThumbnailData | null;
+  /** 構成サムネイルのサービス名 */
+  serviceName?: string | null;
   href: string;
 };
 
-const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thumbnail, href }) => {
+const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thumbnail, composedThumbnail, serviceName, href }) => {
   const isNext = direction === "next";
   // 画像の読み込みに失敗したら画像なしの形に落とす
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const thumbSrc = thumbnail && failedSrc !== thumbnail ? thumbnail : null;
+  const composed = composedThumbnail ?? null;
+  const thumbSrc = !composed && thumbnail && failedSrc !== thumbnail ? thumbnail : null;
+  const hasThumb = composed !== null || thumbSrc !== null;
   const arrow = (
     <Icon
       set="Arrows"
@@ -55,20 +63,36 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
       href={href}
       aria-label={direction ? `${isNext ? "次" : "前"}のWork: ${title}` : `Work: ${title}`}
       className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border transition-colors hover:border-system-500 ${
-        thumbSrc
+        hasThumb
           ? `items-stretch ${isNext ? "md:flex-row-reverse" : ""}`
           : `flex-col gap-[6px] px-4 py-[14px] ${align}`
       }`}
     >
-      {thumbSrc ? (
+      {hasThumb ? (
         <>
-          <ProtectedImage
-            src={thumbSrc}
-            alt=""
-            loading="lazy"
-            onError={() => setFailedSrc(thumbSrc)}
-            className="hidden w-[128px] shrink-0 self-stretch object-cover md:block"
-          />
+          {composed ? (
+            <div className="relative hidden w-[128px] shrink-0 self-stretch overflow-hidden bg-system-950 md:block">
+              <div className="absolute inset-x-0 top-1/2 aspect-video -translate-y-1/2">
+                <WorkThumbnail
+                  layout={composed.layout}
+                  logoUrl={composed.logo_url}
+                  desktopUrl={composed.desktop_url}
+                  mobileUrls={composed.mobile_urls}
+                  captureUrls={composed.capture_urls}
+                  serviceName={serviceName}
+                  title={title}
+                />
+              </div>
+            </div>
+          ) : (
+            <ProtectedImage
+              src={thumbSrc!}
+              alt=""
+              loading="lazy"
+              onError={() => setFailedSrc(thumbSrc)}
+              className="hidden w-[128px] shrink-0 self-stretch object-cover md:block"
+            />
+          )}
           <div className={`flex min-w-0 flex-1 flex-col justify-center gap-[6px] px-4 py-[14px] md:gap-1 md:py-[10px] ${align}`}>{body}</div>
         </>
       ) : (

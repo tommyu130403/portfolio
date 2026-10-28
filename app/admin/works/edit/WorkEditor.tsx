@@ -28,7 +28,7 @@ import RichMarkdownEditor, {
 import WorkDetailHeader, { type WorkToolItem, type WorkDetailEditRegion } from "@/components/WorkDetailHeader";
 import WorkCard from "@/components/WorkCard";
 import WorkDetailContent from "@/components/WorkDetailContent";
-import { parseScreenshots, DEFAULT_IMAGE } from "@/lib/work-content";
+import { parseScreenshots, parseThumbnail, DEFAULT_IMAGE, type WorkThumbnailData, type ThumbnailLayout } from "@/lib/work-content";
 import { workPeriodLabel } from "@/lib/work-period";
 import { compressImage } from "@/lib/compress-image";
 import {
@@ -87,6 +87,7 @@ function emptyWork(id: string): Work {
     title: "新しいプロジェクト",
     category: null,
     thumbnail_url: null,
+    thumbnail: null,
     role: null,
     period: null,
     start_date: null,
@@ -461,6 +462,31 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   // jsonb のパースは work の該当カラムが変わったときだけ（毎レンダー・毎キーストロークの再パースを防ぐ）
   const parsedTimeline = useMemo(() => parseTimeline(work?.timeline), [work?.timeline]);
   const parsedStakeholders = useMemo(() => parseStakeholders(work?.stakeholders), [work?.stakeholders]);
+  const thumbnail = useMemo(() => parseThumbnail(work?.thumbnail), [work?.thumbnail]);
+  // 「なし」に切り替えても入力を失わないよう、直前の構成を退避しておく（イベント処理の中でだけ読み書きする）
+  const thumbStashRef = useRef<WorkThumbnailData | null>(null);
+
+  const setThumbnail = (next: WorkThumbnailData | null) => {
+    setField("thumbnail", next as unknown as Json);
+  };
+  const changeLayout = (v: string) => {
+    if (v === "none") {
+      if (thumbnail) thumbStashRef.current = thumbnail;
+      setThumbnail(null);
+      return;
+    }
+    const base: WorkThumbnailData = thumbnail ??
+      thumbStashRef.current ?? { layout: "a1", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [] };
+    setThumbnail({ ...base, layout: v as ThumbnailLayout });
+  };
+  const setSlot = (key: "mobile_urls" | "capture_urls", i: number, v: string) => {
+    if (!thumbnail) return;
+    const arr = [...thumbnail[key]];
+    while (arr.length < i + 1) arr.push("");
+    arr[i] = v;
+    while (arr.length > 0 && arr[arr.length - 1] === "") arr.pop();
+    setThumbnail({ ...thumbnail, [key]: arr });
+  };
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setList(list.some((s) => s.toLowerCase() === value.toLowerCase())
@@ -875,8 +901,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             </div>
 
             <FormGroupHeader>デバイスモックアップ</FormGroupHeader>
-            {/* 旧 Hero の hero_brand / hero_bg_color は新詳細ページ（/works）で未使用のため入力を撤去。
-                カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
+            {/* hero_bg_color は未使用のため入力を撤去。hero_brand は構成サムネイルのサービス名として
+                「サムネイル構成」で入力する。カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
             <div ref={screenshotsFieldRef} className={ringClass("screenshots")}>
               <FieldLabel>スクリーンショット（左パネルのデバイスモックアップ・先頭2枚を表示）</FieldLabel>
               <HeroScreenshotsEditor
@@ -885,15 +911,95 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               />
             </div>
 
-            <FormGroupHeader>一覧・タグ設定（一覧サムネ / 制作内容 / ツール）</FormGroupHeader>
-            <div>
-              <FieldLabel>サムネイル（一覧カード用）</FieldLabel>
-              <ImagePickerField
-                value={work.thumbnail_url ?? ""}
-                onChange={(v) => setField("thumbnail_url", v || null)}
-                folder="projects/thumbnails"
-                previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
-              />
+            <FormGroupHeader>一覧・タグ設定（サムネイル構成 / 制作内容 / ツール）</FormGroupHeader>
+            <div className="flex flex-col gap-3">
+              <div>
+                <FieldLabel>サムネイル構成</FieldLabel>
+                <select
+                  value={thumbnail?.layout ?? "none"}
+                  onChange={(e) => changeLayout(e.target.value)}
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary"
+                >
+                  <option value="none">なし（1枚画像を使う）</option>
+                  <option value="a1">A-1 デスクトップ+モバイル</option>
+                  <option value="a2">A-2 デスクトップのみ</option>
+                  <option value="a3">A-3 モバイルのみ</option>
+                  <option value="d">D モックアップなし</option>
+                </select>
+              </div>
+              {thumbnail === null ? (
+                <div>
+                  <FieldLabel>サムネイル（1枚画像）</FieldLabel>
+                  <ImagePickerField
+                    value={work.thumbnail_url ?? ""}
+                    onChange={(v) => setField("thumbnail_url", v || null)}
+                    folder="projects/thumbnails"
+                    previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <FieldLabel>サービス名</FieldLabel>
+                    <Input value={work.hero_brand ?? ""} onChange={(v) => setField("hero_brand", v || null)} placeholder="サービス名" />
+                  </div>
+                  <div>
+                    <FieldLabel>ロゴ</FieldLabel>
+                    <ImagePickerField
+                      value={thumbnail.logo_url ?? ""}
+                      onChange={(v) => setThumbnail({ ...thumbnail, logo_url: v || null })}
+                      folder="projects/thumbnails"
+                      previewClassName="mt-2 h-12 w-12 rounded-[6px] object-cover"
+                    />
+                  </div>
+                  {(thumbnail.layout === "a1" || thumbnail.layout === "a2") && (
+                    <div>
+                      <FieldLabel>デスクトップ画面</FieldLabel>
+                      <ImagePickerField
+                        value={thumbnail.desktop_url ?? ""}
+                        onChange={(v) => setThumbnail({ ...thumbnail, desktop_url: v || null })}
+                        folder="projects/thumbnails"
+                        previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
+                      />
+                    </div>
+                  )}
+                  {thumbnail.layout === "a1" && (
+                    <div>
+                      <FieldLabel>モバイル画面</FieldLabel>
+                      <ImagePickerField
+                        value={thumbnail.mobile_urls[0] ?? ""}
+                        onChange={(v) => setSlot("mobile_urls", 0, v)}
+                        folder="projects/thumbnails"
+                        previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
+                      />
+                    </div>
+                  )}
+                  {thumbnail.layout === "a3" &&
+                    [0, 1].map((i) => (
+                      <div key={`mobile-${i}`}>
+                        <FieldLabel>モバイル画面 {i + 1}</FieldLabel>
+                        <ImagePickerField
+                          value={thumbnail.mobile_urls[i] ?? ""}
+                          onChange={(v) => setSlot("mobile_urls", i, v)}
+                          folder="projects/thumbnails"
+                          previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
+                        />
+                      </div>
+                    ))}
+                  {thumbnail.layout === "d" &&
+                    [0, 1].map((i) => (
+                      <div key={`capture-${i}`}>
+                        <FieldLabel>資料キャプチャ {i + 1}</FieldLabel>
+                        <ImagePickerField
+                          value={thumbnail.capture_urls[i] ?? ""}
+                          onChange={(v) => setSlot("capture_urls", i, v)}
+                          folder="projects/thumbnails"
+                          previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
+                        />
+                      </div>
+                    ))}
+                </>
+              )}
             </div>
             <div ref={tagsFieldRef} className={`flex flex-col gap-4 ${ringClass("tags")}`}>
             <div>
@@ -1110,6 +1216,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                         contents={contents}
                         period={workPeriodLabel(previewWork)}
                         image={previewWork.thumbnail_url ?? DEFAULT_IMAGE}
+                        thumbnail={parseThumbnail(previewWork.thumbnail)}
+                        serviceName={previewWork.hero_brand}
                       />
                     </div>
                   </section>

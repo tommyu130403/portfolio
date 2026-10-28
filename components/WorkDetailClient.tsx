@@ -3,8 +3,8 @@
 import { type FC, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
-import type { Tables } from "@/src/types/supabase";
-import { DEFAULT_IMAGE, parseScreenshots } from "@/lib/work-content";
+import type { Json, Tables } from "@/src/types/supabase";
+import { DEFAULT_IMAGE, parseScreenshots, parseThumbnail } from "@/lib/work-content";
 import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
 import WorkBreadcrumb from "./WorkBreadcrumb";
@@ -12,7 +12,7 @@ import WorkPagerCard from "./WorkPagerCard";
 import SideMenuBar from "./SideMenuBar";
 
 type Work = Tables<"works">;
-type OrderItem = { id: string; title: string; category: string | null; thumbnail_url: string | null };
+type OrderItem = { id: string; title: string; category: string | null; thumbnail_url: string | null; thumbnail: Json | null; hero_brand: string | null };
 
 type WorkDetailClientProps = {
   /** クエリ文字列 ?id= から受け取った Work ID */
@@ -139,7 +139,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
     let cancelled = false;
     supabase
       .from("works")
-      .select("id, title, category, thumbnail_url")
+      .select("id, title, category, thumbnail_url, thumbnail, hero_brand")
       .eq("is_published", true)
       .order("sort_order", { ascending: true })
       .then(({ data, error: orderError }) => {
@@ -204,6 +204,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
                   direction="prev"
                   category={prev.category}
                   thumbnail={prev.thumbnail_url ?? DEFAULT_IMAGE}
+                  composedThumbnail={parseThumbnail(prev.thumbnail)}
+                  serviceName={prev.hero_brand}
                   title={prev.title}
                   href={workHref(prev.id)}
                 />
@@ -214,6 +216,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
                     direction="next"
                     category={next.category}
                     thumbnail={next.thumbnail_url ?? DEFAULT_IMAGE}
+                    composedThumbnail={parseThumbnail(next.thumbnail)}
+                    serviceName={next.hero_brand}
                     title={next.title}
                     href={workHref(next.id)}
                   />

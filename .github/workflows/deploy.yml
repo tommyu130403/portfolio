@@ -17,6 +17,12 @@ jobs:
           node-version: "22"
           cache: 'npm'
       - run: npm ci
+      # Supabase の設定値が空だと fixture(見本データ)モードでビルドが通ってしまうため、公開前に止める
+      - name: Supabase の設定値が揃っているか確認
+        run: test -n "$NEXT_PUBLIC_SUPABASE_URL" -a -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}

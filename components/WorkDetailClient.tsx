@@ -10,6 +10,7 @@ import WorkDetailContent from "./WorkDetailContent";
 import WorkBreadcrumb from "./WorkBreadcrumb";
 import WorkPagerCard from "./WorkPagerCard";
 import SideMenuBar from "./SideMenuBar";
+import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
 
 type Work = Tables<"works">;
 type OrderItem = { id: string; title: string; category: string | null; thumbnail_url: string | null; thumbnail: Json | null; hero_brand: string | null };
@@ -61,6 +62,8 @@ const WorkDetailSkeleton: FC = () => (
 
 const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const router = useRouter();
+  const hues = useWorkCategoryHues();
+  const hueOf = (name: string | null) => (name ? hues[name] ?? null : null);
   const [work, setWork] = useState<Work | null>(null);
   const [contents, setContents] = useState<string[]>([]);
   const [tools, setTools] = useState<WorkToolItem[]>([]);
@@ -193,7 +196,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
             nextHref={next ? workHref(next.id) : undefined}
           />
         </div>
-        <WorkDetailHeader work={work} contents={contents} tools={tools} screenshots={screenshots} />
+        <WorkDetailHeader work={work} contents={contents} tools={tools} screenshots={screenshots} categoryHue={hueOf(work.category)} />
         <WorkDetailContent work={work} />
 
         {showNav && (
@@ -203,6 +206,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
                 <WorkPagerCard
                   direction="prev"
                   category={prev.category}
+                  categoryHue={hueOf(prev.category)}
                   thumbnail={prev.thumbnail_url ?? DEFAULT_IMAGE}
                   composedThumbnail={parseThumbnail(prev.thumbnail)}
                   serviceName={prev.hero_brand}
@@ -215,6 +219,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
                   <WorkPagerCard
                     direction="next"
                     category={next.category}
+                    categoryHue={hueOf(next.category)}
                     thumbnail={next.thumbnail_url ?? DEFAULT_IMAGE}
                     composedThumbnail={parseThumbnail(next.thumbnail)}
                     serviceName={next.hero_brand}

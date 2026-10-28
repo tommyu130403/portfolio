@@ -8,11 +8,13 @@ import type { Tables } from "@/src/types/supabase";
 import WorkCard from "@/components/WorkCard";
 import { DEFAULT_IMAGE, parseThumbnail } from "@/lib/work-content";
 import { workPeriodLabel } from "@/lib/work-period";
+import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
 
 type Work = Tables<"works">;
 
 export const WorksList: FC = () => {
   const router = useRouter();
+  const hues = useWorkCategoryHues();
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,6 +103,7 @@ export const WorksList: FC = () => {
         <WorkCard
           key={work.id}
           category={work.category}
+          categoryHue={work.category ? hues[work.category] ?? null : null}
           title={work.title}
           contents={workContentsMap[work.id] ?? []}
           period={workPeriodLabel(work)}

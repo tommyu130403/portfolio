@@ -53,6 +53,8 @@ type WorkDetailHeaderProps = {
   contents: string[];
   tools: WorkToolItem[];
   screenshots: string[];
+  /** カテゴリタグの色相（0〜359）。未指定は既定色 */
+  categoryHue?: number | null;
   /** admin プレビュー専用。渡すと各領域に編集ボタンを重ねる（公開ページでは渡さない＝見た目は変わらない） */
   onEdit?: (region: WorkDetailEditRegion) => void;
 };
@@ -61,7 +63,7 @@ type WorkDetailHeaderProps = {
  * 上部ブロック本体（Figma 787:9916 / _ProjectContents のブロック①②）
  * ------------------------------------------------------------------ */
 
-const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, screenshots, onEdit }) => {
+const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, screenshots, categoryHue, onEdit }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [vizModal, setVizModal] = useState<"timeline" | "stakeholders" | null>(null);
   // 読み込みに失敗したアイコン URL。失敗したら次の候補（手元のロゴ → 文字 Tag）へ進む
@@ -106,7 +108,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
       <div className="flex w-full flex-col gap-8">
         <div className="flex w-full flex-col gap-8">
           <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
-            {work.category && <Tag variant="category" label={work.category} className="self-start" />}
+            {work.category && <Tag variant="category" label={work.category} hue={categoryHue} className="self-start" />}
             <p className="text-title-pj text-fg">{work.title}</p>
             {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
           </div>

@@ -59,6 +59,7 @@ import type { IconCatalog } from "@/app/admin/iconCatalogTypes";
 import Tag from "@/components/Tag";
 import { parseStakeholderBreakdown } from "@/components/WorkDetailHeader";
 import { supabase } from "@/src/lib/supabase";
+import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
 import ProtectedImage from "@/components/ProtectedImage";
 import type { Json, Tables } from "@/src/types/supabase";
 
@@ -226,6 +227,7 @@ function measureTextareaOffset(ta: HTMLTextAreaElement, textBefore: string): num
 
 export default function WorkEditor({ workId, iconCatalog }: { workId: string; iconCatalog: IconCatalog }) {
   const router = useRouter();
+  const hues = useWorkCategoryHues();
   const isNew = workId === "new";
   const id = useMemo(() => (isNew ? crypto.randomUUID() : workId), [isNew, workId]);
 
@@ -1204,6 +1206,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                     contents={contents}
                     tools={previewTools}
                     screenshots={previewScreenshots}
+                    categoryHue={previewWork.category ? hues[previewWork.category] ?? null : null}
                     onEdit={handlePreviewEdit}
                   />
                   <WorkDetailContent work={previewWork} onEditSection={handleEditSection} />
@@ -1212,6 +1215,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                     <div className="max-w-[339px]">
                       <WorkCard
                         category={previewWork.category}
+                        categoryHue={previewWork.category ? hues[previewWork.category] ?? null : null}
                         title={previewWork.title}
                         contents={contents}
                         period={workPeriodLabel(previewWork)}

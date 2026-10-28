@@ -6,6 +6,7 @@ import { supabase } from "@/src/lib/supabase";
 import type { Json } from "@/src/types/supabase";
 import { DEFAULT_IMAGE, parseThumbnail } from "@/lib/work-content";
 import WorkPagerCard from "./WorkPagerCard";
+import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
 
 type EmbedWork = {
   category: string | null;
@@ -21,6 +22,7 @@ type EmbedWork = {
  */
 export default function WorkCardEmbed({ id }: { id: string }) {
   const pathname = usePathname();
+  const hues = useWorkCategoryHues();
   const [result, setResult] = useState<{
     id: string;
     work: EmbedWork | null;
@@ -71,6 +73,7 @@ export default function WorkCardEmbed({ id }: { id: string }) {
     >
       <WorkPagerCard
         category={work.category}
+        categoryHue={work.category ? hues[work.category] ?? null : null}
         title={work.title}
         thumbnail={work.thumbnail_url ?? DEFAULT_IMAGE}
         composedThumbnail={parseThumbnail(work.thumbnail)}

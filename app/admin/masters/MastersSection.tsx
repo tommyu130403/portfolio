@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import ServiceLogo from "@/components/ServiceLogo";
 import {
   FieldLabel,
@@ -10,6 +10,8 @@ import {
 } from "../AdminLayout";
 import SectionTitle from "../SectionTitle";
 import ProtectedImage from "@/components/ProtectedImage";
+import Tag from "@/components/Tag";
+import { WORK_CATEGORY_PRESET_HUES } from "@/lib/work-category-color";
 import {
   addNameMaster,
   addContentVocab,
@@ -31,6 +33,7 @@ import {
   renameNameMaster,
   renameContentVocab,
   renameWorkCategory,
+  setWorkCategoryColor,
   updateToolVocab,
   type MasterCompany,
   type MasterPhaseName,
@@ -49,6 +52,109 @@ const dangerButton =
   "shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:cursor-not-allowed disabled:opacity-40";
 const selectClass =
   "w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary";
+
+/** カテゴリ色の指定欄: プリセット 8 色 + 「なし」+ 数値入力（0〜359）。変更はその場で保存する */
+function CategoryColorControl({
+  hue,
+  disabled,
+  onChange,
+}: {
+  hue: number | null;
+  disabled: boolean;
+  /** 保存して true、失敗（権限・通信・busy）なら false を返す */
+  onChange: (hue: number | null) => Promise<boolean>;
+}) {
+  const [draft, setDraft] = useState(hue === null ? "" : String(hue));
+  const inputRef = useRef<HTMLInputElement>(null);
+  /** 保存せず、欄を保存済みの値へ戻す。badInput のとき React の値は変わらないので DOM も直接戻す */
+  const revert = () => {
+    const prev = hue === null ? "" : String(hue);
+    setDraft(prev);
+    if (inputRef.current) inputRef.current.value = prev;
+  };
+  /** 保存に失敗したら欄を元に戻す（成功時は親の key 差し替えで作り直される） */
+  const save = async (next: number | null) => {
+    if (!(await onChange(next))) revert();
+  };
+  const commit = () => {
+    // type="number" は「e」「-」などの不正入力を value="" で返す（空欄と区別できない）。
+    // そのまま空欄扱いにすると保存済みの色が消えるので、badInput は保存せず元に戻す
+    if (inputRef.current?.validity.badInput) {
+      revert();
+      return;
+    }
+    const trimmed = draft.trim();
+    if (trimmed === "") {
+      if (hue !== null) void save(null);
+      return;
+    }
+    const n = Number(trimmed);
+    if (!Number.isInteger(n) || n < 0 || n > 359) {
+      revert();
+      return;
+    }
+    if (n !== hue) void save(n);
+  };
+  /** 見本・「なし」を押すとき、数値欄の blur（＝打ちかけの値の保存）を起こさない。打ちかけは捨てて押した色を優先する */
+  const keepFocus = (e: MouseEvent) => e.preventDefault();
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {WORK_CATEGORY_PRESET_HUES.map((h) => (
+        <button
+          key={h}
+          type="button"
+          aria-label={`色相 ${h}`}
+          disabled={disabled}
+          onMouseDown={keepFocus}
+          onClick={() => {
+            revert();
+            void save(h);
+          }}
+          aria-pressed={hue === h}
+          title={`色相 ${h}`}
+          className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[12px] font-bold leading-none transition-transform disabled:cursor-not-allowed disabled:opacity-40 ${hue === h ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#1a1a1a]" : "opacity-70 hover:opacity-100"}`}
+          style={{ backgroundColor: `oklch(0.30 0.06 ${h})`, color: `oklch(0.88 0.09 ${h})`, boxShadow: `inset 0 0 0 2px oklch(0.88 0.09 ${h})` }}
+        >
+          {/* 選択中だけチェックを出す（リングだけでは暗い地で見分けにくい） */}
+          {hue === h ? "✓" : ""}
+        </button>
+      ))}
+      <button
+        type="button"
+        disabled={disabled}
+        onMouseDown={keepFocus}
+        onClick={() => {
+          revert();
+          void save(null);
+        }}
+        className={`${smallButton} ${hue === null ? "border-primary text-white" : ""}`}
+      >
+        なし
+      </button>
+      <input
+        ref={inputRef}
+        type="number"
+        min={0}
+        max={359}
+        value={draft}
+        disabled={disabled}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        // フォーカス中のホイールで値が動く（Chrome の標準動作）のを防ぐ。ホイール前にフォーカスを外す
+        onWheel={(e) => e.currentTarget.blur()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        aria-label="色相（0〜359）"
+        className="w-16 rounded-[6px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[11px] text-white outline-none focus:border-primary"
+      />
+    </div>
+  );
+}
 
 type ToolDraft = { name: string; slug: string; category: string; icon_url: string };
 
@@ -493,7 +599,17 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
               key={c.id}
               className="flex items-center gap-3 rounded-[8px] border border-border-light bg-surface px-3 py-2"
             >
-              <span className="flex-1 text-[13px] text-white">{c.name}</span>
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+                <span className="text-[13px] text-white">{c.name}</span>
+                {/* 公開サイトでの見え方（作品カードと同じ sm） */}
+                <Tag variant="category" size="sm" label={c.name} hue={c.color_hue} className="min-w-0" />
+                <CategoryColorControl
+                  key={c.color_hue ?? "none"}
+                  hue={c.color_hue}
+                  disabled={busy}
+                  onChange={(hue) => run(() => setWorkCategoryColor(c.id, hue))}
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => {

@@ -14,6 +14,8 @@ type WorkPagerCardProps = {
   direction?: "prev" | "next";
   /** null / 空のときはカテゴリ行ごと出さない */
   category?: string | null;
+  /** カテゴリタグの色相（0〜359）。未指定は既定色 */
+  categoryHue?: number | null;
   title: string;
   /** 値があるとき左（next は md 以上で右）にサムネイルを出す */
   thumbnail?: string | null;
@@ -24,7 +26,7 @@ type WorkPagerCardProps = {
   href: string;
 };
 
-const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thumbnail, composedThumbnail, serviceName, href }) => {
+const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHue, title, thumbnail, composedThumbnail, serviceName, href }) => {
   const isNext = direction === "next";
   // 画像の読み込みに失敗したら画像なしの形に落とす
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -53,7 +55,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, title, thu
         </span>
       )}
       {/* カテゴリは Tag-single チップ（Figma Master 973:2190） */}
-      {category && <Tag variant="category" label={category} size="sm" />}
+      {category && <Tag variant="category" label={category} size="sm" hue={categoryHue} />}
       <span className="line-clamp-2 w-full min-w-0 text-body-02-jp-bold text-system-white [overflow-wrap:anywhere]">{title}</span>
     </>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/Icon";
 import ServiceLogo from "@/components/ServiceLogo";
+import { WORK_CATEGORY_PRESET_HUES } from "@/lib/work-category-color";
 import Tag from "@/components/Tag";
 import Tooltip from "@/components/Tooltip";
 import { TableGrid, TableKeyValue } from "@/components/Table";
@@ -909,6 +910,11 @@ function WorkVizModalDemo() {
   );
 }
 
+/** カテゴリ色の見本: プリセット 8 色（D案）と仮のカテゴリ名を 1 対 1 で組にする */
+const CATEGORY_HUE_SAMPLES = ["プラットフォーム開発", "業務システム", "toC アプリ", "Web サイト", "デザインシステム", "リサーチ", "ブランディング", "新規事業"].map(
+  (label, i) => ({ label, hue: WORK_CATEGORY_PRESET_HUES[i] as number })
+);
+
 function ComponentsSection() {
   return (
     <section id="components" className="scroll-mt-8">
@@ -954,7 +960,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ））/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ）。hue（カテゴリ色の色相。D案: 背景 oklch(0.30 0.06 h)・文字 oklch(0.88 0.09 h)。未指定は Main/600 地））/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -971,6 +977,11 @@ function ComponentsSection() {
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="機能開発" variant="category" />
             <Tag label="機能開発" variant="category" size="sm" />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+            {CATEGORY_HUE_SAMPLES.map(({ hue, label }) => (
+              <Tag key={hue} label={label} variant="category" size="sm" hue={hue} />
+            ))}
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />

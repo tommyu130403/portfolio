@@ -360,18 +360,21 @@ export type Database = {
       }
       work_categories: {
         Row: {
+          color_hue: number | null
           created_at: string
           id: string
           name: string
           sort_order: number
         }
         Insert: {
+          color_hue?: number | null
           created_at?: string
           id?: string
           name: string
           sort_order?: number
         }
         Update: {
+          color_hue?: number | null
           created_at?: string
           id?: string
           name?: string

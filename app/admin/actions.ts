@@ -6,6 +6,8 @@ import {
 } from "@/src/lib/skills-tools-client";
 import type { Json, Tables } from "@/src/types/supabase";
 import { parseTimeline } from "@/components/WorkViz";
+import { normalizeWorkCategoryHue, pickLeastUsedPresetHue } from "@/lib/work-category-color";
+import { invalidateWorkCategoryHues } from "@/src/lib/work-category-colors";
 import {
   clearFlowchartCache,
   type FlowchartData,
@@ -250,7 +252,7 @@ export async function setWorkPublished(
 
 // ─── Work categories ──────────────────────────────────────────────────────────
 
-export type WorkCategory = { id: string; name: string; sort_order: number };
+export type WorkCategory = { id: string; name: string; sort_order: number; color_hue: number | null };
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -263,7 +265,7 @@ export async function listWorkCategories(): Promise<{
   try {
     const { data, error } = await supabase
       .from("work_categories")
-      .select("id, name, sort_order")
+      .select("id, name, sort_order, color_hue")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) return { data: [], error: error.message || error.code || String(error) };
@@ -282,29 +284,57 @@ export async function addWorkCategory(
   try {
     const { data: existing, error: findError } = await supabase
       .from("work_categories")
-      .select("id, name, sort_order")
+      .select("id, name, sort_order, color_hue")
       .eq("name", trimmed)
       .limit(1);
     if (findError) return { error: findError.message || findError.code || String(findError) };
     if (existing?.length) return { error: null, category: existing[0] };
 
-    const { data: last, error: maxError } = await supabase
+    const { data: rows, error: rowsError } = await supabase
       .from("work_categories")
-      .select("sort_order")
-      .order("sort_order", { ascending: false })
-      .limit(1);
-    if (maxError) return { error: maxError.message || maxError.code || String(maxError) };
-    const next = (last?.[0]?.sort_order ?? 0) + 1;
+      .select("sort_order, color_hue");
+    if (rowsError) return { error: rowsError.message || rowsError.code || String(rowsError) };
+    const next = Math.max(0, ...(rows ?? []).map((r) => r.sort_order)) + 1;
+
+    // 初期色: プリセット 8 色のうち、既存カテゴリで使われている数が最も少ない色（同数なら並び順で先）。
+    // 色がまんべんなく散るようにする。あとでマスタ管理で変えられる
+    const color_hue = pickLeastUsedPresetHue((rows ?? []).map((r) => r.color_hue));
 
     const { data, error } = await supabase
       .from("work_categories")
-      .insert({ name: trimmed, sort_order: next })
-      .select("id, name, sort_order");
+      .insert({ name: trimmed, sort_order: next, color_hue })
+      .select("id, name, sort_order, color_hue");
     if (error) return { error: error.message || error.code || String(error) };
     if (!data?.length) {
       return { error: "カテゴリを追加できませんでした（権限がありません）" };
     }
+    invalidateWorkCategoryHues();
     return { error: null, category: data[0] };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+/** カテゴリ色（色相 0〜359）を設定する。null で「色なし」。RLS 拒否は 0 行で返るため失敗として扱う。 */
+export async function setWorkCategoryColor(
+  id: string,
+  hue: number | null
+): Promise<{ error: string | null }> {
+  if (hue !== null && normalizeWorkCategoryHue(hue) === null) {
+    return { error: "色相は 0〜359 の整数で指定してください" };
+  }
+  try {
+    const { data, error } = await supabase
+      .from("work_categories")
+      .update({ color_hue: hue })
+      .eq("id", id)
+      .select("id");
+    if (error) return { error: error.message || error.code || String(error) };
+    if (!data?.length) {
+      return { error: "カテゴリの色を変更できませんでした（権限がありません）" };
+    }
+    invalidateWorkCategoryHues();
+    return { error: null };
   } catch (e) {
     return { error: errMsg(e) };
   }
@@ -332,6 +362,7 @@ export async function renameWorkCategory(
       p_name: trimmed,
     });
     if (error) return { error: error.message || error.code || String(error) };
+    invalidateWorkCategoryHues();
     return { error: null };
   } catch (e) {
     return { error: errMsg(e) };
@@ -381,6 +412,7 @@ export async function deleteWorkCategory(id: string): Promise<{ error: string | 
     if (!data?.length) {
       return { error: "カテゴリを削除できませんでした（権限がありません）" };
     }
+    invalidateWorkCategoryHues();
     return { error: null };
   } catch (e) {
     return { error: errMsg(e) };

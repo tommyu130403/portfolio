@@ -159,12 +159,16 @@ const ImageFigure: FC<{
 }> = ({ url, align, width, scale, caption }) => {
   const cssW = widthToCss(width);
   const figStyle: CSSProperties = {
-    width: align === "full" ? "100%" : cssW ?? "50%",
+    ...(align === "full" ? { width: "100%" } : align === "center" ? { width: cssW ?? "50%" } : { "--fig-w": cssW ?? "50%" }),
     maxWidth: "100%",
     ...(align === "center" ? { marginLeft: "auto", marginRight: "auto" } : {}),
-  };
+  } as CSSProperties;
   const floatClass =
-    align === "left" ? "float-left mr-10 mb-2" : align === "right" ? "float-right ml-10 mb-2" : "clear-both mt-10 mb-10";
+    align === "left"
+      ? "clear-both my-10 w-full @min-[560px]:float-left @min-[560px]:clear-none @min-[560px]:my-0 @min-[560px]:mb-2 @min-[560px]:mr-10 @min-[560px]:w-[var(--fig-w)]"
+      : align === "right"
+        ? "clear-both my-10 w-full @min-[560px]:float-right @min-[560px]:clear-none @min-[560px]:my-0 @min-[560px]:mb-2 @min-[560px]:ml-10 @min-[560px]:w-[var(--fig-w)]"
+        : "clear-both mt-10 mb-10";
 
   return (
     <figure className={floatClass} style={figStyle}>
@@ -693,13 +697,11 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
         </div>
       );
     case "grid":
+      // 560px 未満は 1 カラム。幅の判定は親 MarkdownBody（@container）の幅で行う
       return (
         <div
-          className="mb-4 mt-10 grid"
-          style={{
-            gridTemplateColumns: `repeat(${block.cols}, minmax(0, 1fr))`,
-            gap: `${block.gap * 4}px`,
-          }}
+          className="mb-4 mt-10 grid grid-cols-1 @min-[560px]:grid-cols-[repeat(var(--grid-cols),minmax(0,1fr))]"
+          style={{ "--grid-cols": block.cols, gap: `${block.gap * 4}px` } as CSSProperties}
         >
           {block.cells.map((cell, i) => (
             <div key={i} className="min-w-0">
@@ -717,7 +719,7 @@ export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
   // flow-root の先頭ブロックの mt（ブロック区切り 40）はセクション gap が担うため打ち消す。
   // 末尾ブロックの mb はセクション間 gap / カラム下端 padding が担うため打ち消す
   return (
-    <div style={{ display: "flow-root" }} className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+    <div style={{ display: "flow-root" }} className="@container [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       {blocks.map((b, i) => (
         <RenderBlock key={i} block={b} idx={i} />
       ))}

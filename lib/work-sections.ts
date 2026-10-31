@@ -56,6 +56,9 @@ export function sectionsToMarkdown(sections: unknown): string {
     .join("\n\n");
 }
 
+const FENCE_OPEN = /^```([^`]*)$/;
+const FENCE_CLOSE = /^```\s*$/;
+
 type RawSection = { heading: string; bodyLines: string[]; line: number };
 
 /**
@@ -66,8 +69,11 @@ function splitSections(md: string): RawSection[] {
   const result: RawSection[] = [];
   let cur: RawSection = { heading: "", bodyLines: [], line: 0 };
   let firstBodySet = false;
+  let inFence = false;
   md.split("\n").forEach((line, i) => {
-    if (line.startsWith("# ")) {
+    // コードブロック内の `# コメント` でセクションを割らない
+    if (inFence ? FENCE_CLOSE.test(line) : FENCE_OPEN.test(line)) inFence = !inFence;
+    if (!inFence && line.startsWith("# ")) {
       result.push(cur);
       cur = { heading: line.slice(2).trim(), bodyLines: [], line: i };
       firstBodySet = true;

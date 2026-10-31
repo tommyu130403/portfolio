@@ -22,8 +22,9 @@ import ProtectedImage from "./ProtectedImage";
  *  - `### `  → 見出し02（01 と同形）
  *  - `> `    → 引用（13px system-400 #BDBDBD・左ボーダー、連続行対応）
  * 拡張記法:
- *  - **太字** / *斜体* / [リンク](url)（外部はアイコン付き）
- *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線
+ *  - **太字** / *斜体* / `インラインコード` / [リンク](url)（外部はアイコン付き）
+ *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
+ *  - `::: caption テキスト` の補足文（10px。表やグリッドの下などに置く1行）
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
  *  - `::: card 見出し` 〜 `:::` の汎用カード / `::: workcard id=<uuid>` の作品リンクカード
  *  - `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
@@ -92,6 +93,18 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
       continue;
     }
 
+    // インラインコード
+    const code = rest.match(/^`([^`]+)`/);
+    if (code) {
+      push(
+        <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">
+          {code[1]}
+        </code>
+      );
+      i += code[0].length;
+      continue;
+    }
+
     // 太字 / 斜体
     const bold = rest.match(/^\*\*([^*]+)\*\*/);
     if (bold) {
@@ -126,7 +139,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
 
     // プレーンテキスト（次の特殊トークンまで）
     let next = text.length;
-    for (const s of ["![", "[", "**", "*", "http"]) {
+    for (const s of ["![", "[", "`", "**", "*", "http"]) {
       const idx = text.indexOf(s, i + 1);
       if (idx !== -1 && idx < next) next = idx;
     }
@@ -182,7 +195,7 @@ const ImageFigure: FC<{
       </div>
       {caption && (
         <figcaption
-          className={`mt-2 text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted ${align === "center" ? "text-center" : ""}`}
+          className={`mt-2 text-caption-01-jp text-fg-caption ${align === "center" ? "text-center" : ""}`}
         >
           {caption}
         </figcaption>
@@ -224,7 +237,7 @@ const ImageTextRow: FC<{
             </p>
           )}
           {caption && (
-            <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">{caption}</p>
+            <p className="text-caption-01-jp text-fg-caption">{caption}</p>
           )}
         </div>
       )}
@@ -263,6 +276,8 @@ type Block =
   | { type: "ul"; items: string[] }
   | { type: "ol"; items: string[] }
   | { type: "hr" }
+  | { type: "code"; lang: string; content: string }
+  | { type: "caption"; content: string }
   | { type: "flowchart"; id: string }
   | { type: "workcard"; id: string }
   | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null }
@@ -288,6 +303,9 @@ const isTableSeparator = (line: string) => {
  * 下の gridOpen / cardOpen と同じ条件にそろえる（\b だと `::: card見出し` も数えてしまい、閉じが見つからず後続を飲み込む）
  */
 const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$))/;
+// コードブロックの開き（``` で始まり、以降にバッククォートを含まない行。info string 付きも可）と閉じ（``` だけの行）
+const FENCE_OPEN = /^```([^`]*)$/;
+const FENCE_CLOSE = /^```\s*$/;
 
 function parseBlocks(src: string): Block[] {
   const lines = src.split("\n");
@@ -299,7 +317,8 @@ function parseBlocks(src: string): Block[] {
     /^>\s?/.test(line) ||
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
-    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart)\b/.test(line) ||
+    FENCE_OPEN.test(line) ||
+    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption)\b/.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
@@ -366,6 +385,32 @@ function parseBlocks(src: string): Block[] {
       }
     }
 
+    // 補足文（キャプション）も1行完結。テキストの無い `::: caption` は何も描画せず読み飛ばす
+    const caption = line.match(/^:::\s*caption\s+(.+)$/);
+    if (caption) {
+      blocks.push({ type: "caption", content: caption[1].trim() });
+      i++;
+      continue;
+    }
+    if (/^:::\s*caption\s*$/.test(line)) {
+      i++;
+      continue;
+    }
+
+    // コードブロック（閉じ ``` が無ければ末尾まで）
+    const codeOpen = line.match(FENCE_OPEN);
+    if (codeOpen) {
+      const buf: string[] = [];
+      i++;
+      while (i < lines.length && !FENCE_CLOSE.test(lines[i])) {
+        buf.push(lines[i]);
+        i++;
+      }
+      i++;
+      blocks.push({ type: "code", lang: codeOpen[1].trim().split(/\s+/)[0] ?? "", content: buf.join("\n") });
+      continue;
+    }
+
     // 汎用カード: ::: card 見出し 〜 :::（ネストした grid / card の入れ子を数えて閉じを探す）
     const cardOpen = line.match(/^:::\s*card(?:\s+(.*))?$/);
     if (cardOpen) {
@@ -374,8 +419,8 @@ function parseBlocks(src: string): Block[] {
       let inFence = false; // コードブロック内の ::: / --- は数えない
       i++;
       while (i < lines.length) {
-        // 開きは ``` で始まる行、閉じは ``` だけの行（code ブロック本体の判定と同じ）
-        if (inFence ? /^```\s*$/.test(lines[i]) : /^```/.test(lines[i])) {
+        // 開きは FENCE_OPEN、閉じは FENCE_CLOSE（code ブロック本体の判定と同じ）
+        if (inFence ? FENCE_CLOSE.test(lines[i]) : FENCE_OPEN.test(lines[i])) {
           inFence = !inFence;
         } else if (inFence) {
           // コードの中身はそのまま本文へ
@@ -417,8 +462,8 @@ function parseBlocks(src: string): Block[] {
       let inFence = false; // コードブロック内の ::: / --- は数えない
       i++;
       while (i < lines.length) {
-        // 開きは ``` で始まる行、閉じは ``` だけの行（code ブロック本体の判定と同じ）
-        if (inFence ? /^```\s*$/.test(lines[i]) : /^```/.test(lines[i])) {
+        // 開きは FENCE_OPEN、閉じは FENCE_CLOSE（code ブロック本体の判定と同じ）
+        if (inFence ? FENCE_CLOSE.test(lines[i]) : FENCE_OPEN.test(lines[i])) {
           inFence = !inFence;
           buf.push(lines[i]);
         } else if (inFence) {
@@ -662,6 +707,14 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "hr":
       return <hr className="my-6 border-border-light" />;
+    case "code":
+      return (
+        <pre className="mb-4 mt-10 overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-system-300">
+          <code>{block.content}</code>
+        </pre>
+      );
+    case "caption":
+      return <p className="text-caption-01-jp mb-4 mt-2 text-fg-caption">{renderInline(block.content, k)}</p>;
     case "flowchart":
       return <FlowchartEmbed id={block.id} />;
     case "workcard":
@@ -819,8 +872,11 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
     // 見出しも本文も空のセクション（先頭の空行など）は捨てる。残すと空のセクション分の余白（80px）だけが出る
     if (current && (current.heading || current.body.join("").trim())) sections.push({ heading: current.heading, md: current.body.join("\n").trim() });
   };
+  let inFence = false;
   for (const line of md.split("\n")) {
-    if (line.startsWith("# ")) {
+    // コードブロック内の `# コメント` でセクションを割らない
+    if (inFence ? FENCE_CLOSE.test(line) : FENCE_OPEN.test(line)) inFence = !inFence;
+    if (!inFence && line.startsWith("# ")) {
       flush();
       current = { heading: line.slice(2).trim(), body: [] };
     } else {

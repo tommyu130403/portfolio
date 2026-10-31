@@ -72,7 +72,7 @@ const SAMPLE_WORK_DETAIL = {
     { heading: "見出し01", body: "本文テキスト Body01。プロジェクトで取り組んだ施策の詳細を記載します。" },
     {
       heading: "本文ブロック（検証用）",
-      body: "本文テキスト Body01。画像ブロックの直前の段落です。\n\n![補足テキスト（キャプション）](https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80){width=320 align=left}\n画像の右に並ぶ本文テキスト。Figma Master 994:5656 の画像ブロックに相当します。\n\n### 見出し02\n- 箇条書き1\n- 箇条書き2\n\n> 引用テキスト\n\n---\n\n::: grid cols=2 gap=4\n左セル\n---\n右セル\n:::",
+      body: "本文テキスト Body01。画像ブロックの直前の段落です。\n\n![補足テキスト（キャプション）](https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80){width=320 align=left}\n画像の右に並ぶ本文テキスト。Figma Master 994:5656 の画像ブロックに相当します。\n\n### 見出し02\n- 箇条書き1\n- 箇条書き2\n\n> 引用テキスト\n\n---\n\n::: grid cols=2 gap=4\n左セル\n---\n右セル\n:::\n\n```ts\nconst example = true;\n```\n\n::: caption 表やグリッドの下に置く補足文",
     },
   ],
   stakeholder_breakdown: "事業責任者1・プロジェクトマネージャー1・デザイナー2・エンジニア4",
@@ -939,7 +939,16 @@ function ComponentsSection() {
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
             <p className="text-[15px] leading-[22px] tracking-[0.45px] text-fg">Body01（通常段落 / Noto Regular 15px text-fg = Text/Body/Primary #E0E0E0）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
-            <p className="text-[10px] leading-[12px] tracking-[0.3px] text-fg-muted">補足テキスト 10px（画像キャプション / Noto Regular 10px gray）</p>
+            <p className="text-caption-01-jp text-fg-caption">補足テキスト（画像キャプション / ::: caption / Caption/01/JP 10px text-fg-caption）</p>
+            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-fg">
+              インラインコード（<code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">code</code>）
+            </p>
+            <div className="flex flex-col gap-2">
+              <p className="text-caption-01-jp text-fg-caption">コードブロック（```）</p>
+              <pre className="overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-system-300">
+                <code>{"const example = true;"}</code>
+              </pre>
+            </div>
           </div>
         </ComponentPreview>
 

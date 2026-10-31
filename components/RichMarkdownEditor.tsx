@@ -532,11 +532,14 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           <TSep />
           <TBtn label={<strong>B</strong>} title="太字 (Ctrl+B)" onClick={() => insertAround("**", "**", "太字")} />
           <TBtn label={<em>I</em>} title="斜体 (Ctrl+I)" onClick={() => insertAround("*", "*", "斜体")} />
+          <TBtn label={<code className="text-[10px]">{"</>"}</code>} title="インラインコード" onClick={() => insertAround("`", "`", "code")} />
           <TSep />
           <TBtn label="・リスト" title="箇条書き" onClick={() => insertLine("- 項目")} />
           <TBtn label="1. リスト" title="番号付きリスト" onClick={() => insertLine("1. 項目")} />
           <TBtn label="引用" title="> 引用（13px system-400）" onClick={() => insertLine("> 引用文")} />
           <TBtn label="――" title="区切り線" onClick={() => insertLine("---")} />
+          <TBtn label="コード" title="コードブロックを挿入" onClick={() => insertLine("```\ncode\n```")} />
+          <TBtn label="キャプション" title="補足文（キャプション 10px）を挿入" onClick={() => insertLine("::: caption 補足文")} />
           <TSep />
           <TBtn
             label="リンク"

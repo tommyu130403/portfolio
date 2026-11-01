@@ -21,7 +21,7 @@ export default async function AdminSectionPage({
 
   const logoSlugs = section === "masters" ? getLogoSlugs() : [];
 
-  const iconCatalog = section === "skills-experience" ? getIconCatalog() : [];
+  const iconCatalog = section === "skills-experience" || section === "masters" ? getIconCatalog() : [];
 
   return (
     <AdminSectionClient

@@ -61,6 +61,7 @@ const SAMPLE_WORK_DETAIL = {
   is_current: false,
   timeline: null,
   stakeholders: null,
+  stakeholders_legacy: null,
   hero_brand: null,
   hero_screenshots: [
     "https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=400&q=80",

@@ -2439,7 +2439,7 @@ export function AdminLayout({
           onDirtyChange={(dirty) => setSectionDirty("skills-experience", dirty)}
         />
       )}
-      {section === "masters" && <MastersSection logoSlugs={logoSlugs} />}
+      {section === "masters" && <MastersSection logoSlugs={logoSlugs} iconCatalog={iconCatalog} />}
 
       <div className="mt-24 border-t border-[#2a2a2a] pt-8">
         <p className="text-[12px] text-system-800">Portfolio Admin</p>

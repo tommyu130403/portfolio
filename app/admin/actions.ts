@@ -678,7 +678,13 @@ export async function deleteContentVocab(id: string): Promise<{ error: string | 
 export type NameMasterTable = "companies" | "roles" | "phase_names";
 export type NameMaster = { id: string; name: string; sort_order: number };
 export type MasterCompany = NameMaster & { careerCount: number };
-export type MasterRole = NameMaster & { careerCount: number; workCount: number; breakdownCount: number };
+export type MasterRole = NameMaster & {
+  group_id: string | null;
+  is_titled: boolean;
+  careerCount: number;
+  workCount: number;
+  breakdownCount: number;
+};
 export type MasterPhaseName = NameMaster & { workCount: number };
 
 const NAME_LABEL = { companies: "会社名", roles: "役割名", phase_names: "工程名" } as const;
@@ -793,19 +799,22 @@ export async function listMasterCompanies(): Promise<{ data: MasterCompany[]; er
 export async function listMasterRoles(): Promise<{ data: MasterRole[]; error: string | null }> {
   try {
     const [list, career, works, breakdown] = await Promise.all([
-      listNameMaster("roles"),
+      supabase
+        .from("roles")
+        .select("id, name, sort_order, group_id, is_titled")
+        .order("sort_order")
+        .order("name"),
       fetchAllIds("career_items", "role_id"),
       fetchAllIds("work_roles", "role_id"),
       fetchAllIds("work_stakeholder_counts", "role_id"),
     ]);
-    if (list.error) return { data: [], error: list.error };
-    const err = career.error ?? works.error ?? breakdown.error;
+    const err = list.error ?? career.error ?? works.error ?? breakdown.error;
     if (err) return { data: [], error: dbErr(err) };
     const careerCounts = countBy(career.data, "role_id");
     const workCounts = countBy(works.data, "role_id");
     const breakdownCounts = countBy(breakdown.data, "role_id");
     return {
-      data: list.data.map((r) => ({
+      data: (list.data ?? []).map((r) => ({
         ...r,
         careerCount: careerCounts.get(r.id) ?? 0,
         workCount: workCounts.get(r.id) ?? 0,
@@ -918,6 +927,131 @@ export async function deletePhaseName(id: string): Promise<{ error: string | nul
       return { error: `この工程名は作品 ${n} 件のタイムラインで使われているため削除できません` };
     }
     return await deleteNameMasterRow("phase_names", id);
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+// ─── 関係者グループ（stakeholder_groups）─────────────────────────────────────────
+
+export type StakeholderGroupRow = { id: string; name: string; icon: string | null; sort_order: number };
+
+export async function listStakeholderGroups(): Promise<{ data: StakeholderGroupRow[]; error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from("stakeholder_groups")
+      .select("id, name, icon, sort_order")
+      .order("sort_order")
+      .order("name");
+    if (error) return { data: [], error: dbErr(error) };
+    return { data: data ?? [], error: null };
+  } catch (e) {
+    return { data: [], error: errMsg(e) };
+  }
+}
+
+export async function addStakeholderGroup(
+  name: string,
+  icon: string | null,
+): Promise<{ error: string | null; item?: StakeholderGroupRow; existed?: boolean }> {
+  try {
+    const trimmed = name.trim();
+    if (!trimmed) return { error: "グループ名を入力してください" };
+    const { data: all, error: listErr } = await supabase
+      .from("stakeholder_groups")
+      .select("id, name, icon, sort_order");
+    if (listErr) return { error: dbErr(listErr) };
+    const rows = all ?? [];
+    const lower = trimmed.toLowerCase();
+    const found = rows.find((r) => r.name.trim().toLowerCase() === lower);
+    if (found) return { error: null, item: found, existed: true };
+    const sortOrder = rows.reduce((m, r) => Math.max(m, r.sort_order), 0) + 1;
+    const { data, error } = await supabase
+      .from("stakeholder_groups")
+      .insert({ name: trimmed, icon, sort_order: sortOrder })
+      .select("id, name, icon, sort_order");
+    if (error) {
+      if (error.code === "23505") {
+        const pattern = trimmed.replace(/[\\%_]/g, (c) => "\\" + c);
+        const { data: again, error: againErr } = await supabase
+          .from("stakeholder_groups")
+          .select("id, name, icon, sort_order")
+          .ilike("name", pattern)
+          .limit(1);
+        if (againErr) return { error: dbErr(againErr) };
+        if (again?.length) return { error: null, item: again[0], existed: true };
+      }
+      return { error: dbErr(error) };
+    }
+    if (!data?.length) return { error: "関係者グループを追加できませんでした（権限がありません）" };
+    return { error: null, item: data[0] };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function renameStakeholderGroup(id: string, name: string): Promise<{ error: string | null }> {
+  try {
+    const trimmed = name.trim();
+    if (!trimmed) return { error: "グループ名を入力してください" };
+    const { data: all, error: listErr } = await supabase.from("stakeholder_groups").select("id, name");
+    if (listErr) return { error: dbErr(listErr) };
+    const lower = trimmed.toLowerCase();
+    if ((all ?? []).some((r) => r.id !== id && r.name.trim().toLowerCase() === lower)) {
+      return { error: "同じ名前の関係者グループがすでにあります" };
+    }
+    const { error } = await supabase.rpc("rename_stakeholder_group", { p_id: id, p_name: trimmed });
+    if (error) return { error: dbErr(error) };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function setStakeholderGroupIcon(id: string, icon: string | null): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.rpc(
+      "set_stakeholder_group_icon",
+      icon ? { p_id: id, p_icon: icon } : { p_id: id },
+    );
+    if (error) return { error: dbErr(error) };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function deleteStakeholderGroup(id: string): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.rpc("delete_stakeholder_group", { p_id: id });
+    if (error) return { error: dbErr(error) };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function setRoleStakeholderGroup(
+  roleId: string,
+  groupId: string | null,
+): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.rpc(
+      "set_role_stakeholder_group",
+      groupId ? { p_role_id: roleId, p_group_id: groupId } : { p_role_id: roleId },
+    );
+    if (error) return { error: dbErr(error) };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function setRoleTitled(roleId: string, isTitled: boolean): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.rpc("set_role_titled", { p_role_id: roleId, p_is_titled: isTitled });
+    if (error) return { error: dbErr(error) };
+    return { error: null };
   } catch (e) {
     return { error: errMsg(e) };
   }

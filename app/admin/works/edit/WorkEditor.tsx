@@ -35,8 +35,8 @@ import {
   parseTimeline,
   parseStakeholders,
   type TimelineData,
-  type StakeholdersData,
 } from "@/components/WorkViz";
+import { buildStakeholders, stakeholderRoleEntries } from "@/lib/stakeholders";
 import { sectionsToMarkdown, markdownToSections, sectionStartLines } from "@/lib/work-sections";
 import {
   saveWork,
@@ -46,7 +46,11 @@ import {
   setWorkPublished,
   uploadStorageImage,
   addNameMaster,
+  addStakeholderGroup,
+  setRoleStakeholderGroup,
+  setRoleTitled,
   type NameMaster,
+  type StakeholderGroupRow,
 } from "@/app/admin/actions";
 import PublishToggle from "@/app/admin/PublishToggle";
 import WorkCategoryField from "./WorkCategoryField";
@@ -71,16 +75,6 @@ type Work = Tables<"works">;
  * 右 = 公開ページ全体（上部ブロック・本文・一覧カード）を未保存の値で描くプレビュー。xl 未満では縦積み。
  */
 
-// 新規作成時の Stakeholders 初期値（Figma Master 848:2948）
-const DEFAULT_STAKEHOLDERS: StakeholdersData = {
-  groups: [
-    { label: "Product", icon: "Abstract/application-one", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
-    { label: "Project", icon: "Components/tree-list", members: [{ label: "Project Owner" }, { label: "Project Manager", me: true }] },
-    { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "" }] },
-    { label: "Engineer", icon: "Edit/code", members: [{ label: "Leader" }, { label: "" }, { label: "" }, { label: "" }] },
-  ],
-};
-
 function emptyWork(id: string): Work {
   return {
     id,
@@ -95,7 +89,8 @@ function emptyWork(id: string): Work {
     end_date: null,
     is_current: false,
     timeline: null,
-    stakeholders: DEFAULT_STAKEHOLDERS as unknown as Json,
+    stakeholders: null,
+    stakeholders_legacy: null,
     hero_brand: null,
     hero_screenshots: [] as unknown as Json,
     hero_bg_color: null,
@@ -140,6 +135,9 @@ type BreakdownState =
 const ROLE_DELIMITER = /[・、,]/; // works.role は区切りで分割されるため、担当役割の役割名に使えない
 const BREAKDOWN_INVALID = /[0-9・、,]/; // parseStakeholderBreakdown が役割名に使えない文字
 
+/** 役割マスタ（関係者図のグループ・役職の設定つき） */
+type EditorRole = NameMaster & { group_id: string | null; is_titled: boolean };
+
 type CareerOption = Pick<Tables<"career_items">, "id" | "role" | "company" | "period">;
 type ToolOption = { id: string; name: string; icon_url: string | null; slug: string | null };
 
@@ -154,6 +152,7 @@ function composePublicWork({
   work,
   id,
   roles,
+  groups,
   roleIds,
   breakdown,
   period,
@@ -161,7 +160,8 @@ function composePublicWork({
 }: {
   work: Work;
   id: string;
-  roles: NameMaster[];
+  roles: EditorRole[];
+  groups: StakeholderGroupRow[];
   roleIds: string[];
   breakdown: BreakdownState;
   period: PeriodInputs;
@@ -184,6 +184,13 @@ function composePublicWork({
     id,
     role: derivedRole,
     stakeholder_breakdown: derivedBreakdown,
+    // 関係者図は体制内訳・担当役割・役割マスタのグループ設定から作り直す（DB 側も同じ規則）
+    stakeholders: buildStakeholders(
+      breakdown.mode === "rows" ? breakdown.rows : [],
+      roles,
+      groups,
+      roleIds,
+    ) as unknown as Json,
     ...periodColumnsForSave(work, period, periodTouched),
     // 画像アップロード中の仮の行が万一残っていても DB には入れない
     sections: markdownToSections(
@@ -241,7 +248,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const [newContentLabel, setNewContentLabel] = useState("");
   const [addingContent, setAddingContent] = useState(false);
   const [toolOptions, setToolOptions] = useState<ToolOption[]>([]);
-  const [roles, setRoles] = useState<NameMaster[]>([]);
+  const [roles, setRoles] = useState<EditorRole[]>([]);
+  const [groups, setGroups] = useState<StakeholderGroupRow[]>([]);
+  const [masterBusy, setMasterBusy] = useState(false);
   const [phaseNames, setPhaseNames] = useState<NameMaster[]>([]);
   const [roleIds, setRoleIds] = useState<string[]>([]);
   const [breakdown, setBreakdown] = useState<BreakdownState>({ mode: "rows", rows: [] });
@@ -334,7 +343,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [workRes, contentsRes, toolsRes, careerRes, contentVocabRes, toolVocabRes, rolesRes, phaseNamesRes, workRolesRes, countsRes] = await Promise.all([
+      const [workRes, contentsRes, toolsRes, careerRes, contentVocabRes, toolVocabRes, rolesRes, groupsRes, phaseNamesRes, workRolesRes, countsRes] = await Promise.all([
         isNew
           ? Promise.resolve({ data: null })
           : supabase.from("works").select("*").eq("id", workId).maybeSingle(),
@@ -349,7 +358,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         // （スキルセクションの skill_experience とは疎結合）
         supabase.from("contents_vocab").select("label").order("sort_order").order("label"),
         supabase.from("tools_vocab").select("id, name, icon_url, slug").order("name"),
-        supabase.from("roles").select("id, name, sort_order").order("sort_order").order("name"),
+        supabase.from("roles").select("id, name, sort_order, group_id, is_titled").order("sort_order").order("name"),
+        supabase.from("stakeholder_groups").select("id, name, icon, sort_order").order("sort_order").order("name"),
         supabase.from("phase_names").select("id, name, sort_order").order("sort_order").order("name"),
         isNew
           ? Promise.resolve({ data: [] })
@@ -371,6 +381,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         contentVocabRes.error,
         toolVocabRes.error,
         rolesRes.error,
+        groupsRes.error,
         phaseNamesRes.error,
         "error" in workRolesRes ? workRolesRes.error : null,
         "error" in countsRes ? countsRes.error : null,
@@ -423,7 +434,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           setBreakdown({ mode: "legacy" });
         }
       }
-      setRoles((rolesRes.data ?? []) as NameMaster[]);
+      setRoles((rolesRes.data ?? []) as EditorRole[]);
+      setGroups((groupsRes.data ?? []) as StakeholderGroupRow[]);
       setPhaseNames((phaseNamesRes.data ?? []) as NameMaster[]);
       setCareerOptions((careerRes.data ?? []) as CareerOption[]);
       setContentOptions(
@@ -445,8 +457,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
   // 右側のプレビュー用。保存と同じ組み立て規則で、未保存の編集状態から作る
   const previewWork = useMemo(
-    () => (work ? composePublicWork({ work, id, roles, roleIds, breakdown, period, markdown }) : null),
-    [work, id, roles, roleIds, breakdown, period, markdown]
+    () => (work ? composePublicWork({ work, id, roles, groups, roleIds, breakdown, period, markdown }) : null),
+    [work, id, roles, groups, roleIds, breakdown, period, markdown]
   );
   const previewTools = useMemo<WorkToolItem[]>(
     () =>
@@ -463,7 +475,11 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
   // jsonb のパースは work の該当カラムが変わったときだけ（毎レンダー・毎キーストロークの再パースを防ぐ）
   const parsedTimeline = useMemo(() => parseTimeline(work?.timeline), [work?.timeline]);
-  const parsedStakeholders = useMemo(() => parseStakeholders(work?.stakeholders), [work?.stakeholders]);
+  const parsedStakeholders = useMemo(() => parseStakeholders(previewWork?.stakeholders), [previewWork?.stakeholders]);
+  const diagramRoles = useMemo(
+    () => stakeholderRoleEntries(breakdown.mode === "rows" ? breakdown.rows : [], roleIds, roles).map((e) => e.role),
+    [breakdown, roleIds, roles],
+  );
   const thumbnail = useMemo(() => parseThumbnail(work?.thumbnail), [work?.thumbnail]);
   // 「なし」に切り替えても入力を失わないよう、直前の構成を退避しておく（イベント処理の中でだけ読み書きする）
   const thumbStashRef = useRef<WorkThumbnailData | null>(null);
@@ -497,10 +513,49 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     markDirty();
   };
 
+  /** 役割マスタ・関係者グループを取り直す（グループ・役職の変更は即時保存なので、作品の dirty には触れない） */
+  const reloadStakeholderMasters = async () => {
+    const [rolesRes, groupsRes] = await Promise.all([
+      supabase.from("roles").select("id, name, sort_order, group_id, is_titled").order("sort_order").order("name"),
+      supabase.from("stakeholder_groups").select("id, name, icon, sort_order").order("sort_order").order("name"),
+    ]);
+    const failure = rolesRes.error ?? groupsRes.error;
+    if (failure) {
+      setSaveError(failure.message);
+      return;
+    }
+    setRoles((rolesRes.data ?? []) as EditorRole[]);
+    setGroups((groupsRes.data ?? []) as StakeholderGroupRow[]);
+  };
+
+  const masterRunningRef = useRef(false);
+  const runMaster = async (fn: () => Promise<{ error: string | null }>): Promise<boolean> => {
+    if (masterBusy || masterRunningRef.current) return false;
+    masterRunningRef.current = true;
+    setMasterBusy(true);
+    try {
+      const res = await fn();
+      if (res.error) {
+        setSaveError(res.error);
+        return false;
+      }
+      setSaveError(null);
+      return true;
+    } finally {
+      await reloadStakeholderMasters();
+      masterRunningRef.current = false;
+      setMasterBusy(false);
+    }
+  };
+
   const addRoleToList = async (name: string) => {
     const res = await addNameMaster("roles", name);
     const item = res.item;
-    if (item) setRoles((prev) => (prev.some((r) => r.id === item.id) ? prev : [...prev, item]));
+    if (item) {
+      setRoles((prev) =>
+        prev.some((r) => r.id === item.id) ? prev : [...prev, { ...item, group_id: null, is_titled: false }],
+      );
+    }
     return res;
   };
 
@@ -681,7 +736,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     }
     setSaving(true);
     setSaveError(null);
-    const payload = composePublicWork({ work, id, roles, roleIds, breakdown, period, markdown });
+    const payload = composePublicWork({ work, id, roles, groups, roleIds, breakdown, period, markdown });
     const saveRes = await saveWork(
       payload,
       contents,
@@ -706,6 +761,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             is_current: payload.is_current,
             role: payload.role,
             stakeholder_breakdown: payload.stakeholder_breakdown,
+            stakeholders: payload.stakeholders,
           }
         : p,
     );
@@ -1154,7 +1210,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   type="button"
                   className={`${vizBtn} font-normal tracking-normal disabled:cursor-not-allowed disabled:opacity-40`}
                   disabled={!parsedStakeholders}
-                  title={parsedStakeholders ? undefined : "グループが 0 件のため、公開ページにはアイコンが出ません"}
+                  title={parsedStakeholders ? undefined : "体制内訳・担当役割が 0 件のため、公開ページにはアイコンが出ません"}
                   onClick={() => setVizPreview("stakeholders")}
                 >
                   公開ページでの見え方を確認
@@ -1162,18 +1218,29 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               </span>
             </FormGroupHeader>
             <div>
-              <p className="mb-3 text-[11px] text-fg-muted">公開ページの作品詳細・左パネル（体制の行）の全画面アイコンからモーダルで表示されます。グループが 0 件ならアイコンは出ません。右上の「保存」で反映。</p>
+              <p className="mb-3 text-[11px] text-fg-muted">図は体制内訳と担当役割から自動で作られます。体制内訳・担当役割の変更は右上の「保存」で反映。</p>
               <StakeholdersDiagramEditor
+                data={parsedStakeholders}
+                workRoles={diagramRoles}
+                groups={groups}
                 iconCatalog={iconCatalog}
-                value={parsedStakeholders ?? { groups: [] }}
-                onChange={(v) => setField("stakeholders", (v.groups.length ? v : null) as unknown as Work["stakeholders"])}
+                disabled={masterBusy || saving}
+                onSetGroup={(roleId, groupId) => void runMaster(() => setRoleStakeholderGroup(roleId, groupId))}
+                onSetTitled={(roleId, next) => void runMaster(() => setRoleTitled(roleId, next))}
+                onCreateGroup={(roleId, name, icon) =>
+                  runMaster(async () => {
+                    const added = await addStakeholderGroup(name, icon);
+                    if (added.error || !added.item) return { error: added.error ?? "関係者グループを追加できませんでした" };
+                    return setRoleStakeholderGroup(roleId, added.item.id);
+                  })
+                }
               />
             </div>
 
             <FormGroupHeader>本文</FormGroupHeader>
             <div ref={bodyFieldRef} className={`flex flex-col gap-2 ${ringClass("body")}`}>
               {/^:::\s*(timeline|stakeholders)\b/m.test(markdown) && (
-                <p className="text-[11px] text-fg-muted">本文に「::: timeline」「::: stakeholders」の行があります。この行は現在は表示に使われません（Timeline / Stakeholders は上の設定欄で編集）。</p>
+                <p className="text-[11px] text-fg-muted">本文に「::: timeline」「::: stakeholders」の行があります。この行は現在は表示に使われません（Timeline は上の設定欄で編集。Stakeholders は体制内訳・担当役割から自動生成）。</p>
               )}
               <RichMarkdownEditor
                 value={markdown}

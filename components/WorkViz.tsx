@@ -25,7 +25,7 @@ export type TimelinePhase = {
 export type TimelineData = { totalUnits: number; phases: TimelinePhase[] };
 
 export type StakeholderMember = { label: string; me?: boolean };
-export type StakeholderGroup = { label: string; icon?: string; members: StakeholderMember[] };
+export type StakeholderGroup = { label: string; icon?: string | null; members: StakeholderMember[] };
 export type StakeholdersData = { groups: StakeholderGroup[] };
 
 export function parseTimeline(raw: unknown): TimelineData | null {
@@ -81,7 +81,7 @@ export function parseStakeholders(raw: unknown): StakeholdersData | null {
 }
 
 /** "Set/name" 形式のアイコン参照を描画（DB 由来の文字列を許容）。不正な set 名は描画しない（404 アイコンを避ける）。 */
-const RefIcon: FC<{ icon?: string; tint: string; className: string }> = ({ icon, tint, className }) => {
+const RefIcon: FC<{ icon?: string | null; tint: string; className: string }> = ({ icon, tint, className }) => {
   if (!icon || !icon.includes("/")) return null;
   const set = icon.slice(0, icon.indexOf("/"));
   const name = icon.slice(icon.indexOf("/") + 1);

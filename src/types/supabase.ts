@@ -200,23 +200,37 @@ export type Database = {
       roles: {
         Row: {
           created_at: string
+          group_id: string | null
           id: string
+          is_titled: boolean
           name: string
           sort_order: number
         }
         Insert: {
           created_at?: string
+          group_id?: string | null
           id?: string
+          is_titled?: boolean
           name: string
           sort_order?: number
         }
         Update: {
           created_at?: string
+          group_id?: string | null
           id?: string
+          is_titled?: boolean
           name?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "roles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "stakeholder_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       skill_cards: {
         Row: {
@@ -330,6 +344,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stakeholder_groups: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       tools_vocab: {
         Row: {
@@ -535,6 +573,7 @@ export type Database = {
           sort_order: number | null
           stakeholder_breakdown: string | null
           stakeholders: Json | null
+          stakeholders_legacy: Json | null
           start_date: string | null
           thumbnail: Json | null
           thumbnail_url: string | null
@@ -558,6 +597,7 @@ export type Database = {
           sort_order?: number | null
           stakeholder_breakdown?: string | null
           stakeholders?: Json | null
+          stakeholders_legacy?: Json | null
           start_date?: string | null
           thumbnail?: Json | null
           thumbnail_url?: string | null
@@ -581,6 +621,7 @@ export type Database = {
           sort_order?: number | null
           stakeholder_breakdown?: string | null
           stakeholders?: Json | null
+          stakeholders_legacy?: Json | null
           start_date?: string | null
           thumbnail?: Json | null
           thumbnail_url?: string | null
@@ -603,6 +644,7 @@ export type Database = {
     }
     Functions: {
       delete_role: { Args: { p_id: string }; Returns: undefined }
+      delete_stakeholder_group: { Args: { p_id: string }; Returns: undefined }
       portfolio_access_role: { Args: never; Returns: string }
       rename_company: {
         Args: { p_id: string; p_name: string }
@@ -613,6 +655,10 @@ export type Database = {
         Returns: undefined
       }
       rename_role: {
+        Args: { p_id: string; p_name: string }
+        Returns: undefined
+      }
+      rename_stakeholder_group: {
         Args: { p_id: string; p_name: string }
         Returns: undefined
       }
@@ -628,6 +674,18 @@ export type Database = {
           p_tool_names: string[]
           p_work: Json
         }
+        Returns: undefined
+      }
+      set_role_stakeholder_group: {
+        Args: { p_group_id?: string; p_role_id: string }
+        Returns: undefined
+      }
+      set_role_titled: {
+        Args: { p_is_titled: boolean; p_role_id: string }
+        Returns: undefined
+      }
+      set_stakeholder_group_icon: {
+        Args: { p_icon?: string; p_id: string }
         Returns: undefined
       }
     }

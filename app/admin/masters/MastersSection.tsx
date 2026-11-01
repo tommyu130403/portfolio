@@ -9,18 +9,22 @@ import {
   Input,
 } from "../AdminLayout";
 import SectionTitle from "../SectionTitle";
+import IconPickerField, { formatIconRef, parseIconRef } from "../IconPickerField";
+import type { IconCatalog } from "../iconCatalogTypes";
 import ProtectedImage from "@/components/ProtectedImage";
 import Tag from "@/components/Tag";
 import { WORK_CATEGORY_PRESET_HUES } from "@/lib/work-category-color";
 import {
   addNameMaster,
   addContentVocab,
+  addStakeholderGroup,
   addToolVocab,
   addWorkCategory,
   checkWorkCategoryDeletable,
   deleteCompany,
   deletePhaseName,
   deleteRole,
+  deleteStakeholderGroup,
   deleteContentVocab,
   deleteToolVocab,
   deleteWorkCategory,
@@ -29,10 +33,15 @@ import {
   listMasterRoles,
   listMasterContents,
   listMasterTools,
+  listStakeholderGroups,
   listWorkCategories,
   renameNameMaster,
   renameContentVocab,
+  renameStakeholderGroup,
   renameWorkCategory,
+  setRoleStakeholderGroup,
+  setRoleTitled,
+  setStakeholderGroupIcon,
   setWorkCategoryColor,
   updateToolVocab,
   type MasterCompany,
@@ -40,6 +49,7 @@ import {
   type MasterRole,
   type MasterContent,
   type MasterTool,
+  type StakeholderGroupRow,
   type NameMasterTable,
   type WorkCategory,
 } from "../actions";
@@ -169,7 +179,13 @@ function onEnter(run: () => void) {
   };
 }
 
-export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
+export default function MastersSection({
+  logoSlugs,
+  iconCatalog,
+}: {
+  logoSlugs: string[];
+  iconCatalog: IconCatalog;
+}) {
   const [tools, setTools] = useState<MasterTool[]>([]);
   const [contents, setContents] = useState<MasterContent[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -189,15 +205,17 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
   const [companies, setCompanies] = useState<MasterCompany[]>([]);
   const [roles, setRoles] = useState<MasterRole[]>([]);
   const [phaseNames, setPhaseNames] = useState<MasterPhaseName[]>([]);
+  const [stakeholderGroups, setStakeholderGroups] = useState<StakeholderGroupRow[]>([]);
 
   const refresh = useCallback(async () => {
-    const [t, s, c, co, ro, ph] = await Promise.all([
+    const [t, s, c, co, ro, ph, sg] = await Promise.all([
       listMasterTools(),
       listMasterContents(),
       listWorkCategories(),
       listMasterCompanies(),
       listMasterRoles(),
       listMasterPhaseNames(),
+      listStakeholderGroups(),
     ]);
     if (!t.error) setTools(t.data);
     if (!s.error) setContents(s.data);
@@ -205,7 +223,8 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
     if (!co.error) setCompanies(co.data);
     if (!ro.error) setRoles(ro.data);
     if (!ph.error) setPhaseNames(ph.data);
-    setError(t.error ?? s.error ?? c.error ?? co.error ?? ro.error ?? ph.error);
+    if (!sg.error) setStakeholderGroups(sg.data);
+    setError(t.error ?? s.error ?? c.error ?? co.error ?? ro.error ?? ph.error ?? sg.error);
   }, []);
 
   useEffect(() => {
@@ -326,6 +345,28 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
     return ok && !existed;
   };
 
+  const addGroup = async (name: string) => {
+    const trimmed = name.trim();
+    let existed = false;
+    const ok = await run(async () => {
+      const res = await addStakeholderGroup(name, null);
+      existed = !!res.existed;
+      return res;
+    });
+    if (ok && existed) setError(`「${trimmed}」はすでにあります`);
+    return ok && !existed;
+  };
+
+  const handleDeleteGroup = (item: { id: string; name: string }) => {
+    const n = roles.filter((r) => r.group_id === item.id).length;
+    const message =
+      n > 0
+        ? `グループ「${item.name}」は役割 ${n} 件に設定されています。削除すると、これらの役割はグループ未設定になり、作品の関係者図では名前なしのグループに移ります。削除しますか？`
+        : `グループ「${item.name}」を削除しますか？`;
+    if (!window.confirm(message)) return;
+    void run(() => deleteStakeholderGroup(item.id));
+  };
+
   const renameName = (table: NameMasterTable) => (id: string, name: string) =>
     run(() => renameNameMaster(table, id, name));
 
@@ -352,7 +393,7 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
     <section id="masters" className="scroll-mt-8">
       <SectionTitle label="Masters" title="マスタ管理" />
       <p className="mb-6 text-[13px] text-fg-muted">
-        ツール・制作内容・作品カテゴリ・会社・役割・工程名の語彙を管理します。使われている語彙は削除できません（役割だけは使用中でも確認のうえ削除できます）。
+        ツール・制作内容・作品カテゴリ・会社・関係者グループ・役割・工程名の語彙を管理します。使われている語彙は削除できません（役割だけは使用中でも確認のうえ削除できます）。
       </p>
       {error && <p className="mb-4 text-[13px] text-danger-300">{error}</p>}
 
@@ -650,6 +691,35 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
       />
 
       <NameMasterList
+        title="関係者グループ（stakeholder_groups）"
+        placeholder="新しいグループ名"
+        hint="作品の関係者図のグループです。役割にグループを設定すると、その役割の人数がこのグループの横に並びます"
+        items={stakeholderGroups.map((g) => {
+          const n = roles.filter((r) => r.group_id === g.id).length;
+          return {
+            id: g.id,
+            name: g.name,
+            usage: `役割 ${n} 件`,
+            used: n > 0,
+            extra: (
+              <IconPickerField
+                catalog={iconCatalog}
+                allowEmpty
+                disabled={busy}
+                value={parseIconRef(g.icon)}
+                onChange={(v) => void run(() => setStakeholderGroupIcon(g.id, formatIconRef(v) ?? null))}
+              />
+            ),
+          };
+        })}
+        busy={busy}
+        onAdd={addGroup}
+        onRename={(id, name) => run(() => renameStakeholderGroup(id, name))}
+        onDelete={handleDeleteGroup}
+        allowDeleteUsed
+      />
+
+      <NameMasterList
         title="役割（roles）"
         placeholder="新しい役割名"
         hint="作品の担当役割・体制内訳で使う役割名には「・」「、」「,」や半角数字を入れないでください（公開ページで分割されます）"
@@ -658,6 +728,33 @@ export default function MastersSection({ logoSlugs }: { logoSlugs: string[] }) {
           name: r.name,
           usage: `経歴 ${r.careerCount} / 作品 ${r.workCount} / 体制内訳 ${r.breakdownCount}`,
           used: r.careerCount + r.workCount + r.breakdownCount > 0,
+          extra: (
+            <>
+              <select
+                aria-label={`${r.name}のグループ`}
+                value={r.group_id ?? ""}
+                disabled={busy}
+                onChange={(e) => void run(() => setRoleStakeholderGroup(r.id, e.target.value || null))}
+                className="max-w-[160px] rounded-[6px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[12px] text-white outline-none focus:border-primary disabled:opacity-40"
+              >
+                <option value="">（グループなし）</option>
+                {stakeholderGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              <label className="flex shrink-0 items-center gap-1 text-[11px] text-fg-muted">
+                <input
+                  type="checkbox"
+                  checked={r.is_titled}
+                  disabled={busy}
+                  onChange={(e) => void run(() => setRoleTitled(r.id, e.target.checked))}
+                />
+                役職
+              </label>
+            </>
+          ),
         }))}
         busy={busy}
         onAdd={addName("roles")}

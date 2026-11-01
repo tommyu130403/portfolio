@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { FormGroupHeader, Input } from "../AdminLayout";
 
 const smallButton =
@@ -8,7 +8,7 @@ const smallButton =
 const dangerButton =
   "shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:cursor-not-allowed disabled:opacity-40";
 
-export type NameMasterListItem = { id: string; name: string; usage: string; used: boolean };
+export type NameMasterListItem = { id: string; name: string; usage: string; used: boolean; extra?: ReactNode };
 
 /** Enter で実行する（IME 変換中の Enter は無視） */
 function onEnter(run: () => void) {
@@ -97,6 +97,7 @@ export default function NameMasterList({
               className="flex items-center gap-3 rounded-[8px] border border-border-light bg-surface px-3 py-2"
             >
               <span className="flex-1 text-[13px] text-white">{it.name}</span>
+              {it.extra}
               <span className="text-[11px] text-fg-muted">{it.usage}</span>
               <button
                 type="button"

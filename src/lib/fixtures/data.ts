@@ -31,6 +31,7 @@ const workBase = {
   hero_brand: null,
   stakeholder_breakdown: null,
   stakeholders: null,
+  stakeholders_legacy: null,
   timeline: null,
   period: null,
   thumbnail: null,

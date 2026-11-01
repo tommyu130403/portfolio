@@ -21,7 +21,7 @@ import { container, type DeviceMode } from "@/lib/design-tokens";
  * - 生 Markdown の textarea ＋ ツールバー ＋ 編集 / 分割 / プレビュー の3モード
  * - プレビューは公開側と同一の共有レンダラ（WorkMarkdownDocument）で描画
  * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
- * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから
+ * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから、生 HTML / SVG（`::: html`）は HTML ダイアログから
  * - 分割表示では本文欄とプレビューのスクロール位置を割合で連動する
  * - 画像は本文欄への貼り付けでもアップロードできる（onUploadImage を渡した場合）。貼り付け画像は画像ダイアログ（配置・横幅・倍率）を経て挿入する
  *   貼り付け時は本文に仮の行（![画像をアップロード中…](uploading)）を置き、挿入時にその行を置き換える（キャンセル・失敗時は除去）。
@@ -308,7 +308,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   const syncLock = useRef<HTMLElement | null>(null);
   // 直近に確認したプレビューのスクロール可能量。変わっていたら高さの変化によるブラウザの位置切り詰めとみなす
   const previewMax = useRef<number | null>(null);
-  const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table" | "card" | "mockup">(null);
+  const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table" | "card" | "mockup" | "html">(null);
   const [linkLabel, setLinkLabel] = useState("");
   // リンクの挿入先。ダイアログ表示中に textarea の選択がブラウザ側で変わっても影響されないよう、ボタン押下時に記録する
   const [linkRange, setLinkRange] = useState({ start: 0, end: 0 });
@@ -577,6 +577,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           <TBtn label="表" title="表を挿入（項目-値 / グリッド）" onClick={() => setDialog("table")} />
           <TBtn label="カード" title="見出し＋本文のカードを挿入" onClick={() => setDialog("card")} />
           <TBtn label="モックアップ" title="スマホ / ノートPC のモックアップ枠にスクリーンショットを入れて挿入" onClick={() => setDialog("mockup")} />
+          <TBtn label="HTML" title="HTML / SVG をそのまま埋め込む（::: html ブロック）" onClick={() => setDialog("html")} />
           {onPickFlowchart && (
             <TBtn
               label="フローチャート"
@@ -706,6 +707,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
       {dialog === "grid" && <GridDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "table" && <TableDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "card" && <CardDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
+      {dialog === "html" && <HtmlDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "mockup" && <MockupDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} onPickImage={onPickImage} />}
     </div>
   );
@@ -1049,6 +1051,44 @@ function CardDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
       <div>
         <DLabel>本文（Markdown）</DLabel>
         <textarea className={`${dInput} min-h-[120px] resize-y`} value={body} onChange={(e) => setBody(e.target.value)} placeholder="本文" />
+      </div>
+    </DialogShell>
+  );
+}
+
+/* ─── HTML ダイアログ ────────────────────────────── */
+
+function HtmlDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md: string) => void }) {
+  const [value, setValue] = useState("");
+  const submit = () => {
+    const html = value.trim();
+    if (!html) return;
+    onInsert(`\n::: html\n${html}\n:::\n`);
+    onClose();
+  };
+  return (
+    <DialogShell
+      title="HTML / SVG を挿入"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className={dBtnGhost} onClick={onClose}>キャンセル</button>
+          <button type="button" className={dBtnPrimary} onClick={submit}>挿入</button>
+        </>
+      }
+    >
+      <div>
+        <DLabel>HTML / SVG</DLabel>
+        <textarea
+          className={`${dInput} min-h-[240px] resize-y font-mono text-[12px]`}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="<svg …>…</svg>"
+          spellCheck={false}
+        />
+        <p className="mt-1 text-[11px] text-fg-muted">
+          script・iframe・style タグとイベント属性（onclick など）は表示時に取り除かれます。スタイルは要素の style 属性か SVG の属性で指定してください。
+        </p>
       </div>
     </DialogShell>
   );

@@ -28,6 +28,7 @@ import ProtectedImage from "./ProtectedImage";
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
  *  - `::: card 見出し` 〜 `:::` の汎用カード / `::: workcard id=<uuid>` の作品リンクカード
  *  - `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
+ *  - `::: html` 〜 `:::` の生 HTML / SVG 埋め込み（script・iframe・style・イベント属性は除去）
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
  *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
  */
@@ -282,6 +283,7 @@ type Block =
   | { type: "workcard"; id: string }
   | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null }
   | { type: "card"; title: string; body: string }
+  | { type: "html"; content: string }
   | { type: "grid"; cols: number; gap: number; cells: string[] }
   | { type: "tableKeyValue"; rows: { label: string; value: string }[] }
   | { type: "tableGrid"; header: string[]; rows: string[][] };
@@ -299,13 +301,60 @@ const isTableSeparator = (line: string) => {
 };
 
 /**
- * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card）。深さの数え上げに使う。
+ * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card / html）。深さの数え上げに使う。
  * 下の gridOpen / cardOpen と同じ条件にそろえる（\b だと `::: card見出し` も数えてしまい、閉じが見つからず後続を飲み込む）
  */
-const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$))/;
+const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$)|html\s*$)/;
 // コードブロックの開き（``` で始まり、以降にバッククォートを含まない行。info string 付きも可）と閉じ（``` だけの行）
 const FENCE_OPEN = /^```([^`]*)$/;
 const FENCE_CLOSE = /^```\s*$/;
+
+const HTML_REMOVE_TAGS =
+  "script|iframe|object|embed|style|link|meta|base|form|input|button|textarea|select";
+
+/** URL 属性の値を判定用に整える（HTML 実体参照を戻し、空白・制御文字を除いて小文字化） */
+function normalizeUrlValue(v: string): string {
+  const named: Record<string, string> = {
+    colon: ":", tab: "\t", newline: "\n", nbsp: " ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'",
+  };
+  const fromCode = (n: number) => (Number.isFinite(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
+  return v
+    .replace(/&#x([0-9a-f]+);?/gi, (_, h: string) => fromCode(parseInt(h, 16)))
+    .replace(/&#([0-9]+);?/g, (_, d: string) => fromCode(parseInt(d, 10)))
+    .replace(/&(colon|tab|newline|nbsp|amp|lt|gt|quot|apos);/gi, (_, n: string) => named[n.toLowerCase()])
+    .replace(/[\s\x00-\x1f]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * `::: html` ブロック用の簡易サニタイザ（文字列操作のみ。サーバーでも動く）。
+ * 危険なタグ（中身ごと）・イベント属性・srcdoc を除き、リンク系属性の javascript: 等は # に置き換える。
+ * 1 回の置換で消した文字の残りが新しいタグに組み上がる（`<scr<style>ipt>` → `<script>`）ため、出力が変わらなくなるまで繰り返す
+ */
+function sanitizeHtml(html: string): string {
+  let prev = html;
+  for (let i = 0; i < 10; i++) {
+    const next = sanitizeHtmlOnce(prev);
+    if (next === prev) return next;
+    prev = next;
+  }
+  return prev;
+}
+
+function sanitizeHtmlOnce(html: string): string {
+  return html
+    .replace(new RegExp(`<(${HTML_REMOVE_TAGS})\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>`, "gi"), "")
+    .replace(new RegExp(`<\\/?(?:${HTML_REMOVE_TAGS})\\b[^>]*>`, "gi"), "")
+    .replace(/([\s/"'])on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "$1")
+    .replace(/([\s/"'])srcdoc\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "$1")
+    .replace(
+      /([\s/"']+(?:href|src|xlink:href|formaction|action)\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi,
+      (m, head: string, dq?: string, sq?: string, uq?: string) => {
+        const value = normalizeUrlValue(dq ?? sq ?? uq ?? "");
+        return /^(?:javascript:|vbscript:|data:text\/html)/.test(value) ? `${head}"#"` : m;
+      },
+    );
+}
 
 function parseBlocks(src: string): Block[] {
   const lines = src.split("\n");
@@ -318,7 +367,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     FENCE_OPEN.test(line) ||
-    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption)\b/.test(line) ||
+    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption|html)\b/.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
@@ -408,6 +457,19 @@ function parseBlocks(src: string): Block[] {
       }
       i++;
       blocks.push({ type: "code", lang: codeOpen[1].trim().split(/\s+/)[0] ?? "", content: buf.join("\n") });
+      continue;
+    }
+
+    // 生 HTML / SVG: ::: html 〜 :::（中身はそのまま集める。コードフェンスも数えない）
+    if (/^:::\s*html\s*$/.test(line)) {
+      const buf: string[] = [];
+      i++;
+      while (i < lines.length && !/^:::\s*$/.test(lines[i])) {
+        buf.push(lines[i]);
+        i++;
+      }
+      i++;
+      blocks.push({ type: "html", content: buf.join("\n") });
       continue;
     }
 
@@ -721,6 +783,14 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return <WorkCardEmbed id={block.id} />;
     case "mockup":
       return <MockupEmbed device={block.device} srcs={block.srcs} browser={block.browser} url={block.url} />;
+    case "html":
+      if (block.content.trim() === "") return null;
+      return (
+        <div
+          className="work-html mb-4 mt-10 max-w-full overflow-x-auto text-fg [&_svg]:h-auto [&_svg]:max-w-full"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content) }}
+        />
+      );
     case "card":
       return (
         <div className="mb-4 mt-10">

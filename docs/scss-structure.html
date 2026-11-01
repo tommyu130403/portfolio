@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Figtree:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#191919}
+  body{width:1266px;height:867px;display:flex;align-items:center;justify-content:center}
+  svg{font-family:"Noto Sans JP",sans-serif}
+  .en{font-family:Figtree,"Noto Sans JP",sans-serif}
+  .title{font-size:22px;font-weight:700;fill:#E0E0E0;letter-spacing:.03em}
+  .sub{font-size:15px;font-weight:400;letter-spacing:.03em}
+  .label{font-size:17px;fill:#E0E0E0;letter-spacing:.03em}
+  .legend{font-size:15px;fill:#9E9E9E;letter-spacing:.03em}
+  .edge{stroke:#616161;stroke-width:2;fill:none}
+  /* 全体に効く: main-600 塗り + main-100 枠 */
+  .g rect{fill:#062D20;stroke:#48F4BE;stroke-width:1.5}
+  .g .sub{fill:#48F4BE}
+  /* 共通ルール: surface-light + border-light */
+  .s rect{fill:#292929;stroke:#424242;stroke-width:1.5}
+  .s .sub{fill:#9E9E9E}
+  /* 閉じたスタイル: surface + main-300 枠 */
+  .m rect{fill:#191919;stroke:#2B9E7A;stroke-width:1.5}
+  .m .sub{fill:#2B9E7A}
+</style></head><body>
+<svg width="1266" height="867" viewBox="0 0 1266 867" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#616161"/>
+    </marker>
+  </defs>
+
+  <!-- 上段: 全体に効く -->
+  <g class="g">
+    <rect x="33" y="32" width="360" height="114" rx="8"/>
+    <text class="title en" x="213" y="80" text-anchor="middle">_ress + _base</text>
+    <text class="sub" x="213" y="116" text-anchor="middle">リセット・基本設定</text>
+  </g>
+  <path class="edge" d="M393 89 H470" marker-end="url(#a)"/>
+  <g class="g">
+    <rect x="473" y="32" width="340" height="114" rx="8"/>
+    <text class="title en" x="643" y="80" text-anchor="middle">globals.scss</text>
+    <text class="sub" x="643" y="116" text-anchor="middle">@forward で束ねる</text>
+  </g>
+  <path class="edge" d="M813 89 H890" marker-end="url(#a)"/>
+  <g class="g">
+    <rect x="893" y="32" width="340" height="114" rx="8"/>
+    <text class="title" x="1063" y="80" text-anchor="middle">全画面</text>
+    <text class="sub" x="1063" y="116" text-anchor="middle">全体に適用</text>
+  </g>
+
+  <!-- 中段: 共通ルール -->
+  <g class="s">
+    <rect x="353" y="252" width="560" height="114" rx="8"/>
+    <text class="title en" x="633" y="300" text-anchor="middle">_variables / _mixin</text>
+    <text class="sub" x="633" y="336" text-anchor="middle">共通ルール(CSS出力なし)</text>
+  </g>
+  <path class="edge" d="M633 366 V428 H333 V490" marker-end="url(#a)"/>
+  <path class="edge" d="M633 428 H933 V490" marker-end="url(#a)"/>
+  <text class="label" x="655" y="400">@use で配る(約155ファイル)</text>
+
+  <!-- 下段: 閉じたスタイル -->
+  <g class="m">
+    <rect x="73" y="492" width="520" height="114" rx="8"/>
+    <text class="title en" x="333" y="540" text-anchor="middle">index.module.scss</text>
+    <text class="sub" x="333" y="576" text-anchor="middle">components 各部品(98件)</text>
+  </g>
+  <path class="edge" d="M333 606 V664" marker-end="url(#a)"/>
+  <g class="m">
+    <rect x="153" y="668" width="360" height="88" rx="8"/>
+    <text class="title" x="333" y="720" text-anchor="middle">部品だけに効く</text>
+  </g>
+
+  <g class="m">
+    <rect x="673" y="492" width="520" height="114" rx="8"/>
+    <text class="title en" x="933" y="540" text-anchor="middle">*.module.scss</text>
+    <text class="sub" x="933" y="576" text-anchor="middle">styles/pages 各画面(56件)</text>
+  </g>
+  <path class="edge" d="M933 606 V664" marker-end="url(#a)"/>
+  <g class="m">
+    <rect x="753" y="668" width="360" height="88" rx="8"/>
+    <text class="title" x="933" y="720" text-anchor="middle">画面だけに効く</text>
+  </g>
+
+  <!-- 凡例 -->
+  <g class="g"><rect x="193" y="811" width="20" height="20" rx="4"/></g>
+  <text class="legend" x="233" y="827">全体に効く</text>
+  <g class="s"><rect x="453" y="811" width="20" height="20" rx="4"/></g>
+  <text class="legend" x="493" y="827">共通ルール</text>
+  <g class="m"><rect x="713" y="811" width="20" height="20" rx="4"/></g>
+  <text class="legend" x="753" y="827">閉じたスタイル(CSSモジュール)</text>
+</svg>
+</body></html>

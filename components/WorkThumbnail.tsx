@@ -1,11 +1,15 @@
-import type { CSSProperties, FC } from "react";
+"use client";
+
+import { useState, type CSSProperties, type FC } from "react";
 import ProtectedImage from "./ProtectedImage";
 import type { ThumbnailLayout } from "@/lib/work-content";
 
 /* 構成サムネイル（works.thumbnail）。親の箱（position 指定済み・16:9）を埋める。
  * 1280×720 を基準 px として書き、大きさ・文字は cqw、位置は % に変換する。
  * 根要素が container-type: inline-size のため cqh は使えない（高さも cqw で表す）。
- * cqw は container 宣言した要素自身では祖先基準になるので、縞などは子の層に付ける */
+ * cqw は container 宣言した要素自身では祖先基準になるので、縞などは子の層に付ける。
+ * 数値の正は Claude Design「Works サムネイル 構成案 v2」（Figma: Library の WorkThumbnail）。
+ * #1A1A1A / #0A0A0A / 縞の 2 色は対応するトークンが無いため直書き */
 
 type Props = {
   layout: ThumbnailLayout;
@@ -22,7 +26,10 @@ const u = (px: number) => `${px / 12.8}cqw`;
 const x = (px: number) => `${px / 12.8}%`;
 const y = (px: number) => `${px / 7.2}%`;
 
-const SHADOW = `0 ${u(16)} ${u(40)} rgb(0 0 0 / 0.5)`;
+/** 画像が無いときの空き枠（斜線） */
+const STRIPES: CSSProperties = {
+  backgroundImage: `repeating-linear-gradient(135deg, #262626 0 ${u(14)}, #2b2b2b ${u(14)} ${u(28)})`,
+};
 
 type Box = { left: number; top: number; width: number; height: number };
 
@@ -33,7 +40,7 @@ const boxStyle = ({ left, top, width, height }: Box): CSSProperties => ({
   height: y(height),
 });
 
-/** 画像が空なら何も描かない（枠の bg-system-900 が空き枠として見える） */
+/** 画像が空なら何も描かない（下の斜線が空き枠として見える） */
 const Shot: FC<{ src: string | null }> = ({ src }) =>
   src ? (
     <ProtectedImage
@@ -46,19 +53,18 @@ const Shot: FC<{ src: string | null }> = ({ src }) =>
 
 const DesktopFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   <div
-    className="absolute flex flex-col overflow-hidden bg-system-800"
-    style={{ ...boxStyle(box), borderRadius: u(16), boxShadow: SHADOW }}
+    className="absolute flex flex-col overflow-hidden border-solid border-system-800 bg-[#0a0a0a]"
+    style={{ ...boxStyle(box), borderWidth: u(1), borderRadius: u(16) }}
   >
-    <div className="flex items-center" style={{ height: u(32), gap: u(8), paddingLeft: u(16) }}>
-      {["#ff5f57", "#febc2e", "#28c840"].map((color) => (
-        <span
-          key={color}
-          className="rounded-full"
-          style={{ width: u(10), height: u(10), backgroundColor: color }}
-        />
+    <div
+      className="flex shrink-0 items-center border-solid border-system-800"
+      style={{ height: u(40), gap: u(8), paddingInline: u(18), borderBottomWidth: u(1) }}
+    >
+      {[0, 1, 2].map((i) => (
+        <span key={i} className="rounded-full bg-system-800" style={{ width: u(11), height: u(11) }} />
       ))}
     </div>
-    <div className="relative flex-1 bg-system-900">
+    <div className="relative flex-1" style={STRIPES}>
       <Shot src={src} />
     </div>
   </div>
@@ -66,16 +72,10 @@ const DesktopFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
 
 const PhoneFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   <div
-    className="absolute overflow-hidden border-solid bg-system-900"
-    style={{
-      ...boxStyle(box),
-      borderWidth: u(6),
-      borderColor: "#0a0a0a",
-      borderRadius: u(28),
-      boxShadow: SHADOW,
-    }}
+    className="absolute flex border-solid border-system-800 bg-[#0a0a0a]"
+    style={{ ...boxStyle(box), borderWidth: u(1), borderRadius: u(48), padding: u(12) }}
   >
-    <div className="relative h-full w-full">
+    <div className="relative flex-1 overflow-hidden" style={{ ...STRIPES, borderRadius: u(36) }}>
       <Shot src={src} />
     </div>
   </div>
@@ -83,35 +83,59 @@ const PhoneFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
 
 const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   <div
-    className="absolute overflow-hidden bg-system-900 ring-1 ring-white/10"
-    style={{ ...boxStyle(box), borderRadius: u(12), boxShadow: SHADOW }}
+    className="absolute overflow-hidden border-solid border-system-800 bg-[#1a1a1a]"
+    style={{ ...boxStyle(box), borderWidth: u(1), borderRadius: u(12) }}
   >
-    <Shot src={src} />
+    <div className="absolute inset-0" style={STRIPES}>
+      <Shot src={src} />
+    </div>
   </div>
 );
 
-const Logo: FC<{ src: string | null; size: number; left: number; top: number; radius: number }> = ({
-  src,
-  size,
-  left,
-  top,
-  radius,
-}) => (
-  <div
-    className={`absolute overflow-hidden ${
-      src ? "" : "flex items-center justify-center border border-dashed border-system-700 font-bold text-system-500"
-    }`}
-    style={{
-      left: x(left),
-      top: y(top),
-      width: u(size),
-      height: u(size),
-      borderRadius: u(radius),
-      ...(src ? {} : { fontSize: u(size * 0.22) }),
-    }}
+/** ロゴがあればロゴ画像だけ、無ければサービス名だけを出す。
+ * ロゴは高さを揃えて幅は比率なり（欄の幅を超えたら縮める）にし、見切れさせない。
+ * ロゴを表示できないとき（権限なし・署名失敗・画像切れ）はサービス名に切り替える。
+ * ロゴは隠しても残しておき、ProtectedImage の再試行で表示できたら戻す */
+const Brand: FC<{ logoUrl: string | null; serviceName: string; logoHeight: number; fontSize: number }> = ({
+  logoUrl,
+  serviceName,
+  logoHeight,
+  fontSize,
+}) => {
+  const [unavailableUrl, setUnavailableUrl] = useState<string | null>(null);
+  const showLogo = logoUrl !== null && unavailableUrl !== logoUrl;
+
+  return (
+    <>
+      {logoUrl && (
+        <ProtectedImage
+          src={logoUrl}
+          alt=""
+          draggable={false}
+          onUnavailableChange={(unavailable) => setUnavailableUrl(unavailable ? logoUrl : null)}
+          className={showLogo ? "block w-auto max-w-full object-contain object-left" : "invisible absolute w-auto"}
+          style={{ height: u(logoHeight) }}
+        />
+      )}
+      {!showLogo && (
+        <p
+          className="min-w-0 max-w-full truncate font-sans font-semibold text-system-white"
+          style={{ fontSize: u(fontSize), letterSpacing: "0.02em" }}
+        >
+          {serviceName}
+        </p>
+      )}
+    </>
+  );
+};
+
+const Title: FC<{ title: string; fontSize: number; style?: CSSProperties }> = ({ title, fontSize, style }) => (
+  <p
+    className="line-clamp-3 font-mplus font-bold text-system-white [overflow-wrap:anywhere]"
+    style={{ fontSize: u(fontSize), lineHeight: 1.35, letterSpacing: u(1.6), ...style }}
   >
-    {src ? <Shot src={src} /> : "LOGO"}
-  </div>
+    {title}
+  </p>
 );
 
 const WorkThumbnail: FC<Props> = ({
@@ -125,80 +149,67 @@ const WorkThumbnail: FC<Props> = ({
   className,
 }) => {
   const mobile = (i: number) => mobileUrls[i] || null;
-  const capture = (i: number) => captureUrls[i] || null;
-  const isD = layout === "d";
+  /* 資料キャプチャは入っている分だけ数える（空き枠の "" は詰める）。0 枚なら空き枠を 2 つ見せる */
+  const captures = captureUrls.filter(Boolean);
+  /* 構成案どおり、ロゴもサービス名も未設定なら仮の名前を出す */
+  const service = serviceName?.trim() || "Service";
+
+  if (layout === "d") {
+    return (
+      <div aria-hidden className={`@container absolute inset-0 overflow-hidden bg-[#1a1a1a] ${className ?? ""}`}>
+        <div
+          className="absolute flex flex-col justify-between border-solid border-system-800 bg-[#0a0a0a]"
+          style={{
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: x(520),
+            borderRightWidth: u(1),
+            paddingBlock: u(80),
+            paddingInline: u(72),
+          }}
+        >
+          <div className="flex min-w-0">
+            <Brand logoUrl={logoUrl} serviceName={service} logoHeight={120} fontSize={48} />
+          </div>
+          <Title title={title} fontSize={44} />
+        </div>
+        {captures.length === 1 ? (
+          <CaptureFrame src={captures[0]} left={600} top={120} width={800} height={660} />
+        ) : (
+          /* 2 枚のときは 1 枚目を手前に重ねるため、2 枚目から描く */
+          <>
+            <CaptureFrame src={captures[1] ?? null} left={760} top={360} width={620} height={420} />
+            <CaptureFrame src={captures[0] ?? null} left={600} top={96} width={620} height={400} />
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div aria-hidden className={`@container absolute inset-0 overflow-hidden bg-system-950 ${className ?? ""}`}>
+    <div aria-hidden className={`@container absolute inset-0 overflow-hidden bg-[#1a1a1a] ${className ?? ""}`}>
       <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(135deg, rgb(255 255 255 / 0.035) 0 0.15cqw, transparent 0.15cqw 1.6cqw)",
-        }}
-      />
+        className="absolute flex items-center"
+        style={{ left: x(80), top: y(80), width: x(520), height: u(64) }}
+      >
+        <Brand logoUrl={logoUrl} serviceName={service} logoHeight={64} fontSize={34} />
+      </div>
+      <Title title={title} fontSize={52} style={{ position: "absolute", left: x(80), bottom: y(80), width: x(460) }} />
 
       {layout === "a1" && (
         <>
-          <Logo src={logoUrl} size={64} left={48} top={48} radius={12} />
-          <DesktopFrame src={desktopUrl} left={640} top={180} width={704} height={612} />
-          <PhoneFrame src={mobile(0)} left={550} top={274} width={218} height={518} />
+          <DesktopFrame src={desktopUrl} left={620} top={120} width={780} height={660} />
+          <PhoneFrame src={mobile(0)} left={540} top={300} width={220} height={460} />
         </>
       )}
-      {layout === "a2" && (
-        <>
-          <Logo src={logoUrl} size={64} left={48} top={48} radius={12} />
-          <DesktopFrame src={desktopUrl} left={640} top={216} width={768} height={576} />
-        </>
-      )}
+      {layout === "a2" && <DesktopFrame src={desktopUrl} left={600} top={120} width={800} height={660} />}
       {layout === "a3" && (
         <>
-          <Logo src={logoUrl} size={64} left={48} top={48} radius={12} />
-          <PhoneFrame src={mobile(0)} left={640} top={100} width={300} height={780} />
-          <PhoneFrame src={mobile(1)} left={980} top={-60} width={300} height={780} />
+          <PhoneFrame src={mobile(0)} left={620} top={140} width={290} height={620} />
+          <PhoneFrame src={mobile(1)} left={950} top={60} width={290} height={620} />
         </>
       )}
-      {isD && (
-        <>
-          <Logo src={logoUrl} size={160} left={48} top={48} radius={24} />
-          <CaptureFrame src={capture(0)} left={640} top={86} width={538} height={432} />
-          <CaptureFrame src={capture(1)} left={794} top={324} width={461} height={360} />
-        </>
-      )}
-
-      {serviceName ? (
-        <p
-          className="absolute min-w-0 font-bold text-system-white"
-          style={
-            isD
-              ? { left: x(48), top: y(224), width: x(512), fontSize: u(28) }
-              : {
-                  left: x(128),
-                  top: y(48),
-                  width: x(512),
-                  height: u(64),
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: u(28),
-                }
-          }
-        >
-          {/* flex 要素では text-overflow が効かないため、省略記号は内側の block 要素に付ける */}
-          <span className="block min-w-0 max-w-full truncate">{serviceName}</span>
-        </p>
-      ) : null}
-      <p
-        className="absolute line-clamp-3 font-bold text-system-white [overflow-wrap:anywhere]"
-        style={{
-          left: x(48),
-          bottom: y(48),
-          width: x(layout === "a1" ? 480 : 576),
-          fontSize: u(56),
-          lineHeight: 1.25,
-        }}
-      >
-        {title}
-      </p>
     </div>
   );
 };

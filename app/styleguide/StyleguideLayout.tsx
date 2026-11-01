@@ -42,6 +42,8 @@ const SAMPLE_THUMBNAILS: WorkThumbnailData[] = [
   { layout: "a2", logo_url: null, desktop_url: THUMB_SHOT_DESKTOP, mobile_urls: [], capture_urls: [] },
   { layout: "a3", logo_url: null, desktop_url: null, mobile_urls: [THUMB_SHOT_MOBILE, ""], capture_urls: [] },
   { layout: "d", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [THUMB_SHOT_DESKTOP, THUMB_SHOT_DESKTOP] },
+  /* d で資料が 1 枚だけのとき（右に大きく 1 枚） */
+  { layout: "d", logo_url: THUMB_LOGO, desktop_url: null, mobile_urls: [], capture_urls: ["", THUMB_SHOT_DESKTOP] },
 ];
 const SAMPLE_THUMB_TITLE = "キャリアチケットスカウトサービスの立ち上げ";
 const SAMPLE_THUMB_SERVICE = "Career Ticket";
@@ -1112,12 +1114,12 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkThumbnail"
-          description="構成サムネイル（works.thumbnail）。4 レイアウト・1280×720 基準を cqw で縮尺・空き枠は system-900・ロゴ未設定は LOGO 枠。Figma のマスターは未確認"
+          description="構成サムネイル（works.thumbnail）。4 レイアウト・1280×720 基準を cqw で縮尺・空き枠は斜線・ロゴがあればロゴだけ（高さ揃え・見切れなし）、無ければサービス名（未設定は「Service」）・d は資料 1 枚なら右に大きく 1 枚、2 枚なら 1 枚目が手前。Figma のマスターは Library の WorkThumbnail（構成案 v2 準拠）"
         >
           <div className="flex w-full flex-col gap-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {SAMPLE_THUMBNAILS.map((t) => (
-                <div key={t.layout} className="relative aspect-video w-[339px] max-w-full overflow-hidden rounded-[14px]">
+              {SAMPLE_THUMBNAILS.map((t, i) => (
+                <div key={i} className="relative aspect-video w-[339px] max-w-full overflow-hidden rounded-[14px]">
                   <WorkThumbnail
                     layout={t.layout}
                     logoUrl={t.logo_url}
@@ -1131,8 +1133,8 @@ function ComponentsSection() {
               ))}
             </div>
             <div className="flex gap-4">
-              {SAMPLE_THUMBNAILS.map((t) => (
-                <div key={t.layout} className="relative aspect-video w-[128px] overflow-hidden">
+              {SAMPLE_THUMBNAILS.map((t, i) => (
+                <div key={i} className="relative aspect-video w-[128px] overflow-hidden">
                   <WorkThumbnail
                     layout={t.layout}
                     logoUrl={t.logo_url}

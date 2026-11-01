@@ -1000,6 +1000,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   <div>
                     <FieldLabel>サービス名</FieldLabel>
                     <Input value={work.hero_brand ?? ""} onChange={(v) => setField("hero_brand", v || null)} placeholder="サービス名" />
+                    <p className="mt-1 text-[12px] text-system-500">ロゴを設定するとロゴだけを表示します（ロゴが読み込めないときはサービス名）</p>
                   </div>
                   <div>
                     <FieldLabel>ロゴ</FieldLabel>
@@ -1007,7 +1008,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                       value={thumbnail.logo_url ?? ""}
                       onChange={(v) => setThumbnail({ ...thumbnail, logo_url: v || null })}
                       folder="projects/thumbnails"
-                      previewClassName="mt-2 h-12 w-12 rounded-[6px] object-cover"
+                      previewClassName="mt-2 h-12 w-auto max-w-full rounded-[6px] object-contain"
                     />
                   </div>
                   {(thumbnail.layout === "a1" || thumbnail.layout === "a2") && (
@@ -1047,7 +1048,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   {thumbnail.layout === "d" &&
                     [0, 1].map((i) => (
                       <div key={`capture-${i}`}>
-                        <FieldLabel>資料キャプチャ {i + 1}</FieldLabel>
+                        <FieldLabel>資料キャプチャ {i + 1}{i === 1 ? "（任意）" : ""}</FieldLabel>
                         <ImagePickerField
                           value={thumbnail.capture_urls[i] ?? ""}
                           onChange={(v) => setSlot("capture_urls", i, v)}

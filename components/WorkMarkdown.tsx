@@ -7,7 +7,7 @@ import {
   widthToCss,
   type ImageAlign,
 } from "@/lib/image-layout";
-import { BLOCK_CLOSE, HTML_BLOCK_OPEN } from "@/lib/work-sections";
+import { BLOCK_CLOSE, HTML_BLOCK_OPEN, closedBlockEnd, findBlockEnd, takeLeafBlock, type LeafKind } from "@/lib/work-sections";
 import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
 import WorkCardEmbed from "./WorkCardEmbed";
 import MockupEmbed from "./MockupEmbed";
@@ -314,11 +314,6 @@ const isTableSeparator = (line: string) => {
   return cells.length > 0 && cells.every((c) => /^:?-{3,}:?$/.test(c));
 };
 
-/**
- * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card / html / figure / beforeafter / flow / bars）。深さの数え上げに使う。
- * 下の gridOpen / cardOpen と同じ条件にそろえる（\b だと `::: card見出し` も数えてしまい、閉じが見つからず後続を飲み込む）
- */
-const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$)|html\s*$|(?:figure|beforeafter|flow|bars)(?:\s|$))/;
 // コードブロックの開き（``` で始まり、以降にバッククォートを含まない行。info string 付きも可）と閉じ（``` だけの行）
 const FENCE_OPEN = /^```([^`]*)$/;
 const FENCE_CLOSE = /^```\s*$/;
@@ -368,42 +363,6 @@ function sanitizeHtmlOnce(html: string): string {
         return /^(?:javascript:|vbscript:|data:text\/html)/.test(value) ? `${head}"#"` : m;
       },
     );
-}
-
-type LeafKind = "beforeafter" | "flow" | "bars";
-
-/** 各図版ブロックが自分の中身として認める行（空行は常に可） */
-const LEAF_LINE: Record<LeafKind, RegExp> = {
-  flow: /^\s*[-*+]\s+/,
-  bars: /^(?:\s*[-*+]\s+|\s*legend\s*[:：])/i,
-  beforeafter: /^\s*(?:before|after|note)\s*[:：]/i,
-};
-
-/**
- * 図版ブロック（beforeafter / flow / bars）の開き行の次（start）から、中身の行を集める。
- * 自分の行の形でも空行でも `:::` でもない行が来たらそこで終わる（閉じ忘れで後続の本文を飲み込まない）。
- * 止まった行が `:::` ならそれを閉じとして消費し、そうでなければその行は通常のパースに残す。next は次に読む行
- */
-function takeLeafBlock(lines: string[], start: number, kind: LeafKind): { body: string[]; next: number; closed: boolean } {
-  const body: string[] = [];
-  let i = start;
-  while (i < lines.length) {
-    const l = lines[i];
-    if (BLOCK_CLOSE.test(l)) return { body, next: i + 1, closed: true };
-    if (l.trim() !== "" && !LEAF_LINE[kind].test(l)) break;
-    body.push(l);
-    i++;
-  }
-  return { body, next: i, closed: false };
-}
-
-/**
- * card / grid / figure の閉じ探しで、NESTABLE_OPEN に一致した行が「閉じ `:::` を持つ入れ子」かどうか。
- * 図版ブロックは閉じ忘れだと閉じを持たないので、深さを増やさない（増やすと外側の閉じを取ってしまう）
- */
-function opensNested(lines: string[], idx: number): boolean {
-  const leaf = lines[idx].match(/^:::\s*(beforeafter|flow|bars)(?:\s|$)/);
-  return leaf ? takeLeafBlock(lines, idx + 1, leaf[1] as LeafKind).closed : true;
 }
 
 /** `a | b` を最初の | または ｜（全角）で左右に分ける（無ければ right は空） */
@@ -459,6 +418,17 @@ function parseBeforeAfter(body: string[]): BeforeAfterRow[] {
 
 const clampPct = (n: number) => (Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0);
 
+/** 全角数字・記号を半角にし、桁区切りのカンマを除いて、最初の数値を取り出す（無ければ 0。`90%` `1,000件` `１.３` を読める） */
+function parseBarNumber(text: string): number {
+  const ascii = text
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[．。]/g, ".")
+    .replace(/[－−]/g, "-")
+    .replace(/(\d),(?=\d{3}(?!\d))/g, "$1");
+  const m = ascii.match(/-?\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : 0;
+}
+
 /** `::: bars` の中身（`- ラベル | 補助 | 値 | 表示文 | 色` 行と `legend:` 行）と、開き行の base / max */
 function parseBars(rest: string, body: string[]): { rows: BarsRow[]; base: number | null; legend: string } {
   const attr = (name: string) => {
@@ -478,7 +448,7 @@ function parseBars(rest: string, body: string[]): { rows: BarsRow[]; base: numbe
     const item = l.match(/^\s*[-*+]\s+(.*)$/);
     if (!item) continue;
     const [label = "", sub = "", valueText = "", display = "", tone = ""] = item[1].split(/[|｜]/).map((c) => c.trim());
-    const value = valueText !== "" && Number.isFinite(Number(valueText)) ? Number(valueText) : 0;
+    const value = parseBarNumber(valueText);
     raw.push({
       label,
       sub,
@@ -649,37 +619,9 @@ function parseBlocks(src: string): Block[] {
     // 図版の枠 ::: figure 見出し | 補足文 〜 ::: も同じ閉じ探し（中身は任意の本文 markdown）
     const cardOpen = line.match(/^:::\s*(card|figure)(?:\s+(.*))?$/);
     if (cardOpen) {
-      const buf: string[] = [];
-      let depth = 0;
-      let inFence = false; // コードブロック内の ::: / --- は数えない
-      let inHtml = false; // ::: html の中身（生 HTML）は何も数えない
-      i++;
-      while (i < lines.length) {
-        if (inHtml) {
-          if (BLOCK_CLOSE.test(lines[i])) {
-            inHtml = false;
-            depth--;
-          }
-          buf.push(lines[i]);
-          i++;
-          continue;
-        }
-        // 開きは FENCE_OPEN、閉じは FENCE_CLOSE（code ブロック本体の判定と同じ）
-        if (inFence ? FENCE_CLOSE.test(lines[i]) : FENCE_OPEN.test(lines[i])) {
-          inFence = !inFence;
-        } else if (inFence) {
-          // コードの中身はそのまま本文へ
-        } else if (BLOCK_CLOSE.test(lines[i])) {
-          if (depth === 0) break;
-          depth--;
-        } else if (NESTABLE_OPEN.test(lines[i]) && opensNested(lines, i)) {
-          depth++;
-          inHtml = HTML_BLOCK_OPEN.test(lines[i]);
-        }
-        buf.push(lines[i]);
-        i++;
-      }
-      i++; // closing :::（EOF で閉じが無いときは末尾を越えるだけ）
+      const end = findBlockEnd(lines, i + 1).end;
+      const buf = lines.slice(i + 1, end);
+      i = end + 1; // closing :::（EOF で閉じが無いときは末尾を越えるだけ）
       const rest = (cardOpen[2] ?? "").trim();
       if (cardOpen[1] === "figure") {
         const [title, lead] = splitFirstPipe(rest);
@@ -711,46 +653,14 @@ function parseBlocks(src: string): Block[] {
           gap = Number.isNaN(n) ? 4 : n;
         }
       }
+      const { end, splits } = findBlockEnd(lines, i + 1);
       const cells: string[] = [];
-      let buf: string[] = [];
-      let depth = 0;
-      let inFence = false; // コードブロック内の ::: / --- は数えない
-      let inHtml = false; // ::: html の中身（生 HTML）は何も数えない
-      i++;
-      while (i < lines.length) {
-        if (inHtml) {
-          if (BLOCK_CLOSE.test(lines[i])) {
-            inHtml = false;
-            depth--;
-          }
-          buf.push(lines[i]);
-          i++;
-          continue;
-        }
-        // 開きは FENCE_OPEN、閉じは FENCE_CLOSE（code ブロック本体の判定と同じ）
-        if (inFence ? FENCE_CLOSE.test(lines[i]) : FENCE_OPEN.test(lines[i])) {
-          inFence = !inFence;
-          buf.push(lines[i]);
-        } else if (inFence) {
-          buf.push(lines[i]);
-        } else if (BLOCK_CLOSE.test(lines[i])) {
-          if (depth === 0) break;
-          depth--;
-          buf.push(lines[i]);
-        } else if (NESTABLE_OPEN.test(lines[i]) && opensNested(lines, i)) {
-          depth++;
-          inHtml = HTML_BLOCK_OPEN.test(lines[i]);
-          buf.push(lines[i]);
-        } else if (depth === 0 && /^---\s*$/.test(lines[i])) {
-          cells.push(buf.join("\n").trim());
-          buf = [];
-        } else {
-          buf.push(lines[i]);
-        }
-        i++;
+      let from = i + 1;
+      for (const at of [...splits, end]) {
+        cells.push(lines.slice(from, at).join("\n").trim());
+        from = at + 1;
       }
-      if (buf.length) cells.push(buf.join("\n").trim());
-      i++; // closing :::
+      i = end + 1; // closing :::
       blocks.push({ type: "grid", cols, gap, cells: cells.filter(Boolean) });
       continue;
     }
@@ -1226,12 +1136,22 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
   };
   let inFence = false;
   let inHtml = false;
-  for (const line of md.split("\n")) {
+  const allLines = md.split("\n");
+  for (let li = 0; li < allLines.length; li++) {
+    const line = allLines[li];
     // ::: html の中身はフェンス・見出しとして扱わず、そのまま本文行にする
     if (inHtml || (!inFence && HTML_BLOCK_OPEN.test(line))) {
       inHtml = !(inHtml && BLOCK_CLOSE.test(line));
       if (!current) current = { heading: "", body: [] };
       current.body.push(line);
+      continue;
+    }
+    // 閉じのある card / grid / figure は、中の `# ` を見出しにせず丸ごと本文行にする（lib の splitSections と同じ）
+    const blockEnd = inFence ? -1 : closedBlockEnd(allLines, li);
+    if (blockEnd !== -1) {
+      if (!current) current = { heading: "", body: [] };
+      current.body.push(...allLines.slice(li, blockEnd + 1));
+      li = blockEnd;
       continue;
     }
     // コードブロック内の `# コメント` でセクションを割らない

@@ -888,21 +888,18 @@ function WorkVizModalDemo() {
             { label: "Development", start: 7, span: 6, raci: ["I"] },
             { label: "QA", start: 13, span: 3, raci: ["R"] },
           ] }}
-          stakeholders={{ groups: [
-            { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }] },
-            { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
-            {
-              label: "Engineering",
-              icon: "Edit/code",
-              members: [
-                { label: "Tech Lead" },
-                { label: "Frontend Engineer" },
-                { label: "Backend Engineer" },
-                { label: "QA Engineer" },
-                { label: "Site Reliability Engineer with a very long title" },
-                { label: "" },
-              ],
-            },
+          stakeholders={{ v: 2, layers: [
+            { name: "Product", note: null, cards: [
+              { kind: "role", name: "General Manager", note: "1名", me: false },
+              { kind: "role", name: "Product Manager", note: "1名", me: true },
+            ] },
+            { name: "Engineering", note: "実装・コードレビュー", cards: [
+              { kind: "role", name: "Site Reliability Engineer with a very long title", note: "1名", me: false },
+              { kind: "org", title: "Platform Team・3名", rows: [
+                { text: "Tech Lead", me: false },
+                { text: "Frontend Engineer ×2", me: true },
+              ] },
+            ] },
           ] }}
           onClose={() => setKind(null)}
         />
@@ -1231,13 +1228,38 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkStakeholderDiagram"
-          description="Work 詳細の Stakeholders（Figma _Stakeholder）。メタ表の全画面ボタン → WorkVizModal 内に works.stakeholders を描画"
+          description="層ごとにロールカード／組織カードを並べる。メタ表の全画面ボタン → WorkVizModal 内に works.stakeholders を描画"
         >
           <div className="w-full">
             <WorkStakeholderDiagram
-              data={{ groups: [
-                { label: "Product", icon: "Components/page", members: [{ label: "General Manager" }, { label: "Product Manager", me: true }, { label: "" }] },
-                { label: "Designer", icon: "Components/platte", members: [{ label: "Leader", me: true }, { label: "Member" }] },
+              data={{ v: 2, layers: [
+                { name: "意思決定", note: "合意・要件確認", cards: [
+                  { kind: "role", name: "最終合意者", note: "2名", me: false },
+                  { kind: "role", name: "PO（要件確認者）", note: "1名", me: false },
+                ] },
+                { name: "マネジメント", note: "進行・管理", cards: [
+                  { kind: "role", name: "PjM（プロジェクトマネージャー）", note: "PJ の立ち上げ・初動の進行", me: true },
+                  { kind: "role", name: "PJ 全体管理", note: "進行・工数管理（API 実装と兼務）", me: false },
+                ] },
+                { name: "設計", note: "外部設計", cards: [
+                  { kind: "role", name: "外部設計", note: "デザイナー 1名", me: false },
+                  { kind: "role", name: "外部設計レビュー", note: "デザイナー視点での確認", me: true },
+                ] },
+                { name: "開発", note: "実装・コードレビュー", cards: [
+                  { kind: "org", title: "スカウト（CTS）・4名", rows: [
+                    { text: "学生側 主実装", me: false },
+                    { text: "学生側 コードレビュー", me: false },
+                    { text: "企業側・管理画面 主実装", me: false },
+                    { text: "企業側・管理画面 コードレビュー", me: false },
+                  ] },
+                  { kind: "org", title: "エージェント（CTA）・2名", rows: [
+                    { text: "API コードレビュー ×2", me: false },
+                  ] },
+                  { kind: "org", title: "顧客管理基盤・2名＋兼務", rows: [
+                    { text: "API 主実装（全体管理が兼務）", me: false },
+                    { text: "API レビュー ×2", me: false },
+                  ] },
+                ] },
               ] }}
             />
           </div>
@@ -1245,7 +1267,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkVizModal"
-          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画。stakeholder は中身の幅（width=&quot;content&quot;）"
+          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画。幅は timeline・stakeholder とも full"
         >
           <WorkVizModalDemo />
         </ComponentPreview>

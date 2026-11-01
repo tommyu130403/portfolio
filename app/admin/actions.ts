@@ -194,7 +194,7 @@ export async function saveWork(
   contents: string[],
   tools: string[],
   roleIds: string[],
-  stakeholderCounts: { role_id: string; headcount: number }[] | null,
+  stakeholderCounts: { role_id: string; headcount: number; note: string | null; org: string | null }[] | null,
 ): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase.rpc("save_work_with_relations", {
@@ -934,13 +934,19 @@ export async function deletePhaseName(id: string): Promise<{ error: string | nul
 
 // ─── 関係者グループ（stakeholder_groups）─────────────────────────────────────────
 
-export type StakeholderGroupRow = { id: string; name: string; icon: string | null; sort_order: number };
+export type StakeholderGroupRow = {
+  id: string;
+  name: string;
+  icon: string | null;
+  sort_order: number;
+  note: string | null;
+};
 
 export async function listStakeholderGroups(): Promise<{ data: StakeholderGroupRow[]; error: string | null }> {
   try {
     const { data, error } = await supabase
       .from("stakeholder_groups")
-      .select("id, name, icon, sort_order")
+      .select("id, name, icon, sort_order, note")
       .order("sort_order")
       .order("name");
     if (error) return { data: [], error: dbErr(error) };
@@ -959,7 +965,7 @@ export async function addStakeholderGroup(
     if (!trimmed) return { error: "グループ名を入力してください" };
     const { data: all, error: listErr } = await supabase
       .from("stakeholder_groups")
-      .select("id, name, icon, sort_order");
+      .select("id, name, icon, sort_order, note");
     if (listErr) return { error: dbErr(listErr) };
     const rows = all ?? [];
     const lower = trimmed.toLowerCase();
@@ -969,13 +975,13 @@ export async function addStakeholderGroup(
     const { data, error } = await supabase
       .from("stakeholder_groups")
       .insert({ name: trimmed, icon, sort_order: sortOrder })
-      .select("id, name, icon, sort_order");
+      .select("id, name, icon, sort_order, note");
     if (error) {
       if (error.code === "23505") {
         const pattern = trimmed.replace(/[\\%_]/g, (c) => "\\" + c);
         const { data: again, error: againErr } = await supabase
           .from("stakeholder_groups")
-          .select("id, name, icon, sort_order")
+          .select("id, name, icon, sort_order, note")
           .ilike("name", pattern)
           .limit(1);
         if (againErr) return { error: dbErr(againErr) };
@@ -1013,6 +1019,19 @@ export async function setStakeholderGroupIcon(id: string, icon: string | null): 
     const { error } = await supabase.rpc(
       "set_stakeholder_group_icon",
       icon ? { p_id: id, p_icon: icon } : { p_id: id },
+    );
+    if (error) return { error: dbErr(error) };
+    return { error: null };
+  } catch (e) {
+    return { error: errMsg(e) };
+  }
+}
+
+export async function setStakeholderGroupNote(id: string, note: string | null): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.rpc(
+      "set_stakeholder_group_note",
+      note ? { p_id: id, p_note: note } : { p_id: id },
     );
     if (error) return { error: dbErr(error) };
     return { error: null };

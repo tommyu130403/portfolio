@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FC, type RefObject } from "react";
-import Icon, { ICON_SETS, type IconSet } from "./Icon";
+import { useEffect, useRef, useState, type CSSProperties, type FC, type ReactNode, type RefObject } from "react";
 import { labelStep, scaleForTimeline, type TimelinePeriod, type TimelineScale } from "@/lib/timeline-scale";
 
 /**
@@ -24,9 +23,14 @@ export type TimelinePhase = {
 };
 export type TimelineData = { totalUnits: number; phases: TimelinePhase[] };
 
-export type StakeholderMember = { label: string; me?: boolean };
-export type StakeholderGroup = { label: string; icon?: string | null; members: StakeholderMember[] };
-export type StakeholdersData = { groups: StakeholderGroup[] };
+/** 組織カードの 1 行（役割名 + （メモ）+ ×人数 を組み立て済みの文字） */
+export type StakeholderOrgRow = { text: string; me: boolean };
+export type StakeholderCard =
+  | { kind: "role"; name: string; note: string; me: boolean }
+  | { kind: "org"; title: string; rows: StakeholderOrgRow[] };
+/** 関係者グループ 1 つ = 層 1 つ。name が空の層は「グループ未設定」 */
+export type StakeholderLayer = { name: string; note: string | null; cards: StakeholderCard[] };
+export type StakeholdersData = { v: 2; layers: StakeholderLayer[] };
 
 export function parseTimeline(raw: unknown): TimelineData | null {
   const obj = (raw ?? null) as Record<string, unknown> | null;
@@ -58,36 +62,73 @@ export function parseTimeline(raw: unknown): TimelineData | null {
   return { totalUnits, phases };
 }
 
+/** works.stakeholders（jsonb）を読む。新形式 { v: 2, layers } と旧形式 { groups } の両方を受け付ける。 */
 export function parseStakeholders(raw: unknown): StakeholdersData | null {
   const obj = (raw ?? null) as Record<string, unknown> | null;
-  if (!obj || !Array.isArray(obj.groups)) return null;
-  const groups = (obj.groups as unknown[])
-    .map((g): StakeholderGroup | null => {
-      const o = (g ?? {}) as Record<string, unknown>;
-      if (typeof o.label !== "string") return null;
-      return {
-        label: o.label,
-        icon: typeof o.icon === "string" ? o.icon : undefined,
-        members: (Array.isArray(o.members) ? o.members : [])
-          .map((m): StakeholderMember | null => {
-            const mo = (m ?? {}) as Record<string, unknown>;
-            return typeof mo.label === "string" ? { label: mo.label, me: mo.me === true } : null;
-          })
-          .filter((m): m is StakeholderMember => m !== null),
-      };
-    })
-    .filter((g): g is StakeholderGroup => g !== null && g.members.length > 0);
-  return groups.length > 0 ? { groups } : null;
-}
+  if (!obj || typeof obj !== "object") return null;
 
-/** "Set/name" 形式のアイコン参照を描画（DB 由来の文字列を許容）。不正な set 名は描画しない（404 アイコンを避ける）。 */
-const RefIcon: FC<{ icon?: string | null; tint: string; className: string }> = ({ icon, tint, className }) => {
-  if (!icon || !icon.includes("/")) return null;
-  const set = icon.slice(0, icon.indexOf("/"));
-  const name = icon.slice(icon.indexOf("/") + 1);
-  if (!name || !(ICON_SETS as readonly string[]).includes(set)) return null;
-  return <Icon set={set as IconSet} name={name} tintColor={tint} className={className} />;
-};
+  if (obj.v === 2 && Array.isArray(obj.layers)) {
+    const layers = (obj.layers as unknown[])
+      .map((l): StakeholderLayer | null => {
+        const o = (l ?? {}) as Record<string, unknown>;
+        if (typeof o.name !== "string") return null;
+        const cards = (Array.isArray(o.cards) ? o.cards : [])
+          .map((c): StakeholderCard | null => {
+            const co = (c ?? {}) as Record<string, unknown>;
+            if (co.kind === "role") {
+              if (typeof co.name !== "string" || typeof co.note !== "string") return null;
+              return { kind: "role", name: co.name, note: co.note, me: co.me === true };
+            }
+            if (co.kind === "org") {
+              if (typeof co.title !== "string") return null;
+              const rows = (Array.isArray(co.rows) ? co.rows : [])
+                .map((r): StakeholderOrgRow | null => {
+                  const ro = (r ?? {}) as Record<string, unknown>;
+                  return typeof ro.text === "string" ? { text: ro.text, me: ro.me === true } : null;
+                })
+                .filter((r): r is StakeholderOrgRow => r !== null);
+              return rows.length > 0 ? { kind: "org", title: co.title, rows } : null;
+            }
+            return null;
+          })
+          .filter((c): c is StakeholderCard => c !== null);
+        return cards.length > 0
+          ? { name: o.name, note: typeof o.note === "string" ? o.note : null, cards }
+          : null;
+      })
+      .filter((l): l is StakeholderLayer => l !== null);
+    return layers.length > 0 ? { v: 2, layers } : null;
+  }
+
+  // 旧形式 { groups: [{ label, members: [{ label, me }] }] }（20261101120000 の出力・手描きの図）
+  if (Array.isArray(obj.groups)) {
+    const layers = (obj.groups as unknown[])
+      .map((g): StakeholderLayer | null => {
+        const o = (g ?? {}) as Record<string, unknown>;
+        if (typeof o.label !== "string") return null;
+        const byLabel = new Map<string, { count: number; me: boolean }>();
+        for (const m of Array.isArray(o.members) ? o.members : []) {
+          const mo = (m ?? {}) as Record<string, unknown>;
+          if (typeof mo.label !== "string") continue;
+          const cur = byLabel.get(mo.label) ?? { count: 0, me: false };
+          cur.count += 1;
+          cur.me = cur.me || mo.me === true;
+          byLabel.set(mo.label, cur);
+        }
+        const cards: StakeholderCard[] = [...byLabel].map(([name, v]) => ({
+          kind: "role",
+          name,
+          note: `${v.count}名`,
+          me: v.me,
+        }));
+        return cards.length > 0 ? { name: o.label, note: null, cards } : null;
+      })
+      .filter((l): l is StakeholderLayer => l !== null);
+    return layers.length > 0 ? { v: 2, layers } : null;
+  }
+
+  return null;
+}
 
 /* ─── Timeline（_Process）────────────────────────────── */
 
@@ -250,57 +291,88 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
 
 /* ─── Stakeholders（_Stakeholder）────────────────────── */
 
-// 行の中央 31.5 だと描画で 32 に丸まるため、下マージン1px で 31 ちょうどに（Figma 31）
-const Connector: FC = () => <span className="mb-px h-px w-4 shrink-0 rounded-full bg-border" />;
+/** 英数字の連なり（"API" "Next.js" "PjM" など）だけ欧文フォントにする。大きさ・太さは親から引き継ぐ */
+const MIXED_RE = /[A-Za-z0-9]+(?:[ .\-/][A-Za-z0-9]+)*/g;
+const MixedText: FC<{ text: string }> = ({ text }) => {
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(MIXED_RE)) {
+    const at = m.index ?? 0;
+    if (at > last) nodes.push(text.slice(last, at));
+    nodes.push(
+      <span key={at} className="font-en tracking-normal">
+        {m[0]}
+      </span>,
+    );
+    last = at + m[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return <>{nodes}</>;
+};
+
+const MeBadge: FC<{ className?: string }> = ({ className = "" }) => (
+  <span className={`w-fit rounded-full bg-main-100 px-1.5 py-1 text-caption-01-jp text-surface ${className}`}>担当</span>
+);
 
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
-  <div className="flex flex-col items-start gap-2 md:px-10">
-    {data.groups.map((g, gi) => (
-      <div key={gi} className="flex max-w-full items-center gap-1">
-        {/* グループタイル */}
-        <div className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex size-16 shrink-0 flex-col items-center justify-center rounded-r16 bg-surface">
-          <RefIcon icon={g.icon} tint="var(--color-system-white)" className="h-4 w-4" />
-          <p className="font-sans text-center text-[10px] font-bold leading-normal tracking-[0.5px] text-white">{g.label}</p>
+  <div className="flex flex-col gap-4 md:gap-2.5">
+    {data.layers.map((layer, li) => (
+      <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[104px_minmax(0,1fr)] md:gap-3">
+        <div className="md:py-2.5">
+          {layer.name && (
+            <p className="text-body-02-jp-bold text-main-100">
+              <MixedText text={layer.name} />
+            </p>
+          )}
+          {layer.note && (
+            <p className="mt-0.5 text-caption-01-jp text-fg-muted">
+              <MixedText text={layer.note} />
+            </p>
+          )}
         </div>
-        {/* メンバーピル連結 */}
-        <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-2">
-          {g.members.map((m, mi) => {
-            const memberTint = m.me ? "var(--color-main-050)" : "var(--color-system-500)";
-            return (
-              <span key={mi} className="flex min-w-0 max-w-full items-center gap-1">
-                <Connector />
-                <span
-                  className={`after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] relative flex h-8 min-w-0 max-w-full items-center gap-2 whitespace-nowrap rounded-[32px] px-[9px] py-px ${
-                    m.me ? "after:border-border-main" : "after:border-border"
-                  }`}
-                >
-                  <span className="flex min-w-0 max-w-full items-center gap-1.5">
-                    <Icon
-                      set="Peoples"
-                      name={m.label ? "peoples-two" : "user"}
-                      tintColor={memberTint}
-                      className="h-4 w-4 shrink-0"
-                    />
-                    {m.label && (
-                      <span
-                        title={m.label}
-                        className={`font-en max-md:truncate text-[11px] font-extrabold leading-none tracking-[0.44px] [text-box:trim-both_cap_alphabetic] ${
-                          m.me ? "text-main-050" : "text-system-500"
-                        }`}
-                      >
-                        {m.label}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-2">
+          {layer.cards.map((card, ci) =>
+            card.kind === "role" ? (
+              <div
+                key={ci}
+                className={`flex min-w-0 flex-col rounded-r8 border px-3 py-[9px] ${
+                  card.me ? "border-border-main bg-main-100/6" : "border-border bg-surface-light"
+                }`}
+              >
+                {card.me && <MeBadge className="mb-1" />}
+                {card.name && (
+                  <p className="text-body-02-jp-bold text-fg">
+                    <MixedText text={card.name} />
+                  </p>
+                )}
+                <p className="mt-0.5 text-body-03-jp text-fg-muted">
+                  <MixedText text={card.note} />
+                </p>
+              </div>
+            ) : (
+              <div
+                key={ci}
+                className="flex min-w-0 flex-col rounded-r8 border border-border bg-surface-light px-3 py-2.5"
+              >
+                <p className="text-body-03-jp-bold text-fg-muted">
+                  <MixedText text={card.title} />
+                </p>
+                <ul className="mt-2.5 flex flex-col gap-1">
+                  {card.rows.map((row, ri) => (
+                    <li
+                      key={ri}
+                      className="flex items-center gap-1.5 rounded-r4 bg-system-900 px-2 py-1 text-body-03-jp text-fg"
+                    >
+                      {row.me && <MeBadge />}
+                      <span className="min-w-0">
+                        <MixedText text={row.text} />
                       </span>
-                    )}
-                  </span>
-                  {m.me && (
-                    <span className="font-sans rounded-full bg-main-100 px-1.5 py-1 text-[10px] font-normal leading-none tracking-[0.3px] text-surface">
-                      担当
-                    </span>
-                  )}
-                </span>
-              </span>
-            );
-          })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ),
+          )}
         </div>
       </div>
     ))}

@@ -48,7 +48,6 @@ import {
   addNameMaster,
   addStakeholderGroup,
   setRoleStakeholderGroup,
-  setRoleTitled,
   type NameMaster,
   type StakeholderGroupRow,
 } from "@/app/admin/actions";
@@ -127,9 +126,12 @@ const DEFAULT_BODY_MD = `# プロジェクト概要
 # 学び
 `;
 
-/** 体制内訳の編集状態。rows = 役割 id と人数の行、legacy = 行の形に読めない旧形式の文字 */
+/** 体制内訳の 1 行。note = 役割カードのメモ（空なら「N名」）、org = 組織名（同じ組織は 1 枚の組織カードにまとまる） */
+type BreakdownRow = { role_id: string; headcount: number; note: string; org: string };
+
+/** 体制内訳の編集状態。rows = 役割 id・人数・メモ・組織の行、legacy = 行の形に読めない旧形式の文字 */
 type BreakdownState =
-  | { mode: "rows"; rows: { role_id: string; headcount: number }[] }
+  | { mode: "rows"; rows: BreakdownRow[] }
   | { mode: "legacy" };
 
 const ROLE_DELIMITER = /[・、,]/; // works.role は区切りで分割されるため、担当役割の役割名に使えない
@@ -359,7 +361,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         supabase.from("contents_vocab").select("label").order("sort_order").order("label"),
         supabase.from("tools_vocab").select("id, name, icon_url, slug").order("name"),
         supabase.from("roles").select("id, name, sort_order, group_id, is_titled").order("sort_order").order("name"),
-        supabase.from("stakeholder_groups").select("id, name, icon, sort_order").order("sort_order").order("name"),
+        supabase.from("stakeholder_groups").select("id, name, icon, sort_order, note").order("sort_order").order("name"),
         supabase.from("phase_names").select("id, name, sort_order").order("sort_order").order("name"),
         isNew
           ? Promise.resolve({ data: [] })
@@ -368,7 +370,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           ? Promise.resolve({ data: [] })
           : supabase
               .from("work_stakeholder_counts")
-              .select("role_id, headcount, sort_order")
+              .select("role_id, headcount, sort_order, note, org")
               .eq("work_id", workId)
               .order("sort_order"),
       ]);
@@ -427,9 +429,22 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           setRoleIds(matched);
           setRoleNotice(unmatched);
         }
-        const counts = (countsRes.data ?? []) as { role_id: string; headcount: number }[];
+        const counts = (countsRes.data ?? []) as {
+          role_id: string;
+          headcount: number;
+          note: string | null;
+          org: string | null;
+        }[];
         if (counts.length > 0) {
-          setBreakdown({ mode: "rows", rows: counts.map((c) => ({ role_id: c.role_id, headcount: c.headcount })) });
+          setBreakdown({
+            mode: "rows",
+            rows: counts.map((c) => ({
+              role_id: c.role_id,
+              headcount: c.headcount,
+              note: c.note ?? "",
+              org: c.org ?? "",
+            })),
+          });
         } else if (row.stakeholder_breakdown?.trim()) {
           setBreakdown({ mode: "legacy" });
         }
@@ -517,7 +532,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const reloadStakeholderMasters = async () => {
     const [rolesRes, groupsRes] = await Promise.all([
       supabase.from("roles").select("id, name, sort_order, group_id, is_titled").order("sort_order").order("name"),
-      supabase.from("stakeholder_groups").select("id, name, icon, sort_order").order("sort_order").order("name"),
+      supabase.from("stakeholder_groups").select("id, name, icon, sort_order, note").order("sort_order").order("name"),
     ]);
     const failure = rolesRes.error ?? groupsRes.error;
     if (failure) {
@@ -743,7 +758,12 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       tools,
       roleIds,
       breakdown.mode === "rows"
-        ? breakdown.rows.map((r) => ({ role_id: r.role_id, headcount: r.headcount }))
+        ? breakdown.rows.map((r) => ({
+            role_id: r.role_id,
+            headcount: r.headcount,
+            note: r.note.trim() || null,
+            org: r.org.trim() || null,
+          }))
         : null,
     );
     if (saveRes.error) {
@@ -1218,7 +1238,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               </span>
             </FormGroupHeader>
             <div>
-              <p className="mb-3 text-[11px] text-fg-muted">図は体制内訳と担当役割から自動で作られます。体制内訳・担当役割の変更は右上の「保存」で反映。</p>
+              <p className="mb-3 text-[11px] text-fg-muted">図は体制内訳と担当役割から自動で作られます。体制内訳・担当役割の変更は右上の「保存」で反映。担当役割にメモを付けるときは体制内訳にも人数 1 で入れる。</p>
               <StakeholdersDiagramEditor
                 data={parsedStakeholders}
                 workRoles={diagramRoles}
@@ -1226,7 +1246,6 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 iconCatalog={iconCatalog}
                 disabled={masterBusy || saving}
                 onSetGroup={(roleId, groupId) => void runMaster(() => setRoleStakeholderGroup(roleId, groupId))}
-                onSetTitled={(roleId, next) => void runMaster(() => setRoleTitled(roleId, next))}
                 onCreateGroup={(roleId, name, icon) =>
                   runMaster(async () => {
                     const added = await addStakeholderGroup(name, icon);
@@ -1375,7 +1394,7 @@ function StakeholderBreakdownField({
   const legacyTags = parseStakeholderBreakdown(legacyText);
   const roleName = new Map(roles.map((r) => [r.id, r.name]));
 
-  const setRows = (rows: { role_id: string; headcount: number }[]) => onChange({ mode: "rows", rows });
+  const setRows = (rows: BreakdownRow[]) => onChange({ mode: "rows", rows });
 
   const handleAdd = async () => {
     if (value.mode !== "rows" || adding) return;
@@ -1395,7 +1414,7 @@ function StakeholderBreakdownField({
       if (value.rows.some((r) => r.role_id === item.id)) {
         setAddError("この役割はすでに選ばれています");
       } else {
-        setRows([...value.rows, { role_id: item.id, headcount: 1 }]);
+        setRows([...value.rows, { role_id: item.id, headcount: 1, note: "", org: "" }]);
         setNewRoleName("");
         setUnmatched([]);
       }
@@ -1414,7 +1433,7 @@ function StakeholderBreakdownField({
             className={`${vizBtn} mt-2`}
             disabled={!(!legacyText?.trim() || legacyTags)}
             onClick={() => {
-              const rows: { role_id: string; headcount: number }[] = [];
+              const rows: BreakdownRow[] = [];
               const missing: string[] = [];
               for (const t of legacyTags ?? []) {
                 const name = t.name.trim();
@@ -1424,7 +1443,7 @@ function StakeholderBreakdownField({
                   continue;
                 }
                 if (rows.some((r) => r.role_id === role.id)) continue;
-                rows.push({ role_id: role.id, headcount: Math.min(999, Math.max(1, t.count)) });
+                rows.push({ role_id: role.id, headcount: Math.min(999, Math.max(1, t.count)), note: "", org: "" });
               }
               setUnmatched(missing);
               setRows(rows);
@@ -1441,7 +1460,7 @@ function StakeholderBreakdownField({
             </p>
           )}
           {value.rows.map((r, i) => (
-            <div key={i} className="flex items-center gap-2">
+            <div key={i} className="flex flex-wrap items-center gap-2">
               <select
                 value={r.role_id}
                 onChange={(e) => setRows(value.rows.map((x, j) => (j === i ? { ...x, role_id: e.target.value } : x)))}
@@ -1461,6 +1480,18 @@ function StakeholderBreakdownField({
               </select>
               <NumberField className="w-16" value={r.headcount} min={1} max={999} onCommit={(n) => setRows(value.rows.map((x, j) => (j === i ? { ...x, headcount: n } : x)))} />
               <span className="text-[11px] text-fg-muted">名</span>
+              <Input
+                className="!w-48"
+                placeholder="メモ（任意・空なら人数）"
+                value={r.note}
+                onChange={(v) => setRows(value.rows.map((x, j) => (j === i ? { ...x, note: v } : x)))}
+              />
+              <Input
+                className="!w-48"
+                placeholder="組織（任意・同じ組織は1枚にまとまる）"
+                value={r.org}
+                onChange={(v) => setRows(value.rows.map((x, j) => (j === i ? { ...x, org: v } : x)))}
+              />
               <span className="ml-auto flex items-center gap-1">
                 <MoveButtons index={i} length={value.rows.length} label={roleName.get(r.role_id) || `行${i + 1}`} onMove={(d) => setRows(moveItem(value.rows, i, i + d))} />
                 <button type="button" className={vizDel} onClick={() => setRows(value.rows.filter((_, j) => j !== i))}>削除</button>

@@ -368,7 +368,8 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     FENCE_OPEN.test(line) ||
-    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption|html)\b/.test(line) ||
+    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption)\b/.test(line) ||
+    HTML_BLOCK_OPEN.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
@@ -462,10 +463,10 @@ function parseBlocks(src: string): Block[] {
     }
 
     // 生 HTML / SVG: ::: html 〜 :::（中身はそのまま集める。コードフェンスも数えない）
-    if (/^:::\s*html\s*$/.test(line)) {
+    if (HTML_BLOCK_OPEN.test(line)) {
       const buf: string[] = [];
       i++;
-      while (i < lines.length && !/^:::\s*$/.test(lines[i])) {
+      while (i < lines.length && !BLOCK_CLOSE.test(lines[i])) {
         buf.push(lines[i]);
         i++;
       }

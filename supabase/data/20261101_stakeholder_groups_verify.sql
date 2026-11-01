@@ -1,6 +1,7 @@
 -- 20261101120000_stakeholder_groups.sql の適用後の検証。
--- 1〜7・9・10 は 1 本ずつ別の Run で流す（まとめて貼ると最後の結果しか見えない）。
--- 8 は begin〜rollback を丸ごと 1 回で流す。途中の結果は見えない作りで、不一致なら例外で止まり、全部通れば最後に '8a-8e OK' が出る。
+-- 使い方: ファイル全体を 1 回の Run で流してよい。エラーが出ずに最後の表（11. まとめ）が出れば、8〜10 もすべて通っている。
+--   8・9・10 は不一致のときだけ '8x 不一致' / '9 不一致' / '10 不一致' の例外で止まる（期待どおりの拒否は例外にしない）。
+--   1〜7 の個別の結果を見たいときだけ、そのブロックを単独で Run する（まとめて貼ると最後の結果しか見えない）。
 -- 1. 列（期待: roles.group_id uuid YES 既定なし / roles.is_titled boolean NO false /
 --    stakeholder_groups = id uuid NO gen_random_uuid() / name text NO / icon text YES / sort_order integer NO 0 / created_at timestamptz NO now() /
 --    works.stakeholders_legacy jsonb YES）
@@ -56,6 +57,9 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 do $$
 begin
+  if not (select private.is_owner()) then
+    raise exception '8 前提エラー: オーナーとして実行できていない(auth.uid() = %)。begin から rollback までを 1 回の Run で流しているか確認する', (select auth.uid());
+  end if;
   insert into public.roles (name, sort_order) values ('検証役職A', 9990), ('検証無名B', 9991);
   perform public.set_role_stakeholder_group((select id from public.roles where name = '検証役職A'),
                                             (select id from public.stakeholder_groups where name = 'Designer'));
@@ -111,17 +115,62 @@ end $$;
 select '8a-8e OK' as result;
 rollback;
 
--- 9. ゲスト（期待: ok = true、つまり groups_seen と groups_total が同じ数。次の行で 'Only the owner can change a role' のエラー）
+-- 9. ゲスト（期待: 最後の結果が '9 OK'。グループは全件見えるが役割は変更できない）
 begin;
 select set_config('request.jwt.claims',
   json_build_object('sub', (select user_id from private.readers limit 1), 'role', 'authenticated')::text, true);
+select set_config('verify.groups_total', (select count(*) from public.stakeholder_groups)::text, true);
 set local role authenticated;
-select count(*) as groups_seen,
-       (select count(*) from public.stakeholder_groups) as groups_total,
-       count(*) = (select count(*) from public.stakeholder_groups) as ok
-from public.stakeholder_groups;
-select public.set_role_titled((select id from public.roles order by sort_order limit 1), true);
+do $$
+declare
+  v_seen integer;
+  v_total integer := current_setting('verify.groups_total', true)::integer;
+begin
+  select count(*) into v_seen from public.stakeholder_groups;
+  if v_seen <> v_total or v_seen = 0 then
+    raise exception '9 不一致: ゲストに見えるグループ % 件 / 全 % 件', v_seen, v_total;
+  end if;
+  begin
+    perform public.set_role_titled((select id from public.roles order by sort_order limit 1), true);
+    raise exception '9 不一致: ゲストが役割を変更できてしまった';
+  exception
+    when raise_exception then
+      if sqlerrm <> 'Only the owner can change a role' then
+        raise;
+      end if;
+  end;
+end $$;
+select '9 OK' as result;
 rollback;
 
--- 10. anon（期待: permission denied のエラー）
-begin; set local role anon; select count(*) from public.stakeholder_groups; rollback;
+-- 10. anon（期待: 例外なし。anon が読めてしまうと '10 不一致' で止まる）
+begin;
+do $$
+declare v integer;
+begin
+  execute 'set local role anon';
+  begin
+    select count(*) into v from public.stakeholder_groups;
+    raise exception '10 不一致: anon が stakeholder_groups を読めてしまった(% 件)', v;
+  exception
+    when insufficient_privilege then null;
+  end;
+end $$;
+rollback;
+
+-- 11. まとめ（期待: functions_ok = 11, groups_seeded = 4, stale_cache = 0,
+--     legacy_saved = 適用前に控えた works_with_stakeholders の値, unassigned_roles = 事前割当前なら全役割数・後なら 3）
+select
+  (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where ((n.nspname = 'public' and p.proname in (
+             'save_work_with_relations', 'rename_role', 'delete_role',
+             'set_role_stakeholder_group', 'set_role_titled',
+             'rename_stakeholder_group', 'set_stakeholder_group_icon', 'delete_stakeholder_group'))
+        or (n.nspname = 'private' and p.proname in (
+             'compute_work_stakeholders', 'refresh_work_stakeholders', 'refresh_role_works')))
+      and not has_function_privilege('anon', p.oid, 'execute')
+      and has_function_privilege('authenticated', p.oid, 'execute')) as functions_ok,
+  (select count(*) from public.stakeholder_groups) as groups_seeded,
+  (select count(*) from public.works where stakeholders is distinct from private.compute_work_stakeholders(id)) as stale_cache,
+  (select count(*) from public.works where stakeholders_legacy is not null) as legacy_saved,
+  (select count(*) from public.roles where group_id is null) as unassigned_roles;

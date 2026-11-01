@@ -117,12 +117,13 @@ function DialogShell({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[480px] rounded-[12px] border border-border-light bg-[#1a1a1a] p-5"
+        className="flex max-h-[calc(100vh-48px)] w-full max-w-[480px] flex-col rounded-[12px] border border-border-light bg-[#1a1a1a] p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="mb-4 text-[14px] font-semibold text-white">{title}</p>
-        <div className="flex flex-col gap-4">{children}</div>
-        <div className="mt-5 flex items-center justify-end gap-2">{footer}</div>
+        <p className="mb-4 shrink-0 text-[14px] font-semibold text-white">{title}</p>
+        {/* 中身が長いとき(縦長の画像プレビューなど)は本体だけをスクロールさせ、タイトルとボタン列は常に見せる */}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">{children}</div>
+        <div className="mt-5 flex shrink-0 items-center justify-end gap-2">{footer}</div>
       </div>
     </div>
   );

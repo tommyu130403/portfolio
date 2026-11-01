@@ -26,7 +26,13 @@ from (values
   ('UIデザイン',                   'Designer', false),
   ('エンジニア',                   'Engineer', false),
   ('フロントエンドエンジニア',     'Engineer', false),
-  -- 未割当（グループを判断できない。管理画面で設定する）: カスタマーサクセス / インターン / 研修
+  -- 2026-11-01 本番の役割名（dev と異なる 6 件）から追加
+  ('事業デザイン責任者',           'Product',  true),
+  ('プロダクトマネージャー',       'Product',  true),
+  ('プランナー',                   'Product',  false),
+  ('リードデザイナー',             'Designer', true),
+  ('WEBデザイナー',                'Designer', false),
+  -- 未割当（グループを判断できない。管理画面で設定する）: カスタマーサクセス / インターン / 研修 / メンター
   ('__例__', 'Designer', false)
 ) as m(name, grp, titled)
 join public.stakeholder_groups g on g.name = m.grp

@@ -7,6 +7,7 @@ import {
   widthToCss,
   type ImageAlign,
 } from "@/lib/image-layout";
+import { BLOCK_CLOSE, HTML_BLOCK_OPEN } from "@/lib/work-sections";
 import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
 import WorkCardEmbed from "./WorkCardEmbed";
 import MockupEmbed from "./MockupEmbed";
@@ -479,18 +480,29 @@ function parseBlocks(src: string): Block[] {
       const buf: string[] = [];
       let depth = 0;
       let inFence = false; // コードブロック内の ::: / --- は数えない
+      let inHtml = false; // ::: html の中身（生 HTML）は何も数えない
       i++;
       while (i < lines.length) {
+        if (inHtml) {
+          if (BLOCK_CLOSE.test(lines[i])) {
+            inHtml = false;
+            depth--;
+          }
+          buf.push(lines[i]);
+          i++;
+          continue;
+        }
         // 開きは FENCE_OPEN、閉じは FENCE_CLOSE（code ブロック本体の判定と同じ）
         if (inFence ? FENCE_CLOSE.test(lines[i]) : FENCE_OPEN.test(lines[i])) {
           inFence = !inFence;
         } else if (inFence) {
           // コードの中身はそのまま本文へ
-        } else if (/^:::\s*$/.test(lines[i])) {
+        } else if (BLOCK_CLOSE.test(lines[i])) {
           if (depth === 0) break;
           depth--;
         } else if (NESTABLE_OPEN.test(lines[i])) {
           depth++;
+          inHtml = HTML_BLOCK_OPEN.test(lines[i]);
         }
         buf.push(lines[i]);
         i++;
@@ -522,20 +534,31 @@ function parseBlocks(src: string): Block[] {
       let buf: string[] = [];
       let depth = 0;
       let inFence = false; // コードブロック内の ::: / --- は数えない
+      let inHtml = false; // ::: html の中身（生 HTML）は何も数えない
       i++;
       while (i < lines.length) {
+        if (inHtml) {
+          if (BLOCK_CLOSE.test(lines[i])) {
+            inHtml = false;
+            depth--;
+          }
+          buf.push(lines[i]);
+          i++;
+          continue;
+        }
         // 開きは FENCE_OPEN、閉じは FENCE_CLOSE（code ブロック本体の判定と同じ）
         if (inFence ? FENCE_CLOSE.test(lines[i]) : FENCE_OPEN.test(lines[i])) {
           inFence = !inFence;
           buf.push(lines[i]);
         } else if (inFence) {
           buf.push(lines[i]);
-        } else if (/^:::\s*$/.test(lines[i])) {
+        } else if (BLOCK_CLOSE.test(lines[i])) {
           if (depth === 0) break;
           depth--;
           buf.push(lines[i]);
         } else if (NESTABLE_OPEN.test(lines[i])) {
           depth++;
+          inHtml = HTML_BLOCK_OPEN.test(lines[i]);
           buf.push(lines[i]);
         } else if (depth === 0 && /^---\s*$/.test(lines[i])) {
           cells.push(buf.join("\n").trim());
@@ -787,7 +810,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       if (block.content.trim() === "") return null;
       return (
         <div
-          className="work-html mb-4 mt-10 max-w-full overflow-x-auto text-fg [&_svg]:h-auto [&_svg]:max-w-full"
+          className="work-html mb-4 mt-10 max-w-full overflow-x-auto text-fg [&_svg[viewBox]]:h-auto [&_svg]:max-w-full"
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content) }}
         />
       );
@@ -943,7 +966,15 @@ export const WorkMarkdownDocument: FC<{ md: string }> = ({ md }) => {
     if (current && (current.heading || current.body.join("").trim())) sections.push({ heading: current.heading, md: current.body.join("\n").trim() });
   };
   let inFence = false;
+  let inHtml = false;
   for (const line of md.split("\n")) {
+    // ::: html の中身はフェンス・見出しとして扱わず、そのまま本文行にする
+    if (inHtml || (!inFence && HTML_BLOCK_OPEN.test(line))) {
+      inHtml = !(inHtml && BLOCK_CLOSE.test(line));
+      if (!current) current = { heading: "", body: [] };
+      current.body.push(line);
+      continue;
+    }
     // コードブロック内の `# コメント` でセクションを割らない
     if (inFence ? FENCE_CLOSE.test(line) : FENCE_OPEN.test(line)) inFence = !inFence;
     if (!inFence && line.startsWith("# ")) {

@@ -1060,9 +1060,15 @@ function CardDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
 
 function HtmlDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md: string) => void }) {
   const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const submit = () => {
     const html = value.trim();
     if (!html) return;
+    // 行頭が「:::」だけの行はブロックの閉じと衝突する（`# ` 行はセクション分割が html ブロックを追跡するので問題ない）
+    if (/^:::\s*$/m.test(html)) {
+      setError("行頭が「:::」だけの行はブロックの閉じと衝突するため挿入できません。該当行を書き換えてください。");
+      return;
+    }
     onInsert(`\n::: html\n${html}\n:::\n`);
     onClose();
   };
@@ -1082,13 +1088,17 @@ function HtmlDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
         <textarea
           className={`${dInput} min-h-[240px] resize-y font-mono text-[12px]`}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setError(null);
+          }}
           placeholder="<svg …>…</svg>"
           spellCheck={false}
         />
         <p className="mt-1 text-[11px] text-fg-muted">
           script・iframe・style タグとイベント属性（onclick など）は表示時に取り除かれます。スタイルは要素の style 属性か SVG の属性で指定してください。
         </p>
+        {error && <p className="mt-1 text-[11px] text-danger-300">{error}</p>}
       </div>
     </DialogShell>
   );

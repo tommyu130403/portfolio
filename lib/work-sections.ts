@@ -58,6 +58,9 @@ export function sectionsToMarkdown(sections: unknown): string {
 
 const FENCE_OPEN = /^```([^`]*)$/;
 const FENCE_CLOSE = /^```\s*$/;
+/** `::: html` の開き行と、ブロック共通の閉じ `:::` 行。html の中身は生 HTML なのでフェンスや見出しとして数えない */
+export const HTML_BLOCK_OPEN = /^:::\s*html\s*$/;
+export const BLOCK_CLOSE = /^:::\s*$/;
 
 type RawSection = { heading: string; bodyLines: string[]; line: number };
 
@@ -70,7 +73,19 @@ function splitSections(md: string): RawSection[] {
   let cur: RawSection = { heading: "", bodyLines: [], line: 0 };
   let firstBodySet = false;
   let inFence = false;
+  let inHtml = false;
   md.split("\n").forEach((line, i) => {
+    // ::: html の中身はフェンス・見出しとして扱わず、そのまま本文行にする
+    if (inHtml || (!inFence && HTML_BLOCK_OPEN.test(line))) {
+      if (inHtml && BLOCK_CLOSE.test(line)) inHtml = false;
+      else inHtml = true;
+      if (!firstBodySet && line.trim()) {
+        cur.line = i;
+        firstBodySet = true;
+      }
+      cur.bodyLines.push(line);
+      return;
+    }
     // コードブロック内の `# コメント` でセクションを割らない
     if (inFence ? FENCE_CLOSE.test(line) : FENCE_OPEN.test(line)) inFence = !inFence;
     if (!inFence && line.startsWith("# ")) {

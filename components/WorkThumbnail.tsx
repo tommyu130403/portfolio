@@ -90,35 +90,30 @@ const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   </div>
 );
 
-const Logo: FC<{ src: string | null; size: number; radius: number; fontSize: number }> = ({
-  src,
-  size,
-  radius,
+/** ロゴがあればロゴ画像だけ、無ければサービス名だけを出す。
+ * ロゴは高さを揃えて幅は比率なり（欄の幅を超えたら縮める）にし、見切れさせない */
+const Brand: FC<{ logoUrl: string | null; serviceName: string; logoHeight: number; fontSize: number }> = ({
+  logoUrl,
+  serviceName,
+  logoHeight,
   fontSize,
-}) => (
-  <div
-    className={`relative shrink-0 overflow-hidden ${
-      src ? "" : "flex items-center justify-center border-dashed border-system-700 font-mono text-system-500"
-    }`}
-    style={{
-      width: u(size),
-      height: u(size),
-      borderRadius: u(radius),
-      ...(src ? {} : { borderWidth: u(2), fontSize: u(fontSize) }),
-    }}
-  >
-    {src ? <Shot src={src} /> : "LOGO"}
-  </div>
-);
-
-const ServiceName: FC<{ name: string; fontSize: number }> = ({ name, fontSize }) => (
-  <p
-    className="min-w-0 max-w-full truncate font-sans font-semibold text-system-white"
-    style={{ fontSize: u(fontSize), letterSpacing: "0.02em" }}
-  >
-    {name}
-  </p>
-);
+}) =>
+  logoUrl ? (
+    <ProtectedImage
+      src={logoUrl}
+      alt=""
+      draggable={false}
+      className="block w-auto max-w-full object-contain object-left"
+      style={{ height: u(logoHeight) }}
+    />
+  ) : (
+    <p
+      className="min-w-0 max-w-full truncate font-sans font-semibold text-system-white"
+      style={{ fontSize: u(fontSize), letterSpacing: "0.02em" }}
+    >
+      {serviceName}
+    </p>
+  );
 
 const Title: FC<{ title: string; fontSize: number; style?: CSSProperties }> = ({ title, fontSize, style }) => (
   <p
@@ -140,8 +135,9 @@ const WorkThumbnail: FC<Props> = ({
   className,
 }) => {
   const mobile = (i: number) => mobileUrls[i] || null;
-  const capture = (i: number) => captureUrls[i] || null;
-  /* 構成案どおり、サービス名が未設定でも仮の名前を出す（LOGO 枠と同じ扱い） */
+  /* 資料キャプチャは入っている分だけ数える（空き枠の "" は詰める）。0 枚なら空き枠を 2 つ見せる */
+  const captures = captureUrls.filter(Boolean);
+  /* 構成案どおり、ロゴもサービス名も未設定なら仮の名前を出す */
   const service = serviceName?.trim() || "Service";
 
   if (layout === "d") {
@@ -159,14 +155,20 @@ const WorkThumbnail: FC<Props> = ({
             paddingInline: u(72),
           }}
         >
-          <div className="flex min-w-0 flex-col items-start" style={{ gap: u(24) }}>
-            <Logo src={logoUrl} size={120} radius={28} fontSize={16} />
-            <ServiceName name={service} fontSize={48} />
+          <div className="flex min-w-0">
+            <Brand logoUrl={logoUrl} serviceName={service} logoHeight={120} fontSize={48} />
           </div>
           <Title title={title} fontSize={44} />
         </div>
-        <CaptureFrame src={capture(0)} left={600} top={96} width={620} height={400} />
-        <CaptureFrame src={capture(1)} left={760} top={360} width={620} height={420} />
+        {captures.length === 1 ? (
+          <CaptureFrame src={captures[0]} left={600} top={120} width={800} height={660} />
+        ) : (
+          /* 2 枚のときは 1 枚目を手前に重ねるため、2 枚目から描く */
+          <>
+            <CaptureFrame src={captures[1] ?? null} left={760} top={360} width={620} height={420} />
+            <CaptureFrame src={captures[0] ?? null} left={600} top={96} width={620} height={400} />
+          </>
+        )}
       </div>
     );
   }
@@ -175,10 +177,9 @@ const WorkThumbnail: FC<Props> = ({
     <div aria-hidden className={`@container absolute inset-0 overflow-hidden bg-[#1a1a1a] ${className ?? ""}`}>
       <div
         className="absolute flex items-center"
-        style={{ left: x(80), top: y(80), width: x(520), gap: u(16) }}
+        style={{ left: x(80), top: y(80), width: x(520), height: u(64) }}
       >
-        <Logo src={logoUrl} size={64} radius={16} fontSize={13} />
-        <ServiceName name={service} fontSize={34} />
+        <Brand logoUrl={logoUrl} serviceName={service} logoHeight={64} fontSize={34} />
       </div>
       <Title title={title} fontSize={52} style={{ position: "absolute", left: x(80), bottom: y(80), width: x(460) }} />
 

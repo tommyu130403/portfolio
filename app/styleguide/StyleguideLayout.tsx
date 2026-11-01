@@ -1112,7 +1112,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkThumbnail"
-          description="構成サムネイル（works.thumbnail）。4 レイアウト・1280×720 基準を cqw で縮尺・空き枠は斜線・ロゴ未設定は LOGO 枠、サービス名未設定は「Service」。Figma のマスターは Library の WorkThumbnail（構成案 v2 準拠）"
+          description="構成サムネイル（works.thumbnail）。4 レイアウト・1280×720 基準を cqw で縮尺・空き枠は斜線・ロゴがあればロゴだけ（高さ揃え・見切れなし）、無ければサービス名（未設定は「Service」）・d は資料 1 枚なら右に大きく 1 枚、2 枚なら 1 枚目が手前。Figma のマスターは Library の WorkThumbnail（構成案 v2 準拠）"
         >
           <div className="flex w-full flex-col gap-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

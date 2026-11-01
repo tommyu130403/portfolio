@@ -1499,6 +1499,9 @@ function StakeholderBreakdownField({
               </span>
             </div>
           ))}
+          <button type="button" className={`${vizBtn} self-start`} onClick={() => setRows([...value.rows, { role_id: "", headcount: 1, note: "", org: "" }])}>
+            ＋ 行を追加
+          </button>
           <div
             className="flex items-center gap-2"
             onKeyDown={(e) => {

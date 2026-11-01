@@ -66,7 +66,7 @@ begin
           continue;
         end if;
         v_src_count := v_src_count + 1;
-        if v_src_count > case when v_device = 'phone' then 2 else 1 end then exit; end if;
+        if v_src_count > (case when v_device = 'phone' then 2 else 1 end) then exit; end if;
         v_path := private.portfolio_path_from_url(v_match[2]);
         if v_path is not null then return next v_path; end if;
       end loop;

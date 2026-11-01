@@ -1,5 +1,5 @@
 import type { CSSProperties, FC, ReactNode } from "react";
-import React, { useMemo } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import Headline from "./Headline";
 import Icon from "./Icon";
 import {
@@ -12,6 +12,7 @@ import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
 import WorkCardEmbed from "./WorkCardEmbed";
 import MockupEmbed from "./MockupEmbed";
 import InfoCard from "./InfoCard";
+import { BarChart, BeforeAfter, FigureFrame, FlowSteps, type BarTone, type StepTone } from "./WorkFigure";
 import { TableGrid, TableKeyValue } from "./Table";
 import ProtectedImage from "./ProtectedImage";
 
@@ -27,7 +28,11 @@ import ProtectedImage from "./ProtectedImage";
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
  *  - `::: caption テキスト` の補足文（10px。表やグリッドの下などに置く1行）
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
- *  - `::: card 見出し` 〜 `:::` の汎用カード / `::: workcard id=<uuid>` の作品リンクカード
+ *  - `::: card 見出し` 〜 `:::` の汎用カード（`::: card tone=accent 見出し` で強調カード）/ `::: workcard id=<uuid>` の作品リンクカード
+ *  - `::: figure 見出し | 補足文` 〜 `:::` の図版の枠（中に任意の本文ブロックを入れ子にできる）
+ *  - `::: beforeafter タグ | 見出し` 〜 `:::` の Before/After 図（`before:` / `after:` 行を `→` で区切り、`[!悪い手順]` `[+良い手順]`、直後の `note:` が注記）
+ *  - `::: flow ラベル highlight=N` 〜 `:::` の横フロー（`- ` 行が1手順。N 番目を強調、省略=最後、0=なし）
+ *  - `::: bars base=1.0 max=1.4` 〜 `:::` の横棒グラフ（`- ラベル | 補助 | 値 | 表示文 | up/down/flat`、`legend:` 行で凡例）
  *  - `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
  *  - `::: html` 〜 `:::` の生 HTML / SVG 埋め込み（script・iframe・style・イベント属性は除去）
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
@@ -268,6 +273,10 @@ export function isMockupSrc(src: string): boolean {
   return /^(https?:\/\/[^\s/?#]+|\/(?![/\\])\S+)/i.test(src);
 }
 
+type FigureStepData = { text: string; tone: StepTone };
+type BeforeAfterRow = { kind: "before" | "after"; steps: FigureStepData[]; note: string };
+type BarsRow = { label: string; sub: string; width: number; display: string; tone: BarTone };
+
 type Block =
   | { type: "h1"; content: string }
   | { type: "h2"; content: string }
@@ -283,7 +292,11 @@ type Block =
   | { type: "flowchart"; id: string }
   | { type: "workcard"; id: string }
   | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null }
-  | { type: "card"; title: string; body: string }
+  | { type: "card"; title: string; body: string; tone: "default" | "accent" }
+  | { type: "figure"; title: string; lead: string; body: string }
+  | { type: "beforeAfter"; tag: string; title: string; rows: BeforeAfterRow[] }
+  | { type: "flow"; label: string; steps: string[]; highlight: number }
+  | { type: "bars"; rows: BarsRow[]; base: number | null; legend: string }
   | { type: "html"; content: string }
   | { type: "grid"; cols: number; gap: number; cells: string[] }
   | { type: "tableKeyValue"; rows: { label: string; value: string }[] }
@@ -302,10 +315,10 @@ const isTableSeparator = (line: string) => {
 };
 
 /**
- * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card / html）。深さの数え上げに使う。
+ * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card / html / figure / beforeafter / flow / bars）。深さの数え上げに使う。
  * 下の gridOpen / cardOpen と同じ条件にそろえる（\b だと `::: card見出し` も数えてしまい、閉じが見つからず後続を飲み込む）
  */
-const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$)|html\s*$)/;
+const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$)|html\s*$|(?:figure|beforeafter|flow|bars)(?:\s|$))/;
 // コードブロックの開き（``` で始まり、以降にバッククォートを含まない行。info string 付きも可）と閉じ（``` だけの行）
 const FENCE_OPEN = /^```([^`]*)$/;
 const FENCE_CLOSE = /^```\s*$/;
@@ -357,6 +370,132 @@ function sanitizeHtmlOnce(html: string): string {
     );
 }
 
+type LeafKind = "beforeafter" | "flow" | "bars";
+
+/** 各図版ブロックが自分の中身として認める行（空行は常に可） */
+const LEAF_LINE: Record<LeafKind, RegExp> = {
+  flow: /^\s*[-*+]\s+/,
+  bars: /^(?:\s*[-*+]\s+|\s*legend\s*[:：])/i,
+  beforeafter: /^\s*(?:before|after|note)\s*[:：]/i,
+};
+
+/**
+ * 図版ブロック（beforeafter / flow / bars）の開き行の次（start）から、中身の行を集める。
+ * 自分の行の形でも空行でも `:::` でもない行が来たらそこで終わる（閉じ忘れで後続の本文を飲み込まない）。
+ * 止まった行が `:::` ならそれを閉じとして消費し、そうでなければその行は通常のパースに残す。next は次に読む行
+ */
+function takeLeafBlock(lines: string[], start: number, kind: LeafKind): { body: string[]; next: number; closed: boolean } {
+  const body: string[] = [];
+  let i = start;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (BLOCK_CLOSE.test(l)) return { body, next: i + 1, closed: true };
+    if (l.trim() !== "" && !LEAF_LINE[kind].test(l)) break;
+    body.push(l);
+    i++;
+  }
+  return { body, next: i, closed: false };
+}
+
+/**
+ * card / grid / figure の閉じ探しで、NESTABLE_OPEN に一致した行が「閉じ `:::` を持つ入れ子」かどうか。
+ * 図版ブロックは閉じ忘れだと閉じを持たないので、深さを増やさない（増やすと外側の閉じを取ってしまう）
+ */
+function opensNested(lines: string[], idx: number): boolean {
+  const leaf = lines[idx].match(/^:::\s*(beforeafter|flow|bars)(?:\s|$)/);
+  return leaf ? takeLeafBlock(lines, idx + 1, leaf[1] as LeafKind).closed : true;
+}
+
+/** `a | b` を最初の | または ｜（全角）で左右に分ける（無ければ right は空） */
+function splitFirstPipe(text: string): [string, string] {
+  const idx = text.search(/[|｜]/);
+  return idx === -1 ? [text.trim(), ""] : [text.slice(0, idx).trim(), text.slice(idx + 1).trim()];
+}
+
+/** 手順を `→` で分ける（[ ] の中の → では分けない） */
+function splitSteps(text: string): FigureStepData[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of text) {
+    if (ch === "[") depth++;
+    else if (ch === "]") depth = Math.max(0, depth - 1);
+    if (ch === "→" && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return parts
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      const m = p.match(/^\[([!+])([\s\S]*)\]$/);
+      return m ? { text: m[2].trim(), tone: m[1] === "!" ? "bad" : "good" } : { text: p, tone: "default" };
+    });
+}
+
+/** `::: beforeafter` の中身（before: / after: 行と、直前の行に付く note: 行） */
+function parseBeforeAfter(body: string[]): BeforeAfterRow[] {
+  const rows: BeforeAfterRow[] = [];
+  for (const raw of body) {
+    const line = raw.trim();
+    const row = line.match(/^(before|after)\s*[:：]\s*(.*)$/i);
+    if (row) {
+      const steps = splitSteps(row[2]);
+      if (steps.length > 0) rows.push({ kind: row[1].toLowerCase() === "after" ? "after" : "before", steps, note: "" });
+      continue;
+    }
+    const note = line.match(/^note\s*[:：]\s*(.*)$/i);
+    if (note && rows.length > 0 && note[1]) {
+      const last = rows[rows.length - 1];
+      last.note = last.note ? `${last.note}\n${note[1]}` : note[1];
+    }
+  }
+  return rows;
+}
+
+const clampPct = (n: number) => (Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0);
+
+/** `::: bars` の中身（`- ラベル | 補助 | 値 | 表示文 | 色` 行と `legend:` 行）と、開き行の base / max */
+function parseBars(rest: string, body: string[]): { rows: BarsRow[]; base: number | null; legend: string } {
+  const attr = (name: string) => {
+    const m = rest.match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*(-?\\d+(?:\\.\\d+)?)`));
+    return m ? parseFloat(m[1]) : null;
+  };
+  const base = attr("base");
+  const maxAttr = attr("max");
+  let legend = "";
+  const raw: { label: string; sub: string; value: number; display: string; tone: BarTone }[] = [];
+  for (const l of body) {
+    const legendMatch = l.trim().match(/^legend\s*[:：]\s*(.*)$/i);
+    if (legendMatch) {
+      legend = legendMatch[1].trim();
+      continue;
+    }
+    const item = l.match(/^\s*[-*+]\s+(.*)$/);
+    if (!item) continue;
+    const [label = "", sub = "", valueText = "", display = "", tone = ""] = item[1].split(/[|｜]/).map((c) => c.trim());
+    const value = valueText !== "" && Number.isFinite(Number(valueText)) ? Number(valueText) : 0;
+    raw.push({
+      label,
+      sub,
+      value,
+      display: display || valueText,
+      tone: tone === "up" || tone === "down" ? tone : "flat",
+    });
+  }
+  const max = maxAttr !== null && maxAttr > 0 ? maxAttr : Math.max(...raw.map((r) => r.value), base ?? 0);
+  const pct = (n: number) => (max > 0 ? clampPct((n / max) * 100) : 0);
+  return {
+    rows: raw.map((r) => ({ label: r.label, sub: r.sub, width: pct(r.value), display: r.display, tone: r.tone })),
+    base: base === null ? null : pct(base),
+    legend,
+  };
+}
+
 function parseBlocks(src: string): Block[] {
   const lines = src.split("\n");
   const blocks: Block[] = [];
@@ -368,7 +507,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     FENCE_OPEN.test(line) ||
-    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption|html)\b/.test(line) ||
+    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption|html|figure|beforeafter|flow|bars)\b/.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
     /^!\[[^\]]*\]\([^)\s]+\)(\{[^}]*\})?\s*$/.test(line.trim());
@@ -447,6 +586,37 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
 
+    // 図版（Before/After・横フロー・横棒グラフ）: 開き 〜 最初の閉じ ::: までを行単位で読む（入れ子は無い）
+    const figureOpen = line.match(/^:::\s*(beforeafter|flow|bars)(?:\s+(.*))?$/);
+    if (figureOpen) {
+      const rest = (figureOpen[2] ?? "").trim();
+      const { body, next } = takeLeafBlock(lines, i + 1, figureOpen[1] as LeafKind);
+      i = next;
+      if (figureOpen[1] === "beforeafter") {
+        const [tag, title] = splitFirstPipe(rest);
+        blocks.push({
+          type: "beforeAfter",
+          tag: title ? tag : "",
+          title: title || tag,
+          rows: parseBeforeAfter(body),
+        });
+      } else if (figureOpen[1] === "flow") {
+        const steps = body.map((l) => l.match(/^\s*[-*+]\s+(.*)$/)?.[1].trim() ?? "").filter(Boolean);
+        // highlight=… は値が不正でもラベルに残さず取り除き、不正なら既定（最後）にする
+        const hl = rest.match(/(?:^|\s)highlight\s*=\s*(\S*)/);
+        const n = hl && /^\d+$/.test(hl[1]) ? parseInt(hl[1], 10) : steps.length;
+        blocks.push({
+          type: "flow",
+          label: rest.replace(/(?:^|\s)highlight\s*=\s*\S*/, "").trim(),
+          steps,
+          highlight: n >= 1 && n <= steps.length ? n - 1 : -1,
+        });
+      } else {
+        blocks.push({ type: "bars", ...parseBars(rest, body) });
+      }
+      continue;
+    }
+
     // コードブロック（閉じ ``` が無ければ末尾まで）
     const codeOpen = line.match(FENCE_OPEN);
     if (codeOpen) {
@@ -475,7 +645,8 @@ function parseBlocks(src: string): Block[] {
     }
 
     // 汎用カード: ::: card 見出し 〜 :::（ネストした grid / card の入れ子を数えて閉じを探す）
-    const cardOpen = line.match(/^:::\s*card(?:\s+(.*))?$/);
+    // 図版の枠 ::: figure 見出し | 補足文 〜 ::: も同じ閉じ探し（中身は任意の本文 markdown）
+    const cardOpen = line.match(/^:::\s*(card|figure)(?:\s+(.*))?$/);
     if (cardOpen) {
       const buf: string[] = [];
       let depth = 0;
@@ -500,7 +671,7 @@ function parseBlocks(src: string): Block[] {
         } else if (BLOCK_CLOSE.test(lines[i])) {
           if (depth === 0) break;
           depth--;
-        } else if (NESTABLE_OPEN.test(lines[i])) {
+        } else if (NESTABLE_OPEN.test(lines[i]) && opensNested(lines, i)) {
           depth++;
           inHtml = HTML_BLOCK_OPEN.test(lines[i]);
         }
@@ -508,10 +679,19 @@ function parseBlocks(src: string): Block[] {
         i++;
       }
       i++; // closing :::（EOF で閉じが無いときは末尾を越えるだけ）
+      const rest = (cardOpen[2] ?? "").trim();
+      if (cardOpen[1] === "figure") {
+        const [title, lead] = splitFirstPipe(rest);
+        blocks.push({ type: "figure", title, lead, body: buf.join("\n").trim() });
+        continue;
+      }
+      // tone=accent は見出しの先頭にあるときだけ読む（それ以外は従来どおり見出しの文字）
+      const accent = rest.match(/^tone=accent(?:\s+(.*))?$/);
       blocks.push({
         type: "card",
-        title: (cardOpen[1] ?? "").trim(),
+        title: accent ? (accent[1] ?? "").trim() : rest,
         body: buf.join("\n").trim(),
+        tone: accent ? "accent" : "default",
       });
       continue;
     }
@@ -556,7 +736,7 @@ function parseBlocks(src: string): Block[] {
           if (depth === 0) break;
           depth--;
           buf.push(lines[i]);
-        } else if (NESTABLE_OPEN.test(lines[i])) {
+        } else if (NESTABLE_OPEN.test(lines[i]) && opensNested(lines, i)) {
           depth++;
           inHtml = HTML_BLOCK_OPEN.test(lines[i]);
           buf.push(lines[i]);
@@ -716,8 +896,12 @@ function groupImageText(blocks: Block[]): Block[] {
  * ブロック描画
  * ------------------------------------------------------------------ */
 
+/** `::: figure` の内側かどうか（段落・リスト・カードを図版向けの小さい文字にする） */
+const InFigureContext = createContext(false);
+
 function RenderBlock({ block, idx }: { block: Block; idx: number }) {
   const k = `b-${idx}`;
+  const inFigure = useContext(InFigureContext);
   switch (block.type) {
     case "h1":
       return (
@@ -739,7 +923,9 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "paragraph":
       return (
-        <p className="mb-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
+        <p
+          className={`mb-6 text-fg ${inFigure ? "text-body-02-jp" : "text-[15px] leading-[24px] tracking-[0.45px]"}`}
+        >
           {renderInline(block.content, k)}
         </p>
       );
@@ -776,7 +962,11 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "ul":
       return (
-        <ul className="mb-4 list-disc space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg marker:text-fg-muted">
+        <ul
+          className={`mb-4 list-disc pl-6 marker:text-fg-muted ${
+            inFigure ? "text-body-03-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
+          }`}
+        >
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -784,7 +974,11 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "ol":
       return (
-        <ol className="mb-4 list-decimal space-y-1 pl-6 text-[15px] leading-[24px] tracking-[0.45px] text-fg marker:text-fg-muted">
+        <ol
+          className={`mb-4 list-decimal pl-6 marker:text-fg-muted ${
+            inFigure ? "text-body-03-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
+          }`}
+        >
           {block.items.map((it, i) => (
             <li key={i}>{renderInlineLine(it, `${k}-li${i}`)}</li>
           ))}
@@ -817,9 +1011,64 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "card":
       return (
         <div className="mb-4 mt-10">
-          <InfoCard title={block.title ? renderInline(block.title, `${k}-ct`) : undefined}>
+          <InfoCard title={block.title ? renderInline(block.title, `${k}-ct`) : undefined} tone={block.tone} inFigure={inFigure}>
             <MarkdownBody md={block.body} />
           </InfoCard>
+        </div>
+      );
+    case "figure":
+      return (
+        <div className="mb-4 mt-10">
+          <FigureFrame
+            title={block.title ? renderInline(block.title, `${k}-ft`) : undefined}
+            lead={block.lead ? renderInline(block.lead, `${k}-fl`) : undefined}
+          >
+            {block.body ? <MarkdownBody md={block.body} compact /> : null}
+          </FigureFrame>
+        </div>
+      );
+    case "beforeAfter":
+      return (
+        <div className="mb-4 mt-10">
+          <BeforeAfter
+            tag={block.tag ? renderInline(block.tag, `${k}-bt`) : undefined}
+            title={block.title ? renderInline(block.title, `${k}-bn`) : undefined}
+            rows={block.rows.map((r, ri) => ({
+              kind: r.kind,
+              steps: r.steps.map((s, si) => ({ content: renderInline(s.text, `${k}-bs${ri}-${si}`), tone: s.tone })),
+              note: r.note ? renderInline(r.note, `${k}-bo${ri}`) : undefined,
+            }))}
+          />
+        </div>
+      );
+    case "flow":
+      if (block.steps.length === 0) return null;
+      return (
+        <div className="mb-4 mt-10">
+          <FlowSteps
+            label={block.label ? renderInline(block.label, `${k}-fx`) : undefined}
+            steps={block.steps.map((s, si) => ({
+              content: renderInline(s, `${k}-fs${si}`),
+              tone: si === block.highlight ? "good" : "default",
+            }))}
+          />
+        </div>
+      );
+    case "bars":
+      if (block.rows.length === 0) return null;
+      return (
+        <div className="mb-4 mt-10">
+          <BarChart
+            rows={block.rows.map((r, ri) => ({
+              label: renderInline(r.label, `${k}-ba${ri}`),
+              sub: r.sub ? renderInline(r.sub, `${k}-bb${ri}`) : undefined,
+              width: r.width,
+              display: renderInline(r.display, `${k}-bd${ri}`),
+              tone: r.tone,
+            }))}
+            base={block.base}
+            legend={block.legend ? renderInline(block.legend, `${k}-bl`) : undefined}
+          />
         </div>
       );
     case "tableKeyValue":
@@ -860,15 +1109,24 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
 }
 
 /** 本文 markdown を描画する（flow-root で float 画像を内包し回り込みを成立させる） */
-export const MarkdownBody: FC<{ md: string }> = ({ md }) => {
+export const MarkdownBody: FC<{ md: string; compact?: boolean }> = ({ md, compact }) => {
+  const inFigure = useContext(InFigureContext);
   const blocks = groupImageText(parseBlocks(md));
   // flow-root の先頭ブロックの mt（ブロック区切り 40）はセクション gap が担うため打ち消す。
   // 末尾ブロックの mb はセクション間 gap / カラム下端 padding が担うため打ち消す
   return (
-    <div style={{ display: "flow-root" }} className="@container [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-      {blocks.map((b, i) => (
-        <RenderBlock key={i} block={b} idx={i} />
-      ))}
+    <div
+      style={{ display: "flow-root" }}
+      // compact（図版の枠の中）はブロック間を一律 20px にして、各ブロック固有の上下余白（mt-10 など）を打ち消す
+      className={`@container [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 ${
+        compact ? "[&>*]:mt-0! [&>*]:mb-5! [&>*:last-child]:mb-0!" : ""
+      }`}
+    >
+      <InFigureContext.Provider value={compact || inFigure}>
+        {blocks.map((b, i) => (
+          <RenderBlock key={i} block={b} idx={i} />
+        ))}
+      </InFigureContext.Provider>
     </div>
   );
 };
@@ -915,7 +1173,7 @@ export const WorkSections: FC<{
           if (!map.has(block.id)) map.set(block.id, map.size + 1);
         } else if (block.type === "grid") {
           block.cells.forEach(collect);
-        } else if (block.type === "card") {
+        } else if (block.type === "card" || block.type === "figure") {
           collect(block.body);
         }
       }

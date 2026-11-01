@@ -21,7 +21,7 @@ import { container, type DeviceMode } from "@/lib/design-tokens";
  * - 生 Markdown の textarea ＋ ツールバー ＋ 編集 / 分割 / プレビュー の3モード
  * - プレビューは公開側と同一の共有レンダラ（WorkMarkdownDocument）で描画
  * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
- * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから、生 HTML / SVG（`::: html`）は HTML ダイアログから
+ * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから、生 HTML / SVG（`::: html`）は HTML ダイアログから、図版（`::: figure` / `beforeafter` / `flow` / `bars`）は図版ダイアログ（雛形を挿入して本文欄で書き換える）から
  * - 分割表示では本文欄とプレビューのスクロール位置を割合で連動する
  * - 画像は本文欄への貼り付けでもアップロードできる（onUploadImage を渡した場合）。貼り付け画像は画像ダイアログ（配置・横幅・倍率）を経て挿入する
  *   貼り付け時は本文に仮の行（![画像をアップロード中…](uploading)）を置き、挿入時にその行を置き換える（キャンセル・失敗時は除去）。
@@ -308,7 +308,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   const syncLock = useRef<HTMLElement | null>(null);
   // 直近に確認したプレビューのスクロール可能量。変わっていたら高さの変化によるブラウザの位置切り詰めとみなす
   const previewMax = useRef<number | null>(null);
-  const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table" | "card" | "mockup" | "html">(null);
+  const [dialog, setDialog] = useState<null | "link" | "image" | "grid" | "table" | "card" | "mockup" | "html" | "figure">(null);
   const [linkLabel, setLinkLabel] = useState("");
   // リンクの挿入先。ダイアログ表示中に textarea の選択がブラウザ側で変わっても影響されないよう、ボタン押下時に記録する
   const [linkRange, setLinkRange] = useState({ start: 0, end: 0 });
@@ -578,6 +578,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           <TBtn label="カード" title="見出し＋本文のカードを挿入" onClick={() => setDialog("card")} />
           <TBtn label="モックアップ" title="スマホ / ノートPC のモックアップ枠にスクリーンショットを入れて挿入" onClick={() => setDialog("mockup")} />
           <TBtn label="HTML" title="HTML / SVG をそのまま埋め込む（::: html ブロック）" onClick={() => setDialog("html")} />
+          <TBtn label="図版" title="図版の枠 / 横フロー / Before・After / 横棒グラフの雛形を挿入" onClick={() => setDialog("figure")} />
           {onPickFlowchart && (
             <TBtn
               label="フローチャート"
@@ -708,6 +709,7 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
       {dialog === "table" && <TableDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "card" && <CardDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "html" && <HtmlDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
+      {dialog === "figure" && <FigureDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} />}
       {dialog === "mockup" && <MockupDialog onClose={() => setDialog(null)} onInsert={(md) => insertLine(md)} onPickImage={onPickImage} />}
     </div>
   );
@@ -1051,6 +1053,88 @@ function CardDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
       <div>
         <DLabel>本文（Markdown）</DLabel>
         <textarea className={`${dInput} min-h-[120px] resize-y`} value={body} onChange={(e) => setBody(e.target.value)} placeholder="本文" />
+      </div>
+    </DialogShell>
+  );
+}
+
+/* ─── 図版ダイアログ ─────────────────────────────── */
+
+const FIGURE_TEMPLATES = [
+  {
+    key: "frame",
+    label: "図版の枠",
+    hint: "見出し・補足文つきの枠。中に表・リスト・カードなど任意の本文を入れられる",
+    md: "\n::: figure 見出し | 補足文\n本文（表・リスト・他のブロックも入れられます）\n::: caption 出典など\n:::\n",
+  },
+  {
+    key: "flow",
+    label: "横フロー",
+    hint: "手順を横に並べる。highlight=N で N 番目を強調（省略=最後、0=なし）",
+    md: "\n::: flow ラベル highlight=3\n- 手順1\n- 手順2\n- 手順3\n:::\n",
+  },
+  {
+    key: "beforeafter",
+    label: "Before・After",
+    hint: "→ で手順を区切る。[!…] = 悪い手順、[+…] = 良い手順。note: が直前の行の注記",
+    md: "\n::: beforeafter 施策① | タイトル\nbefore: 手順A → 手順B → [!つまずく手順] → 手順D\nnote: 離脱が多い理由\nafter: 手順A → [+直接つながる手順]\nnote: 改善した点\n:::\n",
+  },
+  {
+    key: "bars",
+    label: "横棒グラフ",
+    hint: "行は「ラベル | 補助 | 値 | 表示文 | up/down/flat」。base= で白い基準線、max= で右端の値",
+    md: "\n::: bars base=1.0 max=1.4\n- 項目A | 補助文 | 1.3 | 約1.3倍 | up\n- 項目B |  | 0.9 | 約0.9倍\n- 項目C | 補助文 | 0.7 | 約0.7倍 | down\nlegend: 白線＝基準の水準\n:::\n",
+  },
+] as const;
+
+function FigureDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md: string) => void }) {
+  const [kind, setKind] = useState<(typeof FIGURE_TEMPLATES)[number]["key"]>("frame");
+  const current = FIGURE_TEMPLATES.find((t) => t.key === kind) ?? FIGURE_TEMPLATES[0];
+  return (
+    <DialogShell
+      title="図版を挿入"
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className={dBtnGhost} onClick={onClose}>キャンセル</button>
+          <button
+            type="button"
+            className={dBtnPrimary}
+            onClick={() => {
+              onInsert(current.md);
+              onClose();
+            }}
+          >
+            挿入
+          </button>
+        </>
+      }
+    >
+      <div>
+        <DLabel>種類</DLabel>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {FIGURE_TEMPLATES.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setKind(t.key)}
+              className={`rounded-[6px] border px-2.5 py-1 text-[11px] transition-colors ${
+                kind === t.key
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border-light text-fg-muted hover:text-white"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-fg-muted">{current.hint}</p>
+      </div>
+      <div>
+        <DLabel>挿入される雛形</DLabel>
+        <pre className="overflow-x-auto whitespace-pre rounded-[6px] border border-border-light bg-surface p-2 font-mono text-[11px] text-fg-muted">
+          {current.md.trim()}
+        </pre>
       </div>
     </DialogShell>
   );

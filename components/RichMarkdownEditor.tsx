@@ -1148,9 +1148,9 @@ function HtmlDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (md:
   const submit = () => {
     const html = value.trim();
     if (!html) return;
-    // 行頭が「:::」だけの行や「# 」は本文の区切り（ブロックの閉じ・セクション分割）と衝突する
-    if (/^(?::::\s*$|# )/m.test(html)) {
-      setError("行頭が「:::」だけの行、または「# 」で始まる行は本文の区切りと衝突するため挿入できません。該当行を書き換えてください。");
+    // 行頭が「:::」だけの行はブロックの閉じと衝突する（`# ` 行はセクション分割が html ブロックを追跡するので問題ない）
+    if (/^:::\s*$/m.test(html)) {
+      setError("行頭が「:::」だけの行はブロックの閉じと衝突するため挿入できません。該当行を書き換えてください。");
       return;
     }
     onInsert(`\n::: html\n${html}\n:::\n`);

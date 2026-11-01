@@ -351,6 +351,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          note: string | null
           sort_order: number
         }
         Insert: {
@@ -358,6 +359,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
+          note?: string | null
           sort_order?: number
         }
         Update: {
@@ -365,6 +367,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+          note?: string | null
           sort_order?: number
         }
         Relationships: []
@@ -489,18 +492,24 @@ export type Database = {
       work_stakeholder_counts: {
         Row: {
           headcount: number
+          note: string | null
+          org: string | null
           role_id: string
           sort_order: number
           work_id: string
         }
         Insert: {
           headcount: number
+          note?: string | null
+          org?: string | null
           role_id: string
           sort_order?: number
           work_id: string
         }
         Update: {
           headcount?: number
+          note?: string | null
+          org?: string | null
           role_id?: string
           sort_order?: number
           work_id?: string
@@ -686,6 +695,10 @@ export type Database = {
       }
       set_stakeholder_group_icon: {
         Args: { p_icon?: string; p_id: string }
+        Returns: undefined
+      }
+      set_stakeholder_group_note: {
+        Args: { p_id: string; p_note?: string }
         Returns: undefined
       }
     }

@@ -31,7 +31,7 @@ const HEADING: Record<WorkVizModalProps["kind"], string> = {
 };
 
 const WorkVizModal: FC<WorkVizModalProps> = ({ kind, timeline, period, stakeholders, onClose }) => (
-  <Modal onClose={onClose} width={kind === "stakeholders" ? "content" : "full"}>
+  <Modal onClose={onClose} width="full">
     {/* Slot（Figma I839:3764;120:367）: gap-16 / p-40 */}
     <div className="flex flex-col gap-4 p-10">
       {/* 見出し Afacad Bold 20px / 行間 150% / 字間 5%・色 #9E9E9E */}

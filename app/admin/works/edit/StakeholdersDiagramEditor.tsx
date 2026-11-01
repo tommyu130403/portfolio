@@ -13,7 +13,7 @@ const smallButton =
 
 type NewGroupDraft = { name: string; icon: IconValue | null };
 
-/** 関係者図の表示と、役割ごとのグループ・役職の設定（役割マスタへ即時保存） */
+/** 関係者図の表示と、役割ごとのグループ（層）の設定（役割マスタへ即時保存） */
 export default function StakeholdersDiagramEditor({
   data,
   workRoles,
@@ -21,7 +21,6 @@ export default function StakeholdersDiagramEditor({
   iconCatalog,
   disabled,
   onSetGroup,
-  onSetTitled,
   onCreateGroup,
 }: {
   data: StakeholdersData | null;
@@ -30,7 +29,6 @@ export default function StakeholdersDiagramEditor({
   iconCatalog: IconCatalog;
   disabled: boolean;
   onSetGroup: (roleId: string, groupId: string | null) => void;
-  onSetTitled: (roleId: string, next: boolean) => void;
   onCreateGroup: (roleId: string, name: string, icon: string | null) => Promise<boolean>;
 }) {
   const [drafts, setDrafts] = useState<Record<string, NewGroupDraft>>({});
@@ -85,15 +83,6 @@ export default function StakeholdersDiagramEditor({
                     </option>
                   ))}
                 </select>
-                <label className="flex shrink-0 items-center gap-1 text-[11px] text-fg-muted">
-                  <input
-                    type="checkbox"
-                    checked={r.is_titled}
-                    disabled={disabled}
-                    onChange={(e) => onSetTitled(r.id, e.target.checked)}
-                  />
-                  役職
-                </label>
                 {!r.group_id && (
                   <div className="flex w-full flex-wrap items-center gap-2">
                     <div className="w-[200px]">
@@ -129,7 +118,7 @@ export default function StakeholdersDiagramEditor({
       )}
 
       <p className="text-[11px] text-fg-muted">
-        グループと役職は役割マスタの設定です。変更はすぐ保存され、同じ役割を使う他の作品の図にも反映されます
+        グループ（層）は役割マスタの設定です。変更はすぐ保存され、同じ役割を使う他の作品の図にも反映されます
       </p>
     </div>
   );

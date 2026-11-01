@@ -15,6 +15,7 @@ import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 import TabBar from "@/components/TabBar";
 import WorkCard from "@/components/WorkCard";
 import InfoCard from "@/components/InfoCard";
+import { MarkdownBody } from "@/components/WorkMarkdown";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
 import WorkThumbnail from "@/components/WorkThumbnail";
@@ -47,6 +48,36 @@ const SAMPLE_THUMBNAILS: WorkThumbnailData[] = [
 ];
 const SAMPLE_THUMB_TITLE = "キャリアチケットスカウトサービスの立ち上げ";
 const SAMPLE_THUMB_SERVICE = "Career Ticket";
+const FIGURE_SAMPLE_MD = `::: figure 図版の枠の見出し | 補足文はここに入ります
+::: beforeafter 施策① | 導線の見直し
+before: スカウトを受信 → サービス LP → [!新規登録（情報を再入力）] → 予約
+note: LP → 登録で大半のユーザーが離脱
+after: 送客スカウトを受信 → [+送客 URL から予約ページへ直接]
+note: LP と再登録をスキップ
+:::
+::: flow 送客フロー highlight=3
+- 対象を抽出
+- スカウトを一括送信
+- 予約ページへ直接遷移
+:::
+::: bars base=1.0 max=1.4
+- 優先度 4 | 最もアクティブ | 1.3 | 約1.3倍 | up
+- 優先度 3 |  | 0.9 | 約0.9倍
+- 優先度 2 | 非アクティブ中心 | 0.7 | 約0.7倍 | down
+legend: 白線＝リリース前の水準
+:::
+::: grid cols=2
+::: card 考察
+通常のカード。
+:::
+---
+::: card tone=accent 次の一手
+強調カード（tone=accent）。
+:::
+:::
+::: caption 出典: サンプル
+:::
+`;
 
 // Works 詳細ページのプレビュー用サンプルデータ
 const SAMPLE_WORK_DETAIL = {
@@ -1163,6 +1194,18 @@ function ComponentsSection() {
             <InfoCard>
               <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">見出しなしのカード。</p>
             </InfoCard>
+            <InfoCard title="tone=accent（次の一手など）" tone="accent">
+              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">Border/Main・main-100 の薄い地・見出しは primary。`::: card tone=accent 見出し` で書く。</p>
+            </InfoCard>
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkFigure（図版ブロック）"
+          description="作品本文の `::: figure`（枠。panel 地 system-900・角丸 16・中に任意の本文ブロック）/ `::: beforeafter`（Before/After の箱。After は Border/Main。悪い手順 danger・良い手順 main-100 地）/ `::: flow`（横フロー。highlight=N で強調）/ `::: bars`（横棒グラフ。up=secondary・down=danger-500・flat=system-750、base= で白い基準線）と、`::: card tone=accent`。560px 未満（本文コンテナ幅）はステップが縦積み（矢印 ↓）になる。Figma 未作成(実装先行・Claude Design の図版案に準拠)"
+        >
+          <div className="w-[704px] max-w-full">
+            <MarkdownBody md={FIGURE_SAMPLE_MD} />
           </div>
         </ComponentPreview>
 

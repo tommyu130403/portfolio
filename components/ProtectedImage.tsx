@@ -6,6 +6,8 @@ import { supabase } from "@/src/lib/supabase";
 
 type ProtectedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src: string;
+  /** 表示できない状態（権限なし・署名失敗・読み込み失敗）に入った / 抜けたときに呼ぶ。代わりの表示に切り替える用 */
+  onUnavailableChange?: (unavailable: boolean) => void;
 };
 
 const BUCKET = "Portfolio";
@@ -35,7 +37,7 @@ function classifySource(src: string): { protected: boolean; path: string | null 
   }
 }
 
-export default function ProtectedImage({ src, alt = "", ...props }: ProtectedImageProps) {
+export default function ProtectedImage({ src, alt = "", onUnavailableChange, onError, ...props }: ProtectedImageProps) {
   const { accessRole } = useAuth();
   const source = classifySource(src);
   const path = source.path;
@@ -45,6 +47,7 @@ export default function ProtectedImage({ src, alt = "", ...props }: ProtectedIma
   const [refresh, setRefresh] = useState(0);
   const [signed, setSigned] = useState<{ source: string; url: string; expiresAt: number } | null>(null);
   const [signFailure, setSignFailure] = useState<string | null>(null);
+  const [loadErrorSrc, setLoadErrorSrc] = useState<string | null>(null);
 
   useEffect(() => {
     if (!source.protected || !imageRef.current) return;
@@ -105,6 +108,33 @@ export default function ProtectedImage({ src, alt = "", ...props }: ProtectedIma
     ? (mayRead && signed?.source === src ? signed.url : undefined)
     : src || undefined;
   const failed = source.protected && signFailure === src && !renderSrc;
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img {...props} ref={imageRef} src={renderSrc} alt={failed ? `${alt || "画像"}を表示できません` : alt} title={failed ? "画像を表示できません。再試行中です" : props.title} />;
+  // 権限の判定中（loading）と署名待ちは「まだ」であって表示不可ではない
+  const unavailable =
+    (source.protected && accessRole !== "loading" && !mayRead) ||
+    failed ||
+    (!source.protected && !renderSrc) ||
+    (!!renderSrc && loadErrorSrc === renderSrc);
+  // 画面の処理が動く前に読み込みが失敗し終わっていると onError が届かないため、描画後にも確かめる
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!renderSrc || !image?.complete || image.naturalWidth > 0) return;
+    let active = true;
+    queueMicrotask(() => { if (active) setLoadErrorSrc(renderSrc); });
+    return () => { active = false; };
+  }, [renderSrc]);
+  const onUnavailableChangeRef = useRef(onUnavailableChange);
+  useEffect(() => { onUnavailableChangeRef.current = onUnavailableChange; });
+  useEffect(() => { onUnavailableChangeRef.current?.(unavailable); }, [unavailable]);
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      {...props}
+      ref={imageRef}
+      src={renderSrc}
+      alt={failed ? `${alt || "画像"}を表示できません` : alt}
+      title={failed ? "画像を表示できません。再試行中です" : props.title}
+      onError={(e) => { setLoadErrorSrc(renderSrc ?? null); onError?.(e); }}
+    />
+  );
 }

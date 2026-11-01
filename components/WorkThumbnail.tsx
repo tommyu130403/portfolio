@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type FC } from "react";
+import { useState, type CSSProperties, type FC } from "react";
 import ProtectedImage from "./ProtectedImage";
 import type { ThumbnailLayout } from "@/lib/work-content";
 
@@ -94,35 +94,25 @@ const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
 
 /** ロゴがあればロゴ画像だけ、無ければサービス名だけを出す。
  * ロゴは高さを揃えて幅は比率なり（欄の幅を超えたら縮める）にし、見切れさせない。
- * ロゴは読み込めるまで隠してサービス名を出しておく（URL の署名失敗・画像切れでも名前が残る） */
+ * ロゴを表示できないとき（権限なし・署名失敗・画像切れ）はサービス名に切り替える。
+ * ロゴは隠しても残しておき、ProtectedImage の再試行で表示できたら戻す */
 const Brand: FC<{ logoUrl: string | null; serviceName: string; logoHeight: number; fontSize: number }> = ({
   logoUrl,
   serviceName,
   logoHeight,
   fontSize,
 }) => {
-  const boxRef = useRef<HTMLSpanElement>(null);
-  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
-  const showLogo = logoUrl !== null && loadedUrl === logoUrl;
-
-  /* 描画前に読み込みが済んでいると onLoad が来ないため、既に読めているかも見る */
-  useEffect(() => {
-    const img = boxRef.current?.querySelector("img");
-    if (!logoUrl || !img?.complete || img.naturalWidth === 0) return;
-    let active = true;
-    queueMicrotask(() => { if (active) setLoadedUrl(logoUrl); });
-    return () => { active = false; };
-  }, [logoUrl]);
+  const [unavailableUrl, setUnavailableUrl] = useState<string | null>(null);
+  const showLogo = logoUrl !== null && unavailableUrl !== logoUrl;
 
   return (
-    <span ref={boxRef} className="contents">
+    <>
       {logoUrl && (
         <ProtectedImage
           src={logoUrl}
           alt=""
           draggable={false}
-          onLoad={() => setLoadedUrl(logoUrl)}
-          onError={() => setLoadedUrl(null)}
+          onUnavailableChange={(unavailable) => setUnavailableUrl(unavailable ? logoUrl : null)}
           className={showLogo ? "block w-auto max-w-full object-contain object-left" : "invisible absolute w-auto"}
           style={{ height: u(logoHeight) }}
         />
@@ -135,7 +125,7 @@ const Brand: FC<{ logoUrl: string | null; serviceName: string; logoHeight: numbe
           {serviceName}
         </p>
       )}
-    </span>
+    </>
   );
 };
 

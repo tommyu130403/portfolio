@@ -42,6 +42,8 @@ const SAMPLE_THUMBNAILS: WorkThumbnailData[] = [
   { layout: "a2", logo_url: null, desktop_url: THUMB_SHOT_DESKTOP, mobile_urls: [], capture_urls: [] },
   { layout: "a3", logo_url: null, desktop_url: null, mobile_urls: [THUMB_SHOT_MOBILE, ""], capture_urls: [] },
   { layout: "d", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [THUMB_SHOT_DESKTOP, THUMB_SHOT_DESKTOP] },
+  /* d で資料が 1 枚だけのとき（右に大きく 1 枚） */
+  { layout: "d", logo_url: THUMB_LOGO, desktop_url: null, mobile_urls: [], capture_urls: ["", THUMB_SHOT_DESKTOP] },
 ];
 const SAMPLE_THUMB_TITLE = "キャリアチケットスカウトサービスの立ち上げ";
 const SAMPLE_THUMB_SERVICE = "Career Ticket";
@@ -1116,8 +1118,8 @@ function ComponentsSection() {
         >
           <div className="flex w-full flex-col gap-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {SAMPLE_THUMBNAILS.map((t) => (
-                <div key={t.layout} className="relative aspect-video w-[339px] max-w-full overflow-hidden rounded-[14px]">
+              {SAMPLE_THUMBNAILS.map((t, i) => (
+                <div key={i} className="relative aspect-video w-[339px] max-w-full overflow-hidden rounded-[14px]">
                   <WorkThumbnail
                     layout={t.layout}
                     logoUrl={t.logo_url}
@@ -1131,8 +1133,8 @@ function ComponentsSection() {
               ))}
             </div>
             <div className="flex gap-4">
-              {SAMPLE_THUMBNAILS.map((t) => (
-                <div key={t.layout} className="relative aspect-video w-[128px] overflow-hidden">
+              {SAMPLE_THUMBNAILS.map((t, i) => (
+                <div key={i} className="relative aspect-video w-[128px] overflow-hidden">
                   <WorkThumbnail
                     layout={t.layout}
                     logoUrl={t.logo_url}

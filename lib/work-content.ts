@@ -39,7 +39,8 @@ export const DEFAULT_IMAGE =
 export const THUMBNAIL_LAYOUTS = ["a1", "a2", "a3", "d"] as const;
 export type ThumbnailLayout = (typeof THUMBNAIL_LAYOUTS)[number];
 
-/** 構成サムネイルの整形済みデータ。空き枠は mobile_urls / capture_urls の "" で位置を保つ */
+/** 構成サムネイルの整形済みデータ。空き枠は mobile_urls / capture_urls の "" で位置を保つ
+ * （表示側の WorkThumbnail は capture_urls だけ "" を詰めて枚数で配置を変える。mobile_urls は位置どおり） */
 export type WorkThumbnailData = {
   layout: ThumbnailLayout;
   logo_url: string | null;

@@ -1000,6 +1000,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   <div>
                     <FieldLabel>サービス名</FieldLabel>
                     <Input value={work.hero_brand ?? ""} onChange={(v) => setField("hero_brand", v || null)} placeholder="サービス名" />
+                    <p className="mt-1 text-[12px] text-system-500">ロゴを設定するとロゴだけを表示します（ロゴが読み込めないときはサービス名）</p>
                   </div>
                   <div>
                     <FieldLabel>ロゴ</FieldLabel>

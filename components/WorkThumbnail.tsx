@@ -1,4 +1,6 @@
-import type { CSSProperties, FC } from "react";
+"use client";
+
+import { useEffect, useRef, useState, type CSSProperties, type FC } from "react";
 import ProtectedImage from "./ProtectedImage";
 import type { ThumbnailLayout } from "@/lib/work-content";
 
@@ -91,29 +93,51 @@ const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
 );
 
 /** ロゴがあればロゴ画像だけ、無ければサービス名だけを出す。
- * ロゴは高さを揃えて幅は比率なり（欄の幅を超えたら縮める）にし、見切れさせない */
+ * ロゴは高さを揃えて幅は比率なり（欄の幅を超えたら縮める）にし、見切れさせない。
+ * ロゴは読み込めるまで隠してサービス名を出しておく（URL の署名失敗・画像切れでも名前が残る） */
 const Brand: FC<{ logoUrl: string | null; serviceName: string; logoHeight: number; fontSize: number }> = ({
   logoUrl,
   serviceName,
   logoHeight,
   fontSize,
-}) =>
-  logoUrl ? (
-    <ProtectedImage
-      src={logoUrl}
-      alt=""
-      draggable={false}
-      className="block w-auto max-w-full object-contain object-left"
-      style={{ height: u(logoHeight) }}
-    />
-  ) : (
-    <p
-      className="min-w-0 max-w-full truncate font-sans font-semibold text-system-white"
-      style={{ fontSize: u(fontSize), letterSpacing: "0.02em" }}
-    >
-      {serviceName}
-    </p>
+}) => {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  const showLogo = logoUrl !== null && loadedUrl === logoUrl;
+
+  /* 描画前に読み込みが済んでいると onLoad が来ないため、既に読めているかも見る */
+  useEffect(() => {
+    const img = boxRef.current?.querySelector("img");
+    if (!logoUrl || !img?.complete || img.naturalWidth === 0) return;
+    let active = true;
+    queueMicrotask(() => { if (active) setLoadedUrl(logoUrl); });
+    return () => { active = false; };
+  }, [logoUrl]);
+
+  return (
+    <span ref={boxRef} className="contents">
+      {logoUrl && (
+        <ProtectedImage
+          src={logoUrl}
+          alt=""
+          draggable={false}
+          onLoad={() => setLoadedUrl(logoUrl)}
+          onError={() => setLoadedUrl(null)}
+          className={showLogo ? "block w-auto max-w-full object-contain object-left" : "invisible absolute w-auto"}
+          style={{ height: u(logoHeight) }}
+        />
+      )}
+      {!showLogo && (
+        <p
+          className="min-w-0 max-w-full truncate font-sans font-semibold text-system-white"
+          style={{ fontSize: u(fontSize), letterSpacing: "0.02em" }}
+        >
+          {serviceName}
+        </p>
+      )}
+    </span>
   );
+};
 
 const Title: FC<{ title: string; fontSize: number; style?: CSSProperties }> = ({ title, fontSize, style }) => (
   <p

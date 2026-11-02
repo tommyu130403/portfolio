@@ -128,6 +128,7 @@ const DEFAULT_BODY_MD = `# プロジェクト概要
 
 /** 体制内訳の 1 行。note = 役割カードのメモ（空なら「N名」）、org = 組織名（同じ組織は 1 枚の組織カードにまとまる） */
 type BreakdownRow = { role_id: string; headcount: number; note: string; org: string };
+const newBreakdownRow = (role_id = ""): BreakdownRow => ({ role_id, headcount: 1, note: "", org: "" });
 
 /** 体制内訳の編集状態。rows = 役割 id・人数・メモ・組織の行、legacy = 行の形に読めない旧形式の文字 */
 type BreakdownState =
@@ -1397,6 +1398,12 @@ function StakeholderBreakdownField({
 
   const setRows = (rows: BreakdownRow[]) => onChange({ mode: "rows", rows });
 
+  const hasEmptyRow = value.mode === "rows" && value.rows.some((r) => !r.role_id);
+  const hasSelectableRole =
+    value.mode === "rows" &&
+    roles.some((o) => !BREAKDOWN_INVALID.test(o.name) && !value.rows.some((r) => r.role_id === o.id));
+  const canAddRow = !adding && !hasEmptyRow && hasSelectableRole;
+
   const handleAdd = async () => {
     if (value.mode !== "rows" || adding) return;
     const name = newRoleName.trim();
@@ -1415,7 +1422,7 @@ function StakeholderBreakdownField({
       if (value.rows.some((r) => r.role_id === item.id)) {
         setAddError("この役割はすでに選ばれています");
       } else {
-        setRows([...value.rows, { role_id: item.id, headcount: 1, note: "", org: "" }]);
+        setRows([...value.rows, newBreakdownRow(item.id)]);
         setNewRoleName("");
         setUnmatched([]);
       }
@@ -1444,7 +1451,7 @@ function StakeholderBreakdownField({
                   continue;
                 }
                 if (rows.some((r) => r.role_id === role.id)) continue;
-                rows.push({ role_id: role.id, headcount: Math.min(999, Math.max(1, t.count)), note: "", org: "" });
+                rows.push({ ...newBreakdownRow(role.id), headcount: Math.min(999, Math.max(1, t.count)) });
               }
               setUnmatched(missing);
               setRows(rows);
@@ -1499,6 +1506,23 @@ function StakeholderBreakdownField({
               </span>
             </div>
           ))}
+          <button
+            type="button"
+            className={`${vizBtn} self-start disabled:cursor-not-allowed disabled:opacity-40`}
+            disabled={!canAddRow}
+            title={
+              adding
+                ? "役割の追加中です"
+                : hasEmptyRow
+                  ? "役割が未選択の行を先に埋めてください"
+                  : !hasSelectableRole
+                    ? "選べる役割がありません（「新しい役割」で追加してください）"
+                    : undefined
+            }
+            onClick={() => setRows([...value.rows, newBreakdownRow()])}
+          >
+            ＋ 行を追加
+          </button>
           <div
             className="flex items-center gap-2"
             onKeyDown={(e) => {

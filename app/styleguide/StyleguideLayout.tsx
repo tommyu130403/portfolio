@@ -97,7 +97,8 @@ const SAMPLE_WORK_DETAIL = {
   stakeholders_legacy: null,
   hero_brand: null,
   hero_screenshots: [
-    "https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=400&q=80",
+    // 横長の 1 枚目はノート PC 枠、縦長の 2 枚目はスマホ枠で描かれる（WorkDetailHeader が縦横で判定）
+    "https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=800&h=500&q=80",
     "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80",
   ],
   hero_bg_color: null,
@@ -1034,7 +1035,7 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="Table" description="本文 markdown に挿入できる表（Library 188:355）。外枠 1px Border・角丸 8px。項目-値（TableKeyValue）はコンテナ幅 480px 以上で横（ラベル列は内容幅・高さ 40px）、480px 未満で縦積み。グリッド（TableGrid）は 1 行目が見出し（12px Bold）・列は等幅（最小 96px）・収まらないときは枠内で横スクロール。markdown では「| 項目 | 値 |」の行、または 2 行目に「| --- | --- |」を置いた表で書く">
+        <ComponentPreview title="Table" description="本文 markdown に挿入できる表（Library 188:355）。外枠 1px Border・角丸 8px。項目-値（TableKeyValue）はコンテナ幅 480px 以上で横（ラベル列は内容幅・高さ 40px）、480px 未満で縦積み。グリッド（TableGrid）は 1 行目が見出し（12px Bold）・列は等幅（最小 96px）・収まらないときは枠内で横スクロール。480px 未満では行ごとに「見出し / 値」を縦積みにする（スマホで多列表を横スクロールさせない）。markdown では「| 項目 | 値 |」の行、または 2 行目に「| --- | --- |」を置いた表で書く">
           <div className="flex w-full max-w-main flex-col gap-6">
             <TableKeyValue
               rows={[
@@ -1319,7 +1320,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailHeader"
-          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック / カテゴリ・タイトル / 制作内容・Tools(タイトル直下の1行)/ メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)"
+          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック(最大 2 枚。横長の画像はノート PC 枠・縦長はスマホ枠。PC 1 枚 + スマホ 1 枚のときは Library の WorkThumbnail a1 にならいスマホを PC の右下に実寸寄りの倍率で重ねる。Figma 側は未同期)/ カテゴリ・タイトル / 制作内容・Tools(タイトル直下の1行)/ メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)"
         >
           <div className="rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailHeader
@@ -1385,12 +1386,12 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="DeviceMock"
-          description="スクリーンショットを入れるデバイス枠。PhoneMock は iPhone 風（既定幅 126px・className で上書き。作品詳細の上部は最大2枚横並び）。LaptopMock はノートPC風（黒ベゼルの画面＋土台・親の幅いっぱい・画像は 16:10 で上端から切り取り）で、ブラウザバー（赤黄緑の点＋中央の URL）は任意。作品本文には `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` で挿入する（url を書くとバーも出る・本文のスマホは幅 180px・ノートPCは最大 640px）。Figma のマスターはまだ無い"
+          description="スクリーンショットを入れるデバイス枠。PhoneMock は iPhone 風（既定幅 126px・className で上書き。枠の高さは画像の比率に合わせ、切り取らない。作品詳細の上部は最大2枚横並び）。LaptopMock はノートPC風（黒ベゼルの画面＋土台・親の幅いっぱい・実機比率(蓋 92%・ベゼル 3%・土台は全幅)で画面は 16:10 固定、画像は上端から切り取り）で、ブラウザバー（赤黄緑の点＋中央の URL）は任意。PhoneMock も browser で iOS Safari 風の下部バー（URL 表示＋アイコン列）を重ねられる（画像下端の帯を隠す用途）。作品本文には `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` で挿入する（url を書くとバーも出る・本文のスマホは幅 180px・ノートPCは最大 640px）。Figma のマスターはまだ無い"
         >
           <div className="flex w-full flex-col gap-8">
             <div className="flex items-start gap-6">
               <PhoneMock src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" className="w-[180px]" />
-              <PhoneMock src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" className="w-[180px]" />
+              <PhoneMock src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80" className="w-[180px]" browser url="example.com" />
             </div>
             <div className="w-full max-w-[640px]">
               <LaptopMock src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80" />

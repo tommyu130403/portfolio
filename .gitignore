@@ -55,3 +55,7 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 一時プレビューの素材（コミットしない）
+/public/tmp-preview/
+/app/tmp-preview/

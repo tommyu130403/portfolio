@@ -7,7 +7,7 @@ import Tooltip from "./Tooltip";
 import { resolveLogoSlug } from "@/src/components/SkillsCardGrid";
 import WorkVizModal from "./WorkVizModal";
 import ProtectedImage from "./ProtectedImage";
-import { PhoneMock, ScreenshotLightbox } from "./DeviceMock";
+import { LaptopMock, PhoneMock, ScreenshotLightbox } from "./DeviceMock";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
 import { EditButton } from "./WorkMarkdown";
 import { periodFromRow } from "@/lib/timeline-scale";
@@ -16,6 +16,92 @@ import type { Tables } from "@/src/types/supabase";
 type Work = Tables<"works">;
 
 export type WorkToolItem = { name: string; icon_url: string | null; slug?: string | null };
+
+/**
+ * 画像の縦横を調べる 1px の見えない画像（ProtectedImage は画面内に入ったときだけ署名・読み込みをするので、display:none にはできない）
+ */
+const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void }> = ({ src, onResult }) => (
+  <div className="relative h-px w-px overflow-hidden">
+    <ProtectedImage
+      src={src}
+      alt=""
+      className="absolute left-0 top-0 h-px w-px opacity-0"
+      onLoad={(e) => onResult(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight)}
+    />
+  </div>
+);
+
+/**
+ * ヒーローの画像（最大 2 枚）。画像の縦横で枠を選ぶ（横長 → ノート PC 枠・縦長 → スマホ枠。ユーザー指示 2026-11-02）。
+ * データ形式（hero_screenshots の URL 配列）は変えない。判定が済むまで枠は描かない。
+ * PC 1 枚 + スマホ 1 枚のときは、Library の WorkThumbnail Layout=a1（570:428）にならいスマホを PC に重ねる。
+ * ユーザー指示（2026-11-02）でスマホは PC の右下、倍率は実寸寄り（PC 幅 0.88 に対しスマホ幅 0.15 ≒ 高さは PC 枠の約 2/3）。
+ * それ以外は横並び・下端揃え
+ */
+const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawShots, onClick }) => {
+  const [landscape, setLandscape] = useState<Record<string, boolean>>({});
+  // URL 末尾のフラグメントで描き方を指定する（サーバーには届かず、データ形式（URL 配列）も変わらない。ユーザー指示 2026-11-02）:
+  //   `#plain` = 端末の枠を付けず素の画像で出す（透過 PNG の合成図など）
+  //   `#browser` / `#browser=example.com` = スマホ枠なら iOS Safari 風の下部バー、ノート PC 枠なら上部のブラウザバー（ドット 3 つ + URL）を付ける
+  const split = (s: string) => {
+    const i = s.indexOf("#");
+    return i < 0 ? { src: s, frag: "" } : { src: s.slice(0, i), frag: s.slice(i + 1) };
+  };
+  const plain = rawShots.filter((s) => split(s).frag === "plain").map((s) => split(s).src);
+  const browserOf: Record<string, string | undefined> = {};
+  const shots = rawShots
+    .filter((s) => split(s).frag !== "plain")
+    .map((s) => {
+      const { src, frag } = split(s);
+      if (frag.startsWith("browser")) browserOf[src] = frag.includes("=") ? frag.slice(frag.indexOf("=") + 1) : "";
+      return src;
+    });
+  if (plain.length > 0 && shots.length === 0) {
+    return (
+      <button type="button" onClick={onClick} aria-label="画像を拡大表示" className="w-[560px] max-w-full cursor-zoom-in">
+        <ProtectedImage src={plain[0]} alt="" className="block h-auto w-full" />
+      </button>
+    );
+  }
+  const known = shots.every((s) => s in landscape);
+  if (!known) {
+    return (
+      <>
+        {shots.map((src) => (
+          <OrientationProbe key={src} src={src} onResult={(v) => setLandscape((prev) => (src in prev ? prev : { ...prev, [src]: v }))} />
+        ))}
+      </>
+    );
+  }
+  const pc = shots.find((s) => landscape[s]);
+  const sp = shots.find((s) => !landscape[s]);
+  if (shots.length === 2 && pc && sp) {
+    return (
+      <div className="relative w-[560px] max-w-full">
+        {/* PC は中央に幅 74%、スマホは幅 20% で PC の右端より 5% 外側に重ねる（ユーザー決定 2026-11-02: A-1 案） */}
+        <div className="mx-auto w-[74%]">
+          <LaptopMock src={pc} onClick={onClick} browser={pc in browserOf} url={browserOf[pc] || undefined} />
+        </div>
+        <div className="absolute bottom-[2%] right-[8%] w-[20%]">
+          <PhoneMock src={sp} onClick={onClick} className="w-full" browser={sp in browserOf} url={browserOf[sp] || undefined} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <>
+      {shots.map((src) =>
+        landscape[src] ? (
+          <div key={src} className="w-[420px] max-w-full">
+            <LaptopMock src={src} onClick={onClick} browser={src in browserOf} url={browserOf[src] || undefined} />
+          </div>
+        ) : (
+          <PhoneMock key={src} src={src} onClick={onClick} browser={src in browserOf} url={browserOf[src] || undefined} />
+        ),
+      )}
+    </>
+  );
+};
 
 /**
  * ツールのアイコン URL を決める。icon_url → スキル欄と同じ判定の public/logos のロゴ の順に、
@@ -88,12 +174,10 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
 
   return (
     <div className="flex w-full flex-col gap-12">
-      {/* デバイスモック（最大2枚） */}
+      {/* デバイスモック（最大2枚。横長の画像はノート PC 枠、縦長はスマホ枠。下端を揃える） */}
       {shots.length > 0 && (
-        <div className={`${rel}flex w-full items-start justify-center gap-6`}>
-          {shots.slice(0, 2).map((src, i) => (
-            <PhoneMock key={i} src={src} onClick={() => setLightboxOpen(true)} />
-          ))}
+        <div className={`${rel}flex w-full flex-wrap items-end justify-center gap-6`}>
+          <HeroShots shots={shots.slice(0, 2)} onClick={() => setLightboxOpen(true)} />
           {onEdit && <EditButton label="スクリーンショット" onClick={() => onEdit("screenshots")} />}
         </div>
       )}

@@ -24,6 +24,14 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
   return (
     <div
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (event) => {
+        if (!event.repeat && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onClick();
+        }
+      } : undefined}
       className={[
         "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[14px]",
         "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-['']",
@@ -31,7 +39,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
         // ホバー（Library Card Status=hover）は外側に 背景 Action/hover・枠 Border/Light・影 shadow を付ける。
         // 影が gap 16px を越えて隣のカードの下に隠れないよう、ホバー中は1段手前に出す
         onClick
-          ? "hover:z-[1] hover:bg-action-hover hover:after:border-border-light hover:shadow-base transition-[background-color,box-shadow] cursor-pointer"
+          ? "hover:z-[1] hover:bg-action-hover hover:after:border-border-light hover:shadow-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-[background-color,box-shadow] cursor-pointer"
           : "",
       ].join(" ")}
     >

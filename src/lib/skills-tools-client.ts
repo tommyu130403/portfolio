@@ -97,22 +97,18 @@ export async function setWorkTools(workId: string, toolIds: string[]): Promise<v
   if (insError) throw new Error(insError.message);
 }
 
-/**
- * スキル行（skill_experience）に紐づくツールを丸ごと置き換える。
- * project_tools と同じ「全削除→挿入」方式で sort_order を 0..n に振り直す。
- */
+/** スキル行に紐づくツールを DB の単一トランザクションで置き換える。 */
 export async function setExperienceTools(experienceId: string, toolIds: string[]): Promise<void> {
-  const { error: delError } = await supabase
-    .from("skill_experience_tools")
-    .delete()
-    .eq("experience_id", experienceId);
-  if (delError) throw new Error(delError.message);
-  if (toolIds.length === 0) return;
-  const rows = toolIds.map((tool_id, idx) => ({
-    experience_id: experienceId,
-    tool_id,
-    sort_order: idx,
-  }));
-  const { error: insError } = await supabase.from("skill_experience_tools").insert(rows);
-  if (insError) throw new Error(insError.message);
+  // Generated DB types are refreshed after the migration has been applied.
+  const client = supabase as unknown as {
+    rpc: (
+      name: "replace_experience_tools",
+      args: { p_experience_id: string; p_tool_ids: string[] },
+    ) => Promise<{ error: { message: string } | null }>;
+  };
+  const { error } = await client.rpc("replace_experience_tools", {
+    p_experience_id: experienceId,
+    p_tool_ids: toolIds,
+  });
+  if (error) throw new Error(error.message);
 }

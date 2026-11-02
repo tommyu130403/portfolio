@@ -33,7 +33,7 @@ import ProtectedImage from "./ProtectedImage";
  *  - `::: beforeafter タグ | 見出し` 〜 `:::` の Before/After 図（`before:` / `after:` 行を `→` で区切り、`[!悪い手順]` `[+良い手順]`、直後の `note:` が注記）
  *  - `::: flow ラベル highlight=N` 〜 `:::` の横フロー（`- ` 行が1手順。N 番目を強調、省略=最後、0=なし）
  *  - `::: bars base=1.0 max=1.4` 〜 `:::` の横棒グラフ（`- ラベル | 補助 | 値 | 表示文 | up/down/flat`、`legend:` 行で凡例）
- *  - `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
+ *  - `::: mockup phone src=<url> [src=<url>] [browser] [url=example.com]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
  *  - `::: html` 〜 `:::` の生 HTML / SVG 埋め込み（script・iframe・style・イベント属性は除去）
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
  *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
@@ -291,7 +291,7 @@ type Block =
   | { type: "caption"; content: string }
   | { type: "flowchart"; id: string }
   | { type: "workcard"; id: string }
-  | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null }
+  | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null; caption: string }
   | { type: "card"; title: string; body: string; tone: "default" | "accent" }
   | { type: "figure"; title: string; lead: string; body: string }
   | { type: "beforeAfter"; tag: string; title: string; rows: BeforeAfterRow[] }
@@ -533,14 +533,21 @@ function parseBlocks(src: string): Block[] {
         }
       }
       if (srcs.length > 0) {
+        // 直後（空行を挟んでもよい）の `::: caption` はモックの補足文として取り込み、モックのすぐ下に描く
+        // （別ブロックのままだと間が空きすぎる。ユーザー指示 2026-11-02）
+        let next = i + 1;
+        while (next < lines.length && lines[next].trim() === "") next++;
+        const mockCaption = next < lines.length ? lines[next].match(/^:::\s*caption\s+(.+)$/) : null;
         blocks.push({
           type: "mockup",
           device,
           srcs: device === "phone" ? srcs.slice(0, 2) : srcs.slice(0, 1),
-          browser: device === "laptop" && browser,
-          url: device === "laptop" ? url : null,
+          // phone も browser / url を受ける（iOS Safari 風の下部バー。2026-11-02）
+          browser,
+          url,
+          caption: mockCaption ? mockCaption[1].trim() : "",
         });
-        i++;
+        i = mockCaption ? next + 1 : i + 1;
         continue;
       }
     }
@@ -909,8 +916,17 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return <FlowchartEmbed id={block.id} />;
     case "workcard":
       return <WorkCardEmbed id={block.id} />;
-    case "mockup":
-      return <MockupEmbed device={block.device} srcs={block.srcs} browser={block.browser} url={block.url} />;
+    case "mockup": {
+      const mock = <MockupEmbed device={block.device} srcs={block.srcs} browser={block.browser} url={block.url} />;
+      if (!block.caption) return mock;
+      // 補足文はモックと同じ塊に入れ、12px 下に中央揃えで置く（MockupEmbed 自身の上下余白は打ち消す）
+      return (
+        <div className="mb-4 mt-10 [&>div]:my-0">
+          {mock}
+          <p className="text-caption-01-jp mt-3 text-center text-fg-caption">{renderInline(block.caption, `${k}-mc`)}</p>
+        </div>
+      );
+    }
     case "html":
       if (block.content.trim() === "") return null;
       return (
@@ -1010,7 +1026,8 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
           style={{ "--grid-cols": block.cols, gap: `${block.gap * 4}px` } as CSSProperties}
         >
           {block.cells.map((cell, i) => (
-            <div key={i} className="min-w-0">
+            // セルが 1 ブロック（カードなど）だけのときは行の高さいっぱいに伸ばし、横並びのカードの高さを揃える（ユーザー指示 2026-11-02）
+            <div key={i} className="min-w-0 [&>div]:h-full [&>div>:only-child]:h-full [&>div>:only-child>*]:h-full">
               <MarkdownBody md={cell} />
             </div>
           ))}

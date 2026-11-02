@@ -42,31 +42,62 @@ type TableGridProps = {
   rows: ReactNode[][];
 };
 
-/** グリッドテーブル（Figma 188:355 Table/Grid）。1行目が見出し、列は等幅（最小 96px）、収まらないときは枠内で横スクロール */
+/**
+ * グリッドテーブル（Figma 188:355 Table/Grid）。1行目が見出し、列は等幅（最小 96px）、収まらないときは枠内で横スクロール。
+ * 480px 未満では列を縦に積む（スマホで多列表を横スクロールさせない。ユーザー指示 2026-11-02）。
+ */
+/** 空セルの判定。WorkMarkdown は空文字を renderInline して空配列 `[]` で渡してくるので、配列の空も空とみなす */
+const isBlank = (v: ReactNode) => v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
+
 export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
   const cell = "min-h-10 min-w-0 break-words px-4 py-2";
   const colBorder = (ci: number) => (ci > 0 ? "border-l border-border" : "");
   return (
-    <div className={`w-full ${FRAME_SCROLL}`}>
-      <div
-        className="grid min-w-full"
-        style={{ gridTemplateColumns: `repeat(${header.length}, minmax(96px, 1fr))` }}
-      >
-        {header.map((h, ci) => (
-          <div key={ci} className={`${cell} ${rows.length > 0 ? "border-b border-border" : ""} ${LABEL_TYPO} font-bold text-fg-muted ${colBorder(ci)}`}>
-            {h}
+    <div className="@container w-full">
+      <div className={`hidden w-full @min-[480px]:block ${FRAME_SCROLL}`}>
+        <div
+          className="grid min-w-full"
+          style={{ gridTemplateColumns: `repeat(${header.length}, minmax(96px, 1fr))` }}
+        >
+          {header.map((h, ci) => (
+            <div key={ci} className={`${cell} ${rows.length > 0 ? "border-b border-border" : ""} ${LABEL_TYPO} font-bold text-fg-muted ${colBorder(ci)}`}>
+              {h}
+            </div>
+          ))}
+          {rows.map((r, ri) =>
+            header.map((_, ci) => (
+              <div
+                key={`${ri}-${ci}`}
+                className={`${cell} text-fg text-body-03-jp ${ri < rows.length - 1 ? "border-b border-border" : ""} ${colBorder(ci)}`}
+              >
+                {r[ci] ?? null}
+              </div>
+            )),
+          )}
+        </div>
+      </div>
+      <div className={`@min-[480px]:hidden ${FRAME}`}>
+        {/* 行が 0 件なら見出しだけを 1 ブロックで出す（広い幅と同じく見出し行は消さない） */}
+        {rows.length === 0 && (
+          <div className={`flex flex-col gap-y-1 px-4 py-3 ${LABEL_TYPO} text-fg-muted`}>
+            {header.filter((h) => !isBlank(h)).map((h, ci) => <div key={ci}>{h}</div>)}
+          </div>
+        )}
+        {rows.map((r, ri) => (
+          <div key={ri} className={`flex flex-col gap-y-3 px-4 py-3 ${ROW_DIVIDER}`}>
+            {header.map((h, ci) => {
+              const v = r[ci];
+              if (isBlank(v)) return null;
+              const hasLabel = !isBlank(h);
+              return (
+                <div key={ci} className="flex min-w-0 flex-col gap-y-1">
+                  {hasLabel && <div className={`${LABEL_TYPO} text-fg-muted`}>{h}</div>}
+                  <div className="min-w-0 break-words text-fg text-body-03-jp">{v}</div>
+                </div>
+              );
+            })}
           </div>
         ))}
-        {rows.map((r, ri) =>
-          header.map((_, ci) => (
-            <div
-              key={`${ri}-${ci}`}
-              className={`${cell} text-fg text-body-03-jp ${ri < rows.length - 1 ? "border-b border-border" : ""} ${colBorder(ci)}`}
-            >
-              {r[ci] ?? null}
-            </div>
-          )),
-        )}
       </div>
     </div>
   );

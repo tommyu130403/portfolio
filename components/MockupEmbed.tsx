@@ -21,7 +21,7 @@ const MockupEmbed: FC<MockupEmbedProps> = ({ device, srcs, browser, url }) => {
       {device === "phone" ? (
         <div className="flex w-full items-start justify-center gap-6">
           {srcs.map((src, i) => (
-            <PhoneMock key={i} src={src} className={srcs.length > 1 ? "w-[180px] max-w-[calc(50%-12px)]" : "w-[180px] max-w-full"} onClick={() => setOpen(true)} />
+            <PhoneMock key={i} src={src} className={srcs.length > 1 ? "w-[180px] max-w-[calc(50%-12px)]" : "w-[180px] max-w-full"} onClick={() => setOpen(true)} browser={browser} url={url ?? undefined} />
           ))}
         </div>
       ) : (

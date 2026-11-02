@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC, useEffect } from "react";
+import { type FC, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ProtectedImage from "./ProtectedImage";
 
@@ -98,6 +98,28 @@ export const LaptopMock: FC<{ src: string; browser?: boolean; url?: string; onCl
  * frame=laptop は横長のスクショなので、スマホ用の大きな角丸・黒枠を付けない
  * ------------------------------------------------------------------ */
 
+/**
+ * ライトボックスの 1 枚。枠は画像ごとに決める: URL 末尾 `#plain` は枠なし、読み込んだ画像が横長なら laptop（角丸のみ）、
+ * 縦長なら phone（大きな角丸 + 黒枠）。読み込み前は呼び出し側の frame に従う（ヒーローは PC と SP が混在するため）
+ */
+const LightboxShot: FC<{ src: string; frame: "phone" | "laptop" }> = ({ src, frame }) => {
+  const hash = src.indexOf("#");
+  const plain = hash >= 0 && src.slice(hash + 1) === "plain";
+  const cleanSrc = hash >= 0 ? src.slice(0, hash) : src;
+  const [landscape, setLandscape] = useState<boolean | null>(null);
+  const kind = plain ? "plain" : landscape === null ? frame : landscape ? "laptop" : "phone";
+  return (
+    <ProtectedImage
+      src={cleanSrc}
+      alt=""
+      onLoad={(e) => setLandscape(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight)}
+      className={`max-h-[90vh] w-auto max-w-full object-contain ${
+        kind === "plain" ? "" : kind === "laptop" ? "rounded-[8px]" : "rounded-[24px] border-[3px] border-[#0a0a0a]"
+      }`}
+    />
+  );
+};
+
 export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void; frame?: "phone" | "laptop" }> = ({
   shots,
   onClose,
@@ -120,14 +142,7 @@ export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void; fram
       onClick={onClose}
     >
       {shots.map((src, i) => (
-        <ProtectedImage
-          key={i}
-          src={src}
-          alt=""
-          className={`max-h-[90vh] w-auto max-w-full object-contain ${
-            frame === "laptop" ? "rounded-[8px]" : "rounded-[24px] border-[3px] border-[#0a0a0a]"
-          }`}
-        />
+        <LightboxShot key={i} src={src} frame={frame} />
       ))}
     </div>,
     document.body,

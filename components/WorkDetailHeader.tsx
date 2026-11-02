@@ -18,7 +18,8 @@ type Work = Tables<"works">;
 export type WorkToolItem = { name: string; icon_url: string | null; slug?: string | null };
 
 /**
- * 画像の縦横を調べる 1px の見えない画像（ProtectedImage は画面内に入ったときだけ署名・読み込みをするので、display:none にはできない）
+ * 画像の縦横を調べる 1px の見えない画像（ProtectedImage は画面内に入ったときだけ署名・読み込みをするので、display:none にはできない）。
+ * 読めない（404・署名失敗・権限なし）ときは縦長扱いで確定させ、従来どおりスマホ枠（壊れた画像の表示）を出す — ヒーローを消さない
  */
 const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void }> = ({ src, onResult }) => (
   <div className="relative h-px w-px overflow-hidden">
@@ -27,6 +28,8 @@ const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void
       alt=""
       className="absolute left-0 top-0 h-px w-px opacity-0"
       onLoad={(e) => onResult(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight)}
+      onError={() => onResult(false)}
+      onUnavailableChange={(unavailable) => unavailable && onResult(false)}
     />
   </div>
 );

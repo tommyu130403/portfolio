@@ -1072,15 +1072,14 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="SideMenuBar"
-          description="サイドナビゲーション。Figma Master 62:545 / Library 55-296 準拠。角丸なし・右境界線は inside stroke(after 疑似要素)。Social はロゴのみ(GitHub / YOUTRUST、リンク先未設定)。showCollapseToggle=false で折りたたみトグルを隠す(モバイルのオーバーレイ表示用)"
+          description="サイドナビゲーション。Figma Master 62:545 / Library 55-296 準拠。角丸なし・右境界線は inside stroke(after 疑似要素)。Social はロゴのみ(GitHub / YOUTRUST、リンク先未設定)。既定は折りたたみ(96px)で、ホバー / キーボードフォーカス時に 216px(最も幅の広い中身に合わせて 8 の倍数へ切り上げ)へ展開しページ内容に重なる(内容は動かない)。collapsed prop で状態を固定できる(モバイルのオーバーレイは collapsed={false})。トグルボタンなし"
         >
           <div className="flex flex-wrap gap-8">
             <div className="overflow-hidden rounded-[12px] border border-border-light">
               <SideMenuBar activeSection="works" collapsed={false} />
             </div>
-            {/* モバイルオーバーレイ用: トグル非表示 */}
             <div className="overflow-hidden rounded-[12px] border border-border-light">
-              <SideMenuBar activeSection="works" collapsed={false} showCollapseToggle={false} />
+              <SideMenuBar activeSection="works" collapsed />
             </div>
           </div>
         </ComponentPreview>

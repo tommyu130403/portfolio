@@ -26,14 +26,8 @@ export default function Home() {
 
 function HomeContent() {
   const [activeSection, setActiveSection] = useState<SideMenuSectionId>("introduction");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // lg 未満のモバイルナビ（ハンバーガー → オーバーレイ）の開閉状態
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // SSR との不一致を防ぐため、ウィンドウ幅による初期値はハイドレーション後に設定する
-  useEffect(() => {
-    setSidebarCollapsed(window.innerWidth < 1024);
-  }, []);
 
   // オーバーレイ表示中は Esc で閉じ、背面スクロールをロックする
   useEffect(() => {
@@ -131,15 +125,8 @@ function HomeContent() {
   return (
     <div className="flex min-h-screen items-start bg-surface text-white">
         {/* Side Menu（lg 以上のみ表示） */}
-        <div
-          className="sticky top-0 shrink-0 z-[2] hidden lg:block"
-          style={{ width: sidebarCollapsed ? 96 : 256, transition: "width 300ms ease-in-out" }}
-        >
-          <SideMenuBar
-            activeSection={activeSection}
-            collapsed={sidebarCollapsed}
-            onCollapsedChange={setSidebarCollapsed}
-          />
+        <div className="sticky top-0 shrink-0 z-[2] hidden w-[96px] lg:block">
+          <SideMenuBar activeSection={activeSection} />
         </div>
 
         {/* モバイル: ハンバーガー（lg 未満のみ表示） */}
@@ -172,7 +159,7 @@ function HomeContent() {
             />
             {/* パネル: 既存 SideMenuBar を展開状態で再利用。ナビリンククリックで閉じる */}
             <div
-              className="absolute inset-y-0 left-0 w-[256px]"
+              className="absolute inset-y-0 left-0 w-[216px]"
               onClick={(e) => {
                 if ((e.target as HTMLElement).closest("a")) setMobileMenuOpen(false);
               }}
@@ -180,7 +167,6 @@ function HomeContent() {
               <SideMenuBar
                 activeSection={activeSection}
                 collapsed={false}
-                showCollapseToggle={false}
               />
             </div>
             {/* 閉じるボタン */}

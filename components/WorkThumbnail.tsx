@@ -8,8 +8,9 @@ import type { ThumbnailLayout } from "@/lib/work-content";
  * 1280×720 を基準 px として書き、大きさ・文字は cqw、位置は % に変換する。
  * 根要素が container-type: inline-size のため cqh は使えない（高さも cqw で表す）。
  * cqw は container 宣言した要素自身では祖先基準になるので、縞などは子の層に付ける。
+ * 地は全作品共通の bg-thumbnail（一覧の背景 surface より暗い）。タイトルは出さない。
  * 数値の正は Claude Design「Works サムネイル 構成案 v2」（Figma: Library の WorkThumbnail）。
- * #1A1A1A / #0A0A0A / 縞の 2 色は対応するトークンが無いため直書き */
+ * #0A0A0A / #1A1A1A（資料枠）/ 縞の 2 色は対応するトークンが無いため直書き */
 
 type Props = {
   layout: ThumbnailLayout;
@@ -18,7 +19,6 @@ type Props = {
   mobileUrls: string[];
   captureUrls: string[];
   serviceName?: string | null;
-  title: string;
   className?: string;
 };
 
@@ -95,48 +95,48 @@ const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
 /** ロゴがあればロゴ画像だけ、無ければサービス名だけを出す。
  * ロゴは高さを揃えて幅は比率なり（欄の幅を超えたら縮める）にし、見切れさせない。
  * ロゴを表示できないとき（権限なし・署名失敗・画像切れ）はサービス名に切り替える。
- * ロゴは隠しても残しておき、ProtectedImage の再試行で表示できたら戻す */
-const Brand: FC<{ logoUrl: string | null; serviceName: string; logoHeight: number; fontSize: number }> = ({
+ * ロゴは隠しても残しておき、ProtectedImage の再試行で表示できたら戻す。
+ * 左の 520px 幅の欄で縦横中央に置く（ロゴ・サービス名とも幅は 376px まで。モックアップに触れさせない） */
+const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean }> = ({
   logoUrl,
   serviceName,
-  logoHeight,
-  fontSize,
+  padded,
 }) => {
   const [unavailableUrl, setUnavailableUrl] = useState<string | null>(null);
   const showLogo = logoUrl !== null && unavailableUrl !== logoUrl;
 
   return (
-    <>
+    <div
+      className="absolute flex flex-col items-center justify-center"
+      style={{
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: x(520),
+        ...(padded ? { paddingBlock: u(80), paddingInline: u(72) } : {}),
+      }}
+    >
       {logoUrl && (
         <ProtectedImage
           src={logoUrl}
           alt=""
           draggable={false}
           onUnavailableChange={(unavailable) => setUnavailableUrl(unavailable ? logoUrl : null)}
-          className={showLogo ? "block w-auto max-w-full object-contain object-left" : "invisible absolute w-auto"}
-          style={{ height: u(logoHeight) }}
+          className={showLogo ? "block w-auto object-contain object-center" : "invisible absolute w-auto"}
+          style={{ height: u(144), maxWidth: u(376) }}
         />
       )}
       {!showLogo && (
         <p
-          className="min-w-0 max-w-full truncate font-sans font-semibold text-system-white"
-          style={{ fontSize: u(fontSize), letterSpacing: "0.02em" }}
+          className="min-w-0 truncate text-center font-sans font-semibold text-system-white"
+          style={{ fontSize: u(56), letterSpacing: "0.02em", maxWidth: u(376) }}
         >
           {serviceName}
         </p>
       )}
-    </>
+    </div>
   );
 };
-
-const Title: FC<{ title: string; fontSize: number; style?: CSSProperties }> = ({ title, fontSize, style }) => (
-  <p
-    className="line-clamp-3 font-mplus font-bold text-system-white [overflow-wrap:anywhere]"
-    style={{ fontSize: u(fontSize), lineHeight: 1.35, letterSpacing: u(1.6), ...style }}
-  >
-    {title}
-  </p>
-);
 
 const WorkThumbnail: FC<Props> = ({
   layout,
@@ -145,7 +145,6 @@ const WorkThumbnail: FC<Props> = ({
   mobileUrls,
   captureUrls,
   serviceName,
-  title,
   className,
 }) => {
   const mobile = (i: number) => mobileUrls[i] || null;
@@ -154,26 +153,12 @@ const WorkThumbnail: FC<Props> = ({
   /* 構成案どおり、ロゴもサービス名も未設定なら仮の名前を出す */
   const service = serviceName?.trim() || "Service";
 
+  const rootClass = `@container absolute inset-0 overflow-hidden bg-thumbnail ${className ?? ""}`;
+
   if (layout === "d") {
     return (
-      <div aria-hidden className={`@container absolute inset-0 overflow-hidden bg-[#1a1a1a] ${className ?? ""}`}>
-        <div
-          className="absolute flex flex-col justify-between border-solid border-system-800 bg-[#0a0a0a]"
-          style={{
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: x(520),
-            borderRightWidth: u(1),
-            paddingBlock: u(80),
-            paddingInline: u(72),
-          }}
-        >
-          <div className="flex min-w-0">
-            <Brand logoUrl={logoUrl} serviceName={service} logoHeight={120} fontSize={48} />
-          </div>
-          <Title title={title} fontSize={44} />
-        </div>
+      <div aria-hidden className={rootClass}>
+        <Brand logoUrl={logoUrl} serviceName={service} padded />
         {captures.length === 1 ? (
           <CaptureFrame src={captures[0]} left={600} top={120} width={800} height={660} />
         ) : (
@@ -188,14 +173,8 @@ const WorkThumbnail: FC<Props> = ({
   }
 
   return (
-    <div aria-hidden className={`@container absolute inset-0 overflow-hidden bg-[#1a1a1a] ${className ?? ""}`}>
-      <div
-        className="absolute flex items-center"
-        style={{ left: x(80), top: y(80), width: x(520), height: u(64) }}
-      >
-        <Brand logoUrl={logoUrl} serviceName={service} logoHeight={64} fontSize={34} />
-      </div>
-      <Title title={title} fontSize={52} style={{ position: "absolute", left: x(80), bottom: y(80), width: x(460) }} />
+    <div aria-hidden className={rootClass}>
+      <Brand logoUrl={logoUrl} serviceName={service} />
 
       {layout === "a1" && (
         <>
@@ -206,8 +185,8 @@ const WorkThumbnail: FC<Props> = ({
       {layout === "a2" && <DesktopFrame src={desktopUrl} left={600} top={120} width={800} height={660} />}
       {layout === "a3" && (
         <>
-          <PhoneFrame src={mobile(0)} left={620} top={140} width={290} height={620} />
-          <PhoneFrame src={mobile(1)} left={950} top={60} width={290} height={620} />
+          <PhoneFrame src={mobile(0)} left={600} top={140} width={290} height={620} />
+          <PhoneFrame src={mobile(1)} left={930} top={60} width={290} height={620} />
         </>
       )}
     </div>

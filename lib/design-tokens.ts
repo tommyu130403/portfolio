@@ -169,6 +169,8 @@ export const semantic = {
   surface: color.system["925"], //                    Figma: Background/Default
   /** Background/Light — 一段明るいサーフェス */
   surfaceLight: color.system["875"], //               Figma: Background/Light
+  /** 作品サムネイルの地 — surface より暗くして一覧の背景（surface）と分ける */
+  thumbnail: color.system["950"], //                  Figma: 未登録
   /** Border/Default — 標準ボーダー */
   border: color.system["825"], //                     Figma: Border/Default
   /** Border/Light — コントラストの高い（目立つ）ボーダー */

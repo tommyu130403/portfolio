@@ -82,7 +82,6 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
                   mobileUrls={composed.mobile_urls}
                   captureUrls={composed.capture_urls}
                   serviceName={serviceName}
-                  title={title}
                 />
               </div>
             </div>

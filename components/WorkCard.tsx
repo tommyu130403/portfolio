@@ -53,7 +53,6 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
             mobileUrls={thumbnail.mobile_urls}
             captureUrls={thumbnail.capture_urls}
             serviceName={serviceName}
-            title={title}
           />
         ) : (
           <ProtectedImage
@@ -63,14 +62,14 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
           />
         )}
       </div>
-      {/* Figma Master 494:1363: 本文 p16・gap24。上段（カテゴリチップ＋期間 / 作品名）gap4、下段に制作内容タグ */}
+      {/* Figma Master 494:1045（2026-11-03）: 本文 p16・gap24。上段（カテゴリチップ＋期間 / 作品名）gap8、下段に制作内容タグ */}
       <div className="flex min-h-[160px] min-w-0 flex-col gap-6 p-4">
-        <div className="flex flex-col gap-1">
-          {/* カテゴリも期間も無ければ行ごと出さない（親の gap-1 で 4px の空きが残らないように）。
+        <div className="flex flex-col gap-2">
+          {/* カテゴリも期間も無ければ行ごと出さない（親の gap-2 で 8px の空きが残らないように）。
               長いカテゴリは省略し、期間（右端）は折り返さない */}
           {(category || period) && (
             <div className="flex items-center justify-between gap-2">
-              {category ? <Tag variant="category" label={category} size="sm" hue={categoryHue} className="min-w-0" /> : null}
+              {category ? <Tag variant="category" label={category} size="card" hue={categoryHue} className="min-w-0" /> : null}
               {period ? (
                 <p className="ml-auto shrink-0 font-en text-[11px] font-extrabold leading-none tracking-[0.33px] text-fg-subtle whitespace-nowrap [text-box:trim-both_cap_alphabetic]">
                   {period}

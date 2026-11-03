@@ -19,6 +19,50 @@ const exampleRenderedUrl = new URL(supabase.storage.from(BUCKET).getPublicUrl("_
 const renderedPathPrefix = exampleRenderedUrl.pathname.slice(0, -"__probe__".length);
 const storageRoot = publicPathPrefix.split("/object/public/")[0];
 
+type SignedEntry = { url: string; expiresAt: number };
+
+// 署名結果は画面全体で共有する。署名 URL は毎回トークンが変わりブラウザのキャッシュが効かないため、
+// 同じ画像を別の部品や作り直された部品が署名し直すと、画像の取得まで二重になる
+const signedCache = new Map<string, SignedEntry>();
+const pendingSigns = new Map<string, Promise<SignedEntry | null>>();
+// 読める画像は役割ごとに違うため、ログインし直しで別のユーザーになったら共有を捨てる。
+// 前のユーザーの署名が後から届いても共有に入れないよう、世代で見分ける
+let cacheGeneration = 0;
+let cacheUserId: string | null | undefined;
+supabase.auth.onAuthStateChange((_event, session) => {
+  const userId = session?.user.id ?? null;
+  if (cacheUserId !== undefined && userId !== cacheUserId) {
+    cacheGeneration += 1;
+    signedCache.clear();
+    pendingSigns.clear();
+  }
+  cacheUserId = userId;
+});
+
+function isFresh(entry: SignedEntry | undefined): entry is SignedEntry {
+  return !!entry && entry.expiresAt > Date.now() + REFRESH_BEFORE_SECONDS * 1000;
+}
+
+/** 失効間近（REFRESH_BEFORE_SECONDS 以内）でなければ共有の結果を返し、そうでなければ署名する。同時の依頼は 1 回にまとめる */
+function signPath(path: string): Promise<SignedEntry | null> {
+  const cached = signedCache.get(path);
+  if (isFresh(cached)) return Promise.resolve(cached);
+  const pending = pendingSigns.get(path);
+  if (pending) return pending;
+  const generation = cacheGeneration;
+  const request = supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS)
+    .then(({ data, error }) => {
+      if (error || !data?.signedUrl) return null;
+      const entry = { url: data.signedUrl, expiresAt: Date.now() + SIGNED_URL_SECONDS * 1000 };
+      if (generation === cacheGeneration) signedCache.set(path, entry);
+      return entry;
+    })
+    .catch(() => null)
+    .finally(() => { if (pendingSigns.get(path) === request) pendingSigns.delete(path); });
+  pendingSigns.set(path, request);
+  return request;
+}
+
 /** Stored public URLs are stable identifiers; only the rendered URL is signed. */
 function classifySource(src: string): { protected: boolean; path: string | null } {
   try {
@@ -45,7 +89,11 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
   const imageRef = useRef<HTMLImageElement>(null);
   const [visible, setVisible] = useState(false);
   const [refresh, setRefresh] = useState(0);
-  const [signed, setSigned] = useState<{ source: string; url: string; expiresAt: number } | null>(null);
+  // 作り直されたときも、共有の署名が生きていれば最初の描画から使う（署名・画像の取り直しを起こさない）
+  const [signed, setSigned] = useState<{ source: string; url: string; expiresAt: number } | null>(() => {
+    const cached = path ? signedCache.get(path) : undefined;
+    return isFresh(cached) ? { source: src, ...cached } : null;
+  });
   const [signFailure, setSignFailure] = useState<string | null>(null);
   const [loadErrorSrc, setLoadErrorSrc] = useState<string | null>(null);
 
@@ -67,18 +115,16 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
 
   useEffect(() => {
     if (!path || !mayRead || !visible) return;
-    if (signed?.source === src && signed.expiresAt > Date.now() + REFRESH_BEFORE_SECONDS * 1000) return;
+    if (signed?.source === src && isFresh(signed)) return;
     let active = true;
-    supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS)
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error || !data?.signedUrl) setSignFailure(src);
-        else {
-          setSignFailure(null);
-          setSigned({ source: src, url: data.signedUrl, expiresAt: Date.now() + SIGNED_URL_SECONDS * 1000 });
-        }
-      })
-      .catch(() => { if (active) setSignFailure(src); });
+    signPath(path).then((entry) => {
+      if (!active) return;
+      if (!entry) setSignFailure(src);
+      else {
+        setSignFailure(null);
+        setSigned({ source: src, ...entry });
+      }
+    });
     return () => { active = false; };
   }, [path, src, mayRead, visible, signed, refresh]);
 

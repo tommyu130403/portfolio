@@ -28,6 +28,7 @@ import RichMarkdownEditor, {
 import WorkDetailHeader, { type WorkToolItem, type WorkDetailEditRegion } from "@/components/WorkDetailHeader";
 import WorkCard from "@/components/WorkCard";
 import WorkDetailContent from "@/components/WorkDetailContent";
+import { SERVICE_BRANDS } from "@/lib/service-brands";
 import { parseScreenshots, parseThumbnail, DEFAULT_IMAGE, type WorkThumbnailData, type ThumbnailLayout } from "@/lib/work-content";
 import { workPeriodLabel } from "@/lib/work-period";
 import { compressImage } from "@/lib/compress-image";
@@ -510,7 +511,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       return;
     }
     const base: WorkThumbnailData = thumbnail ??
-      thumbStashRef.current ?? { layout: "a1", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [] };
+      thumbStashRef.current ?? { layout: "a1", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [], brand: null };
     setThumbnail({ ...base, layout: v as ThumbnailLayout });
   };
   const setSlot = (key: "mobile_urls" | "capture_urls", i: number, v: string) => {
@@ -1022,6 +1023,20 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                     <FieldLabel>サービス名</FieldLabel>
                     <Input value={work.hero_brand ?? ""} onChange={(v) => setField("hero_brand", v || null)} placeholder="サービス名" />
                     <p className="mt-1 text-[12px] text-system-500">ロゴを設定するとロゴだけを表示します（ロゴが読み込めないときはサービス名）</p>
+                  </div>
+                  <div>
+                    <FieldLabel>サービス</FieldLabel>
+                    <select
+                      value={thumbnail.brand ?? ""}
+                      onChange={(e) => setThumbnail({ ...thumbnail, brand: e.target.value || null })}
+                      className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary"
+                    >
+                      <option value="">なし（黒い地）</option>
+                      {SERVICE_BRANDS.map((b) => (
+                        <option key={b.key} value={b.key}>{b.name}</option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-[12px] text-system-500">サービスを選ぶと白基調のブランド色の地になり、ロゴ欄が空ならそのサービスのロゴを出します（黒い地向けの白いロゴは見えなくなるので、ロゴ欄を空にしてください）</p>
                   </div>
                   <div>
                     <FieldLabel>ロゴ</FieldLabel>

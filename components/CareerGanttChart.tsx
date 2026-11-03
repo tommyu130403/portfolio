@@ -46,7 +46,7 @@ const PANEL_Z = 50;
 const FONT_EN = "Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif";
 const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
 // 詳細パネルの見出し用（globals.css の --font-guide と同じ並び。@theme inline の変数は CSS 変数として出ないため実体を直接指定）
-const FONT_GUIDE = "var(--font-afacad), var(--font-mplus-1p), sans-serif";
+const FONT_GUIDE = "var(--font-afacad), var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
@@ -401,7 +401,7 @@ function DetailBody({
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <PeriodRow item={item} />
-        <p style={{ fontFamily: FONT_GUIDE, fontWeight: 700, color: C.role, fontSize: 22, lineHeight: 1.4, letterSpacing: ".96px", margin: 0, overflowWrap: "anywhere" }}>
+        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 22, lineHeight: 1.4, letterSpacing: ".96px", margin: 0, overflowWrap: "anywhere" }}>
           {item.role}
         </p>
         <p style={{ fontFamily: FONT_JP, color: C.muted, fontSize: 12, lineHeight: 1.6, letterSpacing: ".36px", margin: 0, overflowWrap: "anywhere" }}>

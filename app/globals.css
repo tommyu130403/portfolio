@@ -71,9 +71,8 @@ html:has([data-work-detail]) {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   /* Special フォント: 指定箇所のみ使用 (typo.special)。英数字/日本語の自動切替は対象外 */
-  --font-guide: var(--font-afacad), var(--font-mplus-1p); /* EN: Afacad / JP: M PLUS 1p */
+  --font-guide: var(--font-afacad), var(--font-noto-sans-jp); /* EN: Afacad / JP: Noto Sans JP */
   --font-sans:  var(--font-afacad);       /* Special 英字のみ: Afacad     (typo.special.en) */
-  --font-mplus: var(--font-mplus-1p);     /* Special 日本語のみ: M PLUS 1p（実装ローカル・Figma 変数なし） */
   /* Body フォント: 全要素のデフォルト (typo.body)。Noto のみ。英字 Avenir は font-en で明示する。 */
   --font-body:  var(--font-noto-sans-jp), sans-serif; /* Body: Noto Sans JP */
   --font-noto:  var(--font-noto-sans-jp); /* Body 日本語のみ: Noto Sans JP (typo.body.jp) */

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Afacad, Geist_Mono, Noto_Sans_JP, M_PLUS_1p, Figtree } from "next/font/google";
+import { Afacad, Geist_Mono, Noto_Sans_JP, Figtree } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 
@@ -7,14 +7,6 @@ import { AuthProvider } from "@/lib/auth";
 const afacad = Afacad({
   variable: "--font-afacad",
   subsets: ["latin"],
-  display: "swap",
-});
-
-// 日本語見出しフォント: M PLUS 1p（実装ローカル・Figma 変数なし）
-const mplusOnep = M_PLUS_1p({
-  variable: "--font-mplus-1p",
-  subsets: ["latin"],
-  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -78,7 +70,7 @@ export default function RootLayout({
     // globals.css の scroll-behavior: smooth を、Next.js が画面切り替え中だけ外せるようにする目印
     <html lang="ja" data-scroll-behavior="smooth">
       <body
-        className={`${afacad.variable} ${mplusOnep.variable} ${notoSansJP.variable} ${figtree.variable} ${geistMono.variable} antialiased`}
+        className={`${afacad.variable} ${notoSansJP.variable} ${figtree.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
           {children}

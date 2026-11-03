@@ -2412,7 +2412,7 @@ export function AdminLayout({
     <AdminShell section={section} hasUnsavedChanges={hasUnsavedChanges}>
       <div className="mb-16">
         <p className="text-[12px] tracking-[0.6px] text-primary">Content Management</p>
-        <p className="mt-1 font-mplus text-[40px] font-bold tracking-[2px] text-white">Admin</p>
+        <p className="mt-1 font-noto text-[40px] font-bold tracking-[2px] text-white">Admin</p>
         <p className="mt-3 text-[14px] text-fg-muted">
           ポートフォリオのコンテンツを編集・管理します。変更は保存ボタンを押すと即時反映されます。
         </p>

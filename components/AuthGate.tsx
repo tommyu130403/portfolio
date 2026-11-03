@@ -59,7 +59,7 @@ function LoginForm() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface">
       <div className="w-full max-w-[400px] px-8">
         <p className="mb-1 text-[12px] tracking-[0.6px] text-primary">Portfolio</p>
-        <p className="mb-2 font-mplus text-[36px] leading-tight tracking-[1.8px] text-white">
+        <p className="mb-2 font-noto text-[36px] leading-tight tracking-[1.8px] text-white">
           Yu Tomita
         </p>
         <p className="mb-10 text-[14px] text-fg-muted">

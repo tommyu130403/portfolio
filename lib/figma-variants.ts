@@ -30,7 +30,7 @@ export const ITEM_WIDTH_CLASSES: Record<ItemWidth, string> = {
 
 /** _Item 共通ベース */
 export const ITEM_BASE =
-  "flex cursor-pointer items-center rounded-[8px] shrink-0 transition-all duration-300 overflow-hidden gap-3 px-3 py-[10px]";
+  "flex cursor-pointer items-center rounded-[8px] shrink-0 transition-[width,background-color,color] duration-300 overflow-hidden gap-3 px-3 py-[10px]";
 
 /** フォーカス時のアクセシビリティ */
 export const ITEM_FOCUS =

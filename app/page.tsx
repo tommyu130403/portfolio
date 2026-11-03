@@ -106,7 +106,9 @@ function HomeContent() {
 
     const TRIGGER_OFFSET = 120;
 
-    const updateActive = () => {
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
       let current: SideMenuSectionId = SECTION_IDS[0];
       for (const id of SECTION_IDS) {
         const el = document.getElementById(id);
@@ -116,10 +118,18 @@ function HomeContent() {
       }
       setActiveSection(current);
     };
+    // スクロール中は 1 フレームに 1 回だけ測る
+    const updateActive = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(measure);
+    };
 
     updateActive();
     window.addEventListener("scroll", updateActive, { passive: true });
-    return () => window.removeEventListener("scroll", updateActive);
+    return () => {
+      window.removeEventListener("scroll", updateActive);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
   return (
@@ -145,41 +155,48 @@ function HomeContent() {
         </button>
 
         {/* モバイル: オーバーレイ（lg 未満のみ表示） */}
-        {mobileMenuOpen && (
+        {/* 常に描画し、開閉は opacity / translate で動かす(閉じている間は inert + invisible で操作・読み上げ対象外) */}
+        <div
+          inert={!mobileMenuOpen}
+          className={[
+            "fixed inset-0 z-[60] lg:hidden transition-[opacity,visibility] duration-300 ease-in-out",
+            mobileMenuOpen ? "visible opacity-100" : "invisible opacity-0",
+          ].join(" ")}
+          // 閉じている間は dialog として数えない(Modal の「最前面のダイアログ」判定に混ざらないように)
+          role={mobileMenuOpen ? "dialog" : undefined}
+          aria-modal={mobileMenuOpen ? true : undefined}
+          aria-label="ナビゲーション"
+        >
+          {/* 背景（クリックで閉じる） */}
           <div
-            className="fixed inset-0 z-[60] lg:hidden"
-            role="dialog"
-            aria-modal="true"
-            aria-label="ナビゲーション"
+            className="absolute inset-0 bg-black/25"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* パネル: 既存 SideMenuBar を展開状態で再利用。ナビリンククリックで閉じる */}
+          <div
+            className={[
+              "absolute inset-y-0 left-0 w-[216px] transition-transform duration-300 ease-in-out",
+              mobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+            ].join(" ")}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest("a")) setMobileMenuOpen(false);
+            }}
           >
-            {/* 背景（クリックで閉じる） */}
-            <div
-              className="absolute inset-0 bg-black/25"
-              onClick={() => setMobileMenuOpen(false)}
+            <SideMenuBar
+              activeSection={activeSection}
+              collapsed={false}
             />
-            {/* パネル: 既存 SideMenuBar を展開状態で再利用。ナビリンククリックで閉じる */}
-            <div
-              className="absolute inset-y-0 left-0 w-[216px]"
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest("a")) setMobileMenuOpen(false);
-              }}
-            >
-              <SideMenuBar
-                activeSection={activeSection}
-                collapsed={false}
-              />
-            </div>
-            {/* 閉じるボタン */}
-            <button
-              type="button"
-              aria-label="メニューを閉じる"
-              onClick={() => setMobileMenuOpen(false)}
-              className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-light text-[18px] text-white"
-            >
-              ✕
-            </button>
           </div>
-        )}
+          {/* 閉じるボタン */}
+          <button
+            type="button"
+            aria-label="メニューを閉じる"
+            onClick={() => setMobileMenuOpen(false)}
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-light text-[18px] text-white"
+          >
+            ✕
+          </button>
+        </div>
 
       {/* Main content */}
       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">
@@ -190,7 +207,7 @@ function HomeContent() {
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-system-800" />
               ) : (
-                <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" className="h-full w-full object-cover" />
+                <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
             </div>
             <div className="flex flex-1 flex-col">

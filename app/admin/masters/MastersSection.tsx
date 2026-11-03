@@ -683,8 +683,8 @@ export default function MastersSection({
             >
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
                 <span className="text-[13px] text-white">{c.name}</span>
-                {/* 公開サイトでの見え方（作品カードと同じ sm） */}
-                <Tag variant="category" size="sm" label={c.name} hue={c.color_hue} className="min-w-0" />
+                {/* 公開サイトでの見え方（作品カードと同じ card） */}
+                <Tag variant="category" size="card" label={c.name} hue={c.color_hue} className="min-w-0" />
                 <CategoryColorControl
                   key={c.color_hue ?? "none"}
                   hue={c.color_hue}

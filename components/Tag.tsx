@@ -7,13 +7,14 @@ type TagProps = {
   /**
    * default: 従来の main 系（プロジェクトカード等）
    * small:   Figma Tag/Small（bg black/25・12px white）
-   * content:  作品の制作内容タグ（Figma Master 494:1363 / 989:4803 の Tag-multi Color=default）。背景なし・border 1px・10px fg-muted・折り返さない
+   * content:  作品の制作内容タグ（Figma Master 494:1045 / 989:4803 の Tag-multi Color=default）。地 surface・border 1px・10px fg-muted・折り返さない
    * category: Figma Library Tag-single（552:650）。カードのカテゴリ表示
    * tool:    Figma Slot-Tool（border付き・グレー文字・16pxアイコン前置。スキル展開パネル用）
    */
   variant?: "default" | "small" | "tool" | "content" | "category";
-  /** category のみ: md = 13px（作品詳細上部・Library Tag-single 552:650）/ sm = 10px（作品カード・前後ナビ・Master 494:1363 / 973:2190）。既定 md */
-  size?: "sm" | "md";
+  /** category のみ: md = 13px（作品詳細上部・Library Tag-single 552:650）/ sm = 10px（前後ナビ・Master 973:2190）/
+   * card = Avenir Heavy 10px・高さ 26（作品カード・Master 494:1045）。既定 md */
+  size?: "sm" | "md" | "card";
   prefix?: ReactNode;
   suffix?: ReactNode;
   /** tool のみ: 背景を bg-surface で塗る（Figma 900:9214 の役割・関係者タグ。未指定は背景なし） */
@@ -29,7 +30,11 @@ const INNER_RING = "after:pointer-events-none after:absolute after:inset-0 after
 
 const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md", prefix, suffix, filled, count, hue }) => {
   if (variant === "category") {
-    const fs = size === "sm" ? "text-[10px]" : "text-[13px]";
+    /* card は Master の作品カード（494:1045・2026-11-03）: Avenir Heavy 10px・字間 0.5px・行の上下は削らず高さ 26 */
+    const fs =
+      size === "card"
+        ? "font-en text-[10px] font-extrabold tracking-[0.5px]"
+        : `${size === "sm" ? "text-[10px]" : "text-[13px]"} tracking-[0.03em] [text-box:trim-both_cap_alphabetic]`;
     // 範囲外・NaN は「色なし」に倒す（クラスと style の判定を同じ値から決める）
     const safeHue = normalizeWorkCategoryHue(hue);
     const colored = safeHue !== null;
@@ -38,9 +43,9 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md",
         className={`flex max-w-full items-center justify-center rounded-r4 ${colored ? "" : "bg-main-600 "}p-2 ${className ?? ""}`}
         style={workCategoryTagStyle(safeHue)}
       >
-        {/* Figma Tag-single（Library 552:650・2026-10-27）: 角丸 4・余白 8・Noto 13px 字間 3%・Main/600 地に Main/base。Figma は text-box-trim で行の上下余白を字の高さ（cap）まで削り、チップは 26px。未対応ブラウザでは leading-none の 29px に収まる。sm は 10px・高さ 23（Master の作品カード・前後ナビ） */}
+        {/* Figma Tag-single（Library 552:650・2026-10-27）: 角丸 4・余白 8・Noto 13px 字間 3%・Main/600 地に Main/base。Figma は text-box-trim で行の上下余白を字の高さ（cap）まで削り、チップは 26px。未対応ブラウザでは leading-none の 29px に収まる。sm は 10px・高さ 23（前後ナビ） */}
         <p
-          className={`min-w-0 truncate ${fs} leading-none tracking-[0.03em] ${colored ? "" : "text-primary "}[text-box:trim-both_cap_alphabetic]`}
+          className={`min-w-0 truncate ${fs} leading-none ${colored ? "" : "text-primary"}`}
           title={label}
         >
           {label}
@@ -52,9 +57,10 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md",
   if (variant === "content") {
     return (
       <div
-        className={`relative flex max-w-full shrink-0 items-center rounded-full px-[10px] py-[6px] ${INNER_RING} after:border-border ${className ?? ""}`}
+        className={`relative flex max-w-full shrink-0 items-center rounded-full bg-surface px-[10px] py-[6px] ${INNER_RING} after:border-border ${className ?? ""}`}
       >
-        {/* 行より長い名前は省略し、全文を title で補う（filled の tool と同じ）。
+        {/* Figma Tag-multi（Master 494:1045・2026-11-03）は Background/Default の地を持つ。
+            行より長い名前は省略し、全文を title で補う（filled の tool と同じ）。
             truncate の overflow:hidden が leading-none だと g / y の下端を切るため、
             行を 14px に広げて -my-[2px] で相殺し、タグの高さ 22px（Figma）を保つ */}
         <p className="-my-[2px] min-w-0 truncate font-en text-[10px] leading-[14px] text-fg-muted" title={label}>{label}</p>

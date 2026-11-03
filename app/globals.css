@@ -164,6 +164,7 @@ html:has([data-work-detail]) {
   --color-fg-link-hover: var(--color-main-050);        /* Text/Link-hover */
   --color-surface:       var(--color-system-925);      /* Background/Default */
   --color-surface-light: var(--color-system-875);      /* Background/Light */
+  --color-thumbnail:     var(--color-system-950);      /* （Figma 未登録）作品サムネイルの地。surface より暗くして一覧の背景と分ける */
   --color-border:        var(--color-system-825);      /* Border/Default */
   --color-border-light:  var(--color-system-800);      /* Border/Light */
   --color-border-main:   color-mix(in srgb, var(--color-main-100) 40%, transparent); /* Border/Main = main-100 40% */

@@ -215,6 +215,7 @@ const SEMANTIC_SWATCHES = [
   { kind: "text",   cls: "text-fg-link-hover",  token: "semantic.fgLinkHover",  value: semantic.fgLinkHover,  figma: "Text/Link-hover",     ref: "main-050" },
   { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "system-925" },
   { kind: "bg",     cls: "bg-surface-light",    token: "semantic.surfaceLight", value: semantic.surfaceLight, figma: "Background/Light",   ref: "system-875" },
+  { kind: "bg",     cls: "bg-thumbnail",        token: "semantic.thumbnail",    value: semantic.thumbnail,    figma: "（未登録）",          ref: "system-950" },
   { kind: "border", cls: "border-border",       token: "semantic.border",       value: semantic.border,       figma: "Border/Default",     ref: "system-825" },
   { kind: "border", cls: "border-border-light", token: "semantic.borderLight",  value: semantic.borderLight,  figma: "Border/Light",       ref: "system-800" },
   { kind: "border", cls: "border-border-main",  token: "semantic.borderMain",   value: semantic.borderMain,   figma: "Border/Main",        ref: "main-100 40%" },
@@ -943,7 +944,7 @@ function WorkVizModalDemo() {
 }
 
 /** カテゴリ色の見本: プリセット 8 色（D案）と仮のカテゴリ名を 1 対 1 で組にする */
-const CATEGORY_HUE_SAMPLES = ["プラットフォーム開発", "業務システム", "toC アプリ", "Web サイト", "デザインシステム", "リサーチ", "ブランディング", "新規事業"].map(
+const CATEGORY_HUE_SAMPLES = ["Platform", "Business System", "Consumer App", "Website", "Design System", "Research", "Branding", "New Business"].map(
   (label, i) => ({ label, hue: WORK_CATEGORY_PRESET_HUES[i] as number })
 );
 
@@ -1018,10 +1019,11 @@ function ComponentsSection() {
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             <Tag label="機能開発" variant="category" />
             <Tag label="機能開発" variant="category" size="sm" />
+            <Tag label="Feature" variant="category" size="card" />
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
             {CATEGORY_HUE_SAMPLES.map(({ hue, label }) => (
-              <Tag key={hue} label={label} variant="category" size="sm" hue={hue} />
+              <Tag key={hue} label={label} variant="category" size="card" hue={hue} />
             ))}
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
@@ -1155,7 +1157,6 @@ function ComponentsSection() {
                     mobileUrls={t.mobile_urls}
                     captureUrls={t.capture_urls}
                     serviceName={SAMPLE_THUMB_SERVICE}
-                    title={SAMPLE_THUMB_TITLE}
                   />
                 </div>
               ))}
@@ -1170,7 +1171,6 @@ function ComponentsSection() {
                     mobileUrls={t.mobile_urls}
                     captureUrls={t.capture_urls}
                     serviceName={SAMPLE_THUMB_SERVICE}
-                    title={SAMPLE_THUMB_TITLE}
                   />
                 </div>
               ))}

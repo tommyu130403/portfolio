@@ -42,6 +42,8 @@
 
 Next.js 製のポートフォリオサイト。構成は `app/`（ページ）・`components/` と `src/components/`（UI）・`lib/`（`design-tokens.ts` 等）・`public/`（静的アセット）。詳細はリポジトリを見る。
 
+work 本文を書く・直すときは `docs/work-body-patterns.md` に従う。
+
 ---
 
 ## 2. 実行ポリシー（自動実行 vs 要承認）

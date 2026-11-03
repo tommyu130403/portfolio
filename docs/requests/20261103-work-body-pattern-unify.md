@@ -27,6 +27,7 @@ Step 1. ルールを書く
   - 各行に「正しい書き方」の記法サンプル（コピペできる最小例）を1つずつ付ける。
   - CLAUDE.md §1 の末尾に1行追加:「work 本文を書く・直すときは docs/work-body-patterns.md に従う」。
 Step 2. 下書きを安全な場所へ移す（書き換えより先）
+  - （2026-11-03 追記: 下書き 8 本は PR #174 で docs/work-drafts/ に入っていた。以後は git 上のものが正。worktree からコピーし直さない）
   - 下書き 8 本は .claude/worktrees/work-detail-figures/docs/work-drafts/ にしかない。
     このワークツリーは git 管理が切れている（2026-11-03 確認: git コマンドが not a git repository）。
   - docs/work-drafts/ へコピーして、元は消さない。コピー後に件数と行数が一致することを確認して報告。

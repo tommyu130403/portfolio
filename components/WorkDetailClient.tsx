@@ -70,7 +70,6 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const [order, setOrder] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -238,16 +237,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   return (
     <div data-work-detail className="relative flex min-h-screen items-start bg-surface text-white">
       {/* Side Menu（lg 以上のみ表示） */}
-      <div
-        className="sticky top-0 shrink-0 z-[2] hidden lg:block"
-        style={{ width: sidebarCollapsed ? 96 : 256, transition: "width 300ms ease-in-out" }}
-      >
-        <SideMenuBar
-          activeSection="works"
-          hrefBase="/"
-          collapsed={sidebarCollapsed}
-          onCollapsedChange={setSidebarCollapsed}
-        />
+      <div className="sticky top-0 shrink-0 z-[2] hidden w-[96px] lg:block">
+        <SideMenuBar activeSection="works" hrefBase="/" />
       </div>
       {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
           WorkVizModal(z-50) / ScreenshotLightbox(z-60) が他の層より

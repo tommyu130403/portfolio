@@ -5,7 +5,6 @@ import type { FC } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Icon, { IconProps } from "./Icon";
-import { ButtonFunction } from "./ButtonFunction";
 import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
 import { useAuth } from "@/lib/auth";
 
@@ -170,11 +169,10 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
 // ─────────────────────────────────────────────
 type SideMenuBarProps = {
   activeSection?: SideMenuSectionId;
-  /** サイドバー折りたたみ状態（省略時は内部で管理） */
+  /** 折りたたみ状態の固定。省略時はホバー / キーボードフォーカスで展開する（既定は折りたたみ 96px、
+      展開時 216px でページ内容に重なる）。モバイルのオーバーレイ表示やスタイルガイドでは
+      collapsed={false} 等で固定する */
   collapsed?: boolean;
-  onCollapsedChange?: (collapsed: boolean) => void;
-  /** 折りたたみトグルボタンの表示（既定 true）。モバイルのオーバーレイ表示では false にする */
-  showCollapseToggle?: boolean;
   /** セクションリンクの前置き。トップページは "" のまま(同一ページ内スクロール)、
       別ページ(/works 等)からは "/" を渡して "/#introduction" にする */
   hrefBase?: string;
@@ -182,43 +180,43 @@ type SideMenuBarProps = {
 
 export const SideMenuBar: FC<SideMenuBarProps> = ({
   activeSection,
-  collapsed: controlledCollapsed,
-  onCollapsedChange,
-  showCollapseToggle = true,
+  collapsed: fixedCollapsed,
   hrefBase = "",
 }) => {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const collapsed = controlledCollapsed ?? internalCollapsed;
-  const setCollapsed = onCollapsedChange
-    ? (v: boolean | ((prev: boolean) => boolean)) =>
-        onCollapsedChange(typeof v === "function" ? v(collapsed) : v)
-    : setInternalCollapsed;
+  const [hovered, setHovered] = useState(false);
+  // マウスのクリックで入ったフォーカスは対象外（ポインターが離れたら閉じるため）
+  const [keyboardFocusWithin, setKeyboardFocusWithin] = useState(false);
+  const isHoverMode = fixedCollapsed === undefined;
+  const collapsed = fixedCollapsed ?? !(hovered || keyboardFocusWithin);
 
   const { supabaseSession, accessRole, logout } = useAuth();
   const [logoutError, setLogoutError] = useState("");
 
   return (
     <aside
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => {
+        // マウスで離れたら、キーボード由来の展開も閉じる(クリックで残ったフォーカスで開きっぱなしにしない)
+        setHovered(false);
+        setKeyboardFocusWithin(false);
+      }}
+      onFocusCapture={(e) => {
+        if ((e.target as HTMLElement).matches(":focus-visible")) setKeyboardFocusWithin(true);
+      }}
+      onBlurCapture={(e) => {
+        const next = e.relatedTarget as Node | null;
+        if (!next || !e.currentTarget.contains(next)) setKeyboardFocusWithin(false);
+      }}
       className={[
         "relative flex h-screen flex-col bg-surface",
         "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border after:content-['']",
         "transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-[96px]" : "w-[256px]",
+        // 展開幅 216px = 最も幅の広い中身(プロフィールの「PRODUCT DESIGNER」右端 187px)+ 右余白 24px = 211px を 8 の倍数へ切り上げ。
+        // size トークンに近い値(200 では切れる / 次は 320)がないため直書き
+        collapsed ? "w-[96px]" : "w-[216px]",
+        isHoverMode && !collapsed ? "shadow-base" : "",
       ].join(" ")}
     >
-      {/* Collapse / Expand button — absolute inside aside (no overflow on aside = not clipped) */}
-      {showCollapseToggle && (
-        <div className="absolute right-[-18px] top-[34px] z-10">
-          <ButtonFunction
-            direction={collapsed ? "right" : "left"}
-            border="on"
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          />
-        </div>
-      )}
-
-      {/* Inner scrollable content — overflow-y here doesn't clip the absolute button above */}
       <div className="flex flex-col gap-6 p-6 items-start w-full h-full min-h-0 overflow-y-auto">
         {/* Title */}
         <p

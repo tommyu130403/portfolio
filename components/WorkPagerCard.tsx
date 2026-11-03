@@ -86,13 +86,16 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
               </div>
             </div>
           ) : (
-            <ProtectedImage
-              src={thumbSrc!}
-              alt=""
-              loading="lazy"
-              onError={() => setFailedSrc(thumbSrc)}
-              className="hidden w-[128px] shrink-0 self-stretch object-cover md:block"
-            />
+            // 画像は枠いっぱいに絶対配置し、カードの高さは文字側の中身で決める（画像の縦横比で伸ばさない）
+            <div className="relative hidden w-[128px] shrink-0 self-stretch overflow-hidden md:block">
+              <ProtectedImage
+                src={thumbSrc!}
+                alt=""
+                loading="lazy"
+                onError={() => setFailedSrc(thumbSrc)}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </div>
           )}
           <div className={`flex min-w-0 flex-1 flex-col justify-center gap-[6px] px-4 py-[14px] md:gap-1 md:py-[10px] ${align}`}>{body}</div>
         </>

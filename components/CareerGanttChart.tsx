@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal, flushSync } from "react-dom";
 import Icon from "@/components/Icon";
+import { ButtonFunction } from "@/components/ButtonFunction";
+import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 import { supabase } from "@/src/lib/supabase";
-import type { Tables } from "@/src/types/supabase";
+import type { Json, Tables } from "@/src/types/supabase";
+import WorkPagerCard from "@/components/WorkPagerCard";
+import { DEFAULT_IMAGE, parseThumbnail } from "@/lib/work-content";
+import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
 import { formatPeriodLabel } from "@/lib/work-period";
 
 type CareerItem = Tables<"career_items">;
@@ -14,43 +20,59 @@ type EnrichedItem = CareerItem & {
   endYear: number;
   isCurrent: boolean;
 };
-type WorkLink = { id: string; title: string };
+type WorkLink = {
+  id: string;
+  title: string;
+  category: string | null;
+  thumbnail_url: string | null;
+  thumbnail: Json | null;
+  hero_brand: string | null;
+};
 
 const CURRENT_YEAR = new Date().getFullYear();
 const CHART_TOTAL = 10; // Figma 770:6432 10列
 const CHART_START = CURRENT_YEAR - (CHART_TOTAL - 1);
 const CHART_YEARS = Array.from({ length: CHART_TOTAL }, (_, i) => CHART_START + i);
-// カードの開閉アニメーションの長さ。閉じる間も行を手前に保つ時間と揃える
-const COLLAPSE_MS = 300;
+// 詳細パネルの開閉アニメーションの長さ。閉じ終わるまで描画を残す時間と揃える
+const PANEL_MS = 300;
+// ボトムシートを下へドラッグして閉じるしきい値（px）
+const SHEET_CLOSE_DRAG = 100;
+// Modal.tsx（z-50）と同じ層。サイドメニュー（sticky z-[2]）より手前に出す
+const PANEL_Z = 50;
 
 /* Figma フォント指定（node 770-6652 準拠）
    period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
 // FONT_JP は Noto のみ（日本語テキスト用）。FONT_EN は英数字表示用に Avenir を明示する（Avenir の無い端末は Figtree）。
 const FONT_EN = "Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif";
 const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
+// 詳細パネルの見出し用（globals.css の --font-guide と同じ並び。@theme inline の変数は CSS 変数として出ないため実体を直接指定）
+const FONT_GUIDE = "var(--font-afacad), var(--font-mplus-1p), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
-  cardBg: "#191919", // Background/Default = System/925（Figma 770:6652。ページ背景と同色・影なし）
-  cardBorder: "#3a3a3a", // Border/Default（System/825）
-  cardBorderOpen: "#424242", // Border/Light
+  cardBg: "var(--color-surface-light)", // Background/Light（System/875）
+  cardBgActive: "var(--color-system-850)", // 選択中・ホバー時（カードより一段明るい System/850）
+  cardBorder: "var(--color-border)", // Border/Default（System/825）
+  cardBorderHover: "var(--color-border-light)", // Border/Light
+  cardBorderSelected: "var(--color-border-main)", // Border/Main
+  panelBg: "var(--color-surface)", // Background/Default（System/925）
   period: "#9e9e9e", // System/500
   role: "#e0e0e0", // Text/Body/Primary（System/300）
   company: "#616161", // System/700
-  desc: "#9e9e9e", // System/500
-  worksLabel: "#616161", // System/700
-  worksLink: "#39c89b", // Main/200
-  worksLinkHover: "#b3ffe7", // Main/050（Figma に hover 定義なし・明るい側へ）
+  desc: "#e0e0e0", // System/300
+  muted: "#9e9e9e", // System/500
+  caption: "#757575", // System/600
   iconArrow: "#757575", // System/600
   iconArrowCurrent: "#2b9e7a", // Main/300
+  label: "#b3ffe7", // Main/050（セクション見出しの和文ラベルと同じ）
   badgeBg: "#48f4be",
   badgeText: "#191919", // Background/Default（System/925）
   divider: "#3a3a3a",
   dot: "#3a3a3a", // Border/Default（System/825）
-  dotOpen: "#424242", // Border/Light
+  dotSelected: "#2b9e7a", // Main/300（開いている経歴）
   dotCurrent: "#48f4be", // Main/base
   bar: "#3a3a3a", // Border/Default（System/825）
-  barOpen: "#424242", // Border/Light
+  barSelected: "#2b9e7a", // Main/300（開いている経歴）
   gridLine: "#3a3a3a",
   yearText: "#757575", // System/600
   yearCurrent: "#b3ffe7", // Main/050
@@ -110,160 +132,109 @@ function useMediaQuery(query: string) {
   );
 }
 
-/* Works リンク列（展開カード内）。デスクトップ・モバイル共通 */
-function WorksLinks({
-  works,
-  onOpenWork,
-}: {
-  works: WorkLink[];
-  onOpenWork: (workId: string) => void;
-}) {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  if (works.length === 0) return null;
+/* 期間行（カレンダーアイコン + 期間 + 現在バッジ）。カードと詳細パネルで共通 */
+function PeriodRow({ item }: { item: EnrichedItem }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <p style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", lineHeight: "12px", color: C.worksLabel, margin: 0 }}>
-        Works
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {works.map((w) => {
-          const linkColor = hoveredId === w.id ? C.worksLinkHover : C.worksLink;
-          return (
-            <button
-              key={w.id}
-              type="button"
-              onMouseEnter={() => setHoveredId(w.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenWork(w.id);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 4,
-                background: "transparent",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
-              }}
-            >
-              <Icon
-                set="Arrows"
-                name="arrow-right"
-                tintColor={linkColor}
-                style={{ width: 12, height: 12, flexShrink: 0, marginTop: 0, transition: "background-color .15s ease" }}
-              />
-              <span style={{ fontFamily: FONT_JP, fontSize: 10, letterSpacing: ".3px", color: linkColor, lineHeight: "12px", transition: "color .15s ease" }}>
-                {w.title}
-              </span>
-            </button>
-          );
-        })}
+    <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <Icon set="Time" name="calendar-line" tintColor="var(--color-system-500)" style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span
+          style={{
+            fontFamily: FONT_EN,
+            fontWeight: 800,
+            color: C.period,
+            fontSize: 11,
+            letterSpacing: ".33px",
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+            textBox: "trim-both cap alphabetic",
+          }}
+        >
+          {formatPeriodLabel(item.period)}
+        </span>
       </div>
+      {item.isCurrent && (
+        <span
+          style={{
+            fontFamily: FONT_JP,
+            background: C.badgeBg,
+            color: C.badgeText,
+            fontSize: 9,
+            lineHeight: 1,
+            letterSpacing: "0.1172px",
+            padding: "3px 7px",
+            borderRadius: 9999,
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          現在
+        </span>
+      )}
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   CareerCard — デスクトップ（バー下）／モバイル（縦リスト）共通の小型カード
-   width: 100%（Figma: w-full。幅は呼び出し側の包み div が min 180 / max 400 で決める）。
-   role/company は折り返し（nowrap/ellipsis は付けない）。
-   開閉は親が制御（バー・レールのドット色と連動）。
+   CareerCard — デスクトップ（バー下）／モバイル（縦リスト）共通の入口カード
+   期間・役職・会社だけを見せ、押すと詳細パネルが開く。
+   width: 100%（幅は呼び出し側の包み div が決める）。role/company は折り返し。
    ────────────────────────────────────────────────────────────────────────── */
 function CareerCard({
   item,
-  works,
-  onOpenWork,
-  isOpen,
-  onToggle,
+  isSelected,
+  isMobile,
+  onOpen,
 }: {
   item: EnrichedItem;
-  works: WorkLink[];
-  onOpenWork: (workId: string) => void;
-  isOpen: boolean;
-  /** 省略時はクリックで開閉しない（マウス操作のデスクトップはホバーで開閉する） */
-  onToggle?: () => void;
+  isSelected: boolean;
+  isMobile: boolean;
+  onOpen: () => void;
 }) {
-  const isCurrent = item.isCurrent;
-  const borderColor = isOpen ? C.cardBorderOpen : C.cardBorder;
-  const hasAccordionContent = Boolean(item.description) || works.length > 0;
+  const [hoverRaw, setHovered] = useState(false);
+  // タッチ端末ではホバー表示を出さない（タップ後に残り続けるため）
+  const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const hovered = hoverRaw && canHover;
+  const active = isSelected || hovered;
+  const borderColor = isSelected ? C.cardBorderSelected : hovered ? C.cardBorderHover : C.cardBorder;
+  const chevronColor = item.isCurrent ? C.iconArrowCurrent : C.iconArrow;
 
   // role/company は折り返し（nowrap/ellipsis を付けない。右端切れの原因だったため廃止）
   const clampStyle = { whiteSpace: "normal", overflowWrap: "anywhere" } as const;
 
   return (
-    <div
-      onClick={onToggle}
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      data-career-card-id={item.id}
+      onClick={onOpen}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         width: "100%",
         minWidth: 180,
         boxSizing: "border-box",
+        textAlign: "left",
+        font: "inherit",
+        color: "inherit",
         borderRadius: 10,
         border: `1px solid ${borderColor}`,
-        background: C.cardBg,
-        padding: "16px 0",
+        background: active ? C.cardBgActive : C.cardBg,
+        boxShadow: "0 1px 3px rgba(0,0,0,.1)",
+        padding: 16,
         display: "flex",
-        flexDirection: "column",
-        cursor: onToggle ? "pointer" : "default",
-        position: "relative",
+        alignItems: "center",
+        gap: 12,
+        cursor: "pointer",
         pointerEvents: "auto",
-        transition: "border-color .2s ease",
+        transition: "border-color .2s ease, background-color .2s ease",
       }}
     >
-      {/* ヘッダー（期間行 + 役職 + 会社）— Figma: gap 6 */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 16, paddingRight: 16 }}>
-        {/* 期間行 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <Icon set="Time" name="calendar-line" tintColor="var(--color-system-500)" style={{ width: 12, height: 12, flexShrink: 0 }} />
-              <span
-                style={{
-                  fontFamily: FONT_EN,
-                  fontWeight: 800,
-                  color: C.period,
-                  fontSize: 11,
-                  letterSpacing: ".33px",
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                  textBox: "trim-both cap alphabetic",
-                }}
-              >
-                {formatPeriodLabel(item.period)}
-              </span>
-            </div>
-            {isCurrent && (
-              <span
-                style={{
-                  fontFamily: FONT_JP,
-                  background: C.badgeBg,
-                  color: C.badgeText,
-                  fontSize: 9,
-                  lineHeight: 1,
-                  letterSpacing: "0.1172px",
-                  padding: "3px 7px",
-                  borderRadius: 9999,
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                現在
-              </span>
-            )}
-          </div>
-          <Icon
-            set="Arrows"
-            name={isOpen ? "up" : "down"}
-            tintColor={isCurrent ? C.iconArrowCurrent : C.iconArrow}
-            style={{ width: 12, height: 12, flexShrink: 0 }}
-          />
-        </div>
-
+      {/* 左列（期間行 + 役職 + 会社）— Figma: gap 6 */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+        <PeriodRow item={item} />
         {/* 役職 — Noto Sans JP Bold */}
-        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: 1.6, letterSpacing: ".39px", margin: 0, ...clampStyle }}>
+        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: "20px", letterSpacing: ".39px", margin: 0, ...clampStyle }}>
           {item.role}
         </p>
         {/* 会社 — Noto Sans JP Regular */}
@@ -272,33 +243,29 @@ function CareerCard({
         </p>
       </div>
 
-      {/* アコーディオン（区切り線 + 説明 + Works）— width:0/minWidth:100% で
-         カード幅は role に依存させつつ、内部は幅いっぱいに折り返す */}
-      <div
-        style={{
-          width: 0,
-          minWidth: "100%",
-          maxHeight: isOpen ? 2000 : 0,
-          opacity: isOpen ? 1 : 0,
-          overflow: "hidden",
-          transition: `max-height ${COLLAPSE_MS}ms ease, opacity .2s ease`,
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 16 }}>
-          <div style={{ height: 1, marginBottom: -1, width: "100%", background: C.divider }} />
-          {hasAccordionContent && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 16px" }}>
-              {item.description && (
-                <p style={{ fontFamily: FONT_JP, color: C.desc, fontSize: 11, lineHeight: 1.6, letterSpacing: ".33px", margin: 0, overflowWrap: "anywhere" }}>
-                  {item.description}
-                </p>
-              )}
-              <WorksLinks works={works} onOpenWork={onOpenWork} />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      {isMobile ? (
+        <span
+          aria-hidden
+          style={{
+            alignSelf: "flex-end",
+            flexShrink: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 2,
+            height: 28,
+            padding: "0 10px 0 8px",
+            borderRadius: 9999,
+            border: `1px solid ${C.cardBorder}`,
+            boxSizing: "border-box",
+          }}
+        >
+          <Icon set="Arrows" name="up" tintColor={item.isCurrent ? C.iconArrowCurrent : C.muted} style={{ width: 14, height: 14, flexShrink: 0 }} />
+          <span style={{ fontFamily: FONT_JP, fontSize: 10, lineHeight: 1, color: C.muted }}>詳細</span>
+        </span>
+      ) : (
+        <Icon set="Arrows" name="right" tintColor={chevronColor} style={{ width: 16, height: 16, flexShrink: 0 }} />
+      )}
+    </button>
   );
 }
 
@@ -320,29 +287,16 @@ function Dot({ color }: { color: string }) {
 
 /* ──────────────────────────────────────────────────────────────────────────
    Desktop row — 期間でバーが伸縮し、その下に fit-content カードを配置
+   行は固定高。開いている経歴はバーとドットを main-300 にする
    ────────────────────────────────────────────────────────────────────────── */
 function CareerRowDesktop({
   item,
-  works,
-  onOpenWork,
-  isLast,
-  isOpen,
-  isClosing,
-  canHover,
-  onToggle,
-  onHoverChange,
+  isSelected,
+  onOpen,
 }: {
   item: EnrichedItem;
-  works: WorkLink[];
-  onOpenWork: (workId: string) => void;
-  isLast: boolean;
-  isOpen: boolean;
-  /** 閉じるアニメーション中。縮み切るまで後ろの行より手前に描く */
-  isClosing: boolean;
-  /** マウス操作の端末か。true ならカードはホバーで開閉し、クリックでは開閉しない */
-  canHover: boolean;
-  onToggle: () => void;
-  onHoverChange: (hovered: boolean) => void;
+  isSelected: boolean;
+  onOpen: () => void;
 }) {
   // バー長 = 期間スパン（CHART_START 以前開始は左端でクランプ）
   const s = Math.max(0, Math.min(CHART_TOTAL, item.startVal));
@@ -354,6 +308,7 @@ function CareerRowDesktop({
   // type: current = 右端まで（終点ドットなし）／ prev = CHART_START 以前開始（始点ドットなし）
   const hasStartDot = item.startYear >= CHART_START;
   const hasEndDot = !item.isCurrent;
+  const startDotColor = item.isCurrent ? C.dotCurrent : isSelected ? C.dotSelected : C.dot;
 
   return (
     <div
@@ -361,8 +316,7 @@ function CareerRowDesktop({
       style={{
         position: "relative",
         width: "100%",
-        height: isLast && isOpen ? "auto" : 112,
-        zIndex: isOpen ? 3 : isClosing ? 2 : 1,
+        height: 112,
         display: "flex",
         flexDirection: "column",
         gap: 11,
@@ -371,9 +325,9 @@ function CareerRowDesktop({
     >
       {/* バー行（レール。位置・幅は Figma の期間バーのまま） */}
       <div style={{ marginLeft: `${left}%`, width: `${width}%`, minWidth: 8, display: "flex", alignItems: "center", gap: 4, pointerEvents: "auto" }}>
-        {hasStartDot && <Dot color={item.isCurrent ? C.dotCurrent : isOpen ? C.dotOpen : C.dot} />}
-        <div style={{ flex: 1, minWidth: 0, height: 2, background: isOpen ? C.barOpen : C.bar, borderRadius: "2px 0 0 2px" }} />
-        {hasEndDot && <Dot color={isOpen ? C.dotOpen : C.dot} />}
+        {hasStartDot && <Dot color={startDotColor} />}
+        <div style={{ flex: 1, minWidth: 0, height: 2, background: isSelected ? C.barSelected : C.bar, borderRadius: "2px 0 0 2px" }} />
+        {hasEndDot && <Dot color={isSelected ? C.dotSelected : C.dot} />}
       </div>
       {/* カード（行の直下）。[スペーサー][カード包み div] の2分割 flex にして、
          カード幅は中身（役職・会社名）に合わせつつ、右端にはみ出す場合はスペーサーが縮んで
@@ -381,10 +335,6 @@ function CareerRowDesktop({
       <div style={{ display: "flex", width: "100%" }}>
         <div style={{ flex: `0 1 ${left}%`, minWidth: 0 }} />
         <div
-          data-career-card=""
-          data-open={isOpen ? "" : undefined}
-          onMouseEnter={canHover ? () => onHoverChange(true) : undefined}
-          onMouseLeave={canHover ? () => onHoverChange(false) : undefined}
           style={{
             flex: "0 0 auto",
             width: "max-content",
@@ -395,7 +345,7 @@ function CareerRowDesktop({
             boxSizing: "border-box",
           }}
         >
-          <CareerCard item={item} works={works} onOpenWork={onOpenWork} isOpen={isOpen} onToggle={canHover ? undefined : onToggle} />
+          <CareerCard item={item} isSelected={isSelected} isMobile={false} onOpen={onOpen} />
         </div>
       </div>
     </div>
@@ -407,87 +357,481 @@ function CareerRowDesktop({
    ────────────────────────────────────────────────────────────────────────── */
 function CareerItemMobile({
   item,
-  works,
-  onOpenWork,
+  isSelected,
+  onOpen,
   isFirst,
   isLast,
 }: {
   item: EnrichedItem;
-  works: WorkLink[];
-  onOpenWork: (workId: string) => void;
+  isSelected: boolean;
+  onOpen: () => void;
   isFirst: boolean;
   isLast: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
       {/* タイムラインレール */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, alignSelf: "stretch", flexShrink: 0 }}>
         <div style={{ width: 2, height: 10, borderRadius: "0 0 2px 2px", background: isFirst ? "transparent" : C.bar, flexShrink: 0 }} />
-        <Dot color={isOpen ? C.dotOpen : C.dot} />
+        <Dot color={isSelected ? C.dotSelected : C.dot} />
         <div style={{ width: 2, flex: 1, minHeight: 1, borderRadius: "2px 2px 0 0", background: isLast ? "transparent" : C.bar }} />
       </div>
       {/* カード */}
       <div style={{ paddingBottom: 16, minWidth: 0, flex: 1 }}>
-        <CareerCard
-          item={item}
-          works={works}
-          onOpenWork={onOpenWork}
-          isOpen={isOpen}
-          onToggle={() => setIsOpen((o) => !o)}
-        />
+        <CareerCard item={item} isSelected={isSelected} isMobile onOpen={onOpen} />
       </div>
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+   詳細パネルの中身（PC ドロワー・SP ボトムシート共通）
+   ────────────────────────────────────────────────────────────────────────── */
+function DetailBody({
+  item,
+  works,
+  onOpenWork,
+}: {
+  item: EnrichedItem;
+  works: WorkLink[];
+  onOpenWork: () => void;
+}) {
+  const hues = useWorkCategoryHues();
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <PeriodRow item={item} />
+        <p style={{ fontFamily: FONT_GUIDE, fontWeight: 700, color: C.role, fontSize: 22, lineHeight: 1.4, letterSpacing: ".96px", margin: 0, overflowWrap: "anywhere" }}>
+          {item.role}
+        </p>
+        <p style={{ fontFamily: FONT_JP, color: C.muted, fontSize: 12, lineHeight: 1.6, letterSpacing: ".36px", margin: 0, overflowWrap: "anywhere" }}>
+          {item.company}
+        </p>
+      </div>
+      {(item.description || works.length > 0) && (
+        <div style={{ height: 1, width: "100%", background: C.divider }} />
+      )}
+      {item.description && (
+        <p
+          style={{
+            fontFamily: FONT_JP,
+            color: C.desc,
+            fontSize: 14,
+            lineHeight: 1.9,
+            letterSpacing: ".04em",
+            margin: 0,
+            textWrap: "pretty",
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {item.description}
+        </p>
+      )}
+      {works.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <p style={{ fontFamily: FONT_EN, fontSize: 10, lineHeight: "12px", letterSpacing: ".4px", textTransform: "uppercase", color: C.caption, margin: 0 }}>
+            Works
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {works.map((w) => (
+              // Library の WorkPagerCard（413:259 から方向の行を外した形。作品本文の埋め込みカードと同じ）
+              // 新しいタブで開く操作（修飾キー付き）では閉じない
+              <div key={w.id} onClickCapture={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) onOpenWork(); }}>
+                <WorkPagerCard
+                  category={w.category}
+                  categoryHue={w.category ? hues[w.category] ?? null : null}
+                  title={w.title}
+                  thumbnail={w.thumbnail_url ?? DEFAULT_IMAGE}
+                  composedThumbnail={parseThumbnail(w.thumbnail)}
+                  serviceName={w.hero_brand}
+                  href={`/works?id=${w.id}`}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* 前後の経歴へ送るフッター。古い順で「前 = 古い」「次 = 新しい」 */
+function PrevNext({
+  index,
+  total,
+  onPrev,
+  onNext,
+}: {
+  index: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  const [hovered, setHovered] = useState<"prev" | "next" | null>(null);
+  const btn = (kind: "prev" | "next", disabled: boolean, onClick: () => void) => {
+    const isHover = hovered === kind && !disabled;
+    const chevron = (
+      <Icon set="Arrows" name={kind === "prev" ? "left" : "right"} tintColor="currentColor" style={{ width: 16, height: 16, flexShrink: 0 }} />
+    );
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        onMouseEnter={() => setHovered(kind)}
+        onMouseLeave={() => setHovered(null)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          height: 36,
+          padding: "0 12px",
+          borderRadius: 8,
+          border: `1px solid ${C.cardBorder}`,
+          background: isHover ? "rgba(255,255,255,.05)" : "transparent",
+          color: isHover ? "var(--color-fg)" : C.muted,
+          fontFamily: FONT_JP,
+          fontSize: 12,
+          lineHeight: 1,
+          opacity: disabled ? 0.35 : 1,
+          cursor: disabled ? "default" : "pointer",
+          transition: "background-color .15s ease, color .15s ease",
+        }}
+      >
+        {kind === "prev" && chevron}
+        {kind === "prev" ? "前の経歴" : "次の経歴"}
+        {kind === "next" && chevron}
+      </button>
+    );
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      {btn("prev", index <= 0, onPrev)}
+      <span style={{ fontFamily: FONT_EN, fontSize: 11, color: C.caption, whiteSpace: "nowrap" }}>
+        {index + 1} / {total}
+      </span>
+      {btn("next", index >= total - 1, onNext)}
+    </div>
+  );
+}
+
+function CloseButton({ onClose }: { onClose: (viaKeyboard: boolean) => void }) {
+  return (
+    // detail === 0 = Enter / Space での押下
+    <ButtonFunction border="off" onClick={(e) => onClose(e.detail === 0)} aria-label="閉じる">
+      <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${BUTTON_FUNCTION_ICON}`} />
+    </ButtonFunction>
+  );
+}
+
+const PANEL_SHADOW = "1px 1px 16px 2px rgba(0,0,0,.25)";
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/* ──────────────────────────────────────────────────────────────────────────
+   CareerPanel — 詳細パネル。PC = 右ドロワー / SP = ボトムシート
+   document.body へ portal で出す（親の z-index に閉じ込められないため）。
+   visible が false になると退場アニメーションに入り、親が PANEL_MS 後に unmount する。
+   ────────────────────────────────────────────────────────────────────────── */
+function CareerPanel({
+  items,
+  index,
+  works,
+  isMobile,
+  visible,
+  open,
+  reducedMotion,
+  onClose,
+  onGo,
+  onOpenWork,
+}: {
+  items: EnrichedItem[];
+  index: number;
+  works: WorkLink[];
+  isMobile: boolean;
+  /** 表示位置にいるか（false = 画面外へ退場中） */
+  visible: boolean;
+  /** 操作を受け付けるか（閉じ始めたら false） */
+  open: boolean;
+  reducedMotion: boolean;
+  /** viaKeyboard = キーボード操作で閉じたか（カードへ戻すフォーカス枠の有無） */
+  onClose: (viaKeyboard: boolean) => void;
+  onGo: (next: number) => void;
+  onOpenWork: () => void;
+}) {
+  const item = items[index];
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const [dragY, setDragY] = useState<number | null>(null);
+  const dragStartRef = useRef(0);
+
+  // 開いた直後にダイアログ本体へフォーカス
+  useEffect(() => {
+    if (open) dialogRef.current?.focus({ preventScroll: true });
+  }, [open]);
+
+  // キーボード: Esc で閉じる / ← → で送る / Tab はダイアログ内に閉じ込める
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.isComposing) {
+        onClose(true);
+        return;
+      }
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        if (e.altKey || e.metaKey || e.ctrlKey) return;
+        const t = e.target;
+        if (t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+        const next = index + (e.key === "ArrowLeft" ? -1 : 1);
+        if (next >= 0 && next < items.length) {
+          e.preventDefault();
+          onGo(next);
+        }
+        return;
+      }
+      if (e.key === "Tab") {
+        const root = dialogRef.current;
+        if (!root) return;
+        const focusables = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (!root.contains(active)) {
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus();
+        } else if (e.shiftKey) {
+          if (active === first || active === root) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else if (active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, index, items.length, onClose, onGo]);
+
+  if (!item) return null;
+
+  const dragging = dragY !== null;
+  const ease = reducedMotion ? "none" : `transform ${PANEL_MS}ms ease-in-out`;
+  const scrimStyle = {
+    position: "fixed",
+    inset: 0,
+    zIndex: PANEL_Z,
+    background: "rgba(0,0,0,.25)",
+    opacity: visible ? 1 : 0,
+    pointerEvents: open ? "auto" : "none",
+    transition: reducedMotion ? "none" : `opacity ${PANEL_MS}ms ease-in-out`,
+  } as const;
+
+  // 配色はセクション見出し（Headline: 和文ラベル = Main/050、英字タイトル = fg）に揃える
+  const eyebrow = (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+      <span style={{ fontFamily: FONT_GUIDE, fontSize: 14, lineHeight: 1, letterSpacing: ".4px", color: "var(--color-fg)" }}>Career</span>
+      <span style={{ fontFamily: FONT_JP, fontSize: 11, lineHeight: 1, color: C.label }}>経歴詳細</span>
+    </div>
+  );
+
+  const body = <DetailBody item={item} works={works} onOpenWork={onOpenWork} />;
+  const footer = <PrevNext index={index} total={items.length} onPrev={() => onGo(index - 1)} onNext={() => onGo(index + 1)} />;
+
+  const onHandleDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // 閉じるボタン上の操作はドラッグにしない
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragStartRef.current = e.clientY;
+    setDragY(0);
+  };
+  const onHandleMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragY === null) return;
+    setDragY(Math.max(0, e.clientY - dragStartRef.current));
+  };
+  const onHandleUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragY === null) return;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    const dy = dragY;
+    setDragY(null);
+    if (dy > SHEET_CLOSE_DRAG) onClose(false);
+  };
+
+  const dialogCommon = {
+    ref: dialogRef,
+    role: "dialog",
+    "aria-modal": true,
+    "aria-label": item.role,
+    "aria-hidden": !open || undefined,
+    tabIndex: -1,
+  } as const;
+
+  let panel: ReactNode;
+  if (isMobile) {
+    panel = (
+      <div
+        {...dialogCommon}
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: PANEL_Z + 1,
+          maxHeight: "86dvh",
+          display: "flex",
+          flexDirection: "column",
+          boxSizing: "border-box",
+          background: C.panelBg,
+          border: `1px solid ${C.cardBorder}`,
+          borderBottom: "none",
+          borderRadius: "16px 16px 0 0",
+          boxShadow: PANEL_SHADOW,
+          outline: "none",
+          pointerEvents: open ? "auto" : "none",
+          transform: visible ? `translateY(${dragY ?? 0}px)` : "translateY(100%)",
+          transition: dragging ? "none" : ease,
+        }}
+      >
+        {/* ドラッグ領域（ハンドル + ヘッダー行） */}
+        <div
+          onPointerDown={onHandleDown}
+          onPointerMove={onHandleMove}
+          onPointerUp={onHandleUp}
+          onPointerCancel={() => setDragY(null)}
+          style={{ touchAction: "none", padding: "8px 8px 0 24px", flexShrink: 0 }}
+        >
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--color-border-light)", margin: "0 auto" }} />
+          <div style={{ height: 44, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            {eyebrow}
+            <CloseButton onClose={onClose} />
+          </div>
+        </div>
+        <div key={index} style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: "8px 24px 24px" }}>{body}</div>
+        <div style={{ padding: "12px 16px calc(24px + env(safe-area-inset-bottom))", borderTop: `1px solid ${C.cardBorder}`, flexShrink: 0 }}>{footer}</div>
+      </div>
+    );
+  } else {
+    panel = (
+      <div
+        {...dialogCommon}
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: PANEL_Z + 1,
+          width: 420,
+          maxWidth: "100%",
+          display: "flex",
+          flexDirection: "column",
+          boxSizing: "border-box",
+          background: C.panelBg,
+          borderLeft: `1px solid ${C.cardBorder}`,
+          boxShadow: PANEL_SHADOW,
+          outline: "none",
+          pointerEvents: open ? "auto" : "none",
+          transform: visible ? "translateX(0)" : "translateX(100%)",
+          transition: ease,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 16px 32px", borderBottom: `1px solid ${C.cardBorder}`, flexShrink: 0 }}>
+          {eyebrow}
+          <CloseButton onClose={onClose} />
+        </div>
+        <div key={index} style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: 32 }}>{body}</div>
+        <div style={{ padding: "16px 32px", borderTop: `1px solid ${C.cardBorder}`, flexShrink: 0 }}>{footer}</div>
+      </div>
+    );
+  }
+
+  return createPortal(
+    <>
+      <div aria-hidden onClick={() => onClose(false)} style={scrimStyle} />
+      {panel}
+    </>,
+    document.body
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
    Main export
+   カードは詳細を開く入口。開いた経歴（openIndex）は古い順（oldestFirst）の番号で持ち、
+   PC・SP とも「前の経歴 = 古い／次の経歴 = 新しい」で送る。
    ────────────────────────────────────────────────────────────────────────── */
 export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const [worksByCareer, setWorksByCareer] = useState<Record<string, WorkLink[]>>({});
   const isMobile = useMediaQuery("(max-width: 727px)");
-  // マウス操作の端末だけホバーで開閉する（タッチのタブレット等はタップで開閉）
-  const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
-  // デスクトップは同時に開けるカードを1枚に制限（別カードを開くと前のカードは閉じる）
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  // 開いている経歴（古い順の番号）。null = 閉じている
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  // 閉じている途中のカード（行番号 → 閉じ操作ごとの目印）。閉じた瞬間に z-index を戻すと、
-  // 縮む途中のカードに後ろの行が重なって見える。連打で閉じ途中が重なっても、各行は自分の目印のタイマーでだけ外す
-  const [closing, setClosing] = useState<Record<number, number>>({});
-  const closeSeqRef = useRef(0);
-  const timersRef = useRef(new Set<number>());
-  useEffect(() => {
-    const timers = timersRef.current;
-    return () => timers.forEach((t) => window.clearTimeout(t));
-  }, []);
-  const changeOpen = (next: number | null) => {
-    if (next === openIndex) return;
-    if (openIndex !== null) {
-      const idx = openIndex;
-      const seq = ++closeSeqRef.current;
-      setClosing((prev) => ({ ...prev, [idx]: seq }));
-      // transition は次の描画フレームから始まるので、1フレーム分の余裕を足して外す
-      const timer = window.setTimeout(() => {
-        timersRef.current.delete(timer);
-        setClosing((prev) => {
-          if (prev[idx] !== seq) return prev;
-          const next = { ...prev };
-          delete next[idx];
-          return next;
-        });
-      }, COLLAPSE_MS + 50);
-      timersRef.current.add(timer);
-    }
-    setOpenIndex(next);
-  };
-  const rowsRef = useRef<HTMLDivElement>(null);
+  // 閉じるアニメーション中も中身を描き続けるため、最後に開いていた番号を持つ
+  const [lastIndex, setLastIndex] = useState(0);
+  // パネルを DOM に置くか / 画面内に入ったか（マウント → 次フレーム → 表示、閉じたら退場後に外す）
+  const [mounted, setMounted] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const isOpen = openIndex !== null;
 
-  // career_item_id で works をグルーピング → カード別 Works リンク
+  const enriched: EnrichedItem[] = career.map((item) => ({ ...item, ...parsePeriod(item.period) }));
+  // 古い順（上）→ 新しい順（下）
+  const oldestFirst = [...enriched].sort((a, b) => a.startVal - b.startVal);
+
+  const openAt = (i: number) => {
+    setOpenIndex(i);
+    setLastIndex(i);
+    setMounted(true);
+  };
+
+  const closePanel = (viaKeyboard: boolean, restoreFocus = true) => {
+    const id = oldestFirst[lastIndex]?.id;
+    setOpenIndex(null);
+    if (restoreFocus && id) {
+      const card = document.querySelector<HTMLElement>(`[data-career-card-id="${CSS.escape(id)}"]`);
+      // ポインタで閉じたときはカードにフォーカス枠を出さない
+      card?.focus({ preventScroll: true, focusVisible: viaKeyboard } as FocusOptions);
+    }
+  };
+
+  // マウント直後は画面外に置き、2フレーム後に表示位置へ（transition を効かせる）
+  useEffect(() => {
+    if (!mounted) return;
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => setEntered(true));
+    });
+    return () => {
+      cancelAnimationFrame(r1);
+      cancelAnimationFrame(r2);
+    };
+  }, [mounted]);
+
+  // 閉じたら退場アニメーションの後に DOM から外す
+  useEffect(() => {
+    if (isOpen || !mounted) return;
+    const t = window.setTimeout(() => {
+      setMounted(false);
+      setEntered(false);
+    }, reducedMotion ? 0 : PANEL_MS);
+    return () => window.clearTimeout(t);
+  }, [isOpen, mounted, reducedMotion]);
+
+  // 開いている間は背面をスクロールさせない（開く前の値を保存して閉じるとき復元）
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
+  // career_item_id で works をグルーピング → 詳細パネルの Works リンク
   useEffect(() => {
     let active = true;
     supabase
       .from("works")
-      .select("id, title, career_item_id, sort_order")
+      .select("id, title, category, thumbnail_url, thumbnail, hero_brand, career_item_id, sort_order")
       .eq("is_published", true)
       .order("sort_order", { ascending: true })
       .then(({ data }) => {
@@ -495,7 +839,14 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
         const map: Record<string, WorkLink[]> = {};
         for (const w of data ?? []) {
           if (!w.career_item_id) continue;
-          (map[w.career_item_id] ??= []).push({ id: w.id, title: w.title });
+          (map[w.career_item_id] ??= []).push({
+            id: w.id,
+            title: w.title,
+            category: w.category,
+            thumbnail_url: w.thumbnail_url,
+            thumbnail: w.thumbnail,
+            hero_brand: w.hero_brand,
+          });
         }
         setWorksByCareer(map);
       });
@@ -504,66 +855,54 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
     };
   }, []);
 
-  // 開いたカードがチャート下端を越えたぶんだけ行コンテナを伸ばす（縦の目盛り線も伸びる）。越えなければ何もしない
-  useEffect(() => {
-    if (isMobile) return;
-    const box = rowsRef.current;
-    if (!box) return;
-    const cards = box.querySelectorAll<HTMLElement>("[data-career-card]");
-    const lastRow = box.lastElementChild as HTMLElement | null;
-    const update = () => {
-      const top = box.getBoundingClientRect().top;
-      const natural = lastRow ? lastRow.getBoundingClientRect().bottom : top;
-      let maxBottom = natural;
-      cards.forEach((c) => {
-        // 既存の閉じたカードの微小なはみ出し（現職カードの高さ115.5 vs 行112など）を
-        // コンテナ拡張の対象に含めない。拡張は「開いている」カードの越え幅だけを見る。
-        if (c.hasAttribute("data-open")) {
-          maxBottom = Math.max(maxBottom, c.getBoundingClientRect().bottom);
-        }
-      });
-      const pb = parseFloat(getComputedStyle(box).paddingBottom);
-      if (maxBottom - natural > 0.5) {
-        box.style.minHeight = maxBottom - top + pb + "px";
-      } else {
-        box.style.minHeight = "";
-      }
-    };
-    const ro = new ResizeObserver(update);
-    cards.forEach((c) => ro.observe(c));
-    update();
-    return () => {
-      ro.disconnect();
-      box.style.minHeight = "";
-    };
-  }, [isMobile, career]);
-
-  // Works リンククリック → Works セクションへスクロール＋モーダル展開イベント
-  const handleOpenWork = (workId: string) => {
-    const target = document.getElementById("works");
-    target?.scrollIntoView({ behavior: "smooth" });
-    window.dispatchEvent(new CustomEvent("portfolio:open-work", { detail: { workId } }));
+  // Works カードのクリック → 遷移（カード自体のリンク）の前にパネルを閉じ、背面のスクロールロックを外す
+  const handleOpenWork = () => {
+    // 退場中のパネル（aria-hidden）にフォーカスを残さない
+    (document.activeElement as HTMLElement | null)?.blur();
+    flushSync(() => closePanel(false, false));
   };
 
-  const enriched: EnrichedItem[] = career.map((item) => ({ ...item, ...parsePeriod(item.period) }));
-  // 古い順（上）→ 新しい順（下）
-  const oldestFirst = [...enriched].sort((a, b) => a.startVal - b.startVal);
+  const panelItem = oldestFirst[lastIndex];
+  // 経歴が減って開いていた番号が無くなったら閉じる（背面ロックが残らないように）
+  const staleOpen = isOpen && !panelItem;
+  useEffect(() => {
+    if (staleOpen) setOpenIndex(null);
+  }, [staleOpen]);
+  const panel =
+    mounted && panelItem ? (
+      <CareerPanel
+        items={oldestFirst}
+        index={lastIndex}
+        works={worksByCareer[panelItem.id] ?? []}
+        isMobile={isMobile}
+        visible={isOpen && entered}
+        open={isOpen}
+        reducedMotion={reducedMotion}
+        onClose={closePanel}
+        onGo={openAt}
+        onOpenWork={handleOpenWork}
+      />
+    ) : null;
 
   if (isMobile) {
     // モバイルは新しい順（上）→ 古い順（下）
     const newestFirst = [...oldestFirst].reverse();
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {newestFirst.map((item, i) => (
-          <CareerItemMobile
-            key={item.id}
-            item={item}
-            works={worksByCareer[item.id] ?? []}
-            onOpenWork={handleOpenWork}
-            isFirst={i === 0}
-            isLast={i === newestFirst.length - 1}
-          />
-        ))}
+        {newestFirst.map((item, i) => {
+          const idx = oldestFirst.length - 1 - i;
+          return (
+            <CareerItemMobile
+              key={item.id}
+              item={item}
+              isSelected={openIndex === idx}
+              onOpen={() => openAt(idx)}
+              isFirst={i === 0}
+              isLast={i === newestFirst.length - 1}
+            />
+          );
+        })}
+        {panel}
       </div>
     );
   }
@@ -606,27 +945,14 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
           </div>
 
           {/* バー列 */}
-          <div ref={rowsRef} style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
+          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12, padding: "8px 0" }}>
             {oldestFirst.map((item, i) => (
-              <CareerRowDesktop
-                key={item.id}
-                item={item}
-                works={worksByCareer[item.id] ?? []}
-                onOpenWork={handleOpenWork}
-                isLast={i === oldestFirst.length - 1}
-                isOpen={openIndex === i}
-                isClosing={closing[i] !== undefined}
-                canHover={canHover}
-                onToggle={() => changeOpen(openIndex === i ? null : i)}
-                onHoverChange={(hovered) => {
-                  if (hovered) changeOpen(i);
-                  else if (openIndex === i) changeOpen(null);
-                }}
-              />
+              <CareerRowDesktop key={item.id} item={item} isSelected={openIndex === i} onOpen={() => openAt(i)} />
             ))}
           </div>
         </div>
       </div>
+      {panel}
     </div>
   );
 }

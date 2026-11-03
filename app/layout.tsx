@@ -11,11 +11,14 @@ const afacad = Afacad({
 });
 
 // 日本語見出しフォント: M PLUS 1p（実装ローカル・Figma 変数なし）
+// 先読みしない: 使うのはログイン画面の氏名と font-guide の日本語の代替だけで、先読みは 119 本・約 1 MB になる。
+// 文字が出たときに通常どおり読み込まれる（display: swap。読み込むまで一瞬だけ代わりの書体で出ることがある）
 const mplusOnep = M_PLUS_1p({
   variable: "--font-mplus-1p",
   subsets: ["latin"],
   weight: ["400", "700"],
   display: "swap",
+  preload: false,
 });
 
 // 日本語本文フォント: Noto Sans JP (typo.body.jp)

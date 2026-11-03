@@ -213,26 +213,36 @@ function SegBar({ level }: { level: number }) {
 
 // ──────────────────────────────────────────────
 // SkillRow — accordion row (3 states: default / hover / active)
+//   開閉状態は親（SkillCard）が持つ。カード内で同時に開くのは1つだけ
 // ──────────────────────────────────────────────
-function SkillRow({ skill }: { skill: SkillRowConfig }) {
-  const [open, setOpen] = useState(false);
+function SkillRow({
+  skill,
+  open,
+  onToggle,
+}: {
+  skill: SkillRowConfig;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const panelId = useId();
   const level = segmentsToLevel(skill.segments);
   const levelInfo = SKILL_LEVELS[level - 1];
 
   return (
     <div
-      className={`relative flex min-h-16 flex-col justify-center rounded-[16px] px-px transition-colors duration-200 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors after:duration-200 after:content-[''] ${
+      className={`relative flex flex-col rounded-[16px] px-px transition-colors duration-200 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors after:duration-200 after:content-[''] ${
         open ? "bg-white/5 after:border-border-light" : "hover:bg-white/5 after:border-border"
       }`}
     >
-      {/* _SkillVaule — 常時表示。クリックで開閉 */}
+      {/* _SkillVaule — 常時表示。クリックで開閉。
+          見出しは開閉どちらでも閉じた高さ 64 のまま(Figma の開いた状態 y13 / 罫線 y53 には寄せない)。
+          外側の min-h + 上下中央にすると、1 行の見出しが開いた瞬間に 7px 跳ねる */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex w-full items-center justify-between px-3 py-[13px] text-left"
+        className="flex min-h-16 w-full items-center justify-between px-3 py-[13px] text-left"
       >
         {/* 左: アイコン + ラベル */}
         <span className="flex flex-1 min-w-0 items-center gap-3 pr-4">
@@ -266,7 +276,9 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
       </button>
 
       {/* 展開パネル — grid-rows トランジションで高さアニメ。
-          折りたたみ時は aria-hidden でアクセシビリティツリーから除外（高さは0fr） */}
+          折りたたみ時は aria-hidden でアクセシビリティツリーから除外。
+          罫線は見出しの下端(閉じた高さと同じ y64)に置き、閉じている間は透明・開くと色だけ付く。
+          開閉中に罫線も見出しも動かない */}
       <div
         id={panelId}
         aria-hidden={!open}
@@ -275,9 +287,13 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
         }`}
       >
         <div className="overflow-hidden">
-          {/* mt3 = 見出し行の下16 − ボタンの下余白13。上罫線は Figma では inside なので pt = 16−1。
-              pb13 = 項目の py13（外枠は ::after で位置に入らない）。Figma 733:2902: h162 / スロット y53 */}
-          <div className="mt-[3px] flex flex-col gap-4 border-t border-border px-8 pt-[15px] pb-[13px]">
+          {/* 上罫線は Figma では inside なので pt = 16−1。
+              pb13 = 項目の py13（外枠は ::after で位置に入らない）。罫線は見出し下端の y64(Figma 733:2902 の y53 より 11 下・意図的) */}
+          <div
+            className={`flex flex-col gap-4 border-t px-8 pt-[15px] pb-[13px] transition-colors duration-300 ${
+              open ? "border-border" : "border-transparent"
+            }`}
+          >
             <div className="flex flex-col gap-1">
               {skill.labelNote && (
                 <span className="font-body text-[10px] leading-[12px] tracking-[0.3px]" style={{ color: "#757575" }}>
@@ -294,7 +310,7 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
               )}
             </div>
             {skill.tools.length > 0 && (
-              <div className="flex flex-wrap gap-y-2">
+              <div className="flex flex-wrap gap-2">
                 {skill.tools.map((tool, i) => (
                   <ToolTag key={i} tool={tool} />
                 ))}
@@ -311,10 +327,13 @@ function SkillRow({ skill }: { skill: SkillRowConfig }) {
 // SkillCard
 // ──────────────────────────────────────────────
 export function SkillCard({ card }: { card: SkillCardConfig }) {
+  // 開いている項目の id。カード内で同時に開くのは1つだけ（開いている項目を押すと閉じる・初期は全部閉じ）
+  const [openId, setOpenId] = useState<string | null>(null);
+
   return (
     <div
-      // 375/390 幅ではスキル名の折返し切れを防ぐため、640px 未満だけ左右余白を 40 → 16 に詰める（Figma にモバイル画面なし）
-      className="overflow-clip px-4 py-6 sm:px-10"
+      // Figma (Master 502:1344) はカード余白が上下左右 24。375/390 幅ではスキル名の折返し切れを防ぐため、640px 未満だけ左右余白を 16 に詰める（Figma にモバイル画面なし）
+      className="overflow-clip px-4 py-6 sm:p-6"
       style={{
         borderRadius: 16,
         // Figma は塗りなしの枠に drop-shadow → 中身の形に落ちる影。box-shadow だと箱の下辺に線が出る
@@ -339,13 +358,15 @@ export function SkillCard({ card }: { card: SkillCardConfig }) {
         </div>
       </div>
 
-      {/* items 容器 — Figma (Master 502:1344) は 1 カード内をスキル項目 2 列（352px × gap 16）で並べる。
-          items-start で、片方を展開してももう片方の高さに影響しない。
-          2 列にするのは本文幅が 800px に達する xl (1280px) 以上のときだけ。
-          それ未満で 2 列にするとカードの左右パディング 40px が効いてスキル名が潰れる。 */}
-      <div className="grid grid-cols-1 items-start gap-4 pt-6 xl:grid-cols-2">
+      {/* items 容器 — Figma (Master 502:1344) は 1 カード内をスキル項目 1 列（352px・高さ64・gap 8）で縦に並べる。 */}
+      <div className="flex flex-col gap-2 pt-6">
         {card.skills.map((skill) => (
-          <SkillRow key={skill.id} skill={skill} />
+          <SkillRow
+            key={skill.id}
+            skill={skill}
+            open={openId === skill.id}
+            onToggle={() => setOpenId((cur) => (cur === skill.id ? null : skill.id))}
+          />
         ))}
       </div>
     </div>
@@ -373,7 +394,7 @@ export default function SkillsCardGrid() {
 
   if (loading) {
     return (
-      <div className="flex w-full flex-col gap-6">
+      <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-0">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-[274px] animate-pulse rounded-[14px] bg-[#1a1a1a]" />
         ))}
@@ -383,10 +404,11 @@ export default function SkillsCardGrid() {
 
   if (error) return <p className="text-[13px] text-danger-300" role="alert">スキルの取得に失敗しました: {error}</p>;
 
-  // Figma (Master 502:1344) はカテゴリカードを本文幅 800px の 1 列で縦積みし、
-  // カード内のスキル項目を 2 列に並べる。カードを 2 列にするとスキル名が潰れる。
+  // Figma (Master 502:1344) はカテゴリカード（400px・余白24）を本文幅 800px に 2×2 で並べ、
+  // カード内のスキル項目は 1 列。2×2 のときカード間の gap は無し（カードの余白が間隔になる）。1 列のときは従来どおり 24 空ける。
+  // 2 列にするのは本文幅が 800px に達する xl (1280px) 以上のときだけ。
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="grid w-full grid-cols-1 items-start gap-6 xl:grid-cols-2 xl:gap-0">
       {cards.map((card) => (
         <SkillCard key={card.id} card={card} />
       ))}

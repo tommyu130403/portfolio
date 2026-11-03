@@ -7,6 +7,7 @@ import type { Json } from "@/src/types/supabase";
 import { DEFAULT_IMAGE, parseThumbnail } from "@/lib/work-content";
 import WorkPagerCard from "./WorkPagerCard";
 import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
+import { sharedPublishedWorksOrder } from "@/src/lib/published-works-order";
 
 type EmbedWork = {
   category: string | null;
@@ -31,6 +32,13 @@ export default function WorkCardEmbed({ id }: { id: string }) {
   useEffect(() => {
     let active = true;
     (async () => {
+      // 作品詳細の中なら、前後ナビ用に取った公開作品の一覧から引く（カードごとに取り直さない）
+      const listed = (await sharedPublishedWorksOrder())?.find((w) => w.id === id);
+      if (!active) return;
+      if (listed) {
+        setResult({ id, work: listed });
+        return;
+      }
       const { data: row, error } = await supabase
         .from("works")
         .select("category, title, thumbnail_url, thumbnail, hero_brand")

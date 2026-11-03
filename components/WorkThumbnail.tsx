@@ -3,12 +3,15 @@
 import { useState, type CSSProperties, type FC } from "react";
 import ProtectedImage from "./ProtectedImage";
 import type { ThumbnailLayout } from "@/lib/work-content";
+import { getServiceBrand, serviceLogoSrc } from "@/lib/service-brands";
 
 /* 構成サムネイル（works.thumbnail）。親の箱（position 指定済み・16:9）を埋める。
  * 1280×720 を基準 px として書き、大きさ・文字は cqw、位置は % に変換する。
  * 根要素が container-type: inline-size のため cqh は使えない（高さも cqw で表す）。
  * cqw は container 宣言した要素自身では祖先基準になるので、縞などは子の層に付ける。
- * 地は全作品共通の bg-thumbnail（一覧の背景 surface より暗い）。タイトルは出さない。
+ * 地は bg-thumbnail（一覧の背景 surface より暗い）。タイトルは出さない。
+ * サービス（brand）を選んだ作品は、地を白基調にしてブランドの主色・副色をうすいグラデで重ね、
+ * ロゴ未設定ならそのサービスのロゴを出す（モックアップ枠は黒のまま）。ブランド色は lib/service-brands.ts
  * 数値の正は Claude Design「Works サムネイル 構成案 v2」（Figma: Library の WorkThumbnail）。
  * #0A0A0A / #1A1A1A（資料枠）/ 縞の 2 色は対応するトークンが無いため直書き */
 
@@ -19,6 +22,7 @@ type Props = {
   mobileUrls: string[];
   captureUrls: string[];
   serviceName?: string | null;
+  brand?: string | null;
   className?: string;
 };
 
@@ -97,10 +101,11 @@ const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
  * ロゴを表示できないとき（権限なし・署名失敗・画像切れ）はサービス名に切り替える。
  * ロゴは隠しても残しておき、ProtectedImage の再試行で表示できたら戻す。
  * 左の 520px 幅の欄で縦横中央に置く（ロゴ・サービス名とも幅は 376px まで。モックアップに触れさせない） */
-const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean }> = ({
+const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean; light?: boolean }> = ({
   logoUrl,
   serviceName,
   padded,
+  light,
 }) => {
   const [unavailableUrl, setUnavailableUrl] = useState<string | null>(null);
   const showLogo = logoUrl !== null && unavailableUrl !== logoUrl;
@@ -128,7 +133,7 @@ const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean 
       )}
       {!showLogo && (
         <p
-          className="min-w-0 truncate text-center font-sans font-semibold text-system-white"
+          className={`min-w-0 truncate text-center font-sans font-semibold ${light ? "text-system-900" : "text-system-white"}`}
           style={{ fontSize: u(56), letterSpacing: "0.02em", maxWidth: u(376) }}
         >
           {serviceName}
@@ -145,20 +150,33 @@ const WorkThumbnail: FC<Props> = ({
   mobileUrls,
   captureUrls,
   serviceName,
+  brand,
   className,
 }) => {
   const mobile = (i: number) => mobileUrls[i] || null;
   /* 資料キャプチャは入っている分だけ数える（空き枠の "" は詰める）。0 枚なら空き枠を 2 つ見せる */
   const captures = captureUrls.filter(Boolean);
   /* 構成案どおり、ロゴもサービス名も未設定なら仮の名前を出す */
-  const service = serviceName?.trim() || "Service";
+  const serviceBrand = getServiceBrand(brand);
+  const service = serviceName?.trim() || serviceBrand?.name || "Service";
+  const logo = logoUrl ?? (serviceBrand ? serviceLogoSrc(serviceBrand) : null);
+  const light = serviceBrand !== null;
 
-  const rootClass = `@container absolute inset-0 overflow-hidden bg-thumbnail ${className ?? ""}`;
+  /* ブランドの地: 白に、左上に主色・右下に副色をうすく重ねる（ブランド色は作品ごとのデータなので inline） */
+  const rootClass = ["@container absolute inset-0 overflow-hidden", light ? "" : "bg-thumbnail", className ?? ""]
+    .filter(Boolean)
+    .join(" ");
+  const rootStyle: CSSProperties | undefined = serviceBrand
+    ? {
+        backgroundColor: "#FFFFFF",
+        backgroundImage: `radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, ${serviceBrand.main} 22%, transparent), transparent 60%), radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, ${serviceBrand.sub} 18%, transparent), transparent 60%)`,
+      }
+    : undefined;
 
   if (layout === "d") {
     return (
-      <div aria-hidden className={rootClass}>
-        <Brand logoUrl={logoUrl} serviceName={service} padded />
+      <div aria-hidden className={rootClass} style={rootStyle}>
+        <Brand logoUrl={logo} serviceName={service} light={light} padded />
         {captures.length === 1 ? (
           <CaptureFrame src={captures[0]} left={600} top={120} width={800} height={660} />
         ) : (
@@ -173,8 +191,8 @@ const WorkThumbnail: FC<Props> = ({
   }
 
   return (
-    <div aria-hidden className={rootClass}>
-      <Brand logoUrl={logoUrl} serviceName={service} />
+    <div aria-hidden className={rootClass} style={rootStyle}>
+      <Brand logoUrl={logo} serviceName={service} light={light} />
 
       {layout === "a1" && (
         <>

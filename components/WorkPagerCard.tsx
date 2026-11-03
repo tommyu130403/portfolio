@@ -73,7 +73,8 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
       {hasThumb ? (
         <>
           {composed ? (
-            <div className="relative hidden w-[128px] shrink-0 self-stretch overflow-hidden bg-system-950 md:block">
+            // 16:9 の上下の余りは地と同じ色にする（ブランド地は白基調）
+            <div className={`relative hidden w-[128px] shrink-0 self-stretch overflow-hidden md:block ${composed.brand ? "bg-system-white" : "bg-system-950"}`}>
               <div className="absolute inset-x-0 top-1/2 aspect-video -translate-y-1/2">
                 <WorkThumbnail
                   layout={composed.layout}
@@ -81,6 +82,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
                   desktopUrl={composed.desktop_url}
                   mobileUrls={composed.mobile_urls}
                   captureUrls={composed.capture_urls}
+                  brand={composed.brand}
                   serviceName={serviceName}
                 />
               </div>

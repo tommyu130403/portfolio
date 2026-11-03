@@ -52,6 +52,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
             desktopUrl={thumbnail.desktop_url}
             mobileUrls={thumbnail.mobile_urls}
             captureUrls={thumbnail.capture_urls}
+            brand={thumbnail.brand}
             serviceName={serviceName}
           />
         ) : (

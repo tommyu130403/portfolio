@@ -1,4 +1,5 @@
 import { blocksToMarkdown } from "@/lib/work-sections";
+import { getServiceBrand } from "@/lib/service-brands";
 
 /* ------------------------------------------------------------------ *
  * Work 詳細コンテンツの共有データ整形ヘルパ
@@ -47,6 +48,8 @@ export type WorkThumbnailData = {
   desktop_url: string | null;
   mobile_urls: string[];
   capture_urls: string[];
+  /** サービスのブランド key（lib/service-brands.ts）。未設定は null（黒い地） */
+  brand: string | null;
 };
 
 /** works.thumbnail（Json）を WorkThumbnailData へ整形する。不正な値は null */
@@ -66,5 +69,6 @@ export function parseThumbnail(raw: unknown): WorkThumbnailData | null {
     desktop_url: str(obj.desktop_url),
     mobile_urls: slots(obj.mobile_urls),
     capture_urls: slots(obj.capture_urls),
+    brand: getServiceBrand(obj.brand)?.key ?? null,
   };
 }

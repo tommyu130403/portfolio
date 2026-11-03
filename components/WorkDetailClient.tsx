@@ -3,7 +3,7 @@
 import { type FC, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
-import type { Json, Tables } from "@/src/types/supabase";
+import type { Tables } from "@/src/types/supabase";
 import { DEFAULT_IMAGE, parseScreenshots, parseThumbnail } from "@/lib/work-content";
 import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
@@ -11,9 +11,10 @@ import WorkBreadcrumb from "./WorkBreadcrumb";
 import WorkPagerCard from "./WorkPagerCard";
 import SideMenuBar from "./SideMenuBar";
 import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
+import { loadPublishedWorksOrder, releasePublishedWorksOrder, type PublishedWorkItem } from "@/src/lib/published-works-order";
 
 type Work = Tables<"works">;
-type OrderItem = { id: string; title: string; category: string | null; thumbnail_url: string | null; thumbnail: Json | null; hero_brand: string | null };
+type OrderItem = PublishedWorkItem;
 
 type WorkDetailClientProps = {
   /** クエリ文字列 ?id= から受け取った Work ID */
@@ -137,19 +138,16 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   }, [id]);
 
   // 前後ナビ用の並び順は全 Works で共通のため初回のみ取得する（ナビのたびに再取得しない）。
+  // 本文の作品カード（WorkCardEmbed）もこの結果を引くため、カードごとの取得（本文の後の第 2 波）が出ない
   useEffect(() => {
     let cancelled = false;
-    supabase
-      .from("works")
-      .select("id, title, category, thumbnail_url, thumbnail, hero_brand")
-      .eq("is_published", true)
-      .order("sort_order", { ascending: true })
-      .then(({ data, error: orderError }) => {
-        if (orderError) console.error("Failed to fetch works order:", orderError);
-        if (!cancelled) setOrder(data ?? []);
-      });
+    const request = loadPublishedWorksOrder();
+    request.then((data) => {
+      if (!cancelled) setOrder(data ?? []);
+    });
     return () => {
       cancelled = true;
+      releasePublishedWorksOrder(request);
     };
   }, []);
 

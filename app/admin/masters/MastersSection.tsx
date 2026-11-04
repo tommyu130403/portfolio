@@ -41,7 +41,6 @@ import {
   renameWorkCategory,
   setRoleStakeholderGroup,
   setStakeholderGroupIcon,
-  setStakeholderGroupNote,
   setWorkCategoryColor,
   updateToolVocab,
   type MasterCompany,
@@ -62,47 +61,6 @@ const dangerButton =
   "shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:cursor-not-allowed disabled:opacity-40";
 const selectClass =
   "w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary";
-
-/** 関係者グループの層メモ欄。フォーカスが外れるか Enter（IME 変換中は除く）で、変わっていれば保存する */
-function GroupNoteField({
-  value,
-  disabled,
-  onSave,
-}: {
-  value: string | null;
-  disabled: boolean;
-  onSave: (next: string | null) => void;
-}) {
-  const [draft, setDraft] = useState(value ?? "");
-  const [seen, setSeen] = useState(value);
-  // 保存や再読み込みで値が変わったら、打ちかけを捨てて新しい値に合わせる
-  if (seen !== value) {
-    setSeen(value);
-    setDraft(value ?? "");
-  }
-  const commit = () => {
-    const trimmed = draft.trim();
-    if (trimmed !== (value ?? "")) onSave(trimmed || null);
-  };
-  return (
-    <input
-      type="text"
-      value={draft}
-      disabled={disabled}
-      placeholder="層のメモ（任意）"
-      aria-label="層のメモ"
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
-          e.preventDefault();
-          commit();
-        }
-      }}
-      className="w-40 rounded-[6px] border border-border-light bg-[#1a1a1a] px-2 py-1 text-[11px] text-white outline-none focus:border-primary"
-    />
-  );
-}
 
 /** カテゴリ色の指定欄: プリセット 8 色 + 「なし」+ 数値入力（0〜359）。変更はその場で保存する */
 function CategoryColorControl({
@@ -734,7 +692,7 @@ export default function MastersSection({
       <NameMasterList
         title="関係者グループ（stakeholder_groups）"
         placeholder="新しいグループ名"
-        hint="作品の関係者図の層（意思決定・開発 など）。役割に設定すると、その層にカードとして並びます。メモは層名の下に出ます"
+        hint="作品の関係者図の層（意思決定・開発 など）。役割に設定すると、その層にカードとして並びます。アイコンは層名の上に出ます"
         items={stakeholderGroups.map((g) => {
           const n = roles.filter((r) => r.group_id === g.id).length;
           return {
@@ -744,11 +702,6 @@ export default function MastersSection({
             used: n > 0,
             extra: (
               <>
-                <GroupNoteField
-                  value={g.note}
-                  disabled={busy}
-                  onSave={(next) => void run(() => setStakeholderGroupNote(g.id, next))}
-                />
                 <IconPickerField
                   catalog={iconCatalog}
                   allowEmpty

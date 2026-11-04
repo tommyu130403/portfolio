@@ -1027,19 +1027,6 @@ export async function setStakeholderGroupIcon(id: string, icon: string | null): 
   }
 }
 
-export async function setStakeholderGroupNote(id: string, note: string | null): Promise<{ error: string | null }> {
-  try {
-    const { error } = await supabase.rpc(
-      "set_stakeholder_group_note",
-      note ? { p_id: id, p_note: note } : { p_id: id },
-    );
-    if (error) return { error: dbErr(error) };
-    return { error: null };
-  } catch (e) {
-    return { error: errMsg(e) };
-  }
-}
-
 export async function deleteStakeholderGroup(id: string): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase.rpc("delete_stakeholder_group", { p_id: id });

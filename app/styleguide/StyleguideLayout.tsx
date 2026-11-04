@@ -926,11 +926,11 @@ function WorkVizModalDemo() {
             { label: "QA", start: 13, span: 3, raci: ["R"] },
           ] }}
           stakeholders={{ v: 2, layers: [
-            { name: "Product", note: null, cards: [
+            { name: "Product", note: null, icon: "Abstract/application-one", cards: [
               { kind: "role", name: "General Manager", note: "1名", me: false },
               { kind: "role", name: "Product Manager", note: "1名", me: true },
             ] },
-            { name: "Engineering", note: "実装・コードレビュー", cards: [
+            { name: "Engineering", note: "実装・コードレビュー", icon: null, cards: [
               { kind: "role", name: "Site Reliability Engineer with a very long title", note: "1名", me: false },
               { kind: "org", title: "Platform Team・3名", rows: [
                 { text: "Tech Lead", me: false },
@@ -1282,19 +1282,19 @@ function ComponentsSection() {
           <div className="w-full">
             <WorkStakeholderDiagram
               data={{ v: 2, layers: [
-                { name: "意思決定", note: "合意・要件確認", cards: [
+                { name: "意思決定", note: "合意・要件確認", icon: "Peoples/every-user", cards: [
                   { kind: "role", name: "最終合意者", note: "2名", me: false },
                   { kind: "role", name: "PO（要件確認者）", note: "1名", me: false },
                 ] },
-                { name: "マネジメント", note: "進行・管理", cards: [
+                { name: "マネジメント", note: "進行・管理", icon: "Abstract/application-one", cards: [
                   { kind: "role", name: "PjM（プロジェクトマネージャー）", note: "PJ の立ち上げ・初動の進行", me: true },
                   { kind: "role", name: "PJ 全体管理", note: "進行・工数管理（API 実装と兼務）", me: false },
                 ] },
-                { name: "設計", note: "外部設計", cards: [
+                { name: "設計", note: "外部設計", icon: "Components/tree-list", cards: [
                   { kind: "role", name: "外部設計", note: "デザイナー 1名", me: false },
                   { kind: "role", name: "外部設計レビュー", note: "デザイナー視点での確認", me: true },
                 ] },
-                { name: "開発", note: "実装・コードレビュー", cards: [
+                { name: "開発", note: "実装・コードレビュー", icon: "Edit/code", cards: [
                   { kind: "org", title: "スカウト（CTS）・4名", rows: [
                     { text: "学生側 主実装", me: false },
                     { text: "学生側 コードレビュー", me: false },

@@ -50,8 +50,11 @@ const FONT_GUIDE = "var(--font-afacad), var(--font-noto-sans-jp), sans-serif";
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
-  cardBg: "var(--color-surface-light)", // Background/Light（System/875）
-  cardBgActive: "var(--color-system-850)", // 選択中・ホバー時（カードより一段明るい System/850）
+  // 背景はページと同じ Background/Default。目盛り線を隠すため透明にはせず不透明で塗る。
+  // 選択中・ホバー時は他のカードと同じ Action/hover を重ねる（lib/hover-card.ts の HOVER_CARD と同じ見た目）
+  cardBg: "var(--color-surface)",
+  cardHoverOverlay: "inset 0 0 0 9999px var(--color-action-hover)",
+  cardShadowHover: "1px 1px 16px 2px rgba(0, 0, 0, 0.25)", // shadow-base（@theme の --shadow-base は CSS 変数として出ないため実値）
   cardBorder: "var(--color-border)", // Border/Default（System/825）
   cardBorderHover: "var(--color-border-light)", // Border/Light
   cardBorderSelected: "var(--color-border-main)", // Border/Main
@@ -194,6 +197,7 @@ function CareerCard({
   const [hoverRaw, setHovered] = useState(false);
   // タッチ端末ではホバー表示を出さない（タップ後に残り続けるため）
   const canHover = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const hovered = hoverRaw && canHover;
   const active = isSelected || hovered;
   const borderColor = isSelected ? C.cardBorderSelected : hovered ? C.cardBorderHover : C.cardBorder;
@@ -219,15 +223,20 @@ function CareerCard({
         color: "inherit",
         borderRadius: 10,
         border: `1px solid ${borderColor}`,
-        background: active ? C.cardBgActive : C.cardBg,
-        boxShadow: "0 1px 3px rgba(0,0,0,.1)",
+        background: C.cardBg,
+        // 影が隣の行の下に隠れないよう active 中は手前に出し、外したら影が消え終わる 300ms 後に戻す
+        position: "relative",
+        zIndex: active ? 1 : 0,
+        boxShadow: active ? `${C.cardHoverOverlay}, ${C.cardShadowHover}` : "inset 0 0 0 9999px transparent, 0 0 0 0 transparent",
         padding: 16,
         display: "flex",
         alignItems: "center",
         gap: 12,
         cursor: "pointer",
         pointerEvents: "auto",
-        transition: "border-color .2s ease, background-color .2s ease",
+        transition: reducedMotion
+          ? "none"
+          : `border-color 300ms ease-out, box-shadow 300ms ease-out, z-index 0s linear ${active ? "0s" : "300ms"}`,
       }}
     >
       {/* 左列（期間行 + 役職 + 会社）— Figma: gap 6 */}

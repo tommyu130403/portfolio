@@ -1203,7 +1203,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkFigure（図版ブロック）"
-          description="作品本文の `::: figure`（枠。panel 地 system-900・角丸 16・中に任意の本文ブロック）/ `::: beforeafter`（Before/After の箱。After は Border/Main。悪い手順 danger・良い手順 main-100 地）/ `::: flow`（横フロー。highlight=N で強調）/ `::: bars`（横棒グラフ。up=secondary・down=danger-500・flat=system-750、base= で白い基準線）と、`::: card tone=accent`。560px 未満（本文コンテナ幅）はステップが縦積み（矢印 ↓）になる。Figma 未作成(実装先行・Claude Design の図版案に準拠)"
+          description="作品本文の `::: figure`（枠。panel 地 system-900・角丸 16・中に任意の本文ブロック）/ `::: beforeafter`（上罫線で区切った Before/After の行。ラベル 96px・After は main-100 文字。注記は地なしの色文字）/ `::: flow`（横フロー。highlight=N で強調）/ `::: bars`（横棒グラフ。up=secondary・down=danger-500・flat=system-750、base= で白い基準線）と、`::: card tone=accent`。560px 未満（本文コンテナ幅）はステップが縦積み（矢印 ↓）になる。手順の強調は good=main-100・bad=danger-300 の淡いトーン（地 10%・枠 60%）。Figma: Library WorkFigure 578:582"
         >
           <div className="w-[704px] max-w-full">
             <MarkdownBody md={FIGURE_SAMPLE_MD} />

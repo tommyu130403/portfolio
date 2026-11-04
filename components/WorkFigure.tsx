@@ -39,9 +39,9 @@ const STEP_BASE =
 
 const stepClass = (tone: StepTone) =>
   tone === "good"
-    ? `${STEP_BASE} text-body-03-jp-bold border-main-100 bg-main-100 text-system-950`
+    ? `${STEP_BASE} text-body-03-jp border-main-100/60 bg-main-100/10 text-main-050`
     : tone === "bad"
-      ? `${STEP_BASE} text-body-03-jp border-danger-300/60 bg-danger-300/10 text-danger-100 @min-[560px]:flex-[1.4]`
+      ? `${STEP_BASE} text-body-03-jp border-danger-300/60 bg-danger-300/10 text-danger-100`
       : `${STEP_BASE} text-body-03-jp border-border bg-surface-light`;
 
 const Arrow: FC = () => (
@@ -59,7 +59,7 @@ const StepRow: FC<{ steps: FigureStep[]; spacer?: boolean; gap: string }> = ({ s
         <div className={stepClass(s.tone)}>{s.content}</div>
       </React.Fragment>
     ))}
-    {spacer ? <div aria-hidden className="hidden @min-[560px]:block @min-[560px]:flex-[1.1]" /> : null}
+    {spacer ? <div aria-hidden className="hidden @min-[560px]:block @min-[560px]:flex-1" /> : null}
   </div>
 );
 
@@ -81,18 +81,16 @@ export type BeforeAfterRowData = {
   note?: ReactNode;
 };
 
-/** `::: beforeafter タグ | 見出し` — Before / After の行を、それぞれ枠付きの箱で並べる */
+/** `::: beforeafter タグ | 見出し` — 上に罫線を引いた Before / After の行を縦に並べる */
 export const BeforeAfter: FC<{ tag?: ReactNode; title?: ReactNode; rows: BeforeAfterRowData[] }> = ({
   tag,
   title,
   rows,
 }) => (
-  <div className="flex flex-col gap-2">
+  <div className="flex flex-col">
     {tag || title ? (
-      <div className="text-body-02-jp-bold flex items-center gap-2.5 text-fg">
-        {tag ? (
-          <span className="text-body-03-jp rounded bg-main-100/15 px-2 py-0.5 text-primary">{tag}</span>
-        ) : null}
+      <div className="text-body-03-jp-bold flex items-center gap-2 pb-2 text-fg-muted">
+        {tag ? <span className="text-primary">{tag}</span> : null}
         {title}
       </div>
     ) : null}
@@ -101,29 +99,21 @@ export const BeforeAfter: FC<{ tag?: ReactNode; title?: ReactNode; rows: BeforeA
       return (
         <div
           key={i}
-          className={`grid grid-cols-1 items-center gap-x-3 gap-y-2.5 rounded-[10px] border px-4 py-3.5 @min-[560px]:grid-cols-[74px_1fr] ${
-            isAfter ? "border-border-main" : "border-border"
-          }`}
+          className="flex flex-col gap-2 border-t border-border pt-4 [&:not(:last-child)]:pb-4 @min-[560px]:flex-row @min-[560px]:items-start @min-[560px]:gap-3.5"
         >
-          <span
-            className={`text-caption-01-en inline-flex items-center justify-center justify-self-start rounded-full px-2.5 py-1 @min-[560px]:justify-self-stretch ${
-              isAfter
-                ? "bg-main-100 text-system-950"
-                : "border border-border-light bg-surface-light text-fg-muted"
+          <p
+            className={`text-body-02-jp-bold shrink-0 @min-[560px]:w-24 @min-[560px]:pt-[7px] ${
+              isAfter ? "text-primary" : "text-fg"
             }`}
           >
             {isAfter ? "After" : "Before"}
-          </span>
-          <StepRow steps={row.steps} gap="gap-1.5" spacer={isAfter && row.steps.length <= 2} />
-          {row.note ? (
-            <p
-              className={`text-body-03-jp rounded-md px-2.5 py-1 @min-[560px]:col-start-2 ${
-                isAfter ? "bg-main-100/10 text-primary" : "bg-danger-300/10 text-danger-300"
-              }`}
-            >
-              {row.note}
-            </p>
-          ) : null}
+          </p>
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <StepRow steps={row.steps} gap="gap-2" spacer={isAfter && row.steps.length <= 2} />
+            {row.note ? (
+              <p className={`text-body-03-jp ${isAfter ? "text-primary" : "text-danger-300"}`}>{row.note}</p>
+            ) : null}
+          </div>
         </div>
       );
     })}

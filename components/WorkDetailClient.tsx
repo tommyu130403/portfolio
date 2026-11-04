@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 import { DEFAULT_IMAGE, parseScreenshots, parseThumbnail } from "@/lib/work-content";
-import WorkDetailHeader, { type WorkToolItem } from "./WorkDetailHeader";
+import WorkDetailHeader, { HeroShotsSkeleton, type WorkToolItem } from "./WorkDetailHeader";
 import WorkDetailContent from "./WorkDetailContent";
 import WorkBreadcrumb from "./WorkBreadcrumb";
 import WorkPagerCard from "./WorkPagerCard";
@@ -28,9 +28,8 @@ const WorkDetailSkeleton: FC = () => (
       <div className="h-4 w-40 motion-safe:animate-pulse rounded bg-system-800" />
       <div className="h-4 w-16 motion-safe:animate-pulse rounded bg-system-800" />
     </div>
-    <div className="flex justify-center gap-6">
-      <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
-      <div className="aspect-[126/257] w-[126px] motion-safe:animate-pulse rounded-[24px] bg-system-800" />
+    <div className="flex justify-center">
+      <HeroShotsSkeleton />
     </div>
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-6">

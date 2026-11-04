@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC, useMemo, useState } from "react";
+import { type FC, type ReactNode, useMemo, useState } from "react";
 import Icon from "./Icon";
 import Tag from "./Tag";
 import Tooltip from "./Tooltip";
@@ -35,6 +35,26 @@ const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void
 );
 
 /**
+ * ヒーロー画像の読込み中の形（PC 1 枚 + スマホ 1 枚の重ね。ユーザー指示 2026-11-05）。
+ * 寸法は HeroShots の A-1 配置（幅 560px・PC 74%・スマホ 20% を右下に重ねる）と LaptopMock の比率に揃え、表示後の高さとずらさない。
+ * 作品詳細全体のスケルトン（WorkDetailClient）と、画像の縦横判定中（HeroShots）の両方で使う。children は判定用の見えない画像を入れる用
+ */
+export const HeroShotsSkeleton: FC<{ children?: ReactNode }> = ({ children }) => (
+  <div className="relative w-[560px] max-w-full motion-safe:animate-pulse">
+    <div className="mx-auto w-[74%]">
+      <div className="mx-auto w-[92%] rounded-t-[10px] bg-system-800 px-[3%] pb-[4%] pt-[3%]">
+        <div className="aspect-[16/10] w-full rounded-[3px] bg-system-900" />
+      </div>
+      <div className="aspect-[40/1] w-full rounded-b-[8px] bg-system-800" />
+    </div>
+    <div className="@container absolute bottom-[2%] right-[8%] w-[20%]">
+      <div className="aspect-[9/19] w-full rounded-[12cqw] border-[3cqw] border-system-800 bg-system-900" />
+    </div>
+    {children && <div className="absolute left-0 top-0">{children}</div>}
+  </div>
+);
+
+/**
  * ヒーローの画像（最大 2 枚）。画像の縦横で枠を選ぶ（横長 → ノート PC 枠・縦長 → スマホ枠。ユーザー指示 2026-11-02）。
  * データ形式（hero_screenshots の URL 配列）は変えない。判定が済むまで枠は描かない。
  * PC 1 枚 + スマホ 1 枚のときは、Library の WorkThumbnail Layout=a1（570:428）にならいスマホを PC に重ねる。
@@ -62,18 +82,20 @@ const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawSho
   if (plain.length > 0 && shots.length === 0) {
     return (
       <button type="button" onClick={onClick} aria-label="画像を拡大表示" className="w-[560px] max-w-full cursor-zoom-in">
-        <ProtectedImage src={plain[0]} alt="" className="block h-auto w-full" />
+        <ProtectedImage src={plain[0]} alt="" className="block h-auto w-full [aspect-ratio:auto_16/10]" />
       </button>
     );
   }
   const known = shots.every((s) => s in landscape);
   if (!known) {
+    // 判定中も全体スケルトンと同じ形で高さを保つ（1px の判定用画像だけだと欄が潰れ、
+    // 下のタイトル以下がスケルトン → 判定中 → 表示で上下に動く）
     return (
-      <>
+      <HeroShotsSkeleton>
         {shots.map((src) => (
           <OrientationProbe key={src} src={src} onResult={(v) => setLandscape((prev) => (src in prev ? prev : { ...prev, [src]: v }))} />
         ))}
-      </>
+      </HeroShotsSkeleton>
     );
   }
   const pc = shots.find((s) => landscape[s]);

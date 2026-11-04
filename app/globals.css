@@ -34,10 +34,33 @@
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
   }
+
+  /* 画像は読み込み完了までは透明にし、完了したらフェードインする(ProtectedImage が data-pending を付ける)。
+     base 層なので呼び出し側の opacity / transition ユーティリティが優先される */
+  img[data-img-fade] {
+    transition: opacity 200ms ease-out;
+  }
+  img[data-pending] {
+    opacity: 0;
+  }
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+/* 動きを減らす設定の利用者には、スクロールと遷移・アニメーションを実質即時にする */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* 作品詳細（WorkDetailClient の data-work-detail）だけ、上部固定ヘッダーの高さを変数で持つ。

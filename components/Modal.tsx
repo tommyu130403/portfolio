@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC, type ReactNode, useEffect, useRef } from "react";
+import { type FC, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { ButtonFunction } from "./ButtonFunction";
 import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
 import Icon from "./Icon";
@@ -36,6 +36,21 @@ const Modal: FC<ModalProps> = ({
   const dialogRef = useRef<HTMLDivElement>(null);
   // ダイアログ本体 + 閉じるボタンをまとめて包むラッパー（フォーカストラップの境界）
   const trapRef = useRef<HTMLDivElement>(null);
+  // 閉じるときはフェードアウトを待ってから onClose を呼ぶ
+  const [closing, setClosing] = useState(false);
+  const closeTimerRef = useRef<number | null>(null);
+  const requestClose = useCallback(() => {
+    if (closeTimerRef.current !== null) return;
+    setClosing(true);
+    // 動きを減らす設定ではフェードが即時なので待たない
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    closeTimerRef.current = window.setTimeout(onClose, reduced ? 0 : 200);
+  }, [onClose]);
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     // 開く前の値を保存し、閉じるときに復元する（モーダルが重なった場合でも
@@ -64,7 +79,7 @@ const Modal: FC<ModalProps> = ({
         // モーダルが重なっている場合、最前面（DOM 上で最後）のものだけが閉じる
         const dialogs = document.querySelectorAll('[role="dialog"]');
         if (dialogs.length > 0 && dialogs[dialogs.length - 1] !== dialogRef.current) return;
-        onClose();
+        requestClose();
         return;
       }
       if (e.key === "Tab") {
@@ -94,17 +109,22 @@ const Modal: FC<ModalProps> = ({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
+  }, [requestClose]);
 
   return (
     <div
-      className="fixed top-0 right-0 bottom-0 z-50 flex cursor-pointer items-center justify-center p-10 transition-[left] duration-300 ease-in-out"
+      className={[
+        "fixed top-0 right-0 bottom-0 z-50 flex cursor-pointer items-center justify-center p-10 [transition:left_300ms_ease-in-out,opacity_200ms_ease-out]",
+        // 開いてすぐ閉じたときも、出てくる途中の濃さからフェードアウトさせる(アニメーションを外して遷移に引き継ぐ)。
+        // フェード中もクリックは受け止める(下のページへ抜けると、開き直したモーダルが古い閉じる予約で消えるため)
+        closing ? "opacity-0" : "animate-[card-fade-in_200ms_ease-out]",
+      ].join(" ")}
       style={{
         left: sidebarOffset,
         backgroundColor: "rgba(0,0,0,0.25)",
         backdropFilter: "blur(8px)",
       }}
-      onClick={onClose}
+      onClick={requestClose}
     >
       <div ref={trapRef} className="relative flex w-full flex-col items-center gap-4">
         {/* Prev arrow */}
@@ -163,7 +183,7 @@ const Modal: FC<ModalProps> = ({
           <div className="absolute top-0 -right-[44px]">
             <ButtonFunction
               border="off"
-              onClick={onClose}
+              onClick={requestClose}
               aria-label="Close"
             >
               <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${BUTTON_FUNCTION_ICON}`} />

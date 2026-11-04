@@ -81,7 +81,7 @@ function classifySource(src: string): { protected: boolean; path: string | null 
   }
 }
 
-export default function ProtectedImage({ src, alt = "", onUnavailableChange, onError, ...props }: ProtectedImageProps) {
+export default function ProtectedImage({ src, alt = "", onUnavailableChange, onError, onLoad, ...props }: ProtectedImageProps) {
   const { accessRole } = useAuth();
   const source = classifySource(src);
   const path = source.path;
@@ -96,6 +96,8 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
   });
   const [signFailure, setSignFailure] = useState<string | null>(null);
   const [loadErrorSrc, setLoadErrorSrc] = useState<string | null>(null);
+  // 一度でも読み込みが終わったか。フェードは最初の 1 回だけ(署名の更新や src の差し替えで消えて見えないように)
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!source.protected || !imageRef.current) return;
@@ -168,6 +170,17 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
     queueMicrotask(() => { if (active) setLoadErrorSrc(renderSrc); });
     return () => { active = false; };
   }, [renderSrc]);
+  // 画面の処理が動く前に読み込みが終わっている画像は onLoad が届かないため、描画後にも確かめる
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!renderSrc || !image?.complete || image.naturalWidth === 0) return;
+    let active = true;
+    queueMicrotask(() => { if (active) setLoaded(true); });
+    return () => { active = false; };
+  }, [renderSrc]);
+  // 読み込み完了までは透明にしてフェードインさせる。表示できない画像は代替テキストを見せるため対象外。
+  // 優先読み込みの画像(ページの主画像)はフェードさせない(透明の間は表示完了と数えられず、表示速度の計測が遅れるため)
+  const pending = !unavailable && !loaded && props.fetchPriority !== "high";
   const onUnavailableChangeRef = useRef(onUnavailableChange);
   useEffect(() => { onUnavailableChangeRef.current = onUnavailableChange; });
   useEffect(() => { onUnavailableChangeRef.current?.(unavailable); }, [unavailable]);
@@ -178,8 +191,11 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
       {...props}
       ref={imageRef}
       src={renderSrc}
+      data-img-fade=""
+      data-pending={pending ? "" : undefined}
       alt={failed ? `${alt || "画像"}を表示できません` : alt}
       title={failed ? "画像を表示できません。再試行中です" : props.title}
+      onLoad={(e) => { setLoaded(true); onLoad?.(e); }}
       onError={(e) => { setLoadErrorSrc(renderSrc ?? null); onError?.(e); }}
     />
   );

@@ -86,8 +86,9 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       {!iconOnly && (
         <span
           className={[
-            "font-en flex-1 text-left text-[15px] leading-[20px] tracking-[0.75px] whitespace-nowrap overflow-hidden transition-all duration-300",
-            collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
+            "font-en flex-1 text-left text-[15px] leading-[20px] tracking-[0.75px] whitespace-nowrap overflow-hidden max-w-[160px] transition-opacity duration-300",
+            // 幅は動かさず透明度だけ切り替える(折りたたみ時は親の幅でクリップされる)
+            collapsed ? "opacity-0" : "opacity-100",
           ].join(" ")}
         >
           {label}
@@ -217,12 +218,14 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         isHoverMode && !collapsed ? "shadow-base" : "",
       ].join(" ")}
     >
-      <div className="flex flex-col gap-6 p-6 items-start w-full h-full min-h-0 overflow-y-auto">
+      <div className="flex flex-col gap-6 p-6 items-start w-full h-full min-h-0 overflow-y-auto overflow-x-hidden">
         {/* Title */}
+        {/* font-size は動かさず scale で縮める(24px × 0.5 = 折りたたみ時の 12px)。レイアウト再計算を避ける。
+            w-0: 縮める前の幅が場所を取ると、折りたたみ時に中身が横へはみ出してスクロールできてしまうため */}
         <p
           className={[
-            "font-guide font-normal leading-8 tracking-[0.0703px] text-primary whitespace-nowrap transition-all duration-300",
-            collapsed ? "text-[12px]" : "text-[24px]",
+            "w-0 font-guide font-normal text-[24px] leading-8 tracking-[0.0703px] text-primary whitespace-nowrap origin-left transition-transform duration-300",
+            collapsed ? "scale-50" : "",
           ].join(" ")}
         >
           Portfolio
@@ -239,8 +242,8 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           </div>
           <div
             className={[
-              "flex flex-col gap-1 min-w-0 overflow-hidden transition-all duration-300",
-              collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
+              "flex flex-col gap-1 min-w-0 overflow-hidden max-w-[160px] transition-opacity duration-300",
+              collapsed ? "opacity-0" : "opacity-100",
             ].join(" ")}
           >
             <span className="font-en font-medium text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
@@ -367,8 +370,8 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             <Icon set="Arrows" name="logout" className="h-[18px] w-[18px] shrink-0 text-white/30" />
             <span
               className={[
-                "text-[10px] tracking-[0.4px] text-white/30 whitespace-nowrap overflow-hidden transition-all duration-300",
-                collapsed ? "max-w-0 opacity-0" : "max-w-[160px] opacity-100",
+                "text-[10px] tracking-[0.4px] text-white/30 whitespace-nowrap overflow-hidden max-w-[160px] transition-opacity duration-300",
+                collapsed ? "opacity-0" : "opacity-100",
               ].join(" ")}
             >
               ログアウト

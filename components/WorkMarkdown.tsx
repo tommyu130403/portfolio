@@ -75,7 +75,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
           src={layout.base}
           alt={img[1]}
           style={{ width: widthToCss(layout.width), maxWidth: "100%" }}
-          className="my-2 inline-block rounded-r16 align-top"
+          className="my-2 inline-block h-auto rounded-r16 align-top [aspect-ratio:auto_16/10]"
         />
       );
       i += img[0].length;
@@ -196,7 +196,7 @@ const ImageFigure: FC<{
         <ProtectedImage
           src={url}
           alt={caption ?? ""}
-          className="block h-auto w-full"
+          className="block h-auto w-full [aspect-ratio:auto_16/10]"
           style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "center" } : undefined}
         />
       </div>
@@ -232,7 +232,7 @@ const ImageTextRow: FC<{
         <ProtectedImage
           src={url}
           alt={caption ?? ""}
-          className="block h-auto w-full"
+          className="block h-auto w-full [aspect-ratio:auto_16/10]"
           style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "center" } : undefined}
         />
       </div>

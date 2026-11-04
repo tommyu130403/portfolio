@@ -24,7 +24,7 @@ export const PhoneMock: FC<{ src: string; onClick?: () => void; className?: stri
       aria-label="スクリーンショットを拡大表示"
       className="relative block w-full cursor-zoom-in overflow-hidden rounded-[12cqw] border-[3cqw] border-[#0a0a0a] bg-[#0a0a0a] shadow-xl"
     >
-      <ProtectedImage src={src} alt="" className="block h-auto w-full rounded-[9cqw]" />
+      <ProtectedImage src={src} alt="" className="block h-auto w-full rounded-[9cqw] [aspect-ratio:auto_9/19]" />
       {/* iOS Safari 風の下部バー（任意・ダーク配色で PC のバーと統一）。画像の下端に残る帯（切れた端末イラストや背景だけの部分）を隠す（ユーザー指示 2026-11-02） */}
       {browser && (
         <div

@@ -2,6 +2,7 @@ import type { FC } from "react";
 import Tag from "./Tag";
 import ProtectedImage from "./ProtectedImage";
 import WorkThumbnail from "./WorkThumbnail";
+import { HOVER_CARD } from "@/lib/hover-card";
 import { DEFAULT_IMAGE, type WorkThumbnailData } from "@/lib/work-content";
 
 type WorkCardProps = {
@@ -34,12 +35,11 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
       } : undefined}
       className={[
         "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[14px]",
-        "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-['']",
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-['']",
         // Figma: 通常時の影は内側 _ProjectCard に付くが外側 Card の clip で切れて画面に出ない → 影なし。
         // ホバー（Library Card Status=hover）は外側に 背景 Action/hover・枠 Border/Light・影 shadow を付ける。
-        // 影が gap 16px を越えて隣のカードの下に隠れないよう、ホバー中は1段手前に出す
         onClick
-          ? "hover:z-[1] hover:bg-action-hover hover:after:border-border-light hover:shadow-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-[background-color,box-shadow] cursor-pointer"
+          ? `${HOVER_CARD} hover:after:border-border-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer`
           : "",
       ].join(" ")}
     >

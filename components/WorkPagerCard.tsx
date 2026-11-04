@@ -8,6 +8,7 @@ import ProtectedImage from "./ProtectedImage";
 import WorkThumbnail from "./WorkThumbnail";
 import { GUIDE_TEXT } from "./WorkBreadcrumb";
 import type { WorkThumbnailData } from "@/lib/work-content";
+import { HOVER_CARD } from "@/lib/hover-card";
 
 type WorkPagerCardProps = {
   /** 省略時は方向の行（矢印＋Prev / Next）を出さない（作品本文に埋め込む作品カード用） */
@@ -64,7 +65,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
     <Link
       href={href}
       aria-label={direction ? `${isNext ? "次" : "前"}のWork: ${title}` : `Work: ${title}`}
-      className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border transition-colors hover:border-system-500 ${
+      className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border hover:border-border-light ${HOVER_CARD} ${
         hasThumb
           ? `items-stretch ${isNext ? "md:flex-row-reverse" : ""}`
           : `flex-col gap-[6px] px-4 py-[14px] ${align}`

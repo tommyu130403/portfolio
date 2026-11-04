@@ -1118,7 +1118,7 @@ function ComponentsSection() {
           <ModalDemo />
         </ComponentPreview>
 
-        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。Figma Master 494:1363。カテゴリチップ・期間・作品名・制作内容タグ。画像は thumbnail（構成）があれば WorkThumbnail、無ければ image、無ければ既定画像">
+        <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。クリックで詳細ページ(/works?id=)へ遷移。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。onClick 指定時のみ）。切り替えは 300ms ease-out で、ホバーするカード共通（lib/hover-card.ts の HOVER_CARD。WorkPagerCard・スキルカードも同じ）。Figma Master 494:1363。カテゴリチップ・期間・作品名・制作内容タグ。画像は thumbnail（構成）があれば WorkThumbnail、無ければ image、無ければ既定画像">
           {/* WorkCard は w-full。ラッパを外すとプレビューの容器いっぱいに伸びて実寸を表さない */}
           <div className="w-[256px] max-w-full">
           <WorkCard

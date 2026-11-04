@@ -5,6 +5,7 @@ import Icon from "@/components/Icon";
 import type { IconProps } from "@/components/Icon";
 import ServiceLogo from "@/components/ServiceLogo";
 import Tag from "@/components/Tag";
+import { HOVER_CARD } from "@/lib/hover-card";
 import { supabase } from "@/src/lib/supabase";
 
 // ──────────────────────────────────────────────
@@ -230,8 +231,8 @@ function SkillRow({
 
   return (
     <div
-      className={`relative flex flex-col rounded-[16px] px-px transition-colors duration-200 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:transition-colors after:duration-200 after:content-[''] ${
-        open ? "bg-white/5 after:border-border-light" : "hover:bg-white/5 after:border-border"
+      className={`relative flex flex-col rounded-[16px] px-px after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] ${HOVER_CARD} ${
+        open ? "bg-action-hover after:border-border-light" : "after:border-border hover:after:border-border-light"
       }`}
     >
       {/* _SkillVaule — 常時表示。クリックで開閉。

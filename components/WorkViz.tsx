@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FC, type ReactNode, type RefObject } from "react";
+import { Icon, ICON_SETS, type IconSet } from "@/components/Icon";
 import { labelStep, scaleForTimeline, type TimelinePeriod, type TimelineScale } from "@/lib/timeline-scale";
 
 /**
@@ -28,8 +29,15 @@ export type StakeholderOrgRow = { text: string; me: boolean };
 export type StakeholderCard =
   | { kind: "role"; name: string; note: string; me: boolean }
   | { kind: "org"; title: string; rows: StakeholderOrgRow[] };
-/** 関係者グループ 1 つ = 層 1 つ。name が空の層は「グループ未設定」 */
-export type StakeholderLayer = { name: string; note: string | null; cards: StakeholderCard[] };
+/** 関係者グループ 1 つ = 層 1 つ。name が空の層は「グループ未設定」。icon = 「セット名/アイコン名」 */
+export type StakeholderLayer = { name: string; note: string | null; icon: string | null; cards: StakeholderCard[] };
+
+/** 層の icon を Icon に渡せる形へ。形式外・未知のセットは null（壊れた画像を出さない） */
+function layerIcon(ref: string | null): { set: IconSet; name: string } | null {
+  const m = ref ? /^([A-Za-z]+)\/([^/\s]+)$/.exec(ref) : null;
+  if (!m || !(ICON_SETS as readonly string[]).includes(m[1])) return null;
+  return { set: m[1] as IconSet, name: m[2] };
+}
 export type StakeholdersData = { v: 2; layers: StakeholderLayer[] };
 
 export function parseTimeline(raw: unknown): TimelineData | null {
@@ -93,7 +101,12 @@ export function parseStakeholders(raw: unknown): StakeholdersData | null {
           })
           .filter((c): c is StakeholderCard => c !== null);
         return cards.length > 0
-          ? { name: o.name, note: typeof o.note === "string" ? o.note : null, cards }
+          ? {
+              name: o.name,
+              note: typeof o.note === "string" ? o.note : null,
+              icon: typeof o.icon === "string" ? o.icon : null,
+              cards,
+            }
           : null;
       })
       .filter((l): l is StakeholderLayer => l !== null);
@@ -121,7 +134,7 @@ export function parseStakeholders(raw: unknown): StakeholdersData | null {
           note: `${v.count}名`,
           me: v.me,
         }));
-        return cards.length > 0 ? { name: o.label, note: null, cards } : null;
+        return cards.length > 0 ? { name: o.label, note: null, icon: null, cards } : null;
       })
       .filter((l): l is StakeholderLayer => l !== null);
     return layers.length > 0 ? { v: 2, layers } : null;
@@ -316,17 +329,20 @@ const MeBadge: FC<{ className?: string }> = ({ className = "" }) => (
 
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
   <div className="flex flex-col gap-4 md:gap-2.5">
-    {data.layers.map((layer, li) => (
+    {data.layers.map((layer, li) => {
+      const icon = layerIcon(layer.icon);
+      return (
       <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[104px_minmax(0,1fr)] md:gap-3">
-        <div className="md:py-2.5">
-          {layer.name && (
-            <p className="text-body-02-jp-bold text-main-100">
-              <MixedText text={layer.name} />
-            </p>
+        {/* 層のラベル。md 以上はアイコン → 層名を中央揃えで縦に積む（スマホは横並び）。層のメモ（note）は表示しない */}
+        <div className="flex items-center gap-2 md:flex-col md:gap-1 md:py-2.5 md:text-center">
+          {icon && (
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface-light">
+              <Icon set={icon.set} name={icon.name} tintColor="var(--color-main-100)" alt="" aria-hidden className="h-5 w-5" />
+            </span>
           )}
-          {layer.note && (
-            <p className="mt-0.5 text-caption-01-jp text-fg-muted">
-              <MixedText text={layer.note} />
+          {layer.name && (
+            <p className="min-w-0 text-body-02-jp-bold text-fg-muted">
+              <MixedText text={layer.name} />
             </p>
           )}
         </div>
@@ -339,11 +355,15 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
                   card.me ? "border-border-main bg-main-100/6" : "border-border bg-surface-light"
                 }`}
               >
-                {card.me && <MeBadge className="mb-1" />}
-                {card.name && (
-                  <p className="text-body-02-jp-bold text-fg">
-                    <MixedText text={card.name} />
-                  </p>
+                {(card.name || card.me) && (
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    {card.name && (
+                      <p className="min-w-0 text-body-02-jp-bold text-fg">
+                        <MixedText text={card.name} />
+                      </p>
+                    )}
+                    {card.me && <MeBadge className="shrink-0" />}
+                  </div>
                 )}
                 <p className="mt-0.5 text-body-03-jp text-fg-muted">
                   <MixedText text={card.note} />
@@ -375,6 +395,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
           )}
         </div>
       </div>
-    ))}
+      );
+    })}
   </div>
 );

@@ -139,6 +139,18 @@ type BreakdownState =
 const ROLE_DELIMITER = /[・、,]/; // works.role は区切りで分割されるため、担当役割の役割名に使えない
 const BREAKDOWN_INVALID = /[0-9・、,]/; // parseStakeholderBreakdown が役割名に使えない文字
 
+/** 担当役割のうち体制内訳に無いものを人数 1 の行として末尾に足す（体制内訳と関係者図の顔ぶれを揃える） */
+function appendRoleRows(rows: BreakdownRow[], roleIds: string[], roleList: NameMaster[]): BreakdownRow[] {
+  const nameOf = new Map(roleList.map((r) => [r.id, r.name]));
+  const out = [...rows];
+  for (const id of roleIds) {
+    const name = nameOf.get(id);
+    if (!name || BREAKDOWN_INVALID.test(name) || out.some((r) => r.role_id === id)) continue;
+    out.push(newBreakdownRow(id));
+  }
+  return out;
+}
+
 /** 役割マスタ（関係者図のグループ・役職の設定つき） */
 type EditorRole = NameMaster & { group_id: string | null; is_titled: boolean };
 
@@ -417,6 +429,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
 
         const roleList = (rolesRes.data ?? []) as NameMaster[];
         const linkedRoleIds = ((workRolesRes.data ?? []) as { role_id: string }[]).map((r) => r.role_id);
+        let initialRoleIds = linkedRoleIds;
         if (linkedRoleIds.length > 0) {
           setRoleIds(linkedRoleIds);
         } else if (row.role?.trim()) {
@@ -428,6 +441,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             if (!found) unmatched.push(name);
             else if (!matched.includes(found.id)) matched.push(found.id);
           }
+          initialRoleIds = matched;
           setRoleIds(matched);
           setRoleNotice(unmatched);
         }
@@ -437,17 +451,19 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           note: string | null;
           org: string | null;
         }[];
-        if (counts.length > 0) {
-          setBreakdown({
-            mode: "rows",
-            rows: counts.map((c) => ({
-              role_id: c.role_id,
-              headcount: c.headcount,
-              note: c.note ?? "",
-              org: c.org ?? "",
-            })),
-          });
-        } else if (row.stakeholder_breakdown?.trim()) {
+        if (counts.length > 0 || !row.stakeholder_breakdown?.trim()) {
+          // 保存済みの内訳に無い担当役割も行に足す（関係者図は以前から 1 名として描いていたので、図は変わらない）。
+          // 足した行は DB にまだ無いので、未保存として扱い保存を促す
+          const savedRows = counts.map((c) => ({
+            role_id: c.role_id,
+            headcount: c.headcount,
+            note: c.note ?? "",
+            org: c.org ?? "",
+          }));
+          const rows = appendRoleRows(savedRows, initialRoleIds, roleList);
+          setBreakdown({ mode: "rows", rows });
+          if (rows.length > savedRows.length) setDirty(true);
+        } else {
           setBreakdown({ mode: "legacy" });
         }
       }
@@ -576,8 +592,14 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     return res;
   };
 
+  // 担当役割に足した役割は体制内訳にも行を足す。外したときは行を残す（人数やメモを入れた行を消さないため）
+  const addRoleRowsToBreakdown = (ids: string[], roleList: NameMaster[]) =>
+    setBreakdown((b) => (b.mode === "rows" ? { mode: "rows", rows: appendRoleRows(b.rows, ids, roleList) } : b));
+
   const toggleRole = (id: string) => {
+    const adding = !roleIds.includes(id);
     setRoleIds((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
+    if (adding) addRoleRowsToBreakdown([id], roles);
     markDirty();
   };
 
@@ -599,6 +621,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       const item = res.item;
       if (!roleIds.includes(item.id)) {
         setRoleIds((prev) => [...prev, item.id]);
+        addRoleRowsToBreakdown([item.id], [item]);
         markDirty();
       }
       setNewRoleName("");
@@ -1196,6 +1219,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               <FieldLabel>体制内訳（役割と人数。公開ページでは人数付きタグで表示）</FieldLabel>
               <StakeholderBreakdownField
                 roles={roles}
+                lockedRoleIds={roleIds}
                 value={breakdown}
                 legacyText={work.stakeholder_breakdown}
                 onChange={(v) => {
@@ -1255,7 +1279,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               </span>
             </FormGroupHeader>
             <div>
-              <p className="mb-3 text-[11px] text-fg-muted">図は体制内訳と担当役割から自動で作られます。体制内訳・担当役割の変更は右上の「保存」で反映。担当役割にメモを付けるときは体制内訳にも人数 1 で入れる。</p>
+              <p className="mb-3 text-[11px] text-fg-muted">図は体制内訳と担当役割から自動で作られます。担当役割に選んだ役割は体制内訳にも人数 1 で自動で入ります（人数・メモ・組織は体制内訳で編集）。変更は右上の「保存」で反映。</p>
               <StakeholdersDiagramEditor
                 data={parsedStakeholders}
                 workRoles={diagramRoles}
@@ -1391,6 +1415,7 @@ const EMPTY_TIMELINE: TimelineData = { totalUnits: DEFAULT_TIMELINE.totalUnits, 
 
 function StakeholderBreakdownField({
   roles,
+  lockedRoleIds,
   value,
   legacyText,
   onChange,
@@ -1398,6 +1423,8 @@ function StakeholderBreakdownField({
   onAddRole,
 }: {
   roles: NameMaster[];
+  /** 担当役割。これらの行は体制内訳から外せない（関係者図と顔ぶれを揃えるため） */
+  lockedRoleIds: string[];
   value: BreakdownState;
   legacyText: string | null;
   onChange: (v: BreakdownState) => void;
@@ -1412,6 +1439,10 @@ function StakeholderBreakdownField({
   const roleName = new Map(roles.map((r) => [r.id, r.name]));
 
   const setRows = (rows: BreakdownRow[]) => onChange({ mode: "rows", rows });
+  // 担当役割なのに体制内訳に入れられない役割（名前が BREAKDOWN_INVALID）。黙って図とずれないよう知らせる
+  const unaddableRoles = lockedRoleIds
+    .map((id) => roleName.get(id))
+    .filter((n): n is string => !!n && BREAKDOWN_INVALID.test(n));
 
   const hasEmptyRow = value.mode === "rows" && value.rows.some((r) => !r.role_id);
   const hasSelectableRole =
@@ -1469,7 +1500,7 @@ function StakeholderBreakdownField({
                 rows.push({ ...newBreakdownRow(role.id), headcount: Math.min(999, Math.max(1, t.count)) });
               }
               setUnmatched(missing);
-              setRows(rows);
+              setRows(appendRoleRows(rows, lockedRoleIds, roles));
             }}
           >
             行形式で入力し直す
@@ -1482,10 +1513,15 @@ function StakeholderBreakdownField({
               未登録の役割{unmatched.map((n) => `「${n}」`).join("")}は行に入りませんでした。「新しい役割」で追加して選んでください。
             </p>
           )}
-          {value.rows.map((r, i) => (
+          {value.rows.map((r, i) => {
+            const locked = lockedRoleIds.includes(r.role_id);
+            const lockedTitle = locked ? "担当役割の行です。外すときは担当役割から先に外してください" : undefined;
+            return (
             <div key={i} className="flex flex-wrap items-center gap-2">
               <select
                 value={r.role_id}
+                disabled={locked}
+                title={lockedTitle}
                 onChange={(e) => setRows(value.rows.map((x, j) => (j === i ? { ...x, role_id: e.target.value } : x)))}
                 className={`!w-56 rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] outline-none transition-colors focus:border-primary ${r.role_id ? "text-white" : "text-system-750"}`}
               >
@@ -1517,10 +1553,19 @@ function StakeholderBreakdownField({
               />
               <span className="ml-auto flex items-center gap-1">
                 <MoveButtons index={i} length={value.rows.length} label={roleName.get(r.role_id) || `行${i + 1}`} onMove={(d) => setRows(moveItem(value.rows, i, i + d))} />
-                <button type="button" className={vizDel} onClick={() => setRows(value.rows.filter((_, j) => j !== i))}>削除</button>
+                <button
+                  type="button"
+                  className={`${vizDel} disabled:cursor-not-allowed disabled:opacity-40`}
+                  disabled={locked}
+                  title={lockedTitle}
+                  onClick={() => setRows(value.rows.filter((_, j) => j !== i))}
+                >
+                  削除
+                </button>
               </span>
             </div>
-          ))}
+            );
+          })}
           <button
             type="button"
             className={`${vizBtn} self-start disabled:cursor-not-allowed disabled:opacity-40`}
@@ -1554,6 +1599,11 @@ function StakeholderBreakdownField({
             </button>
           </div>
           {addError && <p className="text-[12px] text-danger-300">{addError}</p>}
+          {unaddableRoles.length > 0 && (
+            <p className="text-[11px] text-[#f4c248]">
+              担当役割{unaddableRoles.map((n) => `「${n}」`).join("")}は半角数字などを含むため体制内訳に入れられません（関係者図には 1 名で出ます）。マスタで改名すると入ります。
+            </p>
+          )}
         </>
       )}
       <div>

@@ -1,4 +1,4 @@
-// SQL `private.compute_work_stakeholders`（20261101150000）と同じ規則。片方を変えたら両方直す。
+// SQL `private.compute_work_stakeholders`（20261105120000）と同じ規則。片方を変えたら両方直す。
 import type { StakeholderCard, StakeholdersData } from "@/components/WorkViz";
 
 export type StakeholderRoleInput = {
@@ -130,9 +130,10 @@ export function buildStakeholders(
   const layers: StakeholdersData["layers"] = named.map((g) => ({
     name: g.name,
     note: g.note ?? null,
+    icon: g.icon ?? null,
     cards: toCards(buckets.get(g.id)!),
   }));
   const ungrouped = buckets.get(null);
-  if (ungrouped) layers.push({ name: "", note: null, cards: toCards(ungrouped) });
+  if (ungrouped) layers.push({ name: "", note: null, icon: null, cards: toCards(ungrouped) });
   return { v: 2, layers };
 }

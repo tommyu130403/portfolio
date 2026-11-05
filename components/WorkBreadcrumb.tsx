@@ -64,14 +64,15 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
   const showCounter = total > 1;
 
   return (
-    // 高さは --work-header-h（既定 56px）。パンくずと「件数＋前後矢印」を、それぞれ半透明＋ぼかしの囲みに入れる
-    // （Library 414:296、Background/Dark-α25 = System/900 #212121 の 25%。ページ背景 surface は System/925 なので surface ではなく system-900 を参照する）。後ろを通る本文はぼかして透ける。
+    // 高さは --work-header-h（既定 56px）。パンくずは不透明＋ぼかし＋1px 枠の囲みに入れる
+    // （Library 414:296、2026-11-05 更新。地 Background/Default = surface = System/925 #191919・枠 border #3A3A3A）。
+    // 件数は囲みを持たず、地の色の縁取りで後ろを通る本文の文字から読み分ける（矢印は Button/Function 自身の枠と地を持つ）。
     // 上部固定は呼び出し側（WorkDetailClient）の sticky ラッパーが持つ
     // 高さは作品詳細ページの --work-header-h（globals.css）。変数の無い場所（スタイルガイド）は既定値 3.5rem（globals.css と同値）
     <div className="flex h-[var(--work-header-h,3.5rem)] min-w-0 items-center justify-between gap-3">
       <nav
         aria-label="パンくず"
-        className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-r8 bg-system-900/25 backdrop-blur-[2px] md:py-2"
+        className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-r8 bg-surface ring-1 ring-inset ring-border backdrop-blur-[2px] md:py-2"
       >
         {/* 「Works」は枠なしの Button/Function（文字版・Library 458:442 / md 未満は矢印付き 458:449）。
             高さ 36px の見た目に対し、当たり判定だけ縦 44px に広げる */}
@@ -109,8 +110,10 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
         // 囲みは行の高さ（--work-header-h）いっぱいにし、44px の矢印リンクを中に収める。前後矢印は全幅で出す
         // （Figma は md 未満を件数のみとしているが、幅に余裕があるため 2026-10-18 にユーザー判断で全幅表示）。
         // 矢印リンクは見た目(36px)より左右 4px 大きいので、右の余白は pr-1 で見た目 8px に揃える
-        <div className="pointer-events-auto flex shrink-0 items-center gap-2 self-stretch rounded-r8 bg-system-900/25 py-0 pl-2 pr-1 backdrop-blur-[2px]">
-          <span className={`${GUIDE_TEXT} tabular-nums text-system-500`}>
+        <div className="pointer-events-auto flex shrink-0 items-center gap-2 self-stretch py-0 pl-2 pr-1">
+          <span
+            className={`${GUIDE_TEXT} tabular-nums text-system-500 [text-shadow:0_0_2px_var(--color-surface),0_0_4px_var(--color-surface),0_0_6px_var(--color-surface),0_0_8px_var(--color-surface)]`}
+          >
             <span className="text-fg">{pad(index + 1)}</span> / {pad(total)}
           </span>
           <div className="flex items-center">

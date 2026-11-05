@@ -1360,7 +1360,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkBreadcrumb"
-          description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずと件数＋前後矢印を半透明（Figma Background/Dark-α25 = bg-system-900/25（#212121 の 25%。ページ背景 surface は system-925 なので surface は使わない））＋ぼかしの囲みに入れる。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」、md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
+          description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずは Background/Default（bg-surface = system-925 #191919・不透明）＋ぼかし＋1px 枠（border #3A3A3A）の囲みに入れる。件数は囲みなしで、地の色の縁取り（text-shadow）で後ろを通る本文から読み分ける。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」、md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={2} total={8} prevHref="#" nextHref="#" />

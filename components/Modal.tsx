@@ -172,7 +172,7 @@ const Modal: FC<ModalProps> = ({
             aria-modal="true"
             tabIndex={-1}
             style={{ outline: "none" }}
-            className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 bg-system-900 shadow-[0_1px_1.5px_0_rgba(0,0,0,0.1),0_1px_1px_0_rgba(0,0,0,0.1)]"
+            className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 bg-surface shadow-[0_1px_1.5px_0_rgba(0,0,0,0.1),0_1px_1px_0_rgba(0,0,0,0.1)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-1 flex-col overflow-y-auto">

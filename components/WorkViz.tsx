@@ -241,7 +241,17 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
           <TimelineAxis scale={scale} colPx={colPx} />
 
           {/* フェーズ行一覧 */}
-          <div className="isolate flex flex-col gap-2">
+          <div className="relative isolate flex flex-col gap-2">
+            {/* 背景の縦線（Career と同じ）。目盛りの区切りと揃え、目盛り行との間（gap-4）もつなぐ */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 -top-4 bottom-0 grid"
+              style={{ gridTemplateColumns: `repeat(${scale.ticks.length}, minmax(0,1fr))` }}
+            >
+              {scale.ticks.map((_, ti) => (
+                <div key={ti} className="border-l border-border" />
+              ))}
+            </div>
             {phases.map((p, i) => {
               const active = p.raci.includes("R") || p.raci.includes("A");
               const left = ((p.start - 1) / totalUnits) * 100;
@@ -250,16 +260,21 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
               // 短いバーでもRACIバッジがはみ出さないようにする（フェーズ名は最小幅では見えなくてよい）。
               const badgeCount = p.raci.length;
               const minBarWidth = 18 + (badgeCount > 0 ? badgeCount * 12 + (badgeCount - 1) * 4 : 0);
+              const barLeft = `min(${left}%, calc(100% - ${minBarWidth}px))`;
+              const barWidth = `max(${width}%, ${minBarWidth}px)`;
+              // ホバーでフェーズ名の長さまで伸ばす。右半分のバーは右端を固定して左へ伸ばし、枠からはみ出さないようにする
+              const anchorRight = left >= 50;
+              const barPos: CSSProperties = anchorRight ? { right: `calc(100% - ${barLeft} - ${barWidth})` } : { left: barLeft };
               return (
                 <div key={i} className="relative h-6 w-full hover:z-[100]! focus-within:z-[100]!" style={{ zIndex: phases.length - i }}>
                   <div
-                    className={`group after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] absolute top-0 flex h-6 items-center justify-between gap-1 rounded-[48px] py-px pl-[5px] pr-[13px] ${
-                      active ? "bg-main-700 after:border-border-main" : "bg-[rgba(0,0,0,0.25)] after:border-border"
+                    className={`group after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] absolute top-0 flex h-6 w-(--bar-w) items-center justify-between gap-1 rounded-[48px] py-px pl-[5px] pr-[13px] hover:w-max hover:min-w-(--bar-w) ${
+                      // 非アクティブは Background/Dark-α25。縦線が透けないよう、地（surface）に重ねて不透明にする
+                      active
+                        ? "bg-main-700 after:border-border-main"
+                        : "bg-[linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),linear-gradient(var(--color-surface),var(--color-surface))] after:border-border"
                     }`}
-                    style={{
-                      left: `min(${left}%, calc(100% - ${minBarWidth}px))`,
-                      width: `max(${width}%, ${minBarWidth}px)`,
-                    }}
+                    style={{ "--bar-w": barWidth, ...barPos } as CSSProperties}
                   >
                     <span className="flex shrink-0 items-center gap-1">
                       {p.raci.map((k, ki) => (

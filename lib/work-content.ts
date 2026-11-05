@@ -32,6 +32,28 @@ export function parseScreenshots(raw: unknown): string[] {
   return raw.filter((u): u is string => typeof u === "string" && u.length > 0);
 }
 
+/** ヒーロー（詳細ページ最上部）の構成種別（works.hero_layout）。null は旧形式（画像の縦横で枠を自動判定） */
+export const HERO_LAYOUTS = ["none", "sp2", "pcsp", "pc", "images"] as const;
+export type HeroLayout = (typeof HERO_LAYOUTS)[number];
+
+/** 構成ごとの画像枠の数。hero_screenshots はこの数の位置どおりの配列で持つ（空き枠は ""） */
+export const HERO_SLOT_COUNT: Record<HeroLayout, number> = { none: 0, sp2: 2, pcsp: 2, pc: 1, images: 3 };
+
+/** works.hero_layout を HeroLayout へ整形する。null・未知の値は null（旧形式） */
+export function parseHeroLayout(raw: unknown): HeroLayout | null {
+  return HERO_LAYOUTS.find((l) => l === raw) ?? null;
+}
+
+/** works.hero_screenshots を、構成の枠数ぶんの固定長配列へ整形する（位置を保つため空き枠は ""） */
+export function parseHeroSlots(raw: unknown, layout: HeroLayout): string[] {
+  const arr = Array.isArray(raw) ? raw : [];
+  // 前後の空白は落とし、空白だけ・フラグメントだけ（"#browser" 等）の枠は空き枠として扱う
+  return Array.from({ length: HERO_SLOT_COUNT[layout] }, (_, i) => {
+    const s = typeof arr[i] === "string" ? arr[i].trim() : "";
+    return s.split("#")[0].trim() === "" ? "" : s;
+  });
+}
+
 /** サムネイル未登録の作品に出す既定画像（一覧カード・前後ナビ共通） */
 export const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";

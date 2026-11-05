@@ -104,6 +104,7 @@ const SAMPLE_WORK_DETAIL = {
     "https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=800&h=500&q=80",
     "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80",
   ],
+  hero_layout: null,
   hero_bg_color: null,
   sections: [
     { heading: "概要", body: "### 背景\n市場のニーズに応えるため、新規スカウトサービスを立ち上げました。\n\n### 課題\n既存フローでは候補者と企業のマッチング精度に課題がありました。" },
@@ -118,6 +119,18 @@ const SAMPLE_WORK_DETAIL = {
   sort_order: 0,
   created_at: null,
 } as Tables<"works">;
+
+// ヒーロー構成（works.hero_layout）ごとの見本。画像は SAMPLE_WORK_DETAIL.hero_screenshots の横長・縦長と同じものを使い回す
+const HERO_SAMPLE_PC = "https://images.unsplash.com/photo-1551650975-87deedd944c3?auto=format&fit=crop&w=800&h=500&q=80";
+const HERO_SAMPLE_SP = "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80";
+const HERO_LAYOUT_SAMPLES: { label: string; hero_layout: string | null; hero_screenshots: string[] }[] = [
+  { label: "none（設定なし。公開ページでは何も出さない）", hero_layout: "none", hero_screenshots: [] },
+  { label: "sp2（SP 2台）", hero_layout: "sp2", hero_screenshots: [HERO_SAMPLE_SP, HERO_SAMPLE_SP] },
+  { label: "pcsp（PC + SP）", hero_layout: "pcsp", hero_screenshots: [HERO_SAMPLE_PC, HERO_SAMPLE_SP] },
+  { label: "pc（PC のみ）", hero_layout: "pc", hero_screenshots: [HERO_SAMPLE_PC] },
+  { label: "images ×1（枠なし 1 枚）", hero_layout: "images", hero_screenshots: [HERO_SAMPLE_PC, "", ""] },
+  { label: "images ×3（枠なし 3 枚・OOUI と同じ階段状の重ね）", hero_layout: "images", hero_screenshots: [HERO_SAMPLE_PC, HERO_SAMPLE_SP, HERO_SAMPLE_PC] },
+];
 
 const SAMPLE_FLOWCHART: FlowchartData = {
   nodes: [
@@ -1344,8 +1357,29 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview
+          title="WorkDetailHeader（ヒーロー構成 hero_layout）"
+          description="管理画面の「ヒーロー構成」で選ぶ 5 種類。none は何も出さず、sp2 / pcsp / pc は画像の縦横を調べず構成どおりの端末枠で描く（URL 末尾の #browser でブラウザバー付き）。images は枠なしで 1〜3 枚（2〜3 枚は OOUI 勉強会のヒーローと同じく 16:9 の札を階段状に重ねる）。hero_layout が null の作品は従来どおり画像の縦横で自動判定する（上の WorkDetailHeader）"
+        >
+          <div className="flex flex-col gap-6">
+            {HERO_LAYOUT_SAMPLES.map((s) => (
+              <div key={s.label} className="flex flex-col gap-2">
+                <p className="text-[12px] text-fg-muted">{s.label}</p>
+                <div className="rounded-[12px] border border-border-light bg-surface p-6">
+                  <WorkDetailHeader
+                    work={{ ...SAMPLE_WORK_DETAIL, hero_layout: s.hero_layout, hero_screenshots: s.hero_screenshots }}
+                    contents={[]}
+                    tools={[]}
+                    screenshots={s.hero_screenshots}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
           title="WorkDetailHeader（onEdit 付き・admin プレビュー用）"
-          description="admin の作品エディタ右側プレビュー専用。onEdit を渡すと、スクリーンショット・カテゴリ/タイトル・制作内容/ツール・期間・役割・関係者の各領域に編集ボタン（円形・鉛筆アイコン）が重なる。押すと左カラムの該当入力欄へ移動して強調する。公開ページでは渡さないので見た目は変わらない"
+          description="admin の作品エディタ右側プレビュー専用。onEdit を渡すと、ヒーロー・カテゴリ/タイトル・制作内容/ツール・期間・役割・関係者の各領域に編集ボタン（円形・鉛筆アイコン）が重なる。押すと左カラムの該当入力欄へ移動して強調する。公開ページでは渡さないので見た目は変わらない"
         >
           <div className="rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailHeader

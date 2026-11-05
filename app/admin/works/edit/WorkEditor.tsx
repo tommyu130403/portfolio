@@ -29,7 +29,17 @@ import WorkDetailHeader, { type WorkToolItem, type WorkDetailEditRegion } from "
 import WorkCard from "@/components/WorkCard";
 import WorkDetailContent from "@/components/WorkDetailContent";
 import { SERVICE_BRANDS } from "@/lib/service-brands";
-import { parseScreenshots, parseThumbnail, DEFAULT_IMAGE, type WorkThumbnailData, type ThumbnailLayout } from "@/lib/work-content";
+import {
+  parseScreenshots,
+  parseThumbnail,
+  parseHeroLayout,
+  parseHeroSlots,
+  HERO_SLOT_COUNT,
+  DEFAULT_IMAGE,
+  type WorkThumbnailData,
+  type ThumbnailLayout,
+  type HeroLayout,
+} from "@/lib/work-content";
 import { workPeriodLabel } from "@/lib/work-period";
 import { compressImage } from "@/lib/compress-image";
 import {
@@ -75,6 +85,41 @@ type Work = Tables<"works">;
  * 右 = 公開ページ全体（上部ブロック・本文・一覧カード）を未保存の値で描くプレビュー。xl 未満では縦積み。
  */
 
+/** ヒーロー構成ごとの画像欄のラベル（位置は hero_screenshots の並びと対応） */
+const HERO_SLOT_LABELS: Record<HeroLayout, string[]> = {
+  none: [],
+  sp2: ["スマホ画面 1", "スマホ画面 2"],
+  pcsp: ["PC 画面", "スマホ画面"],
+  pc: ["PC 画面"],
+  images: ["画像 1", "画像 2（任意）", "画像 3（任意）"],
+};
+
+/**
+ * 構成を切り替えるときの画像の引き継ぎ。PC 枠・スマホ枠は役割どおりに対応させ（pcsp ["", sp] → pc は [""]、pcsp → sp2 は sp が 2 枠目）、
+ * 役割の無い並び（images・旧形式・設定なし）は空き枠を詰めて順に入れる。あふれた分は捨てる
+ */
+function convertHeroSlots(from: HeroLayout | null, slots: string[], to: HeroLayout): string[] {
+  const n = HERO_SLOT_COUNT[to];
+  const inOrder = slots.filter(Boolean);
+  let pc = "";
+  let sps: string[] | null = null;
+  if (from === "pcsp") [pc, sps] = [slots[0] ?? "", [slots[1] ?? ""]];
+  else if (from === "pc") [pc, sps] = [slots[0] ?? "", []];
+  else if (from === "sp2") [pc, sps] = ["", [slots[0] ?? "", slots[1] ?? ""]];
+  if (sps && (to === "pcsp" || to === "pc" || to === "sp2")) {
+    if (to === "pcsp") return [pc, sps[0] ?? ""];
+    if (to === "pc") return [pc];
+    // pcsp → sp2 は 2 枠目へ。sp2 同士は同じ構成なので来ない
+    return from === "pcsp" ? ["", sps[0] ?? ""] : [sps[0] ?? "", sps[1] ?? ""];
+  }
+  return Array.from({ length: n }, (_, i) => inOrder[i] ?? "");
+}
+
+/** works.hero_screenshots（Json）から文字列だけを位置どおりに取り出す（空文字も残す。旧形式エディタの空行を保つため） */
+function heroStrings(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw.filter((u): u is string => typeof u === "string") : [];
+}
+
 function emptyWork(id: string): Work {
   return {
     id,
@@ -93,6 +138,7 @@ function emptyWork(id: string): Work {
     stakeholders_legacy: null,
     hero_brand: null,
     hero_screenshots: [] as unknown as Json,
+    hero_layout: null,
     hero_bg_color: null,
     sections: [] as unknown as Json,
     stakeholder_breakdown: null,
@@ -418,6 +464,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           return;
         }
         setWork(row);
+        // 構成が未設定で画像がある作品は旧形式。保存するまで元の並びを残し、選択肢から戻せるようにする
+        const rawShots = heroStrings(row.hero_screenshots);
+        setLegacyHero(parseHeroLayout(row.hero_layout) === null && rawShots.some((u) => u.length > 0) ? rawShots : null);
         setMarkdown(sectionsToMarkdown(row.sections));
         setPeriod(periodInputsOf(row));
         setContents(
@@ -547,6 +596,47 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     arr[i] = v;
     while (arr.length > 0 && arr[arr.length - 1] === "") arr.pop();
     setThumbnail({ ...thumbnail, [key]: arr });
+  };
+
+  // ヒーロー。読み込み時に hero_layout が null で画像があった作品は旧形式（自動判定）として扱い、保存するまで旧エディタと選択肢を残す
+  const heroLayout = useMemo(() => parseHeroLayout(work?.hero_layout), [work?.hero_layout]);
+  const heroRaw = useMemo(() => heroStrings(work?.hero_screenshots), [work?.hero_screenshots]);
+  const heroSlots = useMemo(() => (heroLayout ? parseHeroSlots(work?.hero_screenshots, heroLayout) : []), [heroLayout, work?.hero_screenshots]);
+  const [legacyHero, setLegacyHero] = useState<string[] | null>(null);
+  const isLegacyHero = heroLayout === null && legacyHero !== null;
+  const heroSelectValue = heroLayout ?? (legacyHero ? "legacy" : "none");
+  // 構成を切り替えても、この編集中は直前の画像の並びを失わないよう、構成ごとに退避しておく（イベント処理の中でだけ読み書きする）
+  const heroDraftRef = useRef<Partial<Record<HeroLayout, string[]>>>({});
+  const legacyDraftRef = useRef<string[] | null>(null);
+  // 「設定なし」は画像を消さないので、hero_screenshots はその前の構成の並びのまま。引き継ぎ元の構成として覚えておく（null = 旧形式・不明）
+  const heroNoneFromRef = useRef<HeroLayout | null>(null);
+  const changeHeroLayout = (v: string) => {
+    const from = heroLayout === "none" ? heroNoneFromRef.current : heroLayout;
+    if (from) heroDraftRef.current[from] = parseHeroSlots(work?.hero_screenshots, from);
+    else if (legacyHero) legacyDraftRef.current = heroRaw;
+    if (v === "legacy") {
+      if (!legacyHero) return;
+      setField("hero_layout", null);
+      setField("hero_screenshots", (legacyDraftRef.current ?? legacyHero) as unknown as Json);
+      return;
+    }
+    const next = parseHeroLayout(v);
+    if (!next) return;
+    setField("hero_layout", next);
+    if (next === "none") {
+      if (heroLayout !== "none") heroNoneFromRef.current = heroLayout;
+      return;
+    }
+    // 直前の構成から引き継いだ画像を優先し、空いた枠だけ、その構成で前に入れていた画像（退避分）で埋める
+    const draft = heroDraftRef.current[next];
+    const converted = convertHeroSlots(from, from ? parseHeroSlots(work?.hero_screenshots, from) : heroRaw, next);
+    setField("hero_screenshots", converted.map((s, i) => s || draft?.[i] || "") as unknown as Json);
+  };
+  const setHeroSlot = (i: number, v: string) => {
+    if (!heroLayout) return;
+    const slots = [...heroSlots];
+    slots[i] = v;
+    setField("hero_screenshots", slots as unknown as Json);
   };
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
@@ -702,7 +792,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
   const handlePreviewEdit = (region: WorkDetailEditRegion) => {
     if (region === "title") {
       // タイトル入力は上部のヘッダー行（スクロール領域の外）にあるため、入力欄にフォーカスしつつ
-      // 左カラムは先頭のカテゴリ欄まで戻す（先頭要素への center スクロールは 0 に丸まる）
+      // 左カラムはカテゴリ欄まで戻す（ヒーロー・一覧カード設定より下にあるので、そこへ center スクロールする）
       titleInputRef.current?.focus({ preventScroll: true });
       focusField("title", titleFieldRef);
       return;
@@ -835,6 +925,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     );
     setRoleNotice([]);
     setPeriod(periodInputsOf(payload));
+    // 構成を選んで保存したら旧形式には戻せない
+    if (parseHeroLayout(payload.hero_layout) !== null) setLegacyHero(null);
     setSaving(false);
     setDirty(false);
     setSavedAt(true);
@@ -944,100 +1036,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
           <div className="w-full shrink-0 pb-12 xl:min-h-0 xl:w-1/2 xl:shrink xl:overflow-y-auto xl:pr-4">
           <div className="flex max-w-main min-w-0 flex-col gap-4">
-            <div ref={titleFieldRef} className={ringClass("title")}>
-              <FieldLabel>カテゴリ</FieldLabel>
-              <WorkCategoryField value={work.category} onChange={(v) => setField("category", v)} dirty={dirty} />
-            </div>
-            <div ref={rolesFieldRef} className={ringClass("roles")}>
-              <FieldLabel>担当役割</FieldLabel>
-              <div className="flex flex-wrap gap-2">
-                {roles.map((r) => {
-                  const selected = roleIds.includes(r.id);
-                  const invalid = ROLE_DELIMITER.test(r.name);
-                  return (
-                    <button
-                      key={r.id}
-                      type="button"
-                      disabled={invalid}
-                      title={invalid ? "「・」「、」「,」を含む役割は作品には使えません" : undefined}
-                      onClick={() => toggleRole(r.id)}
-                      className={`rounded-[999px] border px-3 py-1 text-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                        selected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border-light bg-[#1a1a1a] text-fg-muted hover:text-white"
-                      }`}
-                    >
-                      {r.name}
-                    </button>
-                  );
-                })}
-                {roles.length === 0 && <span className="text-[12px] text-system-700">役割がまだありません。下の入力欄から追加できます</span>}
-              </div>
-              <p className="mt-2 text-[11px] text-fg-muted">
-                選んだ順に「・」でつないで公開ページに表示：
-                {roleIds.map((rid) => roles.find((r) => r.id === rid)?.name).filter(Boolean).join("・") || "—"}
-              </p>
-              {roleNotice.map((n) => (
-                <p key={n} className="mt-1 text-[11px] text-[#f4c248]">
-                  未登録の役割「{n}」は保存すると外れます。マスタに追加して選び直してください
-                </p>
-              ))}
-              <div
-                className="mt-2 flex items-center gap-2"
-                onKeyDown={(e) => {
-                  if ((e.target as HTMLElement).tagName !== "INPUT") return;
-                  if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
-                    e.preventDefault();
-                    if (!addingRole) void handleAddRole();
-                  }
-                }}
-              >
-                <Input value={newRoleName} onChange={setNewRoleName} placeholder="新しい役割" className="!w-56" />
-                <button
-                  type="button"
-                  onClick={() => void handleAddRole()}
-                  disabled={!newRoleName.trim() || addingRole}
-                  className="rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  追加
-                </button>
-              </div>
-            </div>
-            <div>
-              <FieldLabel>担当経歴（Career）</FieldLabel>
-              <select
-                value={work.career_item_id ?? ""}
-                onChange={(e) => setField("career_item_id", e.target.value || null)}
-                className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] outline-none transition-colors focus:border-primary ${work.career_item_id ? "text-white" : "text-system-750"}`}
-              >
-                <option value="">（紐付けなし）</option>
-                {careerOptions.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.role}｜{c.company}（{c.period}）
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div ref={periodFieldRef} className={ringClass("period")}>
-              <FieldLabel>期間</FieldLabel>
-              <PeriodFields value={period} disabled={saving} onChange={(p) => { setPeriod(p); markDirty(); }} />
-              {isLegacyPeriod(work) && isSamePeriod(period, periodInputsOf(work)) && (
-                <p className="mt-1 text-[11px] text-[#f4c248]">現在の値「{work.period}」は年月の入力欄で読み取れない形式です。入力して保存すると置き換わります。</p>
-              )}
-            </div>
-
-            <FormGroupHeader>デバイスモックアップ</FormGroupHeader>
-            {/* hero_bg_color は未使用のため入力を撤去。hero_brand は構成サムネイルのサービス名として
-                「サムネイル構成」で入力する。カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
-            <div ref={screenshotsFieldRef} className={ringClass("screenshots")}>
-              <FieldLabel>スクリーンショット（左パネルのデバイスモックアップ・先頭2枚を表示）</FieldLabel>
-              <HeroScreenshotsEditor
-                value={(work.hero_screenshots ?? []) as string[]}
-                onChange={(v) => setField("hero_screenshots", v as unknown as Json)}
-              />
-            </div>
-
-            <FormGroupHeader>一覧・タグ設定（サムネイル構成 / 制作内容 / ツール）</FormGroupHeader>
+            <FormGroupHeader>一覧カード設定（公開ページの一覧・経歴に出る）</FormGroupHeader>
             <div className="flex flex-col gap-3">
               <div>
                 <FieldLabel>サムネイル構成</FieldLabel>
@@ -1142,6 +1141,78 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 </>
               )}
             </div>
+            <div>
+              <FieldLabel>担当経歴（Career）</FieldLabel>
+              <select
+                value={work.career_item_id ?? ""}
+                onChange={(e) => setField("career_item_id", e.target.value || null)}
+                className={`w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] outline-none transition-colors focus:border-primary ${work.career_item_id ? "text-white" : "text-system-750"}`}
+              >
+                <option value="">（紐付けなし）</option>
+                {careerOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.role}｜{c.company}（{c.period}）
+                  </option>
+                ))}
+              </select>
+            </div>
+            <FormGroupHeader>ヒーロー（詳細ページ最上部）</FormGroupHeader>
+            {/* hero_bg_color は未使用のため入力を撤去。hero_brand は構成サムネイルのサービス名として
+                「サムネイル構成」で入力する。カラムは互換のため残置（破壊的 DROP は別途要承認）。 */}
+            <div ref={screenshotsFieldRef} className={`flex flex-col gap-3 ${ringClass("screenshots")}`}>
+              <div>
+                <FieldLabel>ヒーロー構成</FieldLabel>
+                <select
+                  value={heroSelectValue}
+                  onChange={(e) => changeHeroLayout(e.target.value)}
+                  className="w-full rounded-[8px] border border-border-light bg-[#1a1a1a] px-3 py-2 text-[14px] text-white outline-none transition-colors focus:border-primary"
+                >
+                  {legacyHero && <option value="legacy">自動判定（旧形式）</option>}
+                  <option value="none">設定なし</option>
+                  <option value="sp2">SP 2台</option>
+                  <option value="pcsp">PC + SP</option>
+                  <option value="pc">PC のみ</option>
+                  <option value="images">画像（1〜3枚・枠なし）</option>
+                </select>
+              </div>
+              {isLegacyHero && (
+                <>
+                  <p className="text-[12px] text-system-500">
+                    旧形式（画像の縦横で枠を自動判定・先頭2枚を表示）です。上で構成を選ぶと、この画像を順に新しい枠へ引き継いで置き換わります
+                  </p>
+                  <HeroScreenshotsEditor
+                    value={heroRaw}
+                    onChange={(v) => setField("hero_screenshots", v as unknown as Json)}
+                  />
+                </>
+              )}
+              {heroLayout && heroLayout !== "none" && (
+                <>
+                  {HERO_SLOT_LABELS[heroLayout].map((label, i) => (
+                    <div key={`${heroLayout}-${i}`}>
+                      <FieldLabel>{label}</FieldLabel>
+                      <ImagePickerField
+                        value={heroSlots[i] ?? ""}
+                        onChange={(v) => setHeroSlot(i, v)}
+                        folder="projects/hero"
+                        previewClassName="mt-2 h-24 w-auto max-w-full rounded-[6px] object-contain"
+                      />
+                    </div>
+                  ))}
+                  {heroLayout !== "images" && (
+                    <p className="text-[12px] text-system-500">
+                      URL の末尾に #browser（ドメイン指定は #browser=example.com）を付けると、ブラウザのバー付きで表示します
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+
+            <FormGroupHeader>基本情報</FormGroupHeader>
+            <div ref={titleFieldRef} className={ringClass("title")}>
+              <FieldLabel>カテゴリ</FieldLabel>
+              <WorkCategoryField value={work.category} onChange={(v) => setField("category", v)} dirty={dirty} />
+            </div>
             <div ref={tagsFieldRef} className={`flex flex-col gap-4 ${ringClass("tags")}`}>
             <div>
               <FieldLabel>制作内容</FieldLabel>
@@ -1237,21 +1308,12 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             </div>
             </div>
 
-            <FormGroupHeader>詳細ページ・左パネル設定</FormGroupHeader>
-            <div ref={breakdownFieldRef} className={ringClass("breakdown")}>
-              <FieldLabel>体制内訳（役割と人数。公開ページでは人数付きタグで表示）</FieldLabel>
-              <StakeholderBreakdownField
-                roles={roles}
-                lockedRoleIds={roleIds}
-                value={breakdown}
-                legacyText={work.stakeholder_breakdown}
-                onChange={(v) => {
-                  setBreakdown(v);
-                  markDirty();
-                }}
-                onLegacyTextChange={(v) => setField("stakeholder_breakdown", v)}
-                onAddRole={addRoleToList}
-              />
+            <div ref={periodFieldRef} className={ringClass("period")}>
+              <FieldLabel>期間</FieldLabel>
+              <PeriodFields value={period} disabled={saving} onChange={(p) => { setPeriod(p); markDirty(); }} />
+              {isLegacyPeriod(work) && isSamePeriod(period, periodInputsOf(work)) && (
+                <p className="mt-1 text-[11px] text-[#f4c248]">現在の値「{work.period}」は年月の入力欄で読み取れない形式です。入力して保存すると置き換わります。</p>
+              )}
             </div>
 
             <FormGroupHeader>
@@ -1284,6 +1346,78 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                 }}
                 phaseNames={phaseNames.map((p) => p.name)}
                 onAddPhaseName={handleAddPhaseName}
+              />
+            </div>
+
+            <FormGroupHeader>体制</FormGroupHeader>
+            <div ref={rolesFieldRef} className={ringClass("roles")}>
+              <FieldLabel>担当役割</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {roles.map((r) => {
+                  const selected = roleIds.includes(r.id);
+                  const invalid = ROLE_DELIMITER.test(r.name);
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      disabled={invalid}
+                      title={invalid ? "「・」「、」「,」を含む役割は作品には使えません" : undefined}
+                      onClick={() => toggleRole(r.id)}
+                      className={`rounded-[999px] border px-3 py-1 text-[12px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                        selected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border-light bg-[#1a1a1a] text-fg-muted hover:text-white"
+                      }`}
+                    >
+                      {r.name}
+                    </button>
+                  );
+                })}
+                {roles.length === 0 && <span className="text-[12px] text-system-700">役割がまだありません。下の入力欄から追加できます</span>}
+              </div>
+              <p className="mt-2 text-[11px] text-fg-muted">
+                選んだ順に「・」でつないで公開ページに表示：
+                {roleIds.map((rid) => roles.find((r) => r.id === rid)?.name).filter(Boolean).join("・") || "—"}
+              </p>
+              {roleNotice.map((n) => (
+                <p key={n} className="mt-1 text-[11px] text-[#f4c248]">
+                  未登録の役割「{n}」は保存すると外れます。マスタに追加して選び直してください
+                </p>
+              ))}
+              <div
+                className="mt-2 flex items-center gap-2"
+                onKeyDown={(e) => {
+                  if ((e.target as HTMLElement).tagName !== "INPUT") return;
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                    e.preventDefault();
+                    if (!addingRole) void handleAddRole();
+                  }
+                }}
+              >
+                <Input value={newRoleName} onChange={setNewRoleName} placeholder="新しい役割" className="!w-56" />
+                <button
+                  type="button"
+                  onClick={() => void handleAddRole()}
+                  disabled={!newRoleName.trim() || addingRole}
+                  className="rounded-[6px] border border-border-light px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  追加
+                </button>
+              </div>
+            </div>
+            <div ref={breakdownFieldRef} className={ringClass("breakdown")}>
+              <FieldLabel>体制内訳（役割と人数。公開ページでは人数付きタグで表示）</FieldLabel>
+              <StakeholderBreakdownField
+                roles={roles}
+                lockedRoleIds={roleIds}
+                value={breakdown}
+                legacyText={work.stakeholder_breakdown}
+                onChange={(v) => {
+                  setBreakdown(v);
+                  markDirty();
+                }}
+                onLegacyTextChange={(v) => setField("stakeholder_breakdown", v)}
+                onAddRole={addRoleToList}
               />
             </div>
 

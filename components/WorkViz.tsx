@@ -24,10 +24,12 @@ export type TimelinePhase = {
 };
 export type TimelineData = { totalUnits: number; phases: TimelinePhase[] };
 
+/** 役割カードにぶら下がるチーム（作品ごとの自由入力。役割の人数 = チームの合計） */
+export type StakeholderTeam = { name: string; headcount: number };
 /** 組織カードの 1 行（役割名 + （メモ）+ ×人数 を組み立て済みの文字） */
 export type StakeholderOrgRow = { text: string; me: boolean };
 export type StakeholderCard =
-  | { kind: "role"; name: string; note: string; me: boolean }
+  | { kind: "role"; name: string; note: string; me: boolean; teams?: StakeholderTeam[] }
   | { kind: "org"; title: string; rows: StakeholderOrgRow[] };
 /** 関係者グループ 1 つ = 層 1 つ。name が空の層は「グループ未設定」。icon = 「セット名/アイコン名」 */
 export type StakeholderLayer = { name: string; note: string | null; icon: string | null; cards: StakeholderCard[] };
@@ -85,7 +87,17 @@ export function parseStakeholders(raw: unknown): StakeholdersData | null {
             const co = (c ?? {}) as Record<string, unknown>;
             if (co.kind === "role") {
               if (typeof co.name !== "string" || typeof co.note !== "string") return null;
-              return { kind: "role", name: co.name, note: co.note, me: co.me === true };
+              const teams = (Array.isArray(co.teams) ? co.teams : [])
+                .map((t): StakeholderTeam | null => {
+                  const to = (t ?? {}) as Record<string, unknown>;
+                  return typeof to.name === "string" && to.name.trim() !== "" && Number.isInteger(to.headcount) &&
+                    (to.headcount as number) >= 1 &&
+                    (to.headcount as number) <= 999
+                    ? { name: to.name, headcount: to.headcount as number }
+                    : null;
+                })
+                .filter((t): t is StakeholderTeam => t !== null);
+              return { kind: "role", name: co.name, note: co.note, me: co.me === true, teams };
             }
             if (co.kind === "org") {
               if (typeof co.title !== "string") return null;
@@ -346,14 +358,21 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
   <div className="flex flex-col gap-4 md:gap-2.5">
     {data.layers.map((layer, li) => {
       const icon = layerIcon(layer.icon);
+      // 自分の担当を含む層はミント、それ以外はグレー（層名と同じ色）
+      const hasMe = layer.cards.some((c) => (c.kind === "role" ? c.me : c.rows.some((r) => r.me)));
       return (
       <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[104px_minmax(0,1fr)] md:gap-3">
         {/* 層のラベル。md 以上はアイコン → 層名を中央揃えで縦に積む（スマホは横並び）。層のメモ（note）は表示しない */}
         <div className="flex items-center gap-2 md:flex-col md:gap-1 md:py-2.5 md:text-center">
           {icon && (
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-r8 border border-border bg-surface-light">
-              <Icon set={icon.set} name={icon.name} tintColor="var(--color-main-100)" alt="" aria-hidden className="h-5 w-5" />
-            </span>
+            <Icon
+              set={icon.set}
+              name={icon.name}
+              tintColor={hasMe ? "var(--color-main-100)" : "var(--color-fg-muted)"}
+              alt=""
+              aria-hidden
+              className="h-5 w-5 shrink-0"
+            />
           )}
           {layer.name && (
             <p className="min-w-0 text-body-02-jp-bold text-fg-muted">
@@ -383,6 +402,21 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
                 <p className="mt-0.5 text-body-03-jp text-fg-muted">
                   <MixedText text={card.note} />
                 </p>
+                {card.teams && card.teams.length > 0 && (
+                  <ul className="mt-2.5 flex flex-col gap-1">
+                    {card.teams.map((t, ti) => (
+                      <li
+                        key={ti}
+                        className="flex items-center justify-between gap-2 rounded-r4 bg-system-900 px-2 py-1 text-body-03-jp text-fg"
+                      >
+                        <span className="min-w-0">
+                          <MixedText text={t.name} />
+                        </span>
+                        <span className="shrink-0 text-fg-muted">{t.headcount}名</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ) : (
               <div

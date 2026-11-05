@@ -1,3 +1,5 @@
+-- 注意: 20261105130000_stakeholder_teams.sql の適用後は、この検証は古い（org カードを前提にしている）。
+--       適用後は 20261105_stakeholder_teams_verify.sql を使う。
 -- 20261101150000_stakeholder_layers.sql の適用後の検証。番号ごとに 1 回の Run で流す（まとめて貼ると最後の結果しか見えない）。
 -- 5 は begin から rollback までを 1 回の Run で流す（何も残らない）。
 

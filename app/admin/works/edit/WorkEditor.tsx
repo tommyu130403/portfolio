@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -127,11 +127,15 @@ const DEFAULT_BODY_MD = `# プロジェクト概要
 # 学び
 `;
 
-/** 体制内訳の 1 行。note = 役割カードのメモ（空なら「N名」）、org = 組織名（同じ組織は 1 枚の組織カードにまとまる） */
-type BreakdownRow = { role_id: string; headcount: number; note: string; org: string };
-const newBreakdownRow = (role_id = ""): BreakdownRow => ({ role_id, headcount: 1, note: "", org: "" });
+/** 体制内訳の 1 行。note = 役割カードのメモ（空なら「N名」）、teams = 役割の下にぶら下がるチーム（1 つ以上あれば headcount はチームの合計） */
+type BreakdownTeam = { name: string; headcount: number };
+type BreakdownRow = { role_id: string; headcount: number; note: string; teams: BreakdownTeam[] };
+const newBreakdownRow = (role_id = ""): BreakdownRow => ({ role_id, headcount: 1, note: "", teams: [] });
+/** 行の人数。チームがあれば全チーム行（名前の有無を問わない）の合計、無ければ手入力の人数 */
+const rowHeadcount = (r: BreakdownRow): number =>
+  r.teams.length > 0 ? r.teams.reduce((sum, t) => sum + t.headcount, 0) : r.headcount;
 
-/** 体制内訳の編集状態。rows = 役割 id・人数・メモ・組織の行、legacy = 行の形に読めない旧形式の文字 */
+/** 体制内訳の編集状態。rows = 役割 id・人数・メモ・チームの行、legacy = 行の形に読めない旧形式の文字 */
 type BreakdownState =
   | { mode: "rows"; rows: BreakdownRow[] }
   | { mode: "legacy" };
@@ -192,7 +196,7 @@ function composePublicWork({
     breakdown.mode === "rows"
       ? breakdown.rows
           .filter((r) => roleName.has(r.role_id)) // 役割未選択の行は保存前に弾かれる。プレビューに "undefined" を出さない
-          .map((r) => `${roleName.get(r.role_id)}${r.headcount}`)
+          .map((r) => `${roleName.get(r.role_id)}${rowHeadcount(r)}`)
           .join("・") || null
       : work.stakeholder_breakdown;
   return {
@@ -384,7 +388,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           ? Promise.resolve({ data: [] })
           : supabase
               .from("work_stakeholder_counts")
-              .select("role_id, headcount, sort_order, note, org")
+              .select("role_id, headcount, sort_order, note, teams")
               .eq("work_id", workId)
               .order("sort_order"),
       ]);
@@ -449,7 +453,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
           role_id: string;
           headcount: number;
           note: string | null;
-          org: string | null;
+          teams: BreakdownTeam[] | null;
         }[];
         if (counts.length > 0 || !row.stakeholder_breakdown?.trim()) {
           // 保存済みの内訳に無い担当役割も行に足す（関係者図は以前から 1 名として描いていたので、図は変わらない）。
@@ -458,7 +462,13 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             role_id: c.role_id,
             headcount: c.headcount,
             note: c.note ?? "",
-            org: c.org ?? "",
+            // 手書き SQL で壊れた要素が入っていても画面を落とさない（保存関数が弾く形は読み飛ばす）
+            teams: (Array.isArray(c.teams) ? (c.teams as unknown[]) : []).flatMap((t) => {
+              const o = (t ?? {}) as Record<string, unknown>;
+              return typeof o.name === "string" && Number.isInteger(o.headcount) && (o.headcount as number) >= 1 && (o.headcount as number) <= 999
+                ? [{ name: o.name, headcount: o.headcount as number }]
+                : [];
+            }),
           }));
           const rows = appendRoleRows(savedRows, initialRoleIds, roleList);
           setBreakdown({ mode: "rows", rows });
@@ -768,7 +778,20 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         focusField("breakdown", breakdownFieldRef);
         return;
       }
-      if (breakdown.rows.some((r) => !Number.isInteger(r.headcount) || r.headcount < 1 || r.headcount > 999)) {
+      const roleNameOf = (rid: string) => roles.find((x) => x.id === rid)?.name ?? "";
+      const blankTeamRow = breakdown.rows.find((r) => r.teams.some((t) => t.name.trim() === ""));
+      if (blankTeamRow) {
+        setSaveError(`チーム名が空の行があります（${roleNameOf(blankTeamRow.role_id)}）。名前を入れるか、そのチームを削除してください`);
+        focusField("breakdown", breakdownFieldRef);
+        return;
+      }
+      const overTeamRow = breakdown.rows.find((r) => r.teams.length > 0 && rowHeadcount(r) > 999);
+      if (overTeamRow) {
+        setSaveError(`${roleNameOf(overTeamRow.role_id)}のチームの合計が 999 名を超えています`);
+        focusField("breakdown", breakdownFieldRef);
+        return;
+      }
+      if (breakdown.rows.some((r) => !Number.isInteger(rowHeadcount(r)) || rowHeadcount(r) < 1 || rowHeadcount(r) > 999)) {
         setSaveError("体制内訳の人数は 1〜999 で入力してください");
         focusField("breakdown", breakdownFieldRef);
         return;
@@ -785,9 +808,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
       breakdown.mode === "rows"
         ? breakdown.rows.map((r) => ({
             role_id: r.role_id,
-            headcount: r.headcount,
+            headcount: rowHeadcount(r),
             note: r.note.trim() || null,
-            org: r.org.trim() || null,
+            teams: r.teams.map((t) => ({ name: t.name.trim(), headcount: t.headcount })),
           }))
         : null,
     );
@@ -1279,7 +1302,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
               </span>
             </FormGroupHeader>
             <div>
-              <p className="mb-3 text-[11px] text-fg-muted">図は体制内訳と担当役割から自動で作られます。担当役割に選んだ役割は体制内訳にも人数 1 で自動で入ります（人数・メモ・組織は体制内訳で編集）。変更は右上の「保存」で反映。</p>
+              <p className="mb-3 text-[11px] text-fg-muted">図は体制内訳と担当役割から自動で作られます。担当役割に選んだ役割は体制内訳にも人数 1 で自動で入ります（人数・メモ・チームは体制内訳で編集）。変更は右上の「保存」で反映。</p>
               <StakeholdersDiagramEditor
                 data={parsedStakeholders}
                 workRoles={diagramRoles}
@@ -1517,7 +1540,8 @@ function StakeholderBreakdownField({
             const locked = lockedRoleIds.includes(r.role_id);
             const lockedTitle = locked ? "担当役割の行です。外すときは担当役割から先に外してください" : undefined;
             return (
-            <div key={i} className="flex flex-wrap items-center gap-2">
+            <Fragment key={i}>
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={r.role_id}
                 disabled={locked}
@@ -1537,19 +1561,20 @@ function StakeholderBreakdownField({
                   );
                 })}
               </select>
-              <NumberField className="w-16" value={r.headcount} min={1} max={999} onCommit={(n) => setRows(value.rows.map((x, j) => (j === i ? { ...x, headcount: n } : x)))} />
-              <span className="text-[11px] text-fg-muted">名</span>
+              <NumberField
+                className="w-16"
+                value={rowHeadcount(r)}
+                min={1}
+                max={999}
+                disabled={r.teams.length > 0}
+                onCommit={(n) => setRows(value.rows.map((x, j) => (j === i ? { ...x, headcount: n } : x)))}
+              />
+              <span className="text-[11px] text-fg-muted">{r.teams.length > 0 ? "名（チームの合計）" : "名"}</span>
               <Input
                 className="!w-48"
                 placeholder="メモ（任意・空なら人数）"
                 value={r.note}
                 onChange={(v) => setRows(value.rows.map((x, j) => (j === i ? { ...x, note: v } : x)))}
-              />
-              <Input
-                className="!w-48"
-                placeholder="組織（任意・同じ組織は1枚にまとまる）"
-                value={r.org}
-                onChange={(v) => setRows(value.rows.map((x, j) => (j === i ? { ...x, org: v } : x)))}
               />
               <span className="ml-auto flex items-center gap-1">
                 <MoveButtons index={i} length={value.rows.length} label={roleName.get(r.role_id) || `行${i + 1}`} onMove={(d) => setRows(moveItem(value.rows, i, i + d))} />
@@ -1564,6 +1589,52 @@ function StakeholderBreakdownField({
                 </button>
               </span>
             </div>
+            {r.teams.map((t, ti) => {
+              const setTeams = (teams: BreakdownTeam[]) =>
+                setRows(
+                  value.rows.map((x, j) =>
+                    j === i
+                      ? { ...x, teams, headcount: teams.length > 0 ? teams.reduce((sum, y) => sum + y.headcount, 0) : x.headcount }
+                      : x,
+                  ),
+                );
+              return (
+                <div key={ti} className="ml-6 flex flex-wrap items-center gap-2">
+                  <span className="text-[13px] text-fg-muted">┗</span>
+                  <Input
+                    className="!w-48"
+                    placeholder="チーム名"
+                    value={t.name}
+                    onChange={(v) => setTeams(r.teams.map((y, k) => (k === ti ? { ...y, name: v } : y)))}
+                  />
+                  <NumberField
+                    className="w-16"
+                    value={t.headcount}
+                    min={1}
+                    max={999}
+                    onCommit={(n) => setTeams(r.teams.map((y, k) => (k === ti ? { ...y, headcount: n } : y)))}
+                  />
+                  <span className="text-[11px] text-fg-muted">名</span>
+                  <button type="button" className={vizDel} onClick={() => setTeams(r.teams.filter((_, k) => k !== ti))}>
+                    削除
+                  </button>
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              className={`${vizBtn} ml-6 self-start`}
+              onClick={() =>
+                setRows(
+                  value.rows.map((x, j) =>
+                    j === i ? { ...x, teams: [...x.teams, { name: "", headcount: x.teams.length === 0 ? x.headcount : 1 }] } : x,
+                  ),
+                )
+              }
+            >
+              ＋ チームを追加
+            </button>
+            </Fragment>
             );
           })}
           <button

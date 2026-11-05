@@ -576,6 +576,7 @@ export type Database = {
           hero_bg_color: string | null
           hero_brand: string | null
           hero_screenshots: Json | null
+          hero_layout: string | null
           id: string
           is_current: boolean
           is_published: boolean
@@ -600,6 +601,7 @@ export type Database = {
           hero_bg_color?: string | null
           hero_brand?: string | null
           hero_screenshots?: Json | null
+          hero_layout?: string | null
           id?: string
           is_current?: boolean
           is_published?: boolean
@@ -624,6 +626,7 @@ export type Database = {
           hero_bg_color?: string | null
           hero_brand?: string | null
           hero_screenshots?: Json | null
+          hero_layout?: string | null
           id?: string
           is_current?: boolean
           is_published?: boolean

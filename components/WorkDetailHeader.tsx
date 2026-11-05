@@ -10,6 +10,7 @@ import ProtectedImage from "./ProtectedImage";
 import { LaptopMock, PhoneMock, ScreenshotLightbox } from "./DeviceMock";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
 import { EditButton } from "./WorkMarkdown";
+import { parseHeroLayout, parseHeroSlots, type HeroLayout } from "@/lib/work-content";
 import { periodFromRow } from "@/lib/timeline-scale";
 import type { Tables } from "@/src/types/supabase";
 
@@ -54,6 +55,103 @@ export const HeroShotsSkeleton: FC<{ children?: ReactNode }> = ({ children }) =>
   </div>
 );
 
+/** URL 末尾の `#フラグメント` を分ける（サーバーには届かず、データ形式（URL 文字列）も変わらない） */
+const splitFragment = (s: string) => {
+  const i = s.indexOf("#");
+  return i < 0 ? { src: s, frag: "" } : { src: s.slice(0, i), frag: s.slice(i + 1) };
+};
+
+/** 端末枠の中に出す画像 1 枚ぶん。browser = ブラウザバーを付ける / url = バーに出すドメイン */
+type DeviceShot = { src: string; browser: boolean; url?: string };
+
+/** フラグメントから端末枠の指定を読む（`#browser` / `#browser=example.com`）。`#plain` は枠なしの指定で、呼び出し側が先に見る */
+const toDeviceShot = (raw: string): DeviceShot => {
+  const { src, frag } = splitFragment(raw);
+  if (!frag.startsWith("browser")) return { src, browser: false };
+  return { src, browser: true, url: frag.includes("=") ? frag.slice(frag.indexOf("=") + 1) || undefined : undefined };
+};
+
+/** PC 1 枚 + スマホ 1 枚の重ね（幅 560px。PC は中央に幅 74%、スマホは幅 20% で PC の右端より 5% 外側に重ねる。ユーザー決定 2026-11-02: A-1 案） */
+const HeroOverlap: FC<{ pc: DeviceShot; sp: DeviceShot; onClick: () => void }> = ({ pc, sp, onClick }) => (
+  <div className="relative w-[560px] max-w-full">
+    <div className="mx-auto w-[74%]">
+      <LaptopMock src={pc.src} onClick={onClick} browser={pc.browser} url={pc.url} />
+    </div>
+    <div className="absolute bottom-[2%] right-[8%] w-[20%]">
+      <PhoneMock src={sp.src} onClick={onClick} className="w-full" browser={sp.browser} url={sp.url} />
+    </div>
+  </div>
+);
+
+const HeroPc: FC<{ shot: DeviceShot; onClick: () => void }> = ({ shot, onClick }) => (
+  <div className="w-[420px] max-w-full">
+    <LaptopMock src={shot.src} onClick={onClick} browser={shot.browser} url={shot.url} />
+  </div>
+);
+
+const HeroSp: FC<{ shot: DeviceShot; onClick: () => void }> = ({ shot, onClick }) => (
+  <PhoneMock src={shot.src} onClick={onClick} browser={shot.browser} url={shot.url} />
+);
+
+/**
+ * 管理画面で構成（hero_layout）を選んだ作品のヒーロー。画像の縦横は調べず、枠は構成どおりに決める。
+ * slots は構成の枠数ぶんの配列（空き枠は ""）。空き枠は飛ばして描く。全部空なら呼び出し側が出さない
+ */
+const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => void }> = ({ layout, slots, onClick }) => {
+  const filled = slots.filter(Boolean);
+  if (layout === "sp2") {
+    return (
+      <>
+        {filled.map((s, i) => (
+          <HeroSp key={i} shot={toDeviceShot(s)} onClick={onClick} />
+        ))}
+      </>
+    );
+  }
+  if (layout === "pcsp") {
+    const [pcRaw, spRaw] = slots;
+    if (pcRaw && spRaw) return <HeroOverlap pc={toDeviceShot(pcRaw)} sp={toDeviceShot(spRaw)} onClick={onClick} />;
+    if (pcRaw) return <HeroPc shot={toDeviceShot(pcRaw)} onClick={onClick} />;
+    return spRaw ? <HeroSp shot={toDeviceShot(spRaw)} onClick={onClick} /> : null;
+  }
+  if (layout === "pc") {
+    return slots[0] ? <HeroPc shot={toDeviceShot(slots[0])} onClick={onClick} /> : null;
+  }
+  if (layout === "images") {
+    // 枠なしの素の画像。フラグメントは付いていても落とす。1 枚は従来の `#plain` と同じ見た目
+    const imgs = filled.map((s) => splitFragment(s).src);
+    if (imgs.length === 0) return null;
+    if (imgs.length === 1) {
+      return (
+        <button type="button" onClick={onClick} aria-label="画像を拡大表示" className="w-[560px] max-w-full cursor-zoom-in">
+          <ProtectedImage src={imgs[0]} alt="" className="block h-auto w-full" />
+        </button>
+      );
+    }
+    // 2〜3 枚は OOUI 勉強会のヒーロー（pf-ooui-top-slides.png、1600×900）にならい、16:9 の札を左上から右下へ階段状に重ねる（ユーザー指示 2026-11-05）。
+    // ずらし幅は 1 段 18.75%（同画像の 300/1600・168/900）。札の幅は最後の札が右下の角に届く値（3 枚 62.5% / 2 枚 81.25%）。手前が 1 枚目
+    const step = 18.75;
+    const size = 100 - step * (imgs.length - 1);
+    return (
+      <div className="relative aspect-video w-[560px] max-w-full">
+        {imgs.map((src, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={onClick}
+            aria-label="画像を拡大表示"
+            className="absolute aspect-video cursor-zoom-in overflow-hidden rounded-[6px] border border-border shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            style={{ left: `${step * i}%`, top: `${step * i}%`, width: `${size}%`, zIndex: imgs.length - i }}
+          >
+            <ProtectedImage src={src} alt="" className="block h-full w-full object-cover" />
+          </button>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 /**
  * ヒーローの画像（最大 2 枚）。画像の縦横で枠を選ぶ（横長 → ノート PC 枠・縦長 → スマホ枠。ユーザー指示 2026-11-02）。
  * データ形式（hero_screenshots の URL 配列）は変えない。判定が済むまで枠は描かない。
@@ -66,10 +164,7 @@ const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawSho
   // URL 末尾のフラグメントで描き方を指定する（サーバーには届かず、データ形式（URL 配列）も変わらない。ユーザー指示 2026-11-02）:
   //   `#plain` = 端末の枠を付けず素の画像で出す（透過 PNG の合成図など）
   //   `#browser` / `#browser=example.com` = スマホ枠なら iOS Safari 風の下部バー、ノート PC 枠なら上部のブラウザバー（ドット 3 つ + URL）を付ける
-  const split = (s: string) => {
-    const i = s.indexOf("#");
-    return i < 0 ? { src: s, frag: "" } : { src: s.slice(0, i), frag: s.slice(i + 1) };
-  };
+  const split = splitFragment;
   const plain = rawShots.filter((s) => split(s).frag === "plain").map((s) => split(s).src);
   const browserOf: Record<string, string | undefined> = {};
   const shots = rawShots
@@ -102,15 +197,11 @@ const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawSho
   const sp = shots.find((s) => !landscape[s]);
   if (shots.length === 2 && pc && sp) {
     return (
-      <div className="relative w-[560px] max-w-full">
-        {/* PC は中央に幅 74%、スマホは幅 20% で PC の右端より 5% 外側に重ねる（ユーザー決定 2026-11-02: A-1 案） */}
-        <div className="mx-auto w-[74%]">
-          <LaptopMock src={pc} onClick={onClick} browser={pc in browserOf} url={browserOf[pc] || undefined} />
-        </div>
-        <div className="absolute bottom-[2%] right-[8%] w-[20%]">
-          <PhoneMock src={sp} onClick={onClick} className="w-full" browser={sp in browserOf} url={browserOf[sp] || undefined} />
-        </div>
-      </div>
+      <HeroOverlap
+        pc={{ src: pc, browser: pc in browserOf, url: browserOf[pc] || undefined }}
+        sp={{ src: sp, browser: sp in browserOf, url: browserOf[sp] || undefined }}
+        onClick={onClick}
+      />
     );
   }
   return (
@@ -179,7 +270,16 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
   const [vizModal, setVizModal] = useState<"timeline" | "stakeholders" | null>(null);
   // 読み込みに失敗したアイコン URL。失敗したら次の候補（手元のロゴ → 文字 Tag）へ進む
   const [brokenIcons, setBrokenIcons] = useState<Record<string, boolean>>({});
-  const shots = screenshots.length > 0 ? screenshots : work.thumbnail_url ? [work.thumbnail_url] : [];
+  // ヒーロー。構成（hero_layout）が選ばれていればその構成どおり、null（旧形式）なら画像の縦横で枠を自動判定する。
+  // 構成が none か、画像が 1 枚も無ければ何も出さない（一覧のサムネイル画像で代用しない）
+  const heroLayout = parseHeroLayout(work.hero_layout);
+  const heroSlots = useMemo(
+    () => (heroLayout ? parseHeroSlots(work.hero_screenshots, heroLayout) : []),
+    [heroLayout, work.hero_screenshots],
+  );
+  const shots = heroLayout ? heroSlots.filter(Boolean) : screenshots;
+  // images は枠なしで出すので、拡大表示も枠なし（#plain）にそろえる
+  const lightboxShots = heroLayout === "images" ? shots.map((s) => `${splitFragment(s).src}#plain`) : shots;
   // 「全画面」ボタンで開く構造化ビジュアル（データが無ければボタン自体を非表示）。
   // jsonb のパースは該当カラムが変わったときだけ（WorkEditor と同じ useMemo 規約）
   const timeline = useMemo(() => parseTimeline(work.timeline), [work.timeline]);
@@ -199,17 +299,21 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
 
   return (
     <div className="flex w-full flex-col gap-12">
-      {/* デバイスモック（最大2枚。横長の画像はノート PC 枠、縦長はスマホ枠。下端を揃える） */}
+      {/* ヒーロー（構成を選んだ作品はその構成どおり。旧形式は最大2枚で、横長の画像はノート PC 枠・縦長はスマホ枠。下端を揃える） */}
       {shots.length > 0 && (
         <div className={`${rel}flex w-full flex-wrap items-end justify-center gap-6`}>
-          <HeroShots shots={shots.slice(0, 2)} onClick={() => setLightboxOpen(true)} />
-          {onEdit && <EditButton label="スクリーンショット" onClick={() => onEdit("screenshots")} />}
+          {heroLayout ? (
+            <HeroLayoutShots layout={heroLayout} slots={heroSlots} onClick={() => setLightboxOpen(true)} />
+          ) : (
+            <HeroShots shots={shots.slice(0, 2)} onClick={() => setLightboxOpen(true)} />
+          )}
+          {onEdit && <EditButton label="ヒーロー" onClick={() => onEdit("screenshots")} />}
         </div>
       )}
       {shots.length === 0 && onEdit && (
         <div className="relative flex min-h-10 items-center justify-center text-[12px] text-fg-muted">
-          スクリーンショット未設定
-          <EditButton label="スクリーンショット" onClick={() => onEdit("screenshots")} />
+          ヒーロー未設定
+          <EditButton label="ヒーロー" onClick={() => onEdit("screenshots")} />
         </div>
       )}
 
@@ -340,7 +444,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
         </div>
       </div>
 
-      {lightboxOpen && <ScreenshotLightbox shots={shots} onClose={() => setLightboxOpen(false)} />}
+      {lightboxOpen && <ScreenshotLightbox shots={lightboxShots} onClose={() => setLightboxOpen(false)} />}
 
       {vizModal && (
         <WorkVizModal

@@ -28,6 +28,7 @@ const F1 = "00000000-0000-4000-8000-000000000601";
 
 const workBase = {
   hero_bg_color: null,
+  hero_layout: null,
   hero_brand: null,
   stakeholder_breakdown: null,
   stakeholders: null,

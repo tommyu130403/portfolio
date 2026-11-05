@@ -1,5 +1,5 @@
-// SQL `private.compute_work_stakeholders`（20261105120000）と同じ規則。片方を変えたら両方直す。
-import type { StakeholderCard, StakeholdersData } from "@/components/WorkViz";
+// SQL `private.compute_work_stakeholders`（20261105130000）と同じ規則。片方を変えたら両方直す。
+import type { StakeholderCard, StakeholderTeam, StakeholdersData } from "@/components/WorkViz";
 
 export type StakeholderRoleInput = {
   id: string;
@@ -18,14 +18,14 @@ export type StakeholderCountInput = {
   role_id: string;
   headcount: number;
   note?: string | null;
-  org?: string | null;
+  teams?: StakeholderTeam[] | null;
 };
 
 type RoleEntry = {
   role: StakeholderRoleInput;
   headcount: number;
   note: string | null;
-  org: string | null;
+  teams: StakeholderTeam[];
   me: boolean;
 };
 
@@ -38,21 +38,33 @@ export function stakeholderRoleEntries(
   const byId = new Map(roles.map((r) => [r.id, r]));
   const seen = new Set<string>();
   const out: RoleEntry[] = [];
-  const push = (id: string, headcount: number, note?: string | null, org?: string | null) => {
+  const push = (id: string, headcount: number, note?: string | null, teams?: StakeholderTeam[] | null) => {
     const role = byId.get(id);
     if (!role || seen.has(id)) return;
-    if (!Number.isInteger(headcount) || headcount < 1) return;
+    // チームは SQL が弾く形（名前が空・人数が 1〜999 の整数でない）を捨てる。1 つ以上残れば人数は合計
+    const validTeams: StakeholderTeam[] = [];
+    if (Array.isArray(teams)) {
+      for (const t of teams as unknown[]) {
+        if (!t || typeof t !== "object") continue;
+        const { name, headcount: n } = t as Record<string, unknown>;
+        if (typeof name !== "string" || name.trim() === "") continue;
+        if (typeof n !== "number" || !Number.isInteger(n) || n < 1 || n > 999) continue;
+        validTeams.push({ name: name.trim(), headcount: n });
+      }
+    }
+    const total = validTeams.length > 0 ? validTeams.reduce((sum, t) => sum + t.headcount, 0) : headcount;
+    if (!Number.isInteger(total) || total < 1) return;
     seen.add(id);
     out.push({
       role,
-      headcount,
+      headcount: total,
       note: (note ?? "").trim() || null,
-      org: (org ?? "").trim() || null,
+      teams: validTeams,
       me: roleIds.includes(id),
     });
   };
-  for (const c of counts) push(c.role_id, c.headcount, c.note, c.org);
-  for (const id of roleIds) push(id, 1, null, null);
+  for (const c of counts) push(c.role_id, c.headcount, c.note, c.teams);
+  for (const id of roleIds) push(id, 1, null, []);
   return out;
 }
 
@@ -86,38 +98,15 @@ export function buildStakeholders(
     else buckets.set(key, [e]);
   }
 
-  // 組織なしの行 = 役割カード。組織ありの行は同じ層・同じ組織で 1 枚にまとめ、最初に出た位置に置く
-  const toCards = (list: RoleEntry[]): StakeholderCard[] => {
-    const cards: StakeholderCard[] = [];
-    const orgIndex = new Map<string, number>();
-    for (const e of list) {
-      if (e.org === null) {
-        cards.push({
-          kind: "role",
-          name: e.role.name,
-          note: e.note ?? `${e.headcount}名`,
-          me: e.me,
-        });
-        continue;
-      }
-      const row = {
-        text:
-          e.role.name +
-          (e.note ? `（${e.note}）` : "") +
-          (e.headcount > 1 ? ` ×${e.headcount}` : ""),
-        me: e.me,
-      };
-      const at = orgIndex.get(e.org);
-      const card = at === undefined ? undefined : cards[at];
-      if (card && card.kind === "org") {
-        card.rows.push(row);
-      } else {
-        orgIndex.set(e.org, cards.length);
-        cards.push({ kind: "org", title: e.org, rows: [row] });
-      }
-    }
-    return cards;
-  };
+  // 全ての行が役割カード。チームは teams に載せる（組織カードは作らない）
+  const toCards = (list: RoleEntry[]): StakeholderCard[] =>
+    list.map((e) => ({
+      kind: "role",
+      name: e.role.name,
+      note: e.note ?? `${e.headcount}名`,
+      me: e.me,
+      teams: e.teams,
+    }));
 
   const named = [...buckets.keys()]
     .filter((k): k is string => k !== null)

@@ -932,6 +932,10 @@ function WorkVizModalDemo() {
             ] },
             { name: "Engineering", note: "実装・コードレビュー", icon: null, cards: [
               { kind: "role", name: "Site Reliability Engineer with a very long title", note: "1名", me: false },
+              { kind: "role", name: "エンジニア", note: "5名", me: false, teams: [
+                { name: "チームA", headcount: 2 },
+                { name: "チームB", headcount: 3 },
+              ] },
               { kind: "org", title: "Platform Team・3名", rows: [
                 { text: "Tech Lead", me: false },
                 { text: "Frontend Engineer ×2", me: true },
@@ -1295,6 +1299,10 @@ function ComponentsSection() {
                   { kind: "role", name: "外部設計レビュー", note: "デザイナー視点での確認", me: true },
                 ] },
                 { name: "開発", note: "実装・コードレビュー", icon: "Edit/code", cards: [
+                  { kind: "role", name: "エンジニア", note: "5名", me: false, teams: [
+                    { name: "チームA", headcount: 2 },
+                    { name: "チームB", headcount: 3 },
+                  ] },
                   { kind: "org", title: "スカウト（CTS）・4名", rows: [
                     { text: "学生側 主実装", me: false },
                     { text: "学生側 コードレビュー", me: false },

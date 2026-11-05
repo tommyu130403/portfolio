@@ -496,6 +496,7 @@ export type Database = {
           org: string | null
           role_id: string
           sort_order: number
+          teams: Json
           work_id: string
         }
         Insert: {
@@ -504,6 +505,7 @@ export type Database = {
           org?: string | null
           role_id: string
           sort_order?: number
+          teams?: Json
           work_id: string
         }
         Update: {
@@ -512,6 +514,7 @@ export type Database = {
           org?: string | null
           role_id?: string
           sort_order?: number
+          teams?: Json
           work_id?: string
         }
         Relationships: [

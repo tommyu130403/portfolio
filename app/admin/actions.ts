@@ -194,7 +194,7 @@ export async function saveWork(
   contents: string[],
   tools: string[],
   roleIds: string[],
-  stakeholderCounts: { role_id: string; headcount: number; note: string | null; org: string | null }[] | null,
+  stakeholderCounts: { role_id: string; headcount: number; note: string | null; teams: { name: string; headcount: number }[] }[] | null,
 ): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase.rpc("save_work_with_relations", {

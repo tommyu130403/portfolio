@@ -18,6 +18,7 @@ import InfoCard from "@/components/InfoCard";
 import { MarkdownBody } from "@/components/WorkMarkdown";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
+import WorkToc, { type WorkTocItem } from "@/components/WorkToc";
 import WorkThumbnail from "@/components/WorkThumbnail";
 import ProtectedImage from "@/components/ProtectedImage";
 import { PhoneMock, LaptopMock } from "@/components/DeviceMock";
@@ -852,6 +853,28 @@ function FigmaOnlyPreview({ title, figma, description }: {
   );
 }
 
+const SAMPLE_TOC_ITEMS: WorkTocItem[] = [
+  { label: "概要", level: 1 },
+  { label: "背景と課題", level: 1 },
+  { label: "現状の整理", level: 2 },
+  { label: "とても長い見出しのサンプルとても長い見出しのサンプルとても長い見出しのサンプル", level: 2 },
+  { label: "取り組み", level: 1 },
+  { label: "設計方針", level: 2 },
+  { label: "成果", level: 1 },
+  { label: "振り返り", level: 1 },
+];
+
+function WorkTocDemo() {
+  const [activeIndex, setActiveIndex] = useState(1);
+  return (
+    <div className="relative h-[360px] w-full">
+      <div className="absolute left-0 top-1/2 -translate-y-1/2">
+        <WorkToc items={SAMPLE_TOC_ITEMS} activeIndex={activeIndex} onSelect={setActiveIndex} />
+      </div>
+    </div>
+  );
+}
+
 function ModalDemo() {
   const [open, setOpen] = useState(false);
   const [carousel, setCarousel] = useState(false);
@@ -1427,6 +1450,13 @@ function ComponentsSection() {
             </div>
             <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" href="#" />
           </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkToc"
+          description="作品詳細の目次（シークエリア）。閉じた状態は見出しごとの短い横線の縦並びで、いま読んでいる見出しの線だけ primary 色。開いた状態は見出し名を並べた暗い角丸パネル（長い見出しは省略表示、小見出しはインデント）。マウスはホバーで開閉するポップオーバー、キーボード（Enter / Space）も同じポップオーバー。タッチ・ペンは線の列をタップすると左から出るドロワー（1 行 44px 以上・背景タップ / × / Esc で閉じる）。ポップオーバーは Esc・外側タップで閉じ、見出しを選ぶとそこへスクロールして閉じる。見出しが 1 つ以下なら何も出さない。位置は呼び出し側で決める（実ページは画面左端に固定）"
+        >
+          <WorkTocDemo />
         </ComponentPreview>
 
         <ComponentPreview

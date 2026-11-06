@@ -351,27 +351,25 @@ const MixedText: FC<{ text: string }> = ({ text }) => {
 };
 
 const MeBadge: FC<{ className?: string }> = ({ className = "" }) => (
-  <span className={`w-fit rounded-full bg-main-100 px-1.5 py-1 text-caption-01-jp text-surface ${className}`}>担当</span>
+  <span className={`w-fit rounded-full bg-main-100 px-1.5 py-0.5 text-caption-01-jp text-surface ${className}`}>担当</span>
 );
 
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
-  <div className="flex flex-col gap-4 md:gap-2.5">
+  <div className="flex flex-col gap-1.5 md:gap-2">
     {data.layers.map((layer, li) => {
       const icon = layerIcon(layer.icon);
-      // 自分の担当を含む層はミント、それ以外はグレー（層名と同じ色）
-      const hasMe = layer.cards.some((c) => (c.kind === "role" ? c.me : c.rows.some((r) => r.me)));
       return (
-      <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[104px_minmax(0,1fr)] md:gap-3">
+      <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[88px_minmax(0,1fr)] md:gap-3">
         {/* 層のラベル。md 以上はアイコン → 層名を中央揃えで縦に積む（スマホは横並び）。層のメモ（note）は表示しない */}
-        <div className="flex items-center gap-2 md:flex-col md:gap-1 md:py-2.5 md:text-center">
+        <div className="flex items-center gap-2 md:flex-col md:items-center md:gap-1 md:py-2 md:text-center">
           {icon && (
             <Icon
               set={icon.set}
               name={icon.name}
-              tintColor={hasMe ? "var(--color-main-100)" : "var(--color-fg-muted)"}
+              tintColor="var(--color-fg-muted)"
               alt=""
               aria-hidden
-              className="h-5 w-5 shrink-0"
+              className="h-4 w-4 shrink-0"
             />
           )}
           {layer.name && (
@@ -380,35 +378,28 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
             </p>
           )}
         </div>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-1">
           {layer.cards.map((card, ci) =>
             card.kind === "role" ? (
               <div
                 key={ci}
-                className={`flex min-w-0 flex-col rounded-r8 border px-3 py-[9px] ${
-                  card.me ? "border-border-main bg-main-100/6" : "border-border bg-surface-light"
+                className={`flex min-w-0 flex-col rounded-md border px-3 py-2.5 ${
+                  card.me ? "border-main-100/60 bg-main-100/10" : "border-border bg-surface-light"
                 }`}
               >
                 {(card.name || card.me) && (
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    {card.name && (
-                      <p className="min-w-0 text-body-02-jp-bold text-fg">
-                        <MixedText text={card.name} />
-                      </p>
-                    )}
-                    {card.me && <MeBadge className="shrink-0" />}
-                  </div>
+                  <p className="min-w-0 text-body-02-jp-bold text-fg">
+                    <MixedText text={card.name} />
+                    {card.me && <MeBadge className="ml-1.5 inline-block align-[1px]" />}
+                  </p>
                 )}
-                <p className="mt-0.5 text-body-03-jp text-fg-muted">
+                <p className="mt-0.5 text-body-02-jp text-fg-muted">
                   <MixedText text={card.note} />
                 </p>
                 {card.teams && card.teams.length > 0 && (
-                  <ul className="mt-2.5 flex flex-col gap-1">
+                  <ul className="mt-2 flex flex-col gap-1">
                     {card.teams.map((t, ti) => (
-                      <li
-                        key={ti}
-                        className="flex items-center justify-between gap-2 rounded-r4 bg-system-900 px-2 py-1 text-body-03-jp text-fg"
-                      >
+                      <li key={ti} className="flex items-center justify-between gap-2 rounded-r4 bg-system-900 px-2 py-1 text-body-02-jp text-fg">
                         <span className="min-w-0">
                           <MixedText text={t.name} />
                         </span>
@@ -419,23 +410,17 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
                 )}
               </div>
             ) : (
-              <div
-                key={ci}
-                className="flex min-w-0 flex-col rounded-r8 border border-border bg-surface-light px-3 py-2.5"
-              >
-                <p className="text-body-03-jp-bold text-fg-muted">
+              <div key={ci} className="flex min-w-0 flex-col rounded-md border border-border bg-surface-light px-3 py-2.5">
+                <p className="text-body-02-jp-bold text-fg">
                   <MixedText text={card.title} />
                 </p>
-                <ul className="mt-2.5 flex flex-col gap-1">
+                <ul className="mt-2 flex flex-col gap-1">
                   {card.rows.map((row, ri) => (
-                    <li
-                      key={ri}
-                      className="flex items-center gap-1.5 rounded-r4 bg-system-900 px-2 py-1 text-body-03-jp text-fg"
-                    >
-                      {row.me && <MeBadge />}
+                    <li key={ri} className={`flex items-center gap-1.5 rounded-r4 bg-system-900 px-2 py-1 text-body-02-jp ${row.me ? "text-main-050" : "text-fg"}`}>
                       <span className="min-w-0">
                         <MixedText text={row.text} />
                       </span>
+                      {row.me && <MeBadge />}
                     </li>
                   ))}
                 </ul>

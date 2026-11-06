@@ -39,13 +39,13 @@ const STEP_BASE =
 
 const stepClass = (tone: StepTone) =>
   tone === "good"
-    ? `${STEP_BASE} text-body-03-jp border-main-100/60 bg-main-100/10 text-main-050`
+    ? `${STEP_BASE} text-body-02-jp border-main-100/60 bg-main-100/10 text-main-050`
     : tone === "bad"
-      ? `${STEP_BASE} text-body-03-jp border-danger-300/60 bg-danger-300/10 text-danger-100`
-      : `${STEP_BASE} text-body-03-jp border-border bg-surface-light`;
+      ? `${STEP_BASE} text-body-02-jp border-danger-300/60 bg-danger-300/10 text-danger-100`
+      : `${STEP_BASE} text-body-02-jp border-border bg-surface-light`;
 
 const Arrow: FC = () => (
-  <span aria-hidden className="text-body-03-jp flex items-center justify-center text-fg-subtle">
+  <span aria-hidden className="text-body-02-jp flex items-center justify-center text-fg-subtle">
     <span className="@min-[560px]:hidden">↓</span>
     <span className="hidden @min-[560px]:inline">→</span>
   </span>
@@ -66,7 +66,7 @@ const StepRow: FC<{ steps: FigureStep[]; spacer?: boolean; gap: string }> = ({ s
 /** `::: flow ラベル highlight=N` — 横並びの手順（狭い幅では縦積み） */
 export const FlowSteps: FC<{ label?: ReactNode; steps: FigureStep[] }> = ({ label, steps }) => (
   <div className="flex flex-col gap-2">
-    {label ? <p className="text-body-03-jp-bold text-fg-muted">{label}</p> : null}
+    {label ? <p className="text-body-02-jp-bold text-fg-muted">{label}</p> : null}
     <StepRow steps={steps} gap="gap-2" />
   </div>
 );
@@ -89,7 +89,7 @@ export const BeforeAfter: FC<{ tag?: ReactNode; title?: ReactNode; rows: BeforeA
 }) => (
   <div className="flex flex-col">
     {tag || title ? (
-      <div className="text-body-03-jp-bold flex items-center gap-2 pb-2 text-fg-muted">
+      <div className="text-body-02-jp-bold flex items-center gap-2 pb-2 text-fg-muted">
         {tag ? <span className="text-primary">{tag}</span> : null}
         {title}
       </div>
@@ -111,7 +111,7 @@ export const BeforeAfter: FC<{ tag?: ReactNode; title?: ReactNode; rows: BeforeA
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <StepRow steps={row.steps} gap="gap-2" spacer={isAfter && row.steps.length <= 2} />
             {row.note ? (
-              <p className={`text-body-03-jp ${isAfter ? "text-primary" : "text-danger-300"}`}>{row.note}</p>
+              <p className={`text-body-02-jp ${isAfter ? "text-primary" : "text-danger-300"}`}>{row.note}</p>
             ) : null}
           </div>
         </div>
@@ -148,7 +148,7 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
       <div key={i} className="grid grid-cols-[6rem_minmax(0,1fr)_4.5rem] items-center gap-3.5">
         <div className="min-w-0">
           <p className="text-body-02-jp-bold text-fg">{r.label}</p>
-          {r.sub ? <p className="text-caption-01-jp mt-px text-fg-muted">{r.sub}</p> : null}
+          {r.sub ? <p className="text-[12px] leading-[18px] tracking-[0.03em] mt-px text-fg-muted">{r.sub}</p> : null}
         </div>
         <div className="relative h-[22px] rounded bg-surface-light">
           <div
@@ -162,6 +162,6 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
         <p className={`text-body-01-jp-bold text-right ${VALUE[r.tone]}`}>{r.display}</p>
       </div>
     ))}
-    {legend ? <p className="text-caption-01-jp text-fg-subtle">{legend}</p> : null}
+    {legend ? <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-subtle">{legend}</p> : null}
   </div>
 );

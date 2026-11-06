@@ -322,7 +322,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
         <div className="flex w-full flex-col gap-8">
           <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
             {work.category && <Tag variant="category" label={work.category} hue={categoryHue} className="self-start" />}
-            <p className="text-title-pj text-fg">{work.title}</p>
+            <h1 className="text-title-pj text-fg">{work.title}</h1>
             {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
           </div>
 

@@ -72,8 +72,9 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
     <div className="flex h-[var(--work-header-h,3.5rem)] min-w-0 items-center justify-between gap-3">
       <nav
         aria-label="パンくず"
-        className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-r8 bg-surface ring-1 ring-inset ring-border backdrop-blur-[2px] md:py-2"
+        className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-r8 bg-surface ring-1 ring-inset ring-border backdrop-blur-[2px] md:px-2 md:py-2"
       >
+        {/* md 以上は枠の内側に左右 8px を足し、文字から枠までを左 15px・右 16px にそろえる（「Works」側はボタンの余白 6px＋枠 1px を含む） */}
         {/* 「Works」は枠なしの Button/Function（文字版・Library 458:442 / md 未満は矢印付き 458:449）。
             高さ 36px の見た目に対し、当たり判定だけ縦 44px に広げる */}
         <Link

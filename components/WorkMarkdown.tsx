@@ -20,13 +20,13 @@ import ProtectedImage from "./ProtectedImage";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（横線＋Noto Bold 16px gray #616161・Library Headline type=02 304:302）
+ *  - `## `   → 見出し01（横線 #616161＋Noto Bold 16px 文字 #9E9E9E Text/Body/Secondary・Library Headline type=02 304:302。文字は背景 #0A0A0A 上 7.4:1）
  *  - `### `  → 見出し02（01 と同形）
  *  - `> `    → 引用（13px system-400 #BDBDBD・左ボーダー、連続行対応）
  * 拡張記法:
  *  - **太字** / *斜体* / `インラインコード` / [リンク](url)（外部はアイコン付き）
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
- *  - `::: caption テキスト` の補足文（10px。表やグリッドの下などに置く1行）
+ *  - `::: caption テキスト` の補足文（12px・行の高さ 18px。表やグリッドの下などに置く1行）
  *  - `::: grid cols=N gap=M` 〜 `---` 区切り 〜 `:::` の複数カラムグリッド
  *  - `::: card 見出し` 〜 `:::` の汎用カード（`::: card tone=accent 見出し` で強調カード）/ `::: workcard id=<uuid>` の作品リンクカード
  *  - `::: figure 見出し | 補足文` 〜 `:::` の図版の枠（中に任意の本文ブロックを入れ子にできる）
@@ -202,7 +202,7 @@ const ImageFigure: FC<{
       </div>
       {caption && (
         <figcaption
-          className={`mt-2 text-caption-01-jp text-fg-caption ${align === "center" ? "text-center" : ""}`}
+          className={`mt-2 text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption ${align === "center" ? "text-center" : ""}`}
         >
           {caption}
         </figcaption>
@@ -244,7 +244,7 @@ const ImageTextRow: FC<{
             </p>
           )}
           {caption && (
-            <p className="text-caption-01-jp text-fg-caption">{caption}</p>
+            <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption">{caption}</p>
           )}
         </div>
       )}
@@ -821,22 +821,23 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
   const k = `b-${idx}`;
   const inFigure = useContext(InFigureContext);
   switch (block.type) {
+    // 見出しの階層: 作品名 h1 → セクション見出し h2 → `##`・`###` とも h3（同形の同格。見た目は変えない）
     case "h1":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
           <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
-          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-system-700">
+          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted">
             {renderInline(block.content, k)}
-          </p>
+          </h3>
         </div>
       );
     case "h2":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
           <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
-          <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-system-700">
+          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted">
             {renderInline(block.content, k)}
-          </p>
+          </h3>
         </div>
       );
     case "paragraph":
@@ -882,7 +883,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <ul
           className={`mb-4 list-disc pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-03-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
+            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
           }`}
         >
           {block.items.map((it, i) => (
@@ -894,7 +895,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <ol
           className={`mb-4 list-decimal pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-03-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
+            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
           }`}
         >
           {block.items.map((it, i) => (
@@ -911,7 +912,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
         </pre>
       );
     case "caption":
-      return <p className="text-caption-01-jp mb-4 mt-2 text-fg-caption">{renderInline(block.content, k)}</p>;
+      return <p className="text-[12px] leading-[18px] tracking-[0.03em] mb-4 mt-2 text-fg-caption">{renderInline(block.content, k)}</p>;
     case "flowchart":
       return <FlowchartEmbed id={block.id} />;
     case "workcard":
@@ -923,7 +924,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <div className="mb-4 mt-10 [&>div]:my-0">
           {mock}
-          <p className="text-caption-01-jp mt-3 text-center text-fg-caption">{renderInline(block.caption, `${k}-mc`)}</p>
+          <p className="text-[12px] leading-[18px] tracking-[0.03em] mt-3 text-center text-fg-caption">{renderInline(block.caption, `${k}-mc`)}</p>
         </div>
       );
     }

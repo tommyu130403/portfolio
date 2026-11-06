@@ -1027,8 +1027,9 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
           style={{ "--grid-cols": block.cols, gap: `${block.gap * 4}px` } as CSSProperties}
         >
           {block.cells.map((cell, i) => (
-            // セルが 1 ブロック（カードなど）だけのときは行の高さいっぱいに伸ばし、横並びのカードの高さを揃える（ユーザー指示 2026-11-02）
-            <div key={i} className="min-w-0 [&>div]:h-full [&>div>:only-child]:h-full [&>div>:only-child>*]:h-full">
+            // セルが 1 ブロック（カードなど）だけのときは行の高さいっぱいに伸ばし、横並びのカードの高さを揃える（ユーザー指示 2026-11-02）。
+            // 画像（figure）の中身は伸ばさない。伸ばすと説明（figcaption）が枠の外へ押し出され、次の段に重なる
+            <div key={i} className="min-w-0 [&>div]:h-full [&>div>:only-child]:h-full [&>div>:only-child:not(figure)>*]:h-full">
               <MarkdownBody md={cell} />
             </div>
           ))}

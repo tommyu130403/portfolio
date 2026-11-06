@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
@@ -10,6 +10,7 @@ import WorkDetailContent from "./WorkDetailContent";
 import WorkBreadcrumb from "./WorkBreadcrumb";
 import WorkPagerCard from "./WorkPagerCard";
 import SideMenuBar from "./SideMenuBar";
+import WorkToc, { useWorkToc } from "./WorkToc";
 import { useWorkCategoryHues } from "@/src/lib/work-category-colors";
 import { loadPublishedWorksOrder, releasePublishedWorksOrder, type PublishedWorkItem } from "@/src/lib/published-works-order";
 
@@ -70,6 +71,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const [order, setOrder] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { items: tocItems, activeIndex: tocActive, scrollTo: scrollToToc } = useWorkToc(contentRef, work?.id ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -205,7 +208,9 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           />
         </div>
         <WorkDetailHeader work={work} contents={contents} tools={tools} screenshots={screenshots} categoryHue={hueOf(work.category)} />
-        <WorkDetailContent work={work} />
+        <div ref={contentRef}>
+          <WorkDetailContent work={work} />
+        </div>
 
         {showNav && (
           <>
@@ -246,15 +251,23 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   return (
     <div data-work-detail className="relative flex min-h-screen items-start bg-surface text-white">
       {/* Side Menu（lg 以上のみ表示） */}
-      <div className="sticky top-0 shrink-0 z-[2] hidden w-[96px] lg:block">
+      {/* z-40: ホバーで 216px に広がるメニューを目次(z-30)より上に出す。モーダル(z-50 / z-60)よりは下 */}
+      <div className="sticky top-0 shrink-0 z-40 hidden w-[96px] lg:block">
         <SideMenuBar activeSection="works" hrefBase="/" />
       </div>
+      {/* 目次は画面左端に固定。z-30 は固定ヘッダー(z-20)より上、SideMenuBar(z-40)・モーダル(z-50 / z-60)より下。
+          lg 未満は本文カラム左の余白(32px / md 40px)に線が収まり、lg 以上は SideMenuBar(96px)の右に置く */}
+      {work && !loading && (
+        <div className="fixed left-0 top-1/2 z-30 -translate-y-1/2 lg:left-[112px]">
+          <WorkToc key={work.id} items={tocItems} activeIndex={tocActive} onSelect={scrollToToc} />
+        </div>
+      )}
       {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
           WorkVizModal(z-50) / ScreenshotLightbox(z-60) が他の層より
           下に沈む（2026-09-11 に実測） */}
       <main className="relative flex min-w-0 flex-1 flex-col items-center">
         {/* カラム */}
-        <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-6 py-20 xl:px-0">
+        <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-8 py-20 md:px-10 lg:px-6 xl:px-0">
           {renderBody()}
         </div>
       </main>

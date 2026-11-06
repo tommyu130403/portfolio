@@ -230,7 +230,7 @@ function HomeContent() {
 
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
-            <Headline label="自己紹介" title="Introduction" />
+            <Headline label="自己紹介" title="Intro" />
             <div className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
               <div className="flex flex-col gap-4">
                 {loading ? (

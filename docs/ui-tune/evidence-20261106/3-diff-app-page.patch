@@ -1,0 +1,13 @@
+diff --git a/app/page.tsx b/app/page.tsx
+index 72fdef1..93b25f0 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -185,7 +185,7 @@ function HomeContent() {
+       <main className="relative z-[1] flex flex-1 items-start overflow-hidden">
+         <div className="flex w-full flex-col items-center gap-[120px] px-6 lg:px-8 xl:px-10 py-20">
+           {/* Hero */}
+-          <section className="flex w-full max-w-main flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-16">
++          <section className="flex w-full max-w-main flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-16 p-16">
+             <div className="relative aspect-square w-[120px] flex-none sm:w-auto sm:flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
+               {loading ? (
+                 <div className="h-full w-full animate-pulse bg-system-800" />

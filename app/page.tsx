@@ -205,7 +205,7 @@ function HomeContent() {
           <section className="flex w-full max-w-main flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-16">
             <div className="relative aspect-square w-[120px] flex-none sm:w-auto sm:flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
               {loading ? (
-                <div className="h-full w-full animate-pulse bg-system-800" />
+                <div className="h-full w-full animate-pulse bg-surface-light" />
               ) : (
                 <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
@@ -213,14 +213,14 @@ function HomeContent() {
             <div className="flex flex-1 flex-col">
               <div className="flex flex-col gap-2">
                 <p className="font-en text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
-                  {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-system-800" /> : profile?.title}
+                  {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-surface-light" /> : profile?.title}
                 </p>
                 <div className="flex flex-wrap items-end gap-x-2 gap-y-0 text-main-050">
                   <p className="font-noto text-[46px] leading-[60px] tracking-[0.2637px]">
-                    {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-system-800" /> : profile?.name_jp}
+                    {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_jp}
                   </p>
                   <p className="font-en text-[20px] leading-7 tracking-[-0.4492px]">
-                    {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-system-800" /> : profile?.name_en}
+                    {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-surface-light" /> : profile?.name_en}
                   </p>
                 </div>
                 {profile?.bio && <p className="text-[15px] leading-6 text-fg-muted">{profile.bio}</p>}
@@ -234,7 +234,7 @@ function HomeContent() {
             <div className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
               <div className="flex flex-col gap-4">
                 {loading ? (
-                  <div className="h-16 w-full animate-pulse rounded bg-system-800" />
+                  <div className="h-16 w-full animate-pulse rounded bg-surface-light" />
                 ) : profileError ? (
                   <p role="alert">自己紹介を読み込めませんでした。</p>
                 ) : introduction.length > 0 ? (
@@ -267,9 +267,9 @@ function HomeContent() {
             <div className="flex flex-col gap-6">
               {loading ? (
                 <div className="flex flex-col gap-3">
-                  <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-system-800" />
-                  <span className="inline-block h-16 w-2/3 animate-pulse rounded-[10px] bg-system-800" style={{ marginLeft: "20%" }} />
-                  <span className="inline-block h-16 w-1/2 animate-pulse rounded-[10px] bg-system-800" style={{ marginLeft: "40%" }} />
+                  <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-surface-light" />
+                  <span className="inline-block h-16 w-2/3 animate-pulse rounded-[10px] bg-surface-light" style={{ marginLeft: "20%" }} />
+                  <span className="inline-block h-16 w-1/2 animate-pulse rounded-[10px] bg-surface-light" style={{ marginLeft: "40%" }} />
                 </div>
               ) : careerError ? (
                 <p className="text-[13px] text-danger-300" role="alert">経歴を読み込めませんでした。</p>

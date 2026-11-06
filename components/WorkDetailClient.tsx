@@ -26,8 +26,8 @@ const WorkDetailSkeleton: FC = () => (
   <div role="status" className="flex w-full flex-col gap-12">
     <span className="sr-only">読み込み中…</span>
     <div className="flex h-[var(--work-header-h)] items-center justify-between">
-      <div className="h-4 w-40 motion-safe:animate-pulse rounded bg-system-800" />
-      <div className="h-4 w-16 motion-safe:animate-pulse rounded bg-system-800" />
+      <div className="h-4 w-40 motion-safe:animate-pulse rounded bg-surface-light" />
+      <div className="h-4 w-16 motion-safe:animate-pulse rounded bg-surface-light" />
     </div>
     <div className="flex justify-center">
       <HeroShotsSkeleton />
@@ -35,27 +35,27 @@ const WorkDetailSkeleton: FC = () => (
     <div className="flex flex-col gap-12">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-4">
-          <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-system-800" />
-          <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+          <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-surface-light" />
+          <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-surface-light" />
         </div>
         <div className="flex gap-2">
-          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
-          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
-          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-system-800" />
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-surface-light" />
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-surface-light" />
+          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-surface-light" />
         </div>
       </div>
-      <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-system-800" />
+      <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-surface-light" />
     </div>
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-4">
-        <div className="h-9 w-32 motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-9 w-32 motion-safe:animate-pulse rounded bg-surface-light" />
         <div className="h-px flex-1 bg-border" />
       </div>
       <div className="flex flex-col gap-3">
-        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
-        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-system-800" />
-        <div className="h-4 w-11/12 motion-safe:animate-pulse rounded bg-system-800" />
-        <div className="h-4 w-2/3 motion-safe:animate-pulse rounded bg-system-800" />
+        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-surface-light" />
+        <div className="h-4 w-full motion-safe:animate-pulse rounded bg-surface-light" />
+        <div className="h-4 w-11/12 motion-safe:animate-pulse rounded bg-surface-light" />
+        <div className="h-4 w-2/3 motion-safe:animate-pulse rounded bg-surface-light" />
       </div>
     </div>
   </div>
@@ -175,11 +175,11 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
     if (error || !work) {
       return (
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-          <p className="text-[15px] text-white/70">{error ?? "Work が見つかりませんでした。"}</p>
+          <p className="text-[15px] text-fg-muted">{error ?? "Work が見つかりませんでした。"}</p>
           <button
             type="button"
             onClick={handleBack}
-            className="rounded-full border border-system-800 px-4 py-2 text-[13px] text-system-500 transition-colors hover:border-system-500 hover:text-white"
+            className="rounded-full border border-border px-4 py-2 text-[13px] text-fg-muted transition-colors hover:border-border-light hover:text-fg"
           >
             ‹ Works 一覧へ戻る
           </button>
@@ -249,7 +249,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   };
 
   return (
-    <div data-work-detail className="relative flex min-h-screen items-start bg-surface text-white">
+    <div data-work-detail className="relative flex min-h-screen items-start bg-surface text-fg">
       {/* Side Menu（lg 以上のみ表示） */}
       {/* z-40: ホバーで 216px に広がるメニューを目次(z-30)より上に出す。モーダル(z-50 / z-60)よりは下 */}
       <div className="sticky top-0 shrink-0 z-40 hidden w-[96px] lg:block">

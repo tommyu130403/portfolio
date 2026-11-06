@@ -121,7 +121,7 @@ const Modal: FC<ModalProps> = ({
       ].join(" ")}
       style={{
         left: sidebarOffset,
-        backgroundColor: "rgba(0,0,0,0.25)",
+        backgroundColor: "color-mix(in srgb, var(--color-system-black) 25%, transparent)",
         backdropFilter: "blur(8px)",
       }}
       onClick={requestClose}
@@ -165,14 +165,14 @@ const Modal: FC<ModalProps> = ({
               : "relative w-full max-w-[min(var(--container-main),calc(100%_-_10px))]"
           }
         >
-          {/* 容器の地色は Library Modal 120:383 で System/900 固定（Background/Default ではない）。ページ背景が System/925 になっても #212121 を保つ */}
+          {/* 容器の地色は surface */}
           <div
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
             tabIndex={-1}
             style={{ outline: "none" }}
-            className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 bg-surface shadow-[0_1px_1.5px_0_rgba(0,0,0,0.1),0_1px_1px_0_rgba(0,0,0,0.1)]"
+            className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 bg-surface shadow-wisper"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-1 flex-col overflow-y-auto">
@@ -201,8 +201,8 @@ const Modal: FC<ModalProps> = ({
                   "h-1 w-10 rounded-r2 transition-colors",
                   i === currentIndex
                     ? "bg-primary"
-                    : // Figma の非アクティブは rgba(255,255,255,0.02) だが 2% のトークンが無いため 5% のまま（依頼書 §6）
-                      "bg-white/5",
+                    : // Figma の非アクティブは 白 2% だが 2% のトークンが無いため 5% のまま（依頼書 §6）
+                      "bg-action-hover",
                 ].join(" ")}
               />
             ))}

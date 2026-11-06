@@ -9,9 +9,9 @@ type HeadlineProps = {
    * 見出しタイプ
    * - default: ページ上部のセクション見出し（Library SectionTitle 20:37・2026-10-25 確認: JP ラベル 12px Noto Regular・ls 3%・Main/050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、gap 12・下余白 24）
    * - sub: 小見出し
-   * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
+   * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px text-fg）
    * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 22px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
-   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px。横線 System/700・文字 Text/Body/Secondary）
+   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px。横線 Border/Main・文字 main-050）
    */
   variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2";
 };
@@ -27,10 +27,10 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Headline/Section（Work詳細セクションタイトル）: Avenir Heavy 34px white
+  // Headline/Section（Work詳細セクションタイトル）: Avenir Heavy 34px text-fg
   if (variant === "section") {
     return (
-      <p className="font-en w-full text-[34px] font-extrabold leading-[1.2] text-white [word-break:break-word]">
+      <p className="font-en w-full text-[34px] font-extrabold leading-[1.2] text-fg [word-break:break-word]">
         {title}
       </p>
     );
@@ -40,7 +40,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   if (variant === "section-aside") {
     return (
       <div className="flex w-full items-center gap-4">
-        <h2 className="min-w-0 text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-white [word-break:break-word]">
+        <h2 className="min-w-0 text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-system-white [word-break:break-word]">
           {title}
         </h2>
         <span aria-hidden className="h-px min-w-4 flex-1 bg-border" />
@@ -48,12 +48,12 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Library Headline type=02（304:302）: 横線 16×1px System/700 + Noto Sans JP Bold 16px・lh 150%・ls 5%・文字 Text/Body/Secondary（読みやすさ監査 S7）、gap 8。h1・h2 とも同形の h3
+  // Library Headline type=02（304:302）: 横線 16×1px Border/Main + Noto Sans JP Bold 16px・lh 150%・ls 5%・文字 main-050（2026-11-06 見出し階層 B案）、gap 8。h1・h2 とも同形の h3
   if (variant === "markdown-h1" || variant === "markdown-h2") {
     return (
       <div className="flex w-full items-center gap-2">
-        <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
-        <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted">
+        <span aria-hidden className="h-px w-4 shrink-0 bg-border-main" />
+        <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
           {title}
         </h3>
       </div>

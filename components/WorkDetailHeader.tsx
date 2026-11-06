@@ -43,13 +43,13 @@ const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void
 export const HeroShotsSkeleton: FC<{ children?: ReactNode }> = ({ children }) => (
   <div className="relative w-[560px] max-w-full motion-safe:animate-pulse">
     <div className="mx-auto w-[74%]">
-      <div className="mx-auto w-[92%] rounded-t-[10px] bg-system-800 px-[3%] pb-[4%] pt-[3%]">
-        <div className="aspect-[16/10] w-full rounded-[3px] bg-system-900" />
+      <div className="mx-auto w-[92%] rounded-t-[10px] bg-border px-[3%] pb-[4%] pt-[3%]">
+        <div className="aspect-[16/10] w-full rounded-[3px] bg-surface-light" />
       </div>
-      <div className="aspect-[40/1] w-full rounded-b-[8px] bg-system-800" />
+      <div className="aspect-[40/1] w-full rounded-b-[8px] bg-border" />
     </div>
     <div className="@container absolute bottom-[2%] right-[8%] w-[20%]">
-      <div className="aspect-[9/19] w-full rounded-[12cqw] border-[3cqw] border-system-800 bg-system-900" />
+      <div className="aspect-[9/19] w-full rounded-[12cqw] border-[3cqw] border-border-light bg-surface-light" />
     </div>
     {children && <div className="absolute left-0 top-0">{children}</div>}
   </div>
@@ -140,7 +140,7 @@ const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => 
             type="button"
             onClick={onClick}
             aria-label="画像を拡大表示"
-            className="absolute aspect-video cursor-zoom-in overflow-hidden rounded-[6px] border border-border shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            className="absolute aspect-video cursor-zoom-in overflow-hidden rounded-[6px] border border-border shadow-[0_8px_24px_color-mix(in_srgb,var(--color-system-black)_35%,transparent)]"
             style={{ left: `${step * i}%`, top: `${step * i}%`, width: `${size}%`, zIndex: imgs.length - i }}
           >
             <ProtectedImage src={src} alt="" className="block h-full w-full object-cover" />
@@ -380,12 +380,12 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
                 type="button"
                 onClick={() => setVizModal("timeline")}
                 aria-label="タイムライン（RACI）を表示"
-                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-system-500"
+                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-border-light"
               >
                 <Icon
                   set="Arrows"
                   name="full-screen-two"
-                  tintColor="var(--color-system-500)"
+                  tintColor="var(--color-fg-muted)"
                   className="h-full w-full"
                   aria-hidden
                 />
@@ -428,12 +428,12 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
                 type="button"
                 onClick={() => setVizModal("stakeholders")}
                 aria-label="ステークホルダー体制を表示"
-                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-system-500"
+                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-border-light"
               >
                 <Icon
                   set="Arrows"
                   name="full-screen-two"
-                  tintColor="var(--color-system-500)"
+                  tintColor="var(--color-fg-muted)"
                   className="h-full w-full"
                   aria-hidden
                 />

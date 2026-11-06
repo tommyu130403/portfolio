@@ -34,8 +34,8 @@ const WorkVizModal: FC<WorkVizModalProps> = ({ kind, timeline, period, stakehold
   <Modal onClose={onClose} width="full">
     {/* Slot（Figma I839:3764;120:367）: gap-16 / p-40 */}
     <div className="flex flex-col gap-4 p-10">
-      {/* 見出し Afacad Bold 20px / 行間 150% / 字間 5%・色 #9E9E9E */}
-      <p className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-system-500">
+      {/* 見出し Afacad Bold 20px / 行間 150% / 字間 5%・色 fg-muted */}
+      <p className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted">
         {HEADING[kind]}
       </p>
       {kind === "timeline"

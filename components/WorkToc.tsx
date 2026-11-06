@@ -241,7 +241,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
             key={i}
             aria-hidden
             className={`h-0.5 rounded-full ${item.level === 1 ? "w-3.5 md:w-4 lg:w-5" : "w-2 md:w-2.5 lg:w-3.5"} ${
-              i === activeIndex ? "bg-primary" : "bg-system-700"
+              i === activeIndex ? "bg-primary" : "bg-fg-subtle"
             }`}
           />
         ))}
@@ -261,7 +261,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
                     }}
                     className={`block w-full truncate py-1.5 text-left text-[14px] leading-[1.5] ${
                       item.level === 2 ? "pl-4" : ""
-                    } ${i === activeIndex ? "font-bold text-primary" : "text-fg hover:text-white"}`}
+                    } ${i === activeIndex ? "font-bold text-primary" : "text-fg hover:text-system-white"}`}
                   >
                     {item.label}
                   </button>
@@ -275,7 +275,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
         typeof document !== "undefined" &&
         createPortal(
           <>
-            <div className="fixed inset-0 z-50 bg-black/25" onClick={closeDrawer} aria-hidden />
+            <div className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--color-system-black)_25%,transparent)]" onClick={closeDrawer} aria-hidden />
             <div
               ref={drawerRef}
               role="dialog"

@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import Link from "next/link";
 import Tag from "./Tag";
 import ProtectedImage from "./ProtectedImage";
 import WorkThumbnail from "./WorkThumbnail";
@@ -18,31 +19,22 @@ type WorkCardProps = {
   thumbnail?: WorkThumbnailData | null;
   /** 構成サムネイルのサービス名 */
   serviceName?: string | null;
-  onClick?: () => void;
+  /** 詳細ページへのリンク先。指定するとカード全体が <a> になり、⌘+クリック・中クリックで別タブに開ける */
+  href?: string;
 };
 
-const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, period, image, thumbnail, serviceName, onClick }) => {
-  return (
-    <div
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (event) => {
-        if (!event.repeat && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          onClick();
-        }
-      } : undefined}
-      className={[
-        "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[14px]",
-        "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-['']",
-        // Figma: 通常時の影は内側 _ProjectCard に付くが外側 Card の clip で切れて画面に出ない → 影なし。
-        // ホバー（Library Card Status=hover）は外側に 背景 Action/hover・枠 Border/Light・影 shadow を付ける。
-        onClick
-          ? `${HOVER_CARD} hover:after:border-border-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer`
-          : "",
-      ].join(" ")}
-    >
+const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, period, image, thumbnail, serviceName, href }) => {
+  const className = [
+    "relative flex w-full min-w-0 flex-col overflow-hidden rounded-[14px]",
+    "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:content-['']",
+    // Figma: 通常時の影は内側 _ProjectCard に付くが外側 Card の clip で切れて画面に出ない → 影なし。
+    // ホバー（Library Card Status=hover）は外側に 背景 Action/hover・枠 Border/Light・影 shadow を付ける。
+    href
+      ? `${HOVER_CARD} hover:after:border-border-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer`
+      : "",
+  ].join(" ");
+  const body = (
+    <>
       <div className="relative aspect-[339/190.6875] w-full shrink-0">
         {thumbnail ? (
           <WorkThumbnail
@@ -88,7 +80,15 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
           ))}
         </div>
       </div>
-    </div>
+    </>
+  );
+
+  return href ? (
+    <Link href={href} className={className}>
+      {body}
+    </Link>
+  ) : (
+    <div className={className}>{body}</div>
   );
 };
 

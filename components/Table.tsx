@@ -28,7 +28,7 @@ export const TableKeyValue: FC<TableKeyValueProps> = ({ rows }) => (
           <div className={`min-w-0 text-fg-muted ${LABEL_TYPO} @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:px-4`}>
             {row.label}
           </div>
-          <div className="min-w-0 break-words text-fg text-body-03-jp @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:border-l @min-[480px]:border-border @min-[480px]:px-4">
+          <div className="min-w-0 break-words text-fg text-body-02-jp @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:border-l @min-[480px]:border-border @min-[480px]:px-4">
             {row.value}
           </div>
         </div>
@@ -68,7 +68,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
             header.map((_, ci) => (
               <div
                 key={`${ri}-${ci}`}
-                className={`${cell} text-fg text-body-03-jp ${ri < rows.length - 1 ? "border-b border-border" : ""} ${colBorder(ci)}`}
+                className={`${cell} text-fg text-body-02-jp ${ri < rows.length - 1 ? "border-b border-border" : ""} ${colBorder(ci)}`}
               >
                 {r[ci] ?? null}
               </div>
@@ -92,7 +92,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
               return (
                 <div key={ci} className="flex min-w-0 flex-col gap-y-1">
                   {hasLabel && <div className={`${LABEL_TYPO} text-fg-muted`}>{h}</div>}
-                  <div className="min-w-0 break-words text-fg text-body-03-jp">{v}</div>
+                  <div className="min-w-0 break-words text-fg text-body-02-jp">{v}</div>
                 </div>
               );
             })}

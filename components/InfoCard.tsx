@@ -4,7 +4,7 @@ type InfoCardProps = {
   title?: ReactNode;
   /** accent = 強調カード（`::: card tone=accent`。Border/Main・main-100 の薄い地・見出しは primary） */
   tone?: "default" | "accent";
-  /** `::: figure` の内側（図版の panel 地の上）。地は surface-light・見出しは小さく（Body/03 Bold・fg-muted） */
+  /** `::: figure` の内側（図版の panel 地の上）。地は surface-light・見出しは fg-muted（文字は外と同じ Body/02 Bold 13px） */
   inFigure?: boolean;
   children: ReactNode;
 };
@@ -18,7 +18,7 @@ const InfoCard: FC<InfoCardProps> = ({ title, tone = "default", inFigure = false
   >
     {title ? (
       <p
-        className={`${inFigure ? "text-body-03-jp-bold" : "text-body-02-jp-bold"} ${
+        className={`text-body-02-jp-bold ${
           tone === "accent" ? "text-primary" : inFigure ? "text-fg-muted" : "text-system-white"
         }`}
       >

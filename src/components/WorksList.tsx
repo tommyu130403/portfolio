@@ -58,8 +58,6 @@ export const WorksList: FC = () => {
     fetchWorks();
   }, []);
 
-  const openWork = (workId: string) => router.push(`/works?id=${workId}`);
-
   // Career カードの Works リンクから発火される遷移イベントを受け、該当 Works 詳細へ遷移する。
   useEffect(() => {
     const handler = (e: Event) => {
@@ -110,7 +108,7 @@ export const WorksList: FC = () => {
           image={work.thumbnail_url ?? DEFAULT_IMAGE}
           thumbnail={parseThumbnail(work.thumbnail)}
           serviceName={work.hero_brand}
-          onClick={() => openWork(work.id)}
+          href={`/works?id=${work.id}`}
         />
       ))}
     </div>

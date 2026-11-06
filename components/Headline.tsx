@@ -11,7 +11,7 @@ type HeadlineProps = {
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px white）
    * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 22px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
-   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px System/700 gray）
+   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px。横線 System/700・文字 Text/Body/Secondary）
    */
   variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2";
 };
@@ -40,22 +40,22 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
   if (variant === "section-aside") {
     return (
       <div className="flex w-full items-center gap-4">
-        <p className="min-w-0 text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-white [word-break:break-word]">
+        <h2 className="min-w-0 text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-white [word-break:break-word]">
           {title}
-        </p>
+        </h2>
         <span aria-hidden className="h-px min-w-4 flex-1 bg-border" />
       </div>
     );
   }
 
-  // Library Headline type=02（304:302・2026-10-25 確認）: 横線 16×1px Main/050 + Noto Sans JP Bold 16px・lh 150%・ls 5%・Main/050、gap 8。h1・h2 とも同形
+  // Library Headline type=02（304:302）: 横線 16×1px System/700 + Noto Sans JP Bold 16px・lh 150%・ls 5%・文字 Text/Body/Secondary（読みやすさ監査 S7）、gap 8。h1・h2 とも同形の h3
   if (variant === "markdown-h1" || variant === "markdown-h2") {
     return (
       <div className="flex w-full items-center gap-2">
         <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
-        <p className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-system-700">
+        <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted">
           {title}
-        </p>
+        </h3>
       </div>
     );
   }

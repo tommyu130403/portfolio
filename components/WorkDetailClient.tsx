@@ -150,6 +150,18 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
     };
   }, []);
 
+  // タブ名を作品ごとに変える（metadata は静的エクスポートで全作品共通の「Works」になるため、読み込み後に上書きする）。
+  // document.title への代入は <title> の文字ノードを差し替え、React が持つノードが外れて
+  // 別ページへ移っても題名が戻らなくなる。既存の文字ノードの値だけを書き換え、戻すのは React の更新に任せる
+  const workTitle = work?.title.trim();
+  // 読み込み中・見つからない・題名が空のときは共通の題名に戻す（前の作品名を残さない）
+  useEffect(() => {
+    const next = workTitle ? `${workTitle} | Yu Tomita` : "Works | Yu Tomita";
+    const node = document.querySelector("head > title")?.firstChild;
+    if (node?.nodeType === Node.TEXT_NODE) node.nodeValue = next;
+    else document.title = next;
+  }, [workTitle]);
+
   const handleBack = () => router.push("/#works");
 
   const workHref = (targetId: string) => `/works?id=${targetId}`;

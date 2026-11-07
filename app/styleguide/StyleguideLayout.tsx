@@ -1016,7 +1016,7 @@ function ComponentsSection() {
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
-            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
+            <p className="text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-system-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
             <Headline title="見出し02（### / Headline type=02・横線 Border/Main＋Noto Bold 16px main-050）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
             <p className="text-[15px] leading-[22px] tracking-[0.45px] text-fg">Body01（通常段落 / Noto Regular 15px text-fg = Text/Body/Primary #D6D6D8）</p>
@@ -1051,36 +1051,36 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ）。hue（カテゴリ色の色相。D案: 保存値 h を青緑〜ローズ 190〜352° の H に縮め、背景 oklch(0.28 0.05 H)・文字 oklch(0.88 0.085 H)。未指定は Main/600 地））/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ）。hue（カテゴリ色の色相。D案: 保存値 h を青緑〜ローズ 190〜352° の H に縮め、背景 oklch(0.28 0.05 H)・文字 oklch(0.88 0.085 H)。未指定は Main/600 地））/ tool(border付き・10px fg-muted。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
             <Tag label="Project Management" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="UI Design" variant="small" />
             <Tag label="UX Research" variant="small" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="UI Design" variant="content" />
             <Tag label="UX Research" variant="content" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="機能開発" variant="category" />
             <Tag label="機能開発" variant="category" size="sm" />
             <Tag label="Feature" variant="category" size="card" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             {CATEGORY_HUE_SAMPLES.map(({ hue, label }) => (
               <Tag key={hue} label={label} variant="category" size="card" hue={hue} />
             ))}
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
             <Tag label="GitHub" variant="tool" prefix={<ServiceLogo name="github" className="w-4 h-4 shrink-0 object-contain" />} />
-            <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />} />
+            <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="var(--color-fg-muted)" className="w-4 h-4 shrink-0" />} />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="デザインリード" variant="tool" filled />
             <Tag label="エンジニア" variant="tool" filled count={3} />
           </div>
@@ -1435,7 +1435,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkPagerCard"
-          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。composedThumbnail（構成サムネイル）ありは 128px 枠に 16:9 で縦中央・上下は system-950。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
+          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。composedThumbnail（構成サムネイル）ありは 128px 枠に 16:9 で縦中央・上下は thumbnail（indigo-950）。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkPagerCard direction="prev" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />

@@ -13,7 +13,7 @@ import IconPickerField, { formatIconRef, parseIconRef } from "../IconPickerField
 import type { IconCatalog } from "../iconCatalogTypes";
 import ProtectedImage from "@/components/ProtectedImage";
 import Tag from "@/components/Tag";
-import { WORK_CATEGORY_PRESET_HUES, workCategoryDisplayHue } from "@/lib/work-category-color";
+import { WORK_CATEGORY_PRESET_HUES, workCategoryDisplayHue, workCategoryTagStyle } from "@/lib/work-category-color";
 import {
   addNameMaster,
   addContentVocab,
@@ -123,7 +123,7 @@ function CategoryColorControl({
           aria-pressed={hue === h}
           title={`色相 ${h}`}
           className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[12px] font-bold leading-none transition-transform disabled:cursor-not-allowed disabled:opacity-40 ${hue === h ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-[#1a1a1a]" : "opacity-70 hover:opacity-100"}`}
-          style={{ backgroundColor: `oklch(0.30 0.06 ${workCategoryDisplayHue(h)})`, color: `oklch(0.88 0.09 ${workCategoryDisplayHue(h)})`, boxShadow: `inset 0 0 0 2px oklch(0.88 0.09 ${workCategoryDisplayHue(h)})` }}
+          style={{ ...workCategoryTagStyle(h), boxShadow: `inset 0 0 0 2px oklch(0.88 0.085 ${workCategoryDisplayHue(h)})` }}
         >
           {/* 選択中だけチェックを出す（リングだけでは暗い地で見分けにくい） */}
           {hue === h ? "✓" : ""}

@@ -43,7 +43,7 @@ type TableGridProps = {
 };
 
 /**
- * グリッドテーブル（Figma 188:355 Table/Grid）。1行目が見出し、列は等幅（最小 96px）、収まらないときは枠内で横スクロール。
+ * グリッドテーブル（Figma 188:355 Table/Grid）。1行目が見出し、列幅は文章量に合わせて自動配分（最小 96px。各列はまず内容の長さまで広がり、枠に収まらないときは短い列を内容幅に保って長い列を折り返す。枠より短い表は余りを各列に均等に足す）、収まらないときは枠内で横スクロール。
  * 480px 未満では列を縦に積む（スマホで多列表を横スクロールさせない。ユーザー指示 2026-11-02）。
  */
 /** 空セルの判定。WorkMarkdown は空文字を renderInline して空配列 `[]` で渡してくるので、配列の空も空とみなす */
@@ -57,7 +57,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
       <div className={`hidden w-full @min-[480px]:block ${FRAME_SCROLL}`}>
         <div
           className="grid min-w-full"
-          style={{ gridTemplateColumns: `repeat(${header.length}, minmax(96px, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${header.length}, minmax(96px, auto))` }}
         >
           {header.map((h, ci) => (
             <div key={ci} className={`${cell} ${rows.length > 0 ? "border-b border-border" : ""} ${LABEL_TYPO} font-bold text-fg-muted ${colBorder(ci)}`}>

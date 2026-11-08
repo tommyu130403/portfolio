@@ -27,8 +27,8 @@ type FlowchartReactNode = Node<FlowNodeData, FlowNodeKind>;
 type Point = { x: number; y: number };
 
 const EDGE_CORNER_RADIUS = 10;
-const EDGE_COLOR = "#616161";
-const EDGE_SELECTED_COLOR = "#48f4be";
+const EDGE_COLOR = "var(--color-fg-subtle)";
+const EDGE_SELECTED_COLOR = "var(--color-main-100)";
 
 const HANDLE_DIRECTIONS: Record<Position, Point> = {
   [Position.Top]: { x: 0, y: -1 },
@@ -190,7 +190,7 @@ function EdgeMarkerDefinition({
           cy="0"
           r="3.8"
           fill={color}
-          stroke="#101010"
+          stroke="var(--color-thumbnail)"
           strokeWidth="1"
         />
       )}
@@ -272,7 +272,7 @@ const GridEdge = memo(function GridEdge({
         ...style,
         stroke: EDGE_SELECTED_COLOR,
         strokeWidth: 2.5,
-        filter: "drop-shadow(0 0 3px rgba(72, 244, 190, 0.65))",
+        filter: "drop-shadow(0 0 3px color-mix(in srgb, var(--color-main-100) 65%, transparent))",
       }
     : style;
 
@@ -325,13 +325,13 @@ function Ports() {
         id="top"
         type="source"
         position={Position.Top}
-        className="!h-2.5 !w-2.5 !border-surface !bg-system-500"
+        className="!h-2.5 !w-2.5 !border-surface !bg-fg-muted"
       />
       <Handle
         id="right"
         type="source"
         position={Position.Right}
-        className="!h-2.5 !w-2.5 !border-surface !bg-system-500"
+        className="!h-2.5 !w-2.5 !border-surface !bg-fg-muted"
       />
       <Handle
         id="bottom"
@@ -343,7 +343,7 @@ function Ports() {
         id="left"
         type="source"
         position={Position.Left}
-        className="!h-2.5 !w-2.5 !border-surface !bg-system-500"
+        className="!h-2.5 !w-2.5 !border-surface !bg-fg-muted"
       />
     </>
   );
@@ -360,11 +360,11 @@ const NODE_COLOR_CLASS: Record<
   { surface: string; mutedText: string }
 > = {
   primary: {
-    surface: "border-main-100 bg-main-100 text-[#0a0a0a]",
+    surface: "border-main-100 bg-main-100 text-main-700",
     mutedText: "text-main-700",
   },
   secondary: {
-    surface: "border-main-100 bg-[#0a2218] text-main-100",
+    surface: "border-main-100 bg-main-600 text-main-100",
     mutedText: "text-main-050",
   },
 };
@@ -405,7 +405,7 @@ function ResizeHandles({
       handleStyle={{
         width: 9,
         height: 9,
-        border: "1px solid #101010",
+        border: "1px solid var(--color-thumbnail)",
         borderRadius: 3,
       }}
       lineStyle={{ borderWidth: 1 }}
@@ -460,7 +460,7 @@ function Frame({
   return (
     <div
       className={`relative flex h-full w-full flex-col px-5 py-2 ${VERTICAL_JUSTIFY[data.verticalAlign]} ${shapeClassName} ${nodeSurfaceClass(data.color, className)} ${
-        selected ? "ring-2 ring-main-100 ring-offset-2 ring-offset-[#101010]" : ""
+        selected ? "ring-2 ring-main-100 ring-offset-2 ring-offset-thumbnail" : ""
       }`}
     >
       <ResizeHandles kind={kind} selected={selected} />
@@ -565,7 +565,7 @@ const CardNode = memo(function CardNode({
         data.color,
         "border-border-light bg-surface text-fg",
       )} ${
-        selected ? "ring-2 ring-main-100 ring-offset-2 ring-offset-[#101010]" : ""
+        selected ? "ring-2 ring-main-100 ring-offset-2 ring-offset-thumbnail" : ""
       }`}
     >
       <ResizeHandles kind="card" selected={selected} />
@@ -607,7 +607,7 @@ const DecisionNode = memo(function DecisionNode({
   return (
     <div
       className={`relative flex h-full min-h-[120px] w-full min-w-[120px] items-center justify-center rounded-[12px] ${
-        selected ? "ring-2 ring-main-100 ring-offset-2 ring-offset-[#101010]" : ""
+        selected ? "ring-2 ring-main-100 ring-offset-2 ring-offset-thumbnail" : ""
       }`}
     >
       <ResizeHandles kind="decision" selected={selected} />
@@ -621,7 +621,7 @@ const DecisionNode = memo(function DecisionNode({
       <div
         className={`relative z-[1] flex h-full w-full max-w-[70%] flex-col px-2 py-[20%] ${VERTICAL_JUSTIFY[data.verticalAlign]} ${
           data.color === "primary"
-            ? "text-[#0a0a0a]"
+            ? "text-main-700"
             : data.color === "secondary"
               ? "text-main-100"
               : "text-fg"

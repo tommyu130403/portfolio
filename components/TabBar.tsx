@@ -6,11 +6,11 @@ import Icon, { type IconProps } from "./Icon";
 /**
  * TabBar — Figma Library node 70:441（_TabBarItem: 70:392）
  *
- * 外枠: Background/Light(#292929) / radius 8 / overflow-clip / 枠線なし
+ * 外枠: Background/Light / radius 8 / overflow-clip / 枠線なし
  * item: h40 / gap12 / pl16 pr24 / radius 8 / 14px Avenir / tracking 0.7px
- *   default: 背景なし・Text/Body/Sub(#9E9E9E)・Roman(400)
- *   Active : Background/Default(#191919) + Border/Default(#3A3A3A)・Text/Body/Primary(#E0E0E0)・Heavy(800)
- *   hover  : Figma は rgba(255,255,255,0.02) だが 2% のトークンが無いため
+ *   default: 背景なし・Text/Body/Sub・Roman(400)
+ *   Active : Background/Default + Border/Default・Text/Body/Primary・Heavy(800)
+ *   hover  : Figma は 白 2% だが 2% のトークンが無いため
  *            Action/hover(白5%)を使っている（差分は依頼書 §6 に記載）
  */
 

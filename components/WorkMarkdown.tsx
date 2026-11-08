@@ -20,9 +20,9 @@ import ProtectedImage from "./ProtectedImage";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（横線 #616161＋Noto Bold 16px 文字 #9E9E9E Text/Body/Secondary・Library Headline type=02 304:302。文字は背景 #0A0A0A 上 7.4:1）
+ *  - `## `   → 見出し01（横線 border-main＋Noto Bold 16px main-050・Library Headline type=02 304:302。2026-11-06 見出し階層 B案）
  *  - `### `  → 見出し02（01 と同形）
- *  - `> `    → 引用（13px system-400 #BDBDBD・左ボーダー、連続行対応）
+ *  - `> `    → 引用（13px fg-muted・左ボーダー、連続行対応）
  * 拡張記法:
  *  - **太字** / *斜体* / `インラインコード` / [リンク](url)（外部はアイコン付き）
  *  - `- ` 箇条書き / `1. ` 番号リスト / `---` 区切り線 / ``` コードブロック
@@ -104,7 +104,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
     const code = rest.match(/^`([^`]+)`/);
     if (code) {
       push(
-        <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">
+        <code className="rounded bg-action-hover px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">
           {code[1]}
         </code>
       );
@@ -825,8 +825,8 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "h1":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
-          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-border-main" />
+          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
             {renderInline(block.content, k)}
           </h3>
         </div>
@@ -834,8 +834,8 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "h2":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-system-700" />
-          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-border-main" />
+          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
             {renderInline(block.content, k)}
           </h3>
         </div>
@@ -852,7 +852,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <div className="mb-3 border-l-2 border-border-light pl-3">
           {block.content.split("\n").map((l, i) => (
-            <p key={i} className="text-[13px] leading-[21px] tracking-[0.39px] text-system-400">
+            <p key={i} className="text-[13px] leading-[21px] tracking-[0.39px] text-fg-muted">
               {renderInlineLine(l, `${k}-q${i}`)}
             </p>
           ))}
@@ -907,7 +907,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return <hr className="my-6 border-border-light" />;
     case "code":
       return (
-        <pre className="mb-4 mt-10 overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-system-300">
+        <pre className="mb-4 mt-10 overflow-x-auto rounded-[12px] border border-border bg-thumbnail p-4 font-mono text-[13px] leading-[1.6] text-fg">
           <code>{block.content}</code>
         </pre>
       );
@@ -1077,7 +1077,7 @@ export const EditButton: FC<{ label: string; onClick: () => void; className?: st
     type="button"
     onClick={onClick}
     aria-label={`${label}を編集`}
-    className={`flex size-7 items-center justify-center rounded-full border border-border-light bg-surface/90 text-system-500 shadow-base transition-colors hover:border-primary hover:text-primary ${className}`}
+    className={`flex size-7 items-center justify-center rounded-full border border-border-light bg-surface/90 text-fg-muted shadow-base transition-colors hover:border-primary hover:text-primary ${className}`}
   >
     <Icon set="Edit" name="edit" tintColor="currentColor" className="size-3.5" aria-hidden />
   </button>

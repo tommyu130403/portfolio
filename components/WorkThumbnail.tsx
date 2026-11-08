@@ -12,8 +12,7 @@ import { getServiceBrand, serviceLogoSrc } from "@/lib/service-brands";
  * 地は bg-thumbnail（一覧の背景 surface より暗い）。タイトルは出さない。
  * サービス（brand）を選んだ作品は、地を白基調にしてブランドの主色・副色をうすいグラデで重ね、
  * ロゴ未設定ならそのサービスのロゴを出す（モックアップ枠は黒のまま）。ブランド色は lib/service-brands.ts
- * 数値の正は Claude Design「Works サムネイル 構成案 v2」（Figma: Library の WorkThumbnail）。
- * #0A0A0A / #1A1A1A（資料枠）/ 縞の 2 色は対応するトークンが無いため直書き */
+ * 数値の正は Claude Design「Works サムネイル 構成案 v2」（Figma: Library の WorkThumbnail）。 */
 
 type Props = {
   layout: ThumbnailLayout;
@@ -32,7 +31,7 @@ const y = (px: number) => `${px / 7.2}%`;
 
 /** 画像が無いときの空き枠（斜線） */
 const STRIPES: CSSProperties = {
-  backgroundImage: `repeating-linear-gradient(135deg, #262626 0 ${u(14)}, #2b2b2b ${u(14)} ${u(28)})`,
+  backgroundImage: `repeating-linear-gradient(135deg, var(--color-surface-light) 0 ${u(14)}, var(--color-border) ${u(14)} ${u(28)})`,
 };
 
 type Box = { left: number; top: number; width: number; height: number };
@@ -57,15 +56,15 @@ const Shot: FC<{ src: string | null }> = ({ src }) =>
 
 const DesktopFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   <div
-    className="absolute flex flex-col overflow-hidden border-solid border-system-800 bg-[#0a0a0a]"
+    className="absolute flex flex-col overflow-hidden border-solid border-border-light bg-thumbnail"
     style={{ ...boxStyle(box), borderWidth: u(1), borderRadius: u(16) }}
   >
     <div
-      className="flex shrink-0 items-center border-solid border-system-800"
+      className="flex shrink-0 items-center border-solid border-border-light"
       style={{ height: u(40), gap: u(8), paddingInline: u(18), borderBottomWidth: u(1) }}
     >
       {[0, 1, 2].map((i) => (
-        <span key={i} className="rounded-full bg-system-800" style={{ width: u(11), height: u(11) }} />
+        <span key={i} className="rounded-full bg-border-light" style={{ width: u(11), height: u(11) }} />
       ))}
     </div>
     <div className="relative flex-1" style={STRIPES}>
@@ -76,7 +75,7 @@ const DesktopFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
 
 const PhoneFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   <div
-    className="absolute flex border-solid border-system-800 bg-[#0a0a0a]"
+    className="absolute flex border-solid border-border-light bg-thumbnail"
     style={{ ...boxStyle(box), borderWidth: u(1), borderRadius: u(48), padding: u(12) }}
   >
     <div className="relative flex-1 overflow-hidden" style={{ ...STRIPES, borderRadius: u(36) }}>
@@ -87,7 +86,7 @@ const PhoneFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
 
 const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   <div
-    className="absolute overflow-hidden border-solid border-system-800 bg-[#1a1a1a]"
+    className="absolute overflow-hidden border-solid border-border-light bg-surface-light"
     style={{ ...boxStyle(box), borderWidth: u(1), borderRadius: u(12) }}
   >
     <div className="absolute inset-0" style={STRIPES}>
@@ -133,7 +132,7 @@ const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean;
       )}
       {!showLogo && (
         <p
-          className={`min-w-0 truncate text-center font-sans font-semibold ${light ? "text-system-900" : "text-system-white"}`}
+          className={`min-w-0 truncate text-center font-sans font-semibold ${light ? "text-surface-light" : "text-fg"}`}
           style={{ fontSize: u(56), letterSpacing: "0.02em", maxWidth: u(376) }}
         >
           {serviceName}

@@ -84,7 +84,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md",
           <p className="font-en text-[10px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
         )}
         {hasCount && (
-          <span className="flex size-4 shrink-0 items-center justify-center rounded-[8px] bg-surface-light p-0.5 font-en text-[10px] font-bold leading-none text-system-700">
+          <span className="flex size-4 shrink-0 items-center justify-center rounded-[8px] bg-surface-light p-0.5 font-en text-[10px] font-bold leading-none text-fg-muted">
             {count}
           </span>
         )}
@@ -98,7 +98,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md",
     <div
       className={
         isSmall
-          ? `bg-[rgba(0,0,0,0.25)] flex gap-2 items-center px-3 py-1 rounded-full shrink-0 ${className ?? ""}`
+          ? `bg-system-black/25 flex gap-2 items-center px-3 py-1 rounded-full shrink-0 ${className ?? ""}`
           : `flex items-center justify-center rounded-full bg-main-700 px-3 py-[3px] ${className ?? ""}`
       }
     >

@@ -54,31 +54,31 @@ const C = {
   // 選択中・ホバー時は他のカードと同じ Action/hover を重ねる（lib/hover-card.ts の HOVER_CARD と同じ見た目）
   cardBg: "var(--color-surface)",
   cardHoverOverlay: "inset 0 0 0 9999px var(--color-action-hover)",
-  cardShadowHover: "1px 1px 16px 2px rgba(0, 0, 0, 0.25)", // shadow-base（@theme の --shadow-base は CSS 変数として出ないため実値）
-  cardBorder: "var(--color-border)", // Border/Default（System/825）
+  cardShadowHover: "1px 1px 16px 2px color-mix(in srgb, var(--color-system-black) 25%, transparent)", // shadow-base 相当（@theme の --shadow-base は CSS 変数として出ないため展開）
+  cardBorder: "var(--color-border)", // Border/Default
   cardBorderHover: "var(--color-border-light)", // Border/Light
   cardBorderSelected: "var(--color-border-main)", // Border/Main
-  panelBg: "var(--color-surface)", // Background/Default（System/925）
-  period: "#9e9e9e", // System/500
-  role: "#e0e0e0", // Text/Body/Primary（System/300）
-  company: "#616161", // System/700
-  desc: "#e0e0e0", // System/300
-  muted: "#9e9e9e", // System/500
-  caption: "#757575", // System/600
-  iconArrow: "#757575", // System/600
-  iconArrowCurrent: "#2b9e7a", // Main/300
-  label: "#b3ffe7", // Main/050（セクション見出しの和文ラベルと同じ）
-  badgeBg: "#48f4be",
-  badgeText: "#191919", // Background/Default（System/925）
-  divider: "#3a3a3a",
-  dot: "#3a3a3a", // Border/Default（System/825）
-  dotSelected: "#2b9e7a", // Main/300（開いている経歴）
-  dotCurrent: "#48f4be", // Main/base
-  bar: "#3a3a3a", // Border/Default（System/825）
-  barSelected: "#2b9e7a", // Main/300（開いている経歴）
-  gridLine: "#3a3a3a",
-  yearText: "#757575", // System/600
-  yearCurrent: "#b3ffe7", // Main/050
+  panelBg: "var(--color-surface)", // Background/Default
+  period: "var(--color-fg-muted)",
+  role: "var(--color-fg)", // Text/Body/Primary
+  company: "var(--color-fg-muted)",
+  desc: "var(--color-fg)",
+  muted: "var(--color-fg-muted)",
+  caption: "var(--color-fg-muted)",
+  iconArrow: "var(--color-fg-muted)",
+  iconArrowCurrent: "var(--color-main-300)",
+  label: "var(--color-main-050)", // Main/050（セクション見出しの和文ラベルと同じ）
+  badgeBg: "var(--color-main-100)",
+  badgeText: "var(--color-main-700)", // ミント地の上の文字
+  divider: "var(--color-border)",
+  dot: "var(--color-border)", // Border/Default
+  dotSelected: "var(--color-main-300)", // Main/300（開いている経歴）
+  dotCurrent: "var(--color-main-100)", // Main/base
+  bar: "var(--color-border)", // Border/Default
+  barSelected: "var(--color-main-300)", // Main/300（開いている経歴）
+  gridLine: "var(--color-border)",
+  yearText: "var(--color-fg-muted)",
+  yearCurrent: "var(--color-main-050)",
 } as const;
 
 /* 期間文字列を解析（月精度）。
@@ -140,7 +140,7 @@ function PeriodRow({ item }: { item: EnrichedItem }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <Icon set="Time" name="calendar-line" tintColor="var(--color-system-500)" style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <Icon set="Time" name="calendar-line" tintColor="var(--color-fg-muted)" style={{ width: 12, height: 12, flexShrink: 0 }} />
         <span
           style={{
             fontFamily: FONT_EN,
@@ -498,7 +498,7 @@ function PrevNext({
           padding: "0 12px",
           borderRadius: 8,
           border: `1px solid ${C.cardBorder}`,
-          background: isHover ? "rgba(255,255,255,.05)" : "transparent",
+          background: isHover ? "var(--color-action-hover)" : "transparent",
           color: isHover ? "var(--color-fg)" : C.muted,
           fontFamily: FONT_JP,
           fontSize: 12,
@@ -534,7 +534,7 @@ function CloseButton({ onClose }: { onClose: (viaKeyboard: boolean) => void }) {
   );
 }
 
-const PANEL_SHADOW = "1px 1px 16px 2px rgba(0,0,0,.25)";
+const PANEL_SHADOW = "1px 1px 16px 2px color-mix(in srgb, var(--color-system-black) 25%, transparent)";
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -632,7 +632,7 @@ function CareerPanel({
     position: "fixed",
     inset: 0,
     zIndex: PANEL_Z,
-    background: "rgba(0,0,0,.25)",
+    background: "color-mix(in srgb, var(--color-system-black) 25%, transparent)",
     opacity: visible ? 1 : 0,
     pointerEvents: open ? "auto" : "none",
     transition: reducedMotion ? "none" : `opacity ${PANEL_MS}ms ease-in-out`,

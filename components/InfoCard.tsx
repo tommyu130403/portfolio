@@ -13,13 +13,13 @@ type InfoCardProps = {
 const InfoCard: FC<InfoCardProps> = ({ title, tone = "default", inFigure = false, children }) => (
   <div
     className={`flex flex-col gap-2 rounded-[14px] border p-4 ${
-      tone === "accent" ? "border-border-main bg-main-100/10" : inFigure ? "border-border bg-surface-light" : "border-border bg-surface"
+      tone === "accent" ? "border-border-main bg-main-100/10" : inFigure ? "border-border bg-indigo-800" : "border-border bg-surface"
     }`}
   >
     {title ? (
       <p
         className={`text-body-02-jp-bold ${
-          tone === "accent" ? "text-primary" : inFigure ? "text-fg-muted" : "text-system-white"
+          tone === "accent" ? "text-primary" : inFigure ? "text-fg-muted" : "text-fg"
         }`}
       >
         {title}

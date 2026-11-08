@@ -22,14 +22,14 @@ export const PhoneMock: FC<{ src: string; onClick?: () => void; className?: stri
       type="button"
       onClick={onClick}
       aria-label="スクリーンショットを拡大表示"
-      className="relative block w-full cursor-zoom-in overflow-hidden rounded-[12cqw] border-[3cqw] border-[#0a0a0a] bg-[#0a0a0a] shadow-xl"
+      className="relative block w-full cursor-zoom-in overflow-hidden rounded-[12cqw] border-[3cqw] border-thumbnail bg-thumbnail shadow-xl"
     >
       <ProtectedImage src={src} alt="" className="block h-auto w-full rounded-[9cqw] [aspect-ratio:auto_9/19]" />
       {/* iOS Safari 風の下部バー（任意・ダーク配色で PC のバーと統一）。画像の下端に残る帯（切れた端末イラストや背景だけの部分）を隠す（ユーザー指示 2026-11-02） */}
       {browser && (
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-[2cqw] rounded-b-[9cqw] border-t border-white/10 bg-[#1c1c1e]/95 px-[5cqw] pb-[4cqw] pt-[3cqw] backdrop-blur-[2px]"
+          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-[2cqw] rounded-b-[9cqw] border-t border-white/10 bg-surface/95 px-[5cqw] pb-[4cqw] pt-[3cqw] backdrop-blur-[2px]"
         >
           <div className="flex h-[11cqw] w-full items-center justify-center rounded-[3cqw] bg-white/10 text-[4.5cqw] leading-none text-white/80">
             <span className="truncate px-[2cqw]">{url ?? "example.com"}</span>
@@ -67,11 +67,11 @@ export const LaptopMock: FC<{ src: string; browser?: boolean; url?: string; onCl
     className="block w-full cursor-zoom-in"
   >
     {/* 蓋（幅 92%・ベゼルは幅比 3%、下 4%） */}
-    <div className="mx-auto w-[92%] overflow-hidden rounded-t-[10px] bg-[#0a0a0a] px-[3%] pb-[4%] pt-[3%] shadow-xl">
+    <div className="mx-auto w-[92%] overflow-hidden rounded-t-[10px] bg-thumbnail px-[3%] pb-[4%] pt-[3%] shadow-xl">
       <div className="@container overflow-hidden rounded-[3px]">
         {/* ブラウザバーは実寸比率（1440px 幅の Safari / Chrome 相当）: 高さ = 画面幅の 3.5%・信号ドット 0.8%・URL 欄は幅の 32% を中央に。cqw で画面幅に比例（ユーザー指示 2026-11-02） */}
         {browser && (
-          <div className="relative flex h-[3.5cqw] items-center justify-center bg-[#1c1c1e]">
+          <div className="relative flex h-[3.5cqw] items-center justify-center bg-surface">
             <div className="absolute left-[1cqw] flex items-center gap-[0.6cqw]">
               <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#ff5f57]" />
               <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#febc2e]" />
@@ -82,12 +82,12 @@ export const LaptopMock: FC<{ src: string; browser?: boolean; url?: string; onCl
             </div>
           </div>
         )}
-        <ProtectedImage src={src} alt="" className="block aspect-[16/10] w-full bg-[#0a0a0a] object-cover object-left-top" />
+        <ProtectedImage src={src} alt="" className="block aspect-[16/10] w-full bg-thumbnail object-cover object-left-top" />
       </div>
     </div>
     {/* 土台（全幅・高さは幅の 2.5%・下角だけ丸い。上中央に小さな切り欠き） */}
-    <div className="relative aspect-[40/1] w-full rounded-b-[8px] bg-[#2b2b2b]">
-      <div className="absolute left-1/2 top-0 h-[40%] w-[12%] -translate-x-1/2 rounded-b-[3px] bg-[#1a1a1a]" />
+    <div className="relative aspect-[40/1] w-full rounded-b-[8px] bg-border">
+      <div className="absolute left-1/2 top-0 h-[40%] w-[12%] -translate-x-1/2 rounded-b-[3px] bg-surface-light" />
     </div>
   </button>
 );
@@ -114,7 +114,7 @@ const LightboxShot: FC<{ src: string; frame: "phone" | "laptop" }> = ({ src, fra
       alt=""
       onLoad={(e) => setLandscape(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight)}
       className={`max-h-[90vh] w-auto max-w-full object-contain ${
-        kind === "plain" ? "" : kind === "laptop" ? "rounded-[8px]" : "rounded-[24px] border-[3px] border-[#0a0a0a]"
+        kind === "plain" ? "" : kind === "laptop" ? "rounded-[8px]" : "rounded-[24px] border-[3px] border-thumbnail"
       }`}
     />
   );
@@ -138,7 +138,7 @@ export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void; fram
   return createPortal(
     <div
       className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center gap-6 overflow-auto p-10"
-      style={{ backgroundColor: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+      style={{ backgroundColor: "color-mix(in srgb, var(--color-system-black) 80%, transparent)", backdropFilter: "blur(8px)" }}
       onClick={onClose}
     >
       {shots.map((src, i) => (

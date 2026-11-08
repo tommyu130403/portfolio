@@ -68,6 +68,22 @@ export const color = {
     "700": "#02140D",
     base: "#48F4BE", // alias for main.100
   },
+  /**
+   * Sub color: indigo scale（2026-11-06 背景色の再検討で追加。Figma 未登録）
+   * 地・面・境界・文字の semantic が参照する。ミント（main）を主役に残すため彩度はごく低い（B slate・2026-11-06 確定）。
+   */
+  indigo: {
+    "050": "#D6D6D8",
+    "200": "#9696A0",
+    "500": "#5D5D69",
+    "700": "#444452",
+    "750": "#343440",
+    "800": "#24232C", // 図版の枠（surface-light）の上に置く面
+    "850": "#1A1A22",
+    "900": "#0E0E14",
+    "950": "#060608",
+    base: "#0E0E14", // alias for indigo.900
+  },
   /** Error / destructive red-pink scale */
   danger: {
     "100": "#FACBD4",
@@ -154,27 +170,27 @@ export const semantic = {
   /** Main/Secondary — ブランドアクセントのサブカラー */
   secondary: color.main["300"], //                    Figma: Main/Secondary
   /** Text/Body/Primary — 本文の主要テキスト */
-  fg: color.system["300"], //                         Figma: Text/Body/Primary
+  fg: color.indigo["050"], //                         Figma: Text/Body/Primary（surface 上 13.3:1）
   /** Text/Body/Secondary — 補助・弱めテキスト */
-  fgMuted: color.system["500"], //                    Figma: Text/Body/Secondary
+  fgMuted: color.indigo["200"], //                    Figma: Text/Body/Secondary（surface 上 6.6:1）
   /** Text/Caption — キャプション用テキスト */
-  fgCaption: color.system["500"], //                  Figma: Text/Caption
-  /** Text/Body/Tertiary — 最も弱いテキスト（surface 上 2.6:1。無効表示など読ませない文字だけ） */
-  fgSubtle: color.system["700"], //                   Figma: Text/Body/Tertiary
+  fgCaption: color.indigo["200"], //                  Figma: Text/Caption
+  /** Text/Body/Tertiary — 最も弱いテキスト（surface 上 3.0:1。無効表示など読ませない文字だけ） */
+  fgSubtle: color.indigo["500"], //                   Figma: Text/Body/Tertiary
   /** Text/Link — テキストリンク */
   fgLink: color.main.base, //                         Figma: Text/Link
   /** Text/Link-hover — テキストリンクのホバー */
   fgLinkHover: color.main["050"], //                  Figma: Text/Link-hover
   /** Background/Default — 標準サーフェス（カード等） */
-  surface: color.system["925"], //                    Figma: Background/Default
+  surface: color.indigo["900"], //                    Figma: Background/Default
   /** Background/Light — 一段明るいサーフェス */
-  surfaceLight: color.system["875"], //               Figma: Background/Light
+  surfaceLight: color.indigo["850"], //               Figma: Background/Light
   /** 作品サムネイルの地 — surface より暗くして一覧の背景（surface）と分ける */
-  thumbnail: color.system["950"], //                  Figma: 未登録
+  thumbnail: color.indigo["950"], //                  Figma: 未登録
   /** Border/Default — 標準ボーダー */
-  border: color.system["825"], //                     Figma: Border/Default
+  border: color.indigo["750"], //                     Figma: Border/Default
   /** Border/Light — コントラストの高い（目立つ）ボーダー */
-  borderLight: color.system["800"], //                Figma: Border/Light
+  borderLight: color.indigo["700"], //                Figma: Border/Light
   /** Border/Main — ブランドカラーのボーダー */
   borderMain: withAlpha(color.main["100"], 0.4), //   Figma: Border/Main（main-100 の 40%）
   /** Action/hover — 白5%の半透明オーバーレイ */

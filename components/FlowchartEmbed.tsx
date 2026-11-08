@@ -43,7 +43,7 @@ export default function FlowchartEmbed({ id }: { id: string }) {
   if (loading) {
     return (
       <div
-        className="mb-4 h-[clamp(260px,50vh,420px)] animate-pulse rounded-[14px] border border-border bg-[#1a1a1a] p-2"
+        className="mb-4 h-[clamp(260px,50vh,420px)] animate-pulse rounded-[14px] border border-border bg-surface-light p-2"
         aria-label="フローチャートを読み込み中"
       >
         <div className="h-full rounded-[10px] bg-white/[0.03]" />
@@ -53,7 +53,7 @@ export default function FlowchartEmbed({ id }: { id: string }) {
 
   if (!record) {
     return (
-      <div className="mb-4 flex h-[clamp(260px,50vh,420px)] items-center justify-center rounded-[14px] border border-dashed border-border-light bg-[#1a1a1a] p-6">
+      <div className="mb-4 flex h-[clamp(260px,50vh,420px)] items-center justify-center rounded-[14px] border border-dashed border-border-light bg-surface-light p-6">
         <p className="text-[13px] tracking-[0.39px] text-fg-muted">
           図が見つかりません
         </p>
@@ -67,7 +67,7 @@ export default function FlowchartEmbed({ id }: { id: string }) {
 
   return (
     <figure className="mb-4 flex flex-col gap-3">
-      <div className="relative h-[clamp(260px,50vh,420px)] max-w-full overflow-hidden rounded-[14px] border border-border bg-[#1a1a1a] p-2">
+      <div className="relative h-[clamp(260px,50vh,420px)] max-w-full overflow-hidden rounded-[14px] border border-border bg-surface-light p-2">
         <FlowchartView data={data} onRequestExpand={() => setExpanded(true)} />
         <div className="absolute right-4 top-4 z-10">
           <ButtonFunction
@@ -98,7 +98,7 @@ export default function FlowchartEmbed({ id }: { id: string }) {
       {title && (
         <figcaption className="flex gap-3 text-[13px] tracking-[0.39px] text-fg-muted">
           {figureNumber !== undefined && (
-            <span className="font-mono text-[12px] text-system-700">
+            <span className="font-mono text-[12px] text-fg-muted">
               Fig.{String(figureNumber).padStart(2, "0")}
             </span>
           )}

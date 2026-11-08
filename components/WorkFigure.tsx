@@ -19,7 +19,7 @@ export const FigureFrame: FC<{ title?: ReactNode; lead?: ReactNode; children?: R
   lead,
   children,
 }) => (
-  <div className="flex flex-col gap-5 rounded-2xl bg-system-900 px-5 pb-6 pt-7 @min-[560px]:px-8">
+  <div className="flex flex-col gap-5 rounded-2xl bg-surface-light px-5 pb-6 pt-7 @min-[560px]:px-8">
     {title || lead ? (
       <div className="flex flex-col gap-0.5">
         {title ? <p className="text-body-01-jp-bold text-fg">{title}</p> : null}
@@ -42,7 +42,7 @@ const stepClass = (tone: StepTone) =>
     ? `${STEP_BASE} text-body-02-jp border-main-100/60 bg-main-100/10 text-main-050`
     : tone === "bad"
       ? `${STEP_BASE} text-body-02-jp border-danger-300/60 bg-danger-300/10 text-danger-100`
-      : `${STEP_BASE} text-body-02-jp border-border bg-surface-light`;
+      : `${STEP_BASE} text-body-02-jp border-border bg-indigo-800`;
 
 const Arrow: FC = () => (
   <span aria-hidden className="text-body-02-jp flex items-center justify-center text-fg-subtle">
@@ -134,7 +134,7 @@ export type BarRowData = {
   tone: BarTone;
 };
 
-const FILL: Record<BarTone, string> = { up: "bg-secondary", down: "bg-danger-500", flat: "bg-system-750" };
+const FILL: Record<BarTone, string> = { up: "bg-secondary", down: "bg-danger-400", flat: "bg-border-light" };
 const VALUE: Record<BarTone, string> = { up: "text-primary", down: "text-danger-300", flat: "text-fg-muted" };
 
 /** `::: bars base=1.0 max=1.4` — ラベル / 棒 / 値の横棒。base（%位置）があれば白い基準線を引く */
@@ -150,7 +150,7 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
           <p className="text-body-02-jp-bold text-fg">{r.label}</p>
           {r.sub ? <p className="text-[12px] leading-[18px] tracking-[0.03em] mt-px text-fg-muted">{r.sub}</p> : null}
         </div>
-        <div className="relative h-[22px] rounded bg-surface-light">
+        <div className="relative h-[22px] rounded bg-surface">
           <div
             className={`h-full rounded ${FILL[r.tone]} ${r.width > 0 ? "min-w-1.5" : ""}`}
             style={{ width: `${r.width}%` }}
@@ -162,6 +162,6 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
         <p className={`text-body-01-jp-bold text-right ${VALUE[r.tone]}`}>{r.display}</p>
       </div>
     ))}
-    {legend ? <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-subtle">{legend}</p> : null}
+    {legend ? <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-muted">{legend}</p> : null}
   </div>
 );

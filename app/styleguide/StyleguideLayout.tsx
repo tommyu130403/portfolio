@@ -224,17 +224,17 @@ const NAV_SECTIONS = [
 const SEMANTIC_SWATCHES = [
   { kind: "bg",     cls: "bg-primary",          token: "semantic.primary",      value: semantic.primary,      figma: "Main/Primary",       ref: "main-base" },
   { kind: "bg",     cls: "bg-secondary",        token: "semantic.secondary",    value: semantic.secondary,    figma: "Main/Secondary",     ref: "main-300" },
-  { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Primary",   ref: "system-300" },
-  { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Secondary", ref: "system-500" },
-  { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",        ref: "system-500" },
-  { kind: "text",   cls: "text-fg-subtle",      token: "semantic.fgSubtle",     value: semantic.fgSubtle,     figma: "Text/Body/Tertiary",  ref: "system-700" },
+  { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Primary",   ref: "indigo-050" },
+  { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Secondary", ref: "indigo-200" },
+  { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",        ref: "indigo-200" },
+  { kind: "text",   cls: "text-fg-subtle",      token: "semantic.fgSubtle",     value: semantic.fgSubtle,     figma: "Text/Body/Tertiary",  ref: "indigo-500" },
   { kind: "text",   cls: "text-fg-link",        token: "semantic.fgLink",       value: semantic.fgLink,       figma: "Text/Link",           ref: "main-base" },
   { kind: "text",   cls: "text-fg-link-hover",  token: "semantic.fgLinkHover",  value: semantic.fgLinkHover,  figma: "Text/Link-hover",     ref: "main-050" },
-  { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "system-925" },
-  { kind: "bg",     cls: "bg-surface-light",    token: "semantic.surfaceLight", value: semantic.surfaceLight, figma: "Background/Light",   ref: "system-875" },
-  { kind: "bg",     cls: "bg-thumbnail",        token: "semantic.thumbnail",    value: semantic.thumbnail,    figma: "（未登録）",          ref: "system-950" },
-  { kind: "border", cls: "border-border",       token: "semantic.border",       value: semantic.border,       figma: "Border/Default",     ref: "system-825" },
-  { kind: "border", cls: "border-border-light", token: "semantic.borderLight",  value: semantic.borderLight,  figma: "Border/Light",       ref: "system-800" },
+  { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "indigo-900" },
+  { kind: "bg",     cls: "bg-surface-light",    token: "semantic.surfaceLight", value: semantic.surfaceLight, figma: "Background/Light",   ref: "indigo-850" },
+  { kind: "bg",     cls: "bg-thumbnail",        token: "semantic.thumbnail",    value: semantic.thumbnail,    figma: "（未登録）",          ref: "indigo-950" },
+  { kind: "border", cls: "border-border",       token: "semantic.border",       value: semantic.border,       figma: "Border/Default",     ref: "indigo-750" },
+  { kind: "border", cls: "border-border-light", token: "semantic.borderLight",  value: semantic.borderLight,  figma: "Border/Light",       ref: "indigo-700" },
   { kind: "border", cls: "border-border-main",  token: "semantic.borderMain",   value: semantic.borderMain,   figma: "Border/Main",        ref: "main-100 40%" },
   { kind: "bg",     cls: "bg-action-hover",     token: "semantic.actionHover",  value: semantic.actionHover,  figma: "Action/hover",       ref: "white 5%" },
 ] as const;
@@ -347,6 +347,13 @@ const COLOR_GROUPS = [
     desc: "ニュートラルグレースケール（1000 と black は同値。1000 はグレースケール最終段で Figma System/1000 に追従、black は純黒の固定値）",
     tailwindPrefix: "system",
     shades: orderedShades(color.system),
+  },
+  {
+    key: "indigo" as const,
+    label: "Indigo",
+    desc: "サブカラー。地・面・境界・文字の semantic が参照する（インディゴ系・Figma 未登録）",
+    tailwindPrefix: "indigo",
+    shades: orderedShades(color.indigo),
   },
 ] as const;
 
@@ -1001,26 +1008,26 @@ function ComponentsSection() {
         <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px mint-050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
-          <div className="w-full"><Headline title="Section（34px Avenir Heavy 白）" variant="section" /></div>
-          <div className="w-full"><Headline title="見出し 01（Headline type=02・16px Bold・文字 #9E9E9E Text/Body/Secondary・横線 System/700・h3）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="Section（34px Avenir Heavy・text-fg）" variant="section" /></div>
+          <div className="w-full"><Headline title="見出し 01（Headline type=02・16px Bold・文字 main-050・横線 Border/Main・h3）" variant="markdown-h1" /></div>
           <div className="w-full"><Headline title="見出し 02（01 と同形・h3・Library Headline type=02 304:302）" variant="markdown-h2" /></div>
           <div className="w-full"><Headline title="背景と課題（section-aside・22px Bold 白 + 右罫線。作品詳細のセクション見出し）" variant="section-aside" /></div>
         </ComponentPreview>
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
-            <p className="font-en text-[34px] font-extrabold leading-[1.2] text-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
-            <Headline title="見出し02（### / Headline type=02・横線＋Noto Bold 16px #9E9E9E）" variant="markdown-h2" />
+            <p className="text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-system-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
+            <Headline title="見出し02（### / Headline type=02・横線 Border/Main＋Noto Bold 16px main-050）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
-            <p className="text-[15px] leading-[22px] tracking-[0.45px] text-fg">Body01（通常段落 / Noto Regular 15px text-fg = Text/Body/Primary #E0E0E0）</p>
-            <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-system-400">引用 blockquote（&gt; / 13px system-400 #BDBDBD・左ボーダー）</p>
+            <p className="text-[15px] leading-[22px] tracking-[0.45px] text-fg">Body01（通常段落 / Noto Regular 15px text-fg = Text/Body/Primary #D6D6D8）</p>
+            <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-fg-muted">引用 blockquote（&gt; / 13px text-fg-muted・左ボーダー）</p>
             <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption">補足テキスト（画像キャプション / ::: caption / 12px・行の高さ 18px text-fg-caption。作品本文の中だけ）</p>
             <p className="text-[15px] leading-[24px] tracking-[0.45px] text-fg">
-              インラインコード（<code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">code</code>）
+              インラインコード（<code className="rounded bg-action-hover px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">code</code>）
             </p>
             <div className="flex flex-col gap-2">
               <p className="text-caption-01-jp text-fg-caption">コードブロック（```）</p>
-              <pre className="overflow-x-auto rounded-[12px] border border-[#2a2a2a] bg-[#0a0a0a] p-4 font-mono text-[13px] leading-[1.6] text-system-300">
+              <pre className="overflow-x-auto rounded-[12px] border border-border bg-thumbnail p-4 font-mono text-[13px] leading-[1.6] text-fg">
                 <code>{"const example = true;"}</code>
               </pre>
             </div>
@@ -1044,36 +1051,36 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ）。hue（カテゴリ色の色相。D案: 背景 oklch(0.30 0.06 h)・文字 oklch(0.88 0.09 h)。未指定は Main/600 地））/ tool(border付き・10px #9e9e9e。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ）。hue（カテゴリ色の色相。D案: 保存値 h を青緑〜ローズ 190〜352° の H に縮め、背景 oklch(0.28 0.05 H)・文字 oklch(0.88 0.085 H)。未指定は Main/600 地））/ tool(border付き・10px fg-muted。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
             <Tag label="Project Management" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="UI Design" variant="small" />
             <Tag label="UX Research" variant="small" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="UI Design" variant="content" />
             <Tag label="UX Research" variant="content" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="機能開発" variant="category" />
             <Tag label="機能開発" variant="category" size="sm" />
             <Tag label="Feature" variant="category" size="card" />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             {CATEGORY_HUE_SAMPLES.map(({ hue, label }) => (
               <Tag key={hue} label={label} variant="category" size="card" hue={hue} />
             ))}
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="Figma" variant="tool" prefix={<ServiceLogo name="figma" className="w-4 h-4 shrink-0 object-contain" />} />
             <Tag label="GitHub" variant="tool" prefix={<ServiceLogo name="github" className="w-4 h-4 shrink-0 object-contain" />} />
-            <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />} />
+            <Tag label="Next.js" variant="tool" prefix={<Icon set="Components" name="page" tintColor="var(--color-fg-muted)" className="w-4 h-4 shrink-0" />} />
           </div>
-          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-system-900">
+          <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="デザインリード" variant="tool" filled />
             <Tag label="エンジニア" variant="tool" filled count={3} />
           </div>
@@ -1243,7 +1250,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkFigure（図版ブロック）"
-          description="作品本文の `::: figure`（枠。panel 地 system-900・角丸 16・中に任意の本文ブロック）/ `::: beforeafter`（上罫線で区切った Before/After の行。ラベル 96px・After は main-100 文字。注記は地なしの色文字）/ `::: flow`（横フロー。highlight=N で強調）/ `::: bars`（横棒グラフ。up=secondary・down=danger-500・flat=system-750、base= で白い基準線）と、`::: card tone=accent`。560px 未満（本文コンテナ幅）はステップが縦積み（矢印 ↓）になる。手順の強調は good=main-100・bad=danger-300 の淡いトーン（地 10%・枠 60%）。Figma: Library WorkFigure 578:582"
+          description="作品本文の `::: figure`（枠。panel 地 surface-light・角丸 16・中に任意の本文ブロック）/ `::: beforeafter`（上罫線で区切った Before/After の行。ラベル 96px・After は main-100 文字。注記は地なしの色文字）/ `::: flow`（横フロー。highlight=N で強調）/ `::: bars`（横棒グラフ。up=secondary・down=danger-400・flat=border-light、base= で白い基準線）と、`::: card tone=accent`。560px 未満（本文コンテナ幅）はステップが縦積み（矢印 ↓）になる。手順の強調は good=main-100・bad=danger-300 の淡いトーン（地 10%・枠 60%）。Figma: Library WorkFigure 578:582"
         >
           <div className="w-[704px] max-w-full">
             <MarkdownBody md={FIGURE_SAMPLE_MD} />
@@ -1417,7 +1424,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkBreadcrumb"
-          description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずは Background/Default（bg-surface = system-925 #191919・不透明）＋ぼかし＋1px 枠（border #3A3A3A）の囲みに入れる。件数は囲みなしで、地の色の縁取り（text-shadow）で後ろを通る本文から読み分ける。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」で、囲みの内側に左右 8px を足して文字から枠までを左右ほぼ同じ(15・16px)にする。md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
+          description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずは Background/Default（bg-surface = indigo-900 #0E0E14・不透明）＋ぼかし＋1px 枠（border = indigo-750 #343440）の囲みに入れる。件数は囲みなしで、地の色の縁取り（text-shadow）で後ろを通る本文から読み分ける。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」で、囲みの内側に左右 8px を足して文字から枠までを左右ほぼ同じ(15・16px)にする。md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkBreadcrumb title="キャリアチケットスカウトサービス" index={2} total={8} prevHref="#" nextHref="#" />
@@ -1428,7 +1435,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkPagerCard"
-          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。composedThumbnail（構成サムネイル）ありは 128px 枠に 16:9 で縦中央・上下は system-950。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
+          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。composedThumbnail（構成サムネイル）ありは 128px 枠に 16:9 で縦中央・上下は thumbnail（indigo-950）。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
             <WorkPagerCard direction="prev" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
@@ -1488,7 +1495,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg（Text/Body/Primary #E0E0E0）。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・出典は 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 24 / 小ブロック間 40"
+          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg（Text/Body/Primary #D6D6D8）。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・出典は 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 24 / 小ブロック間 40"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

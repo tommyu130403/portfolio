@@ -12,10 +12,10 @@ import { supabase } from "@/src/lib/supabase";
 // 4-step proficiency scale（バー点灯色は習熟度で段階的に変化＝Figma準拠）
 // ──────────────────────────────────────────────
 export const SKILL_LEVELS = [
-  { n: 1, en: "Beginner",     bar: "#11503C" }, // main/500
-  { n: 2, en: "Intermediate", bar: "#1E765A" }, // main/400
-  { n: 3, en: "Advanced",     bar: "#2B9E7A" }, // main/300
-  { n: 4, en: "Expert",       bar: "#48F4BE" }, // main/100
+  { n: 1, en: "Beginner",     bar: "var(--color-main-500)" }, // main/500
+  { n: 2, en: "Intermediate", bar: "var(--color-main-400)" }, // main/400
+  { n: 3, en: "Advanced",     bar: "var(--color-main-300)" }, // main/300
+  { n: 4, en: "Expert",       bar: "var(--color-main-100)" }, // main/100
 ];
 
 // Map existing segments scale (1–10) to 4-step proficiency
@@ -92,7 +92,7 @@ function ToolTag({ tool }: { tool: ToolRef }) {
   } else {
     const icon = (tool.category && TOOL_CATEGORY_ICON[tool.category]) || FALLBACK_TOOL_ICON;
     prefix = (
-      <Icon set={icon.set} name={icon.name} tintColor="#9E9E9E" className="w-4 h-4 shrink-0" />
+      <Icon set={icon.set} name={icon.name} tintColor="var(--color-fg-muted)" className="w-4 h-4 shrink-0" />
     );
   }
   return <Tag variant="tool" label={tool.name} prefix={prefix} />;
@@ -201,8 +201,8 @@ function SegBar({ level }: { level: number }) {
               height: 6,
               borderRadius: 999,
               flexShrink: 0,
-              background: on ? litColor : "rgba(0,0,0,0.25)",
-              border: on ? "none" : "1px solid rgba(255,255,255,0.08)",
+              background: on ? litColor : "color-mix(in srgb, var(--color-system-black) 25%, transparent)",
+              border: on ? "none" : "1px solid color-mix(in srgb, var(--color-system-white) 8%, transparent)",
               boxSizing: "border-box",
             }}
           />
@@ -250,7 +250,7 @@ function SkillRow({
           <Icon
             set={skill.icon.set}
             name={skill.icon.name}
-            tintColor="#B3FFE7"
+            tintColor="var(--color-main-050)"
             className="w-4 h-4 shrink-0"
           />
           <span className="font-en flex-1 min-w-0 line-clamp-2 break-words text-[13px] leading-normal text-fg">
@@ -271,7 +271,7 @@ function SkillRow({
             aria-hidden
             className="grid h-6 w-6 shrink-0 place-items-center rounded-lg p-1.5"
           >
-            <Icon set="Arrows" name={open ? "up" : "down"} tintColor="#9E9E9E" className="w-3 h-3" />
+            <Icon set="Arrows" name={open ? "up" : "down"} tintColor="var(--color-fg-muted)" className="w-3 h-3" />
           </span>
         </span>
       </button>
@@ -297,14 +297,14 @@ function SkillRow({
           >
             <div className="flex flex-col gap-1">
               {skill.labelNote && (
-                <span className="font-body text-[10px] leading-[12px] tracking-[0.3px]" style={{ color: "#757575" }}>
+                <span className="font-body text-[10px] leading-[12px] tracking-[0.3px]" style={{ color: "var(--color-fg-muted)" }}>
                   {skill.labelNote}
                 </span>
               )}
               {skill.description && (
                 <p
                   className="font-body text-[13px] leading-[21px] tracking-[0.39px] whitespace-pre-line"
-                  style={{ color: "#9E9E9E" }}
+                  style={{ color: "var(--color-fg-muted)" }}
                 >
                   {skill.description}
                 </p>
@@ -338,7 +338,7 @@ export function SkillCard({ card }: { card: SkillCardConfig }) {
       style={{
         borderRadius: 16,
         // Figma は塗りなしの枠に drop-shadow → 中身の形に落ちる影。box-shadow だと箱の下辺に線が出る
-        filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.1)) drop-shadow(0 1px 1px rgba(0,0,0,0.1))",
+        filter: "drop-shadow(0 1px 1.5px color-mix(in srgb, var(--color-system-black) 10%, transparent)) drop-shadow(0 1px 1px color-mix(in srgb, var(--color-system-black) 10%, transparent))",
         display: "flex",
         flexDirection: "column",
       }}
@@ -346,13 +346,13 @@ export function SkillCard({ card }: { card: SkillCardConfig }) {
       {/* CategoryCard — ヘッダー */}
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
         <div className="flex shrink-0 py-1">
-          <Icon set={card.icon.set} name={card.icon.name} tintColor="#48F4BE" className="w-6 h-6 shrink-0" />
+          <Icon set={card.icon.set} name={card.icon.name} tintColor="var(--color-main-100)" className="w-6 h-6 shrink-0" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <span className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-fg">{card.title}</span>
           <span
             className="font-body text-[13px] leading-[21px] tracking-[0.39px]"
-            style={{ color: "#757575" }}
+            style={{ color: "var(--color-fg-muted)" }}
           >
             {card.titleJP}
           </span>
@@ -397,7 +397,7 @@ export default function SkillsCardGrid() {
     return (
       <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-0">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[274px] animate-pulse rounded-[14px] bg-[#1a1a1a]" />
+          <div key={i} className="h-[274px] animate-pulse rounded-[14px] bg-surface-light" />
         ))}
       </div>
     );

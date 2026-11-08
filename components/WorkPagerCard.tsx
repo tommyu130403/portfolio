@@ -49,7 +49,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
   const body = (
     <>
       {direction && (
-        <span className={`flex items-center gap-1 ${GUIDE_TEXT} text-system-500`}>
+        <span className={`flex items-center gap-1 ${GUIDE_TEXT} text-fg-muted`}>
           {!isNext && arrow}
           {isNext ? "Next" : "Prev"}
           {isNext && arrow}
@@ -57,7 +57,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
       )}
       {/* カテゴリは Tag-single チップ（Figma Master 973:2190） */}
       {category && <Tag variant="category" label={category} size="sm" hue={categoryHue} />}
-      <span className="line-clamp-2 w-full min-w-0 text-body-02-jp-bold text-system-white [overflow-wrap:anywhere]">{title}</span>
+      <span className="line-clamp-2 w-full min-w-0 text-body-02-jp-bold text-fg [overflow-wrap:anywhere]">{title}</span>
     </>
   );
 
@@ -75,7 +75,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
         <>
           {composed ? (
             // 16:9 の上下の余りは地と同じ色にする（ブランド地は白基調）
-            <div className={`relative hidden w-[128px] shrink-0 self-stretch overflow-hidden md:block ${composed.brand ? "bg-system-white" : "bg-system-950"}`}>
+            <div className={`relative hidden w-[128px] shrink-0 self-stretch overflow-hidden md:block ${composed.brand ? "bg-system-white" : "bg-thumbnail"}`}>
               <div className="absolute inset-x-0 top-1/2 aspect-video -translate-y-1/2">
                 <WorkThumbnail
                   layout={composed.layout}

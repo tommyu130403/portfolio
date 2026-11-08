@@ -1051,7 +1051,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 552:650: bg main-600・p8・r4・13px・字間 3%・text-box-trim・size=sm は 10px/高さ 23（作品カード・前後ナビ）。hue（カテゴリ色の色相。D案: 保存値 h を青緑〜ローズ 190〜352° の H に縮め、背景 oklch(0.28 0.05 H)・文字 oklch(0.88 0.085 H)。未指定は Main/600 地））/ tool(border付き・10px fg-muted。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 581:444: bg main-600・p8・r4・Avenir Heavy・字間 5%・行の上下は削らない。size=md は 13px/高さ 29（作品詳細上部）、sm・card は 10px/高さ 26（前後ナビ・作品カード）。hue（カテゴリ色の色相。D案: 保存値 h を青緑〜ローズ 190〜352° の H に縮め、背景 oklch(0.28 0.05 H)・文字 oklch(0.88 0.085 H)。未指定は Main/600 地））/ tool(border付き・10px fg-muted。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -1068,7 +1068,7 @@ function ComponentsSection() {
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="機能開発" variant="category" />
             <Tag label="機能開発" variant="category" size="sm" />
-            <Tag label="Feature" variant="category" size="card" />
+            <Tag label="機能開発" variant="category" size="card" />
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             {CATEGORY_HUE_SAMPLES.map(({ hue, label }) => (

@@ -541,7 +541,7 @@ function parseBlocks(src: string): Block[] {
         blocks.push({
           type: "mockup",
           device,
-          srcs: device === "phone" ? srcs.slice(0, 2) : srcs.slice(0, 1),
+          srcs: device === "phone" ? srcs.slice(0, 3) : srcs.slice(0, 1),
           // phone も browser / url を受ける（iOS Safari 風の下部バー。2026-11-02）
           browser,
           url,

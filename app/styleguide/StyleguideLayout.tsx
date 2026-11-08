@@ -1468,7 +1468,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="DeviceMock"
-          description="スクリーンショットを入れるデバイス枠。PhoneMock は iPhone 風（既定幅 126px・className で上書き。枠の高さは画像の比率に合わせ、切り取らない。作品詳細の上部は最大2枚横並び）。LaptopMock はノートPC風（黒ベゼルの画面＋土台・親の幅いっぱい・実機比率(蓋 92%・ベゼル 3%・土台は全幅)で画面は 16:10 固定、画像は上端から切り取り）で、ブラウザバー（赤黄緑の点＋中央の URL）は任意。PhoneMock も browser で iOS Safari 風の下部バー（URL 表示＋アイコン列）を重ねられる（画像下端の帯を隠す用途）。作品本文には `::: mockup phone src=<url> [src=<url>]` / `::: mockup laptop src=<url> [browser] [url=example.com]` で挿入する（url を書くとバーも出る・本文のスマホは幅 180px・ノートPCは最大 640px）。Figma のマスターはまだ無い"
+          description="スクリーンショットを入れるデバイス枠。PhoneMock は iPhone 風（既定幅 126px・className で上書き。枠の高さは画像の比率に合わせ、切り取らない。作品詳細の上部は最大2枚横並び）。LaptopMock はノートPC風（黒ベゼルの画面＋土台・親の幅いっぱい・実機比率(蓋 92%・ベゼル 3%・土台は全幅)で画面は 16:10 固定、画像は上端から切り取り）で、ブラウザバー（赤黄緑の点＋中央の URL）は任意。PhoneMock も browser で iOS Safari 風の下部バー（URL 表示＋アイコン列）を重ねられる（画像下端の帯を隠す用途）。作品本文には `::: mockup phone src=<url> [src=<url>] [src=<url>]`（スマホは最大3枚） / `::: mockup laptop src=<url> [browser] [url=example.com]` で挿入する（url を書くとバーも出る・本文のスマホは幅 180px・ノートPCは最大 640px）。Figma のマスターはまだ無い"
         >
           <div className="flex w-full flex-col gap-8">
             <div className="flex items-start gap-6">

@@ -1233,7 +1233,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="InfoCard"
-          description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma 未作成(実装先行)"
+          description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma WorkFigure Kind=figure (578:498) に準拠 — 角丸16・余白 上28 左右32(本文の容器が 560px 未満は 16)下24・Background/Light・枠なし・見出し Body/01 Bold。accent は Border/Main + main-100 10% の地。inFigure は図版の中に置くときの地(indigo-800)"
         >
           <div className="flex w-[360px] max-w-full flex-col gap-4">
             <InfoCard title="見出しあり">
@@ -1245,6 +1245,11 @@ function ComponentsSection() {
             <InfoCard title="tone=accent（次の一手など）" tone="accent">
               <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">Border/Main・main-100 の薄い地・見出しは primary。`::: card tone=accent 見出し` で書く。</p>
             </InfoCard>
+            <div className="rounded-2xl bg-surface-light p-4">
+              <InfoCard title="図版の中" inFigure>
+                <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">`::: figure` の内側に置いたカード。</p>
+              </InfoCard>
+            </div>
           </div>
         </ComponentPreview>
 

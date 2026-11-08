@@ -1086,7 +1086,7 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="Table" description="本文 markdown に挿入できる表（Library 188:355）。外枠 1px Border・角丸 8px。項目-値（TableKeyValue）はコンテナ幅 480px 以上で横（ラベル列は内容幅・高さ 40px）、480px 未満で縦積み。グリッド（TableGrid）は 1 行目が見出し（12px Bold）・列は等幅（最小 96px）・収まらないときは枠内で横スクロール。480px 未満では行ごとに「見出し / 値」を縦積みにする（スマホで多列表を横スクロールさせない）。markdown では「| 項目 | 値 |」の行、または 2 行目に「| --- | --- |」を置いた表で書く">
+        <ComponentPreview title="Table" description="本文 markdown に挿入できる表（Library 188:355）。外枠 1px Border・角丸 8px。項目-値（TableKeyValue）はコンテナ幅 480px 以上で横（ラベル列は内容幅・高さ 40px）、480px 未満で縦積み。グリッド（TableGrid）は 1 行目が見出し（12px Bold）・列幅は文章量に合わせて自動配分（最小 96px）・収まらないときは枠内で横スクロール。480px 未満では行ごとに「見出し / 値」を縦積みにする（スマホで多列表を横スクロールさせない）。markdown では「| 項目 | 値 |」の行、または 2 行目に「| --- | --- |」を置いた表で書く">
           <div className="flex w-full max-w-main flex-col gap-6">
             <TableKeyValue
               rows={[
@@ -1104,10 +1104,10 @@ function ComponentsSection() {
               />
             </div>
             <TableGrid
-              header={["見出し1", "見出し2", "見出し3"]}
+              header={["フェーズ", "期間", "やったこと"]}
               rows={[
-                ["内容", "内容", "内容"],
-                ["内容", "内容", "内容"],
+                ["調査", "2週", "既存画面のヒアリングと利用ログの分析を行い、離脱の多い手順を洗い出した"],
+                ["設計", "1ヶ月", "画面遷移を整理し、主要 3 画面のプロトタイプで検証した"],
               ]}
             />
           </div>

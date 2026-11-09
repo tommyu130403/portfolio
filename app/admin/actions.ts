@@ -1130,7 +1130,7 @@ export async function saveSkillBar(bar: {
   try {
     const { data, error } = await supabase.from("skill_experience").upsert(bar).select("id");
     if (error) return { error: error.message };
-    if (!data?.length) return { error: "スキルバーを保存できませんでした（権限がありません）" };
+    if (!data?.length) return { error: "スキル項目を保存できませんでした（権限がありません）" };
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };

@@ -4,7 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
-import ProtectedImage from "@/components/ProtectedImage";
+import ProtectedImage, { storagePathFromUrl } from "@/components/ProtectedImage";
+import PortraitCropper from "./PortraitCropper";
 import {
   saveSkillCard,
   deleteSkillCard,
@@ -749,6 +750,38 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   const [proofIssues, setProofIssues]     = useState<ProofreadIssue[] | null>(null);
   const [proofError, setProofError]       = useState("");
   const [dirty, setDirty] = useState(false);
+  // 写真の切り抜き
+  const [cropSource, setCropSource] = useState<Blob | null>(null);
+  const [cropUploading, setCropUploading] = useState(false);
+  const [cropError, setCropError] = useState("");
+  const portraitInputRef = useRef<HTMLInputElement>(null);
+
+  const [cropPickerOpen, setCropPickerOpen] = useState(false);
+  const [cropFetching, setCropFetching] = useState(false);
+
+  // 切り抜き済みの画像を切り抜き直すと構図を広げられず画質も落ちるため、Storage に置いた元写真から切り抜く
+  const handleCropFromStorage = async (url: string) => {
+    setCropError("");
+    const path = storagePathFromUrl(url);
+    if (!path) { setCropError("Storage の画像ではないため切り抜けません。"); return; }
+    setCropFetching(true);
+    const { data, error: err } = await supabase.storage.from("Portfolio").download(path);
+    setCropFetching(false);
+    if (err || !data) { setCropError("画像を取得できませんでした。"); return; }
+    setCropSource(data);
+  };
+
+  const handleCropped = async (file: File) => {
+    setCropSource(null);
+    setCropUploading(true);
+    setCropError("");
+    const fd = new FormData();
+    fd.append("file", file);
+    const { url, error: err } = await uploadStorageImage(fd, "profile");
+    setCropUploading(false);
+    if (err || !url) { setCropError(err ?? "アップロードに失敗しました"); return; }
+    set("hero_image_url", url);
+  };
 
   const handleProofread = async () => {
     const text = [form.bio, ...(form.introduction as string[])].filter(Boolean).join("\n\n");
@@ -837,8 +870,51 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
             value={form.hero_image_url}
             onChange={(v) => set("hero_image_url", v)}
             folder="profile"
-            previewClassName="mt-2 h-20 w-20 rounded-[8px] object-cover"
+            previewClassName="mt-2 h-24 w-24 rounded-[16px] object-cover"
           />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              ref={portraitInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) setCropSource(f); e.target.value = ""; }}
+            />
+            <button
+              type="button"
+              onClick={() => portraitInputRef.current?.click()}
+              disabled={cropUploading || cropFetching}
+              className="rounded-[8px] border border-border-light px-3 py-2 text-[12px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:opacity-40"
+            >
+              写真をアップロードして切り抜く
+            </button>
+            <button
+              type="button"
+              onClick={() => setCropPickerOpen(true)}
+              disabled={cropUploading || cropFetching}
+              className="rounded-[8px] border border-border-light px-3 py-2 text-[12px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:opacity-40"
+            >
+              Storage の元写真から切り抜く
+            </button>
+            {cropFetching && <span className="text-[12px] text-fg-muted">画像を取得中…</span>}
+            {cropUploading && <span className="text-[12px] text-fg-muted">アップロード中…</span>}
+            {cropError && <span className="text-[12px] text-danger-300" role="alert">{cropError}</span>}
+          </div>
+          <PortraitCropper
+            open={cropSource !== null}
+            source={cropSource}
+            onClose={() => setCropSource(null)}
+            onCropped={handleCropped}
+          />
+          <ImagePickerModal
+            open={cropPickerOpen}
+            onClose={() => setCropPickerOpen(false)}
+            onSelect={(url) => { setCropPickerOpen(false); handleCropFromStorage(url); }}
+            folder="profile"
+          />
+          <p className="mt-2 text-[11px] text-system-700">
+            「Storage の元写真から切り抜く」の画面で元の写真をアップロードしてから選ぶと、元の写真が残り、あとで構図を広げて切り抜き直せます。
+          </p>
         </div>
       </div>
 

@@ -738,7 +738,7 @@ type ProfileForm = Omit<Profile, "updated_at" | "introduction"> & { introduction
 
 function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [form, setForm] = useState<ProfileForm>({
-    id: 1, name_jp: "", name_en: "", title: "", bio: "", hero_image_url: "", introduction: [],
+    id: 1, name_jp: "", name_en: "", title: "", bio: "", career_lead: "", hero_image_url: "", introduction: [],
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -784,7 +784,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   };
 
   const handleProofread = async () => {
-    const text = [form.bio, ...(form.introduction as string[])].filter(Boolean).join("\n\n");
+    const text = [form.bio, ...(form.introduction as string[]), form.career_lead].filter(Boolean).join("\n\n");
     setProofChecking(true); setProofIssues(null); setProofError("");
     try {
       const { issues, error } = await runProofread(text);
@@ -800,7 +800,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   useEffect(() => {
     supabase.from("profile").select("*").eq("id", 1).single().then(({ data, error }) => {
       if (error || !data) setLoadError(error?.message ?? "プロフィールが見つかりません");
-      else setForm({ ...data, introduction: Array.isArray(data.introduction) ? data.introduction as string[] : [] });
+      else setForm({ ...data, career_lead: data.career_lead ?? "", introduction: Array.isArray(data.introduction) ? data.introduction as string[] : [] });
       setFetching(false);
     });
   }, []);
@@ -963,6 +963,12 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 経歴のリード文（トップ Career 見出しの下。空なら出さない） */}
+      <div className="mb-8">
+        <FieldLabel>経歴のリード文（Career 見出しの下。空欄なら表示しない）</FieldLabel>
+        <Textarea value={form.career_lead} onChange={(v) => set("career_lead", v)} rows={3} />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

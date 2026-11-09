@@ -59,6 +59,7 @@ export const FIXTURE_TABLES: {
       name_en: "Test Taro",
       title: "Product Designer",
       bio: "フィクスチャ表示用のサンプルプロフィールです。",
+      career_lead: "経歴のリード文のサンプルです。年表の前に、これまでの流れを短く伝えます。",
       hero_image_url: PLACEHOLDER,
       introduction: [
         "Supabase に接続していないため、ローカルのダミーデータを表示しています。",

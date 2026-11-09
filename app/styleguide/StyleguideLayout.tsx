@@ -52,6 +52,8 @@ const SAMPLE_THUMBNAILS: WorkThumbnailData[] = [
   { layout: "logo", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [], brand: "careerticket-scout" },
   /* 画像のみ（ロゴなし。資料キャプチャ 1 枚目を中央に） */
   { layout: "image", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [THUMB_SHOT_DESKTOP], brand: "leverages" },
+  /* 画像のみで 2 枚（1 枚目が左上・2 枚目が右下に重なる。地は画像の代表色） */
+  { layout: "image", logo_url: null, desktop_url: null, mobile_urls: [], capture_urls: [THUMB_SHOT_DESKTOP, THUMB_SHOT_MOBILE], brand: null },
 ];
 const SAMPLE_THUMB_TITLE = "キャリアチケットスカウトサービスの立ち上げ";
 const SAMPLE_THUMB_SERVICE = "Career Ticket";
@@ -1150,7 +1152,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkThumbnail"
-          description="構成サムネイル（works.thumbnail）。6 レイアウト（a1 / a2 / a3 / d / logo / image）・1280×720 基準を cqw で縮尺・空き枠は斜線・ロゴがあればロゴだけ（高さ揃え・見切れなし）、無ければサービス名（未設定は「Service」）・ブランド指定（careerticket-scout の a1 / hataractive の d はブランド地の例）があれば白基調にブランド色のうすいグラデ・ロゴ未設定ならサービスのロゴ・d は資料 1 枚なら右に大きく 1 枚、2 枚なら 1 枚目が手前・logo はロゴ（無ければサービス名）だけを全面の中央に大きく置く・image はロゴを出さず資料キャプチャ 1 枚目を 16:9 の枠で中央に置く。Figma のマスターは Library の WorkThumbnail（構成案 v2 準拠）"
+          description="構成サムネイル（works.thumbnail）。6 レイアウト（a1 / a2 / a3 / d / logo / image）・1280×720 基準を cqw で縮尺・空き枠は斜線・ロゴがあればロゴだけ（高さ揃え・見切れなし）、無ければサービス名（未設定は「Service」）・ブランド指定（careerticket-scout の a1 / hataractive の d はブランド地の例）があれば白基調にブランド色のうすいグラデ・ロゴ未設定ならサービスのロゴ・d は資料 1 枚なら右に大きく 1 枚、2 枚なら 1 枚目が手前・logo はロゴ（無ければサービス名）だけを全面の中央に大きく置く・image はロゴを出さず資料キャプチャを中央に置く（1 枚なら 16:9 で中央、2 枚なら左上・右下に重ねる。地は画像の代表色のうすいグラデ）。Figma のマスターは Library の WorkThumbnail（構成案 v2 準拠）"
         >
           <div className="flex w-full flex-col gap-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

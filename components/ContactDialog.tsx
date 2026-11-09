@@ -138,7 +138,7 @@ const ContactDialog: FC<ContactDialogProps> = ({ onClose }) => {
             <p className="text-[14px] leading-[1.6] text-fg-muted">
               ご用件を送信してください。メールで返信します。
               <br />
-              項目はすべて必須です。お名前とメールアドレスは返信のためだけに使います。いたずら防止のため送信元を記録します。
+              項目はすべて必須です。お名前とメールアドレスは返信のためだけに使います。
             </p>
           )}
         </div>

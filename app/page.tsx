@@ -210,27 +210,23 @@ function HomeContent() {
                 <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
             </div>
-            <div className="flex flex-1 flex-col">
+            {/* 肩書: 職種と英語名だけ（Figma Master 47:210）。名前は 46px・Avenir Heavy・行間 100% */}
+            <div className="flex flex-1 flex-col gap-6">
               <div className="flex flex-col gap-2">
                 <p className="font-en text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-surface-light" /> : profile?.title}
                 </p>
-                <div className="flex flex-wrap items-end gap-x-2 gap-y-0 text-main-050">
-                  <p className="font-noto text-[46px] leading-[60px] tracking-[0.2637px]">
-                    {loading ? <span className="inline-block h-[60px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_jp}
-                  </p>
-                  <p className="font-en text-[20px] leading-7 tracking-[-0.4492px]">
-                    {loading ? <span className="inline-block h-6 w-40 animate-pulse rounded bg-surface-light" /> : profile?.name_en}
-                  </p>
-                </div>
-                {profile?.bio && <p className="text-[15px] leading-6 text-fg-muted">{profile.bio}</p>}
+                <p className="font-en text-[46px] font-extrabold leading-none tracking-[-0.4492px] text-main-050">
+                  {loading ? <span className="inline-block h-[46px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_en || profile?.name_jp}
+                </p>
               </div>
+              {profile?.bio && <p className="text-[15px] leading-6 text-fg-muted">{profile.bio}</p>}
             </div>
           </section>
 
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
-            <Headline label="自己紹介" title="Intro" />
+            <Headline label="自己紹介" title="Introduction" />
             <div className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
               <div className="flex flex-col gap-4">
                 {loading ? (

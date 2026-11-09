@@ -1,12 +1,12 @@
 import type { FC, ReactNode } from "react";
 
-/** 外枠（Figma Library 188:355 共通: 1px border・角丸 8px・はみ出しを切る） */
-const FRAME = "overflow-hidden rounded-[8px] border border-border";
+/** 外枠（Figma Library 188:355 共通: 1px border・角丸 8px・はみ出しを切る。地は図版ブロック 578:498 と同じ Background/Light） */
+const FRAME = "overflow-hidden rounded-[8px] border border-border bg-surface-light";
 /** 横スクロールする外枠（TableGrid 用。overflow-hidden ではなく overflow-x-auto） */
-const FRAME_SCROLL = "overflow-x-auto rounded-[8px] border border-border";
+const FRAME_SCROLL = "overflow-x-auto rounded-[8px] border border-border bg-surface-light";
 const ROW_DIVIDER = "[&:not(:last-child)]:border-b [&:not(:last-child)]:border-border";
-/** ラベル: 12px / 行間 18px / 字間 0.03em（既存 @utility に一致するものが無いため直書き） */
-const LABEL_TYPO = "text-[12px] leading-[18px] tracking-[0.03em]";
+/** ラベル: 12px / 行間 18px / 字間 0.03em / 太字 / Text/Body/Tertiary（Figma _Table 部品の既定。既存 @utility に一致するものが無いため直書き） */
+const LABEL_TYPO = "text-[12px] leading-[18px] tracking-[0.03em] font-bold text-fg-subtle";
 
 type TableKeyValueProps = {
   rows: { label: ReactNode; value: ReactNode }[];
@@ -25,7 +25,7 @@ export const TableKeyValue: FC<TableKeyValueProps> = ({ rows }) => (
           key={i}
           className={`col-span-full grid grid-cols-subgrid gap-y-3 px-4 py-3 @min-[480px]:gap-y-0 @min-[480px]:p-0 ${ROW_DIVIDER}`}
         >
-          <div className={`min-w-0 text-fg-muted ${LABEL_TYPO} @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:px-4`}>
+          <div className={`min-w-0 ${LABEL_TYPO} @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:px-4`}>
             {row.label}
           </div>
           <div className="min-w-0 break-words text-fg text-body-02-jp @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:border-l @min-[480px]:border-border @min-[480px]:px-4">
@@ -60,7 +60,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
           style={{ gridTemplateColumns: `repeat(${header.length}, minmax(96px, auto))` }}
         >
           {header.map((h, ci) => (
-            <div key={ci} className={`${cell} ${rows.length > 0 ? "border-b border-border" : ""} ${LABEL_TYPO} font-bold text-fg-muted ${colBorder(ci)}`}>
+            <div key={ci} className={`${cell} ${rows.length > 0 ? "border-b border-border" : ""} ${LABEL_TYPO} ${colBorder(ci)}`}>
               {h}
             </div>
           ))}
@@ -79,7 +79,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
       <div className={`@min-[480px]:hidden ${FRAME}`}>
         {/* 行が 0 件なら見出しだけを 1 ブロックで出す（広い幅と同じく見出し行は消さない） */}
         {rows.length === 0 && (
-          <div className={`flex flex-col gap-y-1 px-4 py-3 ${LABEL_TYPO} text-fg-muted`}>
+          <div className={`flex flex-col gap-y-1 px-4 py-3 ${LABEL_TYPO}`}>
             {header.filter((h) => !isBlank(h)).map((h, ci) => <div key={ci}>{h}</div>)}
           </div>
         )}
@@ -91,7 +91,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
               const hasLabel = !isBlank(h);
               return (
                 <div key={ci} className="flex min-w-0 flex-col gap-y-1">
-                  {hasLabel && <div className={`${LABEL_TYPO} text-fg-muted`}>{h}</div>}
+                  {hasLabel && <div className={`${LABEL_TYPO}`}>{h}</div>}
                   <div className="min-w-0 break-words text-fg text-body-02-jp">{v}</div>
                 </div>
               );

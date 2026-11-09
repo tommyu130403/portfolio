@@ -1158,8 +1158,6 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <SubHeading>実装のみ(Figma に対応コンポーネントなし)</SubHeading>
-
         <ComponentPreview
           title="InfoCard"
           description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma WorkFigure Kind=figure (578:498) に準拠 — 角丸16・余白 上28 左右32(本文の容器が 560px 未満は 16)下24・Background/Light・枠なし・見出し Body/01 Bold。accent は Border/Main + main-100 10% の地。inFigure は図版の中に置くときの地(indigo-800)"
@@ -1190,6 +1188,8 @@ function ComponentsSection() {
             <MarkdownBody md={FIGURE_SAMPLE_MD} />
           </div>
         </ComponentPreview>
+
+        <SubHeading>実装のみ(Figma に対応コンポーネントなし)</SubHeading>
 
         <ComponentPreview
           title="RichMarkdownEditor"

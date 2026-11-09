@@ -1110,17 +1110,18 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                         />
                       </div>
                     ))}
-                  {thumbnail.layout === "image" && (
-                    <div>
-                      <FieldLabel>資料キャプチャ（中央に 1 枚）</FieldLabel>
-                      <ImagePickerField
-                        value={thumbnail.capture_urls[0] ?? ""}
-                        onChange={(v) => setSlot("capture_urls", 0, v)}
-                        folder="projects/thumbnails"
-                        previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
-                      />
-                    </div>
-                  )}
+                  {thumbnail.layout === "image" &&
+                    [0, 1].map((i) => (
+                      <div key={`image-${i}`}>
+                        <FieldLabel>画像 {i + 1}{i === 1 ? "（任意。入れると 2 枚を重ねて表示）" : ""}</FieldLabel>
+                        <ImagePickerField
+                          value={thumbnail.capture_urls[i] ?? ""}
+                          onChange={(v) => setSlot("capture_urls", i, v)}
+                          folder="projects/thumbnails"
+                          previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
+                        />
+                      </div>
+                    ))}
                   {thumbnail.layout === "d" &&
                     [0, 1].map((i) => (
                       <div key={`capture-${i}`}>

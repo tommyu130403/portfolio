@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type CSSProperties, type FC } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FC } from "react";
 import ProtectedImage from "./ProtectedImage";
 import type { ThumbnailLayout } from "@/lib/work-content";
 import { getServiceBrand, serviceLogoSrc } from "@/lib/service-brands";
+import { pickImageColor } from "@/lib/image-color";
 
 /* 構成サムネイル（works.thumbnail）。親の箱（position 指定済み・16:9）を埋める。
  * 1280×720 を基準 px として書き、大きさ・文字は cqw、位置は % に変換する。
@@ -43,14 +44,15 @@ const boxStyle = ({ left, top, width, height }: Box): CSSProperties => ({
   height: y(height),
 });
 
-/** 画像が空なら何も描かない（下の斜線が空き枠として見える） */
-const Shot: FC<{ src: string | null }> = ({ src }) =>
+/** 画像が空なら何も描かない（下の斜線が空き枠として見える）。tintKey を渡すと地色の読み取り対象になる */
+const Shot: FC<{ src: string | null; tintKey?: string }> = ({ src, tintKey }) =>
   src ? (
     <ProtectedImage
       src={src}
       alt=""
       draggable={false}
       className="absolute inset-0 h-full w-full object-cover object-top"
+      data-tint-key={tintKey}
     />
   ) : null;
 
@@ -84,13 +86,13 @@ const PhoneFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
   </div>
 );
 
-const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
+const CaptureFrame: FC<Box & { src: string | null; tintKey?: string }> = ({ src, tintKey, ...box }) => (
   <div
     className="absolute overflow-hidden border-solid border-border-light bg-surface-light"
     style={{ ...boxStyle(box), borderWidth: u(1), borderRadius: u(12) }}
   >
     <div className="absolute inset-0" style={STRIPES}>
-      <Shot src={src} />
+      <Shot src={src} tintKey={tintKey} />
     </div>
   </div>
 );
@@ -161,24 +163,70 @@ const WorkThumbnail: FC<Props> = ({
   const serviceBrand = getServiceBrand(brand);
   const service = serviceName?.trim() || serviceBrand?.name || "Service";
   const logo = logoUrl ?? (serviceBrand ? serviceLogoSrc(serviceBrand) : null);
-  const light = serviceBrand !== null;
+  /* 画像のみの構成では、地のグラデーションを画像の代表色から作る（1 枚目=左上、2 枚目=右下。2 枚目が無ければ 1 枚目）。
+   * 色は保存済みの URL ごとに覚える。読めるまでと読めないときはブランド色（無ければ黒い地）のまま */
+  const [tints, setTints] = useState<Record<string, string>>({});
+  const rootRef = useRef<HTMLDivElement>(null);
+  const slot = (i: number) => captureUrls[i] || null;
+  /* 画像の読み込み完了は、部品の準備より先に終わると onLoad が届かない。
+   * そのため描画済みの画像を直接調べ、以後の読み込みは捕捉段階の load で拾う（load は親へ伝わらないため） */
+  const slotsKey = captureUrls.join("\n");
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || layout !== "image") return;
+    let active = true;
+    const read = (img: HTMLImageElement) => {
+      const key = img.dataset.tintKey;
+      if (!key || !img.complete || img.naturalWidth === 0) return;
+      void pickImageColor(img.currentSrc).then((color) => {
+        if (active && color) setTints((prev) => (prev[key] === color ? prev : { ...prev, [key]: color }));
+      });
+    };
+    root.querySelectorAll<HTMLImageElement>("img[data-tint-key]").forEach(read);
+    const onLoad = (e: Event) => {
+      if (e.target instanceof HTMLImageElement) read(e.target);
+    };
+    root.addEventListener("load", onLoad, true);
+    return () => {
+      active = false;
+      root.removeEventListener("load", onLoad, true);
+    };
+  }, [layout, slotsKey]);
+  const tint0 = layout === "image" && slot(0) ? tints[slot(0)!] : undefined;
+  const tint1 = layout === "image" && slot(1) ? tints[slot(1)!] : undefined;
+  const tintMain = tint0 ?? tint1;
+  const tintSub = tint1 ?? tint0;
+  const gradient = tintMain
+    ? { main: tintMain, sub: tintSub ?? tintMain }
+    : serviceBrand
+      ? { main: serviceBrand.main, sub: serviceBrand.sub }
+      : null;
+  const light = gradient !== null;
 
   /* ブランドの地: 白に、左上に主色・右下に副色をうすく重ねる（ブランド色は作品ごとのデータなので inline） */
   const rootClass = ["@container absolute inset-0 overflow-hidden", light ? "" : "bg-thumbnail", className ?? ""]
     .filter(Boolean)
     .join(" ");
-  const rootStyle: CSSProperties | undefined = serviceBrand
+  const rootStyle: CSSProperties | undefined = gradient
     ? {
         backgroundColor: "#FFFFFF",
-        backgroundImage: `radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, ${serviceBrand.main} 22%, transparent), transparent 60%), radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, ${serviceBrand.sub} 18%, transparent), transparent 60%)`,
+        backgroundImage: `radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, ${gradient.main} 22%, transparent), transparent 60%), radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, ${gradient.sub} 18%, transparent), transparent 60%)`,
       }
     : undefined;
 
-  /* 画像のみ: ロゴ・サービス名を出さず、資料キャプチャ 1 枚目（管理画面の欄どおり。空き枠は詰めない）を 16:9 の枠で中央に置く */
+  /* 画像のみ: ロゴ・サービス名を出さない。資料キャプチャは管理画面の欄どおり（空き枠は詰めない）。
+   * 2 枚目が無ければ 1 枚目を 16:9 で中央に。2 枚あれば 1 枚目を左上・2 枚目を右下に重ね、組の中心を全体の中央にそろえる */
   if (layout === "image") {
     return (
-      <div aria-hidden className={rootClass} style={rootStyle}>
-        <CaptureFrame src={captureUrls[0] || null} left={160} top={90} width={960} height={540} />
+      <div ref={rootRef} aria-hidden className={rootClass} style={rootStyle}>
+        {slot(1) ? (
+          <>
+            <CaptureFrame src={slot(1)} tintKey={slot(1) ?? undefined} left={360} top={190} width={800} height={450} />
+            <CaptureFrame src={slot(0)} tintKey={slot(0) ?? undefined} left={120} top={80} width={800} height={450} />
+          </>
+        ) : (
+          <CaptureFrame src={slot(0)} tintKey={slot(0) ?? undefined} left={160} top={90} width={960} height={540} />
+        )}
       </div>
     );
   }

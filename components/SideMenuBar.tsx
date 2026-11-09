@@ -8,11 +8,39 @@ import Icon, { IconProps } from "./Icon";
 import ContactDialog, { clearContactDraft } from "./ContactDialog";
 import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/src/lib/supabase";
+import ProtectedImage from "./ProtectedImage";
 
 export type SideMenuSectionId = "introduction" | "career" | "works" | "skills";
 
-const AVATAR_URL =
-  "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=88&q=80";
+// アイコンは自己紹介のポートレート(profile.hero_image_url)を使う。
+// メニューはトップで 2 つ(PC 用とモバイル用)同時に描かれるため、同時の取得は 1 回にまとめる。
+// 画面を開くたびに取り直す(管理画面で差し替えた直後に戻っても新しい画像になるように)。
+// 取り直すあいだは直前の画像を出し、灰色の丸がちらつかないようにする
+let lastAvatarUrl = "";
+let avatarRequest: Promise<string> | null = null;
+function loadAvatarUrl(): Promise<string> {
+  // 取得に失敗したときだけ直前の画像を使う。取得できて空なら(画像を外したなら)空に戻す
+  avatarRequest ??= Promise.resolve()
+    .then(() => supabase.from("profile").select("hero_image_url").eq("id", 1).single())
+    .then(({ data, error }) => (error ? null : data?.hero_image_url ?? ""), () => null)
+    .then((value) => {
+      avatarRequest = null;
+      if (value !== null) lastAvatarUrl = value;
+      return lastAvatarUrl;
+    });
+  return avatarRequest;
+}
+
+function useAvatarUrl(): string {
+  const [url, setUrl] = useState(lastAvatarUrl);
+  useEffect(() => {
+    let active = true;
+    loadAvatarUrl().then((value) => { if (active) setUrl(value); });
+    return () => { active = false; };
+  }, []);
+  return url;
+}
 
 // 外部サイトは新しいタブで開く(SideMenuItem が http から始まる href を外部と見なす)
 const SOCIAL_LINKS: { label: string; icon: Pick<IconProps, "set" | "name">; href: string }[] = [
@@ -224,6 +252,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
   const collapsed = fixedCollapsed ?? !(hovered || keyboardFocusWithin);
 
   const { supabaseSession, accessRole, logout } = useAuth();
+  const avatarUrl = useAvatarUrl();
   const [logoutError, setLogoutError] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
 
@@ -268,12 +297,14 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
 
         {/* Profile */}
         <div className="flex items-center w-full gap-3">
-          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[36px]">
-            <img
-              src={AVATAR_URL}
-              alt="Avatar"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[36px] bg-surface-light">
+            {avatarUrl && (
+              <ProtectedImage
+                src={avatarUrl}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            )}
           </div>
           <div
             className={[

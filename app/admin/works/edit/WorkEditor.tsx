@@ -1033,6 +1033,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   <option value="a3">A-3 モバイルのみ</option>
                   <option value="d">D モックアップなし</option>
                   <option value="logo">ロゴのみ</option>
+                  <option value="image">画像のみ（ロゴなし）</option>
                 </select>
               </div>
               {thumbnail === null ? (
@@ -1109,6 +1110,17 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                         />
                       </div>
                     ))}
+                  {thumbnail.layout === "image" && (
+                    <div>
+                      <FieldLabel>資料キャプチャ（中央に 1 枚）</FieldLabel>
+                      <ImagePickerField
+                        value={thumbnail.capture_urls[0] ?? ""}
+                        onChange={(v) => setSlot("capture_urls", 0, v)}
+                        folder="projects/thumbnails"
+                        previewClassName="mt-2 h-16 w-28 rounded-[6px] object-cover"
+                      />
+                    </div>
+                  )}
                   {thumbnail.layout === "d" &&
                     [0, 1].map((i) => (
                       <div key={`capture-${i}`}>

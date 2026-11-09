@@ -59,7 +59,8 @@ export const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80";
 
 /** 構成サムネイル（works.thumbnail）のレイアウト種別 */
-export const THUMBNAIL_LAYOUTS = ["a1", "a2", "a3", "d"] as const;
+/** logo はロゴ（なければサービス名）だけを中央に置く。画面写真・資料のない作品向け */
+export const THUMBNAIL_LAYOUTS = ["a1", "a2", "a3", "d", "logo"] as const;
 export type ThumbnailLayout = (typeof THUMBNAIL_LAYOUTS)[number];
 
 /** 構成サムネイルの整形済みデータ。空き枠は mobile_urls / capture_urls の "" で位置を保つ

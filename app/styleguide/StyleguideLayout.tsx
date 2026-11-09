@@ -169,7 +169,7 @@ const SEMANTIC_SWATCHES = [
 ] as const;
 
 // ─── タイポグラフィ（textStyle トークンから生成）────────────────────────────
-// lang → フォントファミリー（CSS 変数経由で next/font を当てる）とサンプル文字
+// lang → フォントファミリー（CSS 変数経由で同梱フォントを当てる。定義は app/fonts/fonts.css）とサンプル文字
 // font-family は app/globals.css の @utility 側が持つ。ここはサンプル文字だけ。
 const TYPO_LANG = {
   jp: { sample: "本文テキスト サンプル" },
@@ -427,7 +427,7 @@ function TypographySection() {
               <p className="text-[11px] text-fg-muted">{role}</p>
               <TokenBadge>{token}</TokenBadge>
             </div>
-            {/* CSS変数経由で参照することでnext/fontのローカルフォントが正しく当たる */}
+            {/* CSS変数経由で参照することで同梱フォント(app/fonts/fonts.css)が正しく当たる */}
             <p
               className={`truncate text-[22px] text-white ${cls}`}
               style={cls ? undefined : { fontFamily: cssVar ? `var(${cssVar})` : family }}

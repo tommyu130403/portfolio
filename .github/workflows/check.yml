@@ -13,7 +13,11 @@ jobs:
         with:
           node-version: "22"
           cache: 'npm'
-      - run: npm ci
+      # supabase(CLI)の postinstall は GitHub Releases からバイナリを落とすため、配布元の不調(504)で
+      # チェック全体が止まる。CI の check では CLI を使わないので install script を止め、必要な部品だけ準備し直す
+      # install script を持つ部品を足したら下の一覧にも足す（確認: package-lock.json の hasInstallScript）
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild sharp esbuild unrs-resolver
       - run: npm run check
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}

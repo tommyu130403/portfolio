@@ -232,11 +232,11 @@ html:has([data-work-detail]) {
    倍率160%の style は、Figma が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。 */
 
 @utility text-title-pj {
-  /* Figma: Title/PJ */
+  /* Figma: Title/PJ（Master 888:3257・2026-11-09: 40px・AUTO=実測 48px） */
   font-family: var(--font-noto-sans-jp), sans-serif;
-  font-size: 34px;
+  font-size: 40px;
   font-weight: 700;
-  line-height: 41px;
+  line-height: 48px;
   letter-spacing: 0.03em;
 }
 

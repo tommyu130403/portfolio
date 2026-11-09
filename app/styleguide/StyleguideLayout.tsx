@@ -955,7 +955,7 @@ function ComponentsSection() {
         <ComponentPreview title="ProtectedImage" description="Portfolio ストレージの画像は認証後に署名付きURLで表示。ローカル画像や外部画像はそのまま表示する">
           <ProtectedImage src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/figma.svg`} alt="Figma" className="h-8 w-8" />
         </ComponentPreview>
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px mint-050 + Title/EN 38px Avenir Heavy・Text/Body/Primary、下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px Main/base + Title/EN 38px Avenir Heavy・Text/Body/Primary、間 8・下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy・text-fg）" variant="section" /></div>

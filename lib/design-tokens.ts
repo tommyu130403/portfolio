@@ -325,7 +325,7 @@ export const typo = {
 //   lang "jp" → typo.body.jp (Noto Sans JP) / "en" → typo.body.en (Avenir) / "special-en" → typo.special.en (Afacad)
 
 export const textStyle = {
-  "title-pj":         { figma: "Title/PJ",              lang: "jp",         size: 34, weight: 700, lineHeight: "41px", letterSpacing: 0.03 },
+  "title-pj":         { figma: "Title/PJ",              lang: "jp",         size: 40, weight: 700, lineHeight: "48px", letterSpacing: 0.03 },
   "title-en":         { figma: "Title/EN",              lang: "en",         size: 38, weight: 800, lineHeight: "52px", letterSpacing: 0.03 },
   "body-01-jp":       { figma: "Body/01/JP/Regular",    lang: "jp",         size: 15, weight: 400, lineHeight: "24px", letterSpacing: 0.03 },
   "body-01-jp-bold":  { figma: "Body/01/JP/Bold",       lang: "jp",         size: 15, weight: 700, lineHeight: "24px", letterSpacing: 0.03 },

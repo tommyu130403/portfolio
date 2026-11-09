@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/src/lib/supabase";
+import { GUEST_EXPIRED_MESSAGE, isGuestExpiredError, toLoginEmail } from "@/lib/guestId";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { supabaseSession, accessRole } = useAuth();
@@ -11,15 +12,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
   if (supabaseSession === "signedOut") return <LoginForm />;
   if (accessRole === "owner" || accessRole === "reader") return <>{children}</>;
-  return <AccessDenied error={accessRole === "error"} />;
+  return <AccessDenied error={accessRole === "error"} expired={accessRole === "expired"} />;
 }
 
-function AccessDenied({ error }: { error: boolean }) {
+function AccessDenied({ error, expired }: { error: boolean; expired: boolean }) {
   const { logout } = useAuth();
   const [logoutError, setLogoutError] = useState("");
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface text-fg">
-      <p role="alert">{error ? "閲覧権限を確認できませんでした。" : "このアカウントには閲覧権限がありません。"}</p>
+      <p role="alert">{expired ? GUEST_EXPIRED_MESSAGE : error ? "閲覧権限を確認できませんでした。" : "このアカウントには閲覧権限がありません。"}</p>
       <button
         type="button"
         onClick={() => {
@@ -35,19 +36,19 @@ function AccessDenied({ error }: { error: boolean }) {
 }
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [input, setInput]       = useState("");
   const [error, setError]       = useState("");
   const [checking, setChecking] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !input) return;
+    if (!loginId.trim() || !input) return;
     setChecking(true);
     setError("");
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: input });
-      if (signInError) setError("メールアドレスまたはパスワードが正しくありません");
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: toLoginEmail(loginId), password: input });
+      if (signInError) setError(isGuestExpiredError(signInError) ? GUEST_EXPIRED_MESSAGE : "IDまたはパスワードが正しくありません");
     } catch {
       setError("エラーが発生しました");
     } finally {
@@ -67,11 +68,14 @@ function LoginForm() {
         </p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="メールアドレス"
+            type="text"
+            value={loginId}
+            onChange={(e) => setLoginId(e.target.value)}
+            placeholder="ID"
             autoFocus
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             autoComplete="username"
             className="w-full rounded-[10px] border border-border-light bg-surface-light px-4 py-3.5 text-[15px] text-fg outline-none transition-colors focus:border-primary"
           />
@@ -88,7 +92,7 @@ function LoginForm() {
           )}
           <button
             type="submit"
-            disabled={checking || !email || !input}
+            disabled={checking || !loginId.trim() || !input}
             className="mt-1 rounded-[10px] bg-primary py-3.5 text-[15px] font-semibold text-main-700 transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             {checking ? "確認中…" : "アクセス"}

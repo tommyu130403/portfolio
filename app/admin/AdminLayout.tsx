@@ -32,6 +32,7 @@ import WorksSection from "./WorksSection";
 import { compressImage } from "@/lib/compress-image";
 import { SkillCard as PublicSkillCard, SKILL_LEVELS, segmentsToLevel, type SkillCardConfig } from "@/src/components/SkillsCardGrid";
 import MastersSection from "./masters/MastersSection";
+import GuestsSection from "./guests/GuestsSection";
 import MasterSelect from "./MasterSelect";
 import IconPickerField, { type IconValue } from "./IconPickerField";
 import type { IconCatalog } from "./iconCatalogTypes";
@@ -2108,6 +2109,7 @@ export function AdminLayout({
         />
       )}
       {section === "masters" && <MastersSection logoSlugs={logoSlugs} iconCatalog={iconCatalog} />}
+      {section === "guests" && <GuestsSection />}
 
       <div className="mt-24 border-t border-[#2a2a2a] pt-8">
         <p className="text-[12px] text-system-800">Portfolio Admin</p>

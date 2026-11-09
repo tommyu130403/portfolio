@@ -38,10 +38,13 @@
     ".next-cursor/types/**/*.ts",
     ".next-cursor/dev/types/**/*.ts",
     ".next-claude/types/**/*.ts",
-    ".next-claude/dev/types/**/*.ts"
+    ".next-claude/dev/types/**/*.ts",
+    ".next/guest2/types/**/*.ts",
+    ".next/guest2/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "portfolio"
+    "portfolio",
+    "supabase/functions"
   ]
 }

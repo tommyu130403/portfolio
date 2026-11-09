@@ -45,7 +45,7 @@ import {
   EMPTY_PERIOD,
   type PeriodInputs,
 } from "./period";
-import { NAV_SECTIONS, type AdminSectionId } from "./sections";
+import { NAV_SECTIONS, NAV_GROUPS, NAV_EXTRA_LINKS, type AdminSectionId } from "./sections";
 
 // ─── 型 ───────────────────────────────────────────────
 type Profile    = Tables<"profile">;
@@ -806,7 +806,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
 
   return (
     <section id="profile" className="scroll-mt-8">
-      <SectionTitle label="Profile" title="プロフィール・自己紹介" />
+      <SectionTitle label="Introduction" title="自己紹介" />
       {dirty && (
         <p className="mb-3 text-[11px] text-[#f4c248]">
           未保存の変更があります
@@ -1446,7 +1446,7 @@ function SkillsExperienceSection({
     if (savingId) return;
     // アイコンのセットと名前は「両方入れる」か「両方空」。片方だけだと公開側が存在しないパスを読む
     const bad = card.bars.findIndex((b) => !!b.icon_set?.trim() !== !!b.icon_name?.trim());
-    if (bad >= 0) { setCardErrors((p) => ({ ...p, [card.id]: `スキルバー #${bad + 1}: アイコンは「セット」と「名前」を両方入力するか、両方空にしてください。` })); return; }
+    if (bad >= 0) { setCardErrors((p) => ({ ...p, [card.id]: `スキル項目 #${bad + 1}: アイコンは「セット」と「名前」を両方入力するか、両方空にしてください。` })); return; }
     setSavingId(card.id); setCardErrors((p) => ({ ...p, [card.id]: "" }));
     const fail = (msg: string) => setCardErrors((p) => ({ ...p, [card.id]: msg }));
     let cardPersisted = false;
@@ -1456,7 +1456,7 @@ function SkillsExperienceSection({
       if (c.error) { fail(`カード情報: ${c.error}`); return; }
       cardPersisted = true;
       for (const [i, bar] of card.bars.entries()) {
-        const name = `スキルバー #${i + 1}（${bar.label || "無題"}）`;
+        const name = `スキル項目 #${i + 1}（${bar.label || "無題"}）`;
         const b = await saveSkillBar({ id: bar.id, card_id: card.id, label: bar.label, label_short: bar.label_short, segments: bar.segments, level: bar.level, description: bar.description, sort_order: bar.sort_order, icon_set: bar.icon_set, icon_name: bar.icon_name, label_note: bar.label_note });
         if (b.error) { fail(`${name}: ${b.error}`); return; }
         persistedBarIds.add(bar.id);
@@ -1546,7 +1546,7 @@ function SkillsExperienceSection({
     }
   };
 
-  // ── スキルバー操作 ────────────────────────────────────
+  // ── スキル項目操作 ────────────────────────────────────
   const updateBar = (
     cardId: string,
     barId: string,
@@ -1569,7 +1569,7 @@ function SkillsExperienceSection({
   const handleDeleteBar = async (cardId: string, barId: string) => {
     const targetBar = cards.find((c) => c.id === cardId)?.bars.find((b) => b.id === barId);
     if (targetBar?.isNew) {
-      if (!window.confirm("未保存のスキルバーを破棄します。よろしいですか？")) return;
+      if (!window.confirm("未保存のスキル項目を破棄します。よろしいですか？")) return;
       setCards((prev) => prev.map((c) =>
         c.id !== cardId ? c : { ...c, bars: c.bars.filter((b) => b.id !== barId) }
       ));
@@ -1577,7 +1577,7 @@ function SkillsExperienceSection({
     }
     if (
       !window.confirm(
-        "このスキルバーを削除します。よろしいですか？\nこの操作は取り消せません。"
+        "このスキル項目を削除します。よろしいですか？\nこの操作は取り消せません。"
       )
     ) {
       return;
@@ -1705,7 +1705,7 @@ function SkillsExperienceSection({
 
   return (
     <section id="skills-experience" className="scroll-mt-8">
-      <SectionTitle label="Skills Experience" title="スキルカルーセル" />
+      <SectionTitle label="Skills" title="スキル" />
       {loadError && <p className="mb-4 text-[13px] text-danger-300">{loadError}</p>}
       {anyDirty && (
         <p className="mb-3 text-[11px] text-[#f4c248]">
@@ -1764,15 +1764,15 @@ function SkillsExperienceSection({
                   {/* カード基本情報 */}
                   <div className="mb-6 grid grid-cols-2 gap-4">
                     <div>
-                      <FieldLabel>タイトル（EN）</FieldLabel>
+                      <FieldLabel>カード見出し（英語）</FieldLabel>
                       <Input value={card.title} onChange={(v) => updateCard(card.id, "title", v)} placeholder="Execution" />
                     </div>
                     <div>
-                      <FieldLabel>タイトル（JP）</FieldLabel>
+                      <FieldLabel>カード見出し（日本語）</FieldLabel>
                       <Input value={card.title_jp} onChange={(v) => updateCard(card.id, "title_jp", v)} placeholder="制作・実行" />
                     </div>
                     <div className="col-span-2">
-                      <FieldLabel>アイコン</FieldLabel>
+                      <FieldLabel>カードアイコン</FieldLabel>
                       <IconPickerField
                         catalog={iconCatalog}
                         value={{ set: card.icon_set, name: card.icon_name }}
@@ -1783,10 +1783,10 @@ function SkillsExperienceSection({
                     </div>
                   </div>
 
-                  {/* スキルバー */}
+                  {/* スキル項目 */}
                   <div className="mb-6">
                     <div className="mb-3 flex items-center justify-between">
-                      <p className="text-[12px] font-semibold tracking-[0.6px] text-fg-muted">スキルバー</p>
+                      <p className="text-[12px] font-semibold tracking-[0.6px] text-fg-muted">スキル項目</p>
                       <button
                         type="button"
                         onClick={() => handleAddBar(card.id)}
@@ -1804,17 +1804,17 @@ function SkillsExperienceSection({
                               index={bi}
                               length={card.bars.length}
                               disabled={movingBars}
-                              label={bar.label || "スキルバー"}
+                              label={bar.label || "スキル項目"}
                               onMove={(d) => void handleMoveBar(card.id, bi, d)}
                             />
                           </div>
                           <div className="grid grid-cols-[1fr_200px] gap-3 mb-3">
                             <div>
-                              <FieldLabel>ラベル</FieldLabel>
+                              <FieldLabel>項目名</FieldLabel>
                               <Input value={bar.label} onChange={(v) => updateBar(card.id, bar.id, "label", v)} placeholder="UIデザイン" />
                             </div>
                             <div>
-                              <FieldLabel>習熟度</FieldLabel>
+                              <FieldLabel>習熟度（メーター）</FieldLabel>
                               <select
                                 value={String(segmentsToLevel(bar.segments))}
                                 onChange={(e) => { const n = Number(e.target.value); updateBarField(card.id, bar.id, (b) => ({ ...b, segments: LEVEL_SEGMENTS[n], level: SKILL_LEVELS[n - 1].en })); }}
@@ -1826,7 +1826,7 @@ function SkillsExperienceSection({
                           </div>
                           <div className="grid grid-cols-3 gap-3 mb-3">
                             <div className="col-span-2">
-                              <FieldLabel>アイコン（空なら Base/system）</FieldLabel>
+                              <FieldLabel>項目アイコン（空なら Base/system）</FieldLabel>
                               <IconPickerField
                                 catalog={iconCatalog}
                                 allowEmpty
@@ -1841,12 +1841,12 @@ function SkillsExperienceSection({
                               />
                             </div>
                             <div>
-                              <FieldLabel>ラベルノート（JP短）</FieldLabel>
+                              <FieldLabel>補足（開いたとき上に小さく）</FieldLabel>
                               <Input value={bar.label_note ?? ""} onChange={(v) => updateBar(card.id, bar.id, "label_note", v || null)} placeholder="UIデザイン" />
                             </div>
                           </div>
                           <div className="mb-3">
-                            <FieldLabel>説明（任意・改行と「・」箇条書き可）</FieldLabel>
+                            <FieldLabel>説明（開いたとき・改行と「・」箇条書き可）</FieldLabel>
                             <Textarea
                               value={bar.description ?? ""}
                               onChange={(v) => updateBar(card.id, bar.id, "description", v || null)}
@@ -1857,7 +1857,7 @@ function SkillsExperienceSection({
 
                           {/* スキル行ツール（skill_experience_tools） */}
                           <div className="mb-3 rounded-[8px] border border-[#2e2e2e] bg-[#161616] p-3">
-                            <p className="mb-2 text-[11px] font-semibold tracking-[0.5px] text-fg-muted">ツール（行単位）</p>
+                            <p className="mb-2 text-[11px] font-semibold tracking-[0.5px] text-fg-muted">ツールタグ（開いたとき）</p>
                             <div className="flex flex-wrap gap-2">
                               {toolVocab.map((opt) => {
                                 const selected = bar.tools.some((t) => t.id === opt.id);
@@ -1959,6 +1959,40 @@ function SkillsExperienceSection({
  * admin 共通シェル（サイドバー + main）。
  * /admin/<section> 各ページと /admin/works/edit の全画面エディタページで共用する。
  */
+function AdminNavLink({
+  href,
+  label,
+  labelJa,
+  isActive,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  labelJa: string;
+  isActive: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      aria-current={isActive ? "page" : undefined}
+      className={[
+        "flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-left transition-colors",
+        isActive
+          ? "bg-[rgba(72,244,190,0.08)] text-white"
+          : "text-fg-muted hover:bg-[#1a1a1a] hover:text-white",
+      ].join(" ")}
+    >
+      {isActive && <span className="h-4 w-[2px] shrink-0 rounded-full bg-primary" />}
+      <span className={["flex flex-col", isActive ? "" : "pl-[10px]"].join(" ")}>
+        <span className="text-[14px] leading-[1.4]">{label}</span>
+        <span className="text-[11px] text-system-700">{labelJa}</span>
+      </span>
+    </Link>
+  );
+}
+
 export function AdminShell({
   section,
   hasUnsavedChanges = false,
@@ -2007,42 +2041,43 @@ export function AdminShell({
           <p className="text-[20px] font-semibold text-white">Admin</p>
           <p className="text-[11px] text-system-700">コンテンツ管理</p>
         </div>
-        <nav className="flex flex-col gap-1">
-          {NAV_SECTIONS.map(({ id, label, labelJa }) => {
-            const isActive = section === id;
-            return (
-              <Link
-                key={id}
-                href={`/admin/${id}`}
-                onClick={confirmLeave}
-                aria-current={isActive ? "page" : undefined}
-                className={[
-                  "flex w-full items-center gap-3 rounded-[8px] px-3 py-2.5 text-left transition-colors",
-                  isActive
-                    ? "bg-[rgba(72,244,190,0.08)] text-white"
-                    : "text-fg-muted hover:bg-[#1a1a1a] hover:text-white",
-                ].join(" ")}
+        <nav aria-label="管理メニュー" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          {NAV_GROUPS.map((group, gi) => (
+            <div
+              key={group.id}
+              role="group"
+              aria-labelledby={`admin-nav-group-${group.id}`}
+              className={["flex flex-col gap-1", gi > 0 ? "mt-6" : ""].join(" ")}
+            >
+              <p
+                id={`admin-nav-group-${group.id}`}
+                className="mb-1 px-3 text-[11px] tracking-[0.6px] text-system-700"
               >
-                {isActive && <span className="h-4 w-[2px] shrink-0 rounded-full bg-primary" />}
-                <span className={["flex flex-col", isActive ? "" : "pl-[10px]"].join(" ")}>
-                  <span className="text-[14px] leading-[1.4]">{label}</span>
-                  <span className="text-[11px] text-system-700">{labelJa}</span>
-                </span>
-              </Link>
-            );
-          })}
+                {group.label}
+              </p>
+              {NAV_SECTIONS.filter((s) => s.group === group.id).map(({ id, label, labelJa }) => (
+                <AdminNavLink
+                  key={id}
+                  href={`/admin/${id}`}
+                  label={label}
+                  labelJa={labelJa}
+                  isActive={section === id}
+                  onClick={confirmLeave}
+                />
+              ))}
+              {NAV_EXTRA_LINKS.filter((l) => l.group === group.id).map(({ href, label, labelJa }) => (
+                <AdminNavLink
+                  key={href}
+                  href={href}
+                  label={label}
+                  labelJa={labelJa}
+                  isActive={false}
+                  onClick={confirmLeave}
+                />
+              ))}
+            </div>
+          ))}
         </nav>
-
-        {/* Style Guide リンク */}
-        <div className="mt-auto">
-          <Link
-            href="/styleguide"
-            className="block rounded-[8px] px-3 py-2 text-[12px] text-system-700 hover:bg-[#1a1a1a] hover:text-fg-muted"
-            onClick={confirmLeave}
-          >
-            Style Guide →
-          </Link>
-        </div>
       </aside>
 
       {/* メインコンテンツ（通常はサイトの最大表示幅 max-w-main、wide は全幅・全高） */}

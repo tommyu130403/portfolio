@@ -195,7 +195,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
     return (
       <>
-        {/* ヘッダーは上部固定。z-20 は本文中の z-10（FlowchartEmbed の拡大ボタン・Tooltip）より上、
+        {/* ヘッダーは上部固定。z-20 は本文中の z-10（Tooltip など）より上、
             WorkVizModal(z-50) / ScreenshotLightbox(z-60) より下。帯の透明部分は後ろの本文を押せるよう
             pointer-events-none にし、囲み（パンくず・件数）だけ WorkBreadcrumb 側で auto に戻す */}
         <div className="pointer-events-none sticky top-0 z-20">

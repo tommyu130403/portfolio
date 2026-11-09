@@ -2,8 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import ProtectedImage from "@/components/ProtectedImage";
 import {
@@ -19,20 +18,15 @@ import {
   addToolNameFromWorks,
   listStorageImages,
   uploadStorageImage,
-  listFlowcharts,
-  deleteFlowchart,
-  duplicateFlowchart,
   listNameMaster,
   addNameMaster,
 } from "@/app/admin/actions";
 import type {
-  FlowchartRow,
   NameMaster,
   StorageImage,
 } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
 import { type ProofreadIssue, runProofread } from "@/lib/proofread-client";
-import { parseFlowchart } from "@/lib/flowchart";
 import SectionTitle from "./SectionTitle";
 import WorksSection from "./WorksSection";
 import { compressImage } from "@/lib/compress-image";
@@ -58,11 +52,6 @@ type CareerItem = Tables<"career_items">;
 type CareerRow  = CareerItem & { isNew?: true };
 type SkillCard       = Tables<"skill_cards">;
 type SkillExperience = Tables<"skill_experience">;
-
-const FlowchartPreview = dynamic(
-  () => import("@/components/FlowchartView"),
-  { ssr: false },
-);
 
 // ─── ナビゲーション ────────────────────────────────────
 // 各設定は /admin/<id> の専用ページとして表示する（1画面1セクション）
@@ -283,163 +272,6 @@ export function ImagePickerModal({
               className="rounded-[8px] bg-primary px-4 py-2 text-[13px] font-semibold text-black transition-opacity disabled:opacity-40"
             >
               {showAlt ? "挿入" : "選択"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── フローチャートピッカー モーダル ──────────────────────────────────────────
-
-export function FlowchartPickerModal({
-  open,
-  onClose,
-  onSelect,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSelect: (flowchart: { id: string; title: string }) => void;
-}) {
-  const [items, setItems] = useState<FlowchartRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<FlowchartRow | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      setQuery("");
-      setSelected(null);
-      setError("");
-      listFlowcharts().then((result) => {
-        setItems(result.data);
-        setError(result.error ?? "");
-        setLoading(false);
-      });
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [open]);
-
-  if (!open) return null;
-
-  const filtered = items.filter((item) =>
-    `${item.title} ${item.description ?? ""}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[86vh] w-full max-w-[840px] flex-col overflow-hidden rounded-[12px] border border-border-light bg-[#1a1a1a]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-[#2a2a2a] px-5 py-4">
-          <p className="text-[14px] font-semibold text-white">
-            フローチャートを選択
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[18px] text-system-700 hover:text-white"
-            aria-label="閉じる"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="px-5 pt-4">
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="タイトル・説明で検索…"
-            className="w-full rounded-[8px] border border-border-light bg-surface px-3 py-2 text-[13px] text-white outline-none focus:border-main-100"
-          />
-        </div>
-        <div className="flex-1 overflow-y-auto p-5">
-          {loading ? (
-            <div className="h-64 animate-pulse rounded-[12px] bg-white/[0.03]" />
-          ) : error ? (
-            <p className="py-8 text-center text-[13px] text-danger-300">
-              {error}
-            </p>
-          ) : filtered.length === 0 ? (
-            <p className="py-8 text-center text-[13px] text-system-700">
-              {query
-                ? "一致するフローチャートがありません"
-                : "フローチャートがありません"}
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {filtered.map((item) => {
-                const graph = parseFlowchart(item.data);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSelected(item)}
-                    className={`overflow-hidden rounded-[10px] border text-left transition-colors ${
-                      selected?.id === item.id
-                        ? "border-main-100"
-                        : "border-border-light hover:border-system-700"
-                    }`}
-                  >
-                    <div className="h-32 bg-[#141414]">
-                      {graph ? (
-                        <FlowchartPreview
-                          data={graph}
-                          interactive={false}
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-[11px] text-system-700">
-                          プレビューできません
-                        </div>
-                      )}
-                    </div>
-                    <div className="bg-[#101010] px-3 py-2">
-                      <p className="truncate text-[13px] text-white">
-                        {item.title}
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-system-700">
-                        {graph?.nodes.length ?? 0} nodes
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-between border-t border-[#2a2a2a] px-5 py-3">
-          <p className="truncate text-[11px] text-system-700">
-            {selected ? `選択中: ${selected.title}` : "図を選択してください"}
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-[8px] border border-border-light px-4 py-2 text-[13px] text-fg-muted hover:text-white"
-            >
-              キャンセル
-            </button>
-            <button
-              type="button"
-              disabled={!selected}
-              onClick={() => {
-                if (selected) {
-                  onSelect({ id: selected.id, title: selected.title });
-                }
-              }}
-              className="rounded-[8px] bg-main-100 px-4 py-2 text-[13px] font-semibold text-black disabled:opacity-40"
-            >
-              挿入
             </button>
           </div>
         </div>
@@ -1474,163 +1306,6 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   );
 }
 
-// ─── Flowcharts セクション ────────────────────────────────────────────────────
-
-function FlowchartsSection({
-  onDirtyChange,
-}: {
-  onDirtyChange: (dirty: boolean) => void;
-}) {
-  void onDirtyChange;
-  const [items, setItems] = useState<FlowchartRow[]>([]);
-  const [fetching, setFetching] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState("");
-
-  const load = useCallback(async (showLoading = true) => {
-    if (showLoading) setFetching(true);
-    const result = await listFlowcharts();
-    setItems(result.data);
-    setError(result.error ?? "");
-    setFetching(false);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    listFlowcharts().then((result) => {
-      if (!active) return;
-      setItems(result.data);
-      setError(result.error ?? "");
-      setFetching(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleDuplicate = async (id: string) => {
-    setBusyId(id);
-    setError("");
-    const result = await duplicateFlowchart(id);
-    setBusyId(null);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    await load(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        "このフローチャートを削除します。\n本文から参照されている可能性があり、削除後は「図が見つかりません」と表示されます。\nこの操作は取り消せません。",
-      )
-    ) {
-      return;
-    }
-    setBusyId(id);
-    setError("");
-    const result = await deleteFlowchart(id);
-    setBusyId(null);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    setItems((current) => current.filter((item) => item.id !== id));
-  };
-
-  if (fetching) {
-    return (
-      <div className="h-64 animate-pulse rounded-[12px] bg-[#1a1a1a]" />
-    );
-  }
-
-  return (
-    <section id="flowcharts" className="scroll-mt-8">
-      <SectionTitle label="Flowcharts" title="フローチャート" />
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <p className="text-[13px] text-fg-muted">
-          作品をまたいで再利用できるフローチャートを管理します。
-        </p>
-        <Link
-          href="/admin/flowcharts/edit?id=new"
-          className="shrink-0 rounded-[8px] bg-main-100 px-4 py-2 text-[13px] font-semibold text-[#0a0a0a] hover:opacity-80"
-        >
-          ＋ 新規作成
-        </Link>
-      </div>
-      {error && (
-        <p className="mb-4 text-[13px] text-danger-300">{error}</p>
-      )}
-      <div className="overflow-hidden rounded-[12px] border border-border-light">
-        <div className="grid grid-cols-[minmax(0,1fr)_90px_180px_220px] gap-4 bg-[#161616] px-5 py-3 text-[11px] uppercase tracking-[0.55px] text-system-700">
-          <span>タイトル</span>
-          <span>ノード数</span>
-          <span>更新日時</span>
-          <span className="text-right">操作</span>
-        </div>
-        {items.map((item) => {
-          const graph = parseFlowchart(item.data);
-          return (
-            <div
-              key={item.id}
-              className="grid grid-cols-[minmax(0,1fr)_90px_180px_220px] items-center gap-4 border-t border-[#2a2a2a] bg-[#101010] px-5 py-4"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-[14px] text-white">
-                  {item.title}
-                </p>
-                {item.description && (
-                  <p className="mt-1 truncate text-[11px] text-system-700">
-                    {item.description}
-                  </p>
-                )}
-              </div>
-              <span className="text-[12px] text-fg-muted">
-                {graph?.nodes.length ?? 0}
-              </span>
-              <span className="text-[12px] text-fg-muted">
-                {item.updated_at
-                  ? new Date(item.updated_at).toLocaleString("ja-JP")
-                  : "—"}
-              </span>
-              <div className="flex items-center justify-end gap-2">
-                <Link
-                  href={`/admin/flowcharts/edit?id=${item.id}`}
-                  className="rounded-[6px] border border-border-light px-3 py-1.5 text-[12px] text-white hover:border-main-100"
-                >
-                  編集
-                </Link>
-                <button
-                  type="button"
-                  disabled={busyId === item.id}
-                  onClick={() => handleDuplicate(item.id)}
-                  className="rounded-[6px] px-3 py-1.5 text-[12px] text-fg-muted hover:bg-white/5 hover:text-white disabled:opacity-40"
-                >
-                  複製
-                </button>
-                <button
-                  type="button"
-                  disabled={busyId === item.id}
-                  onClick={() => handleDelete(item.id)}
-                  className="rounded-[6px] px-3 py-1.5 text-[12px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:opacity-40"
-                >
-                  削除
-                </button>
-              </div>
-            </div>
-          );
-        })}
-        {items.length === 0 && (
-          <p className="bg-[#101010] px-5 py-10 text-center text-[13px] text-system-700">
-            フローチャートがありません
-          </p>
-        )}
-      </div>
-    </section>
-  );
-}
-
 // ─── SkillsExperience セクション ───────────────────────
 
 // スキル行（skill_experience）に紐づくツール（skill_experience_tools → tools_vocab）。
@@ -2426,13 +2101,6 @@ export function AdminLayout({
         <CareerSection onDirtyChange={(dirty) => setSectionDirty("career", dirty)} />
       )}
       {section === "works" && <WorksSection />}
-      {section === "flowcharts" && (
-        <FlowchartsSection
-          onDirtyChange={(dirty) =>
-            setSectionDirty("flowcharts", dirty)
-          }
-        />
-      )}
       {section === "skills-experience" && (
         <SkillsExperienceSection
           iconCatalog={iconCatalog}

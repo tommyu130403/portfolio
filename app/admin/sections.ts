@@ -7,7 +7,6 @@ export const NAV_SECTIONS = [
   { id: "profile",          label: "Profile",          labelJa: "プロフィール・自己紹介" },
   { id: "career",           label: "Career",           labelJa: "経歴" },
   { id: "works",         label: "Works",            labelJa: "制作・企画" },
-  { id: "flowcharts",       label: "Flowcharts",       labelJa: "フローチャート" },
   { id: "skills-experience", label: "Skills Experience", labelJa: "スキルカルーセル" },
   { id: "masters",           label: "Masters",          labelJa: "マスタ管理" },
 ] as const;

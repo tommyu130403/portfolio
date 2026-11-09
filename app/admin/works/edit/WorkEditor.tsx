@@ -8,7 +8,6 @@ import {
   FieldLabel,
   FormGroupHeader,
   HeroScreenshotsEditor,
-  FlowchartPickerModal,
   WorkPickerModal,
   ImagePickerField,
   ImagePickerModal,
@@ -373,25 +372,8 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
     setPickerOpen(false);
   };
 
-  // フローチャートピッカー（RichMarkdownEditor から Promise で選択結果を受け取る）
-  const [flowchartPickerOpen, setFlowchartPickerOpen] = useState(false);
-  const flowchartResolve = useRef<
-    ((v: { id: string; title: string } | null) => void) | null
-  >(null);
-  const pickFlowchart = () =>
-    new Promise<{ id: string; title: string } | null>((resolve) => {
-      flowchartResolve.current = resolve;
-      setFlowchartPickerOpen(true);
-    });
-  const closeFlowchartPicker = (
-    result: { id: string; title: string } | null,
-  ) => {
-    flowchartResolve.current?.(result);
-    flowchartResolve.current = null;
-    setFlowchartPickerOpen(false);
-  };
 
-  // 作品ピッカー（本文の作品カード挿入用。フローチャートと同じ Promise 方式）
+  // 作品ピッカー（本文の作品カード挿入用。画像ピッカーと同じ Promise 方式）
   const [workPickerOpen, setWorkPickerOpen] = useState(false);
   const workPickResolve = useRef<
     ((v: { id: string; title: string } | null) => void) | null
@@ -1466,7 +1448,6 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   markDirty();
                 }}
                 onPickImage={pickImage}
-                onPickFlowchart={pickFlowchart}
                 onPickWork={pickWork}
                 onUploadImage={async (file) => {
                   const fd = new FormData();
@@ -1526,11 +1507,6 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         onSelect={(url, alt) => closePicker({ url, alt })}
         folder="projects/sections"
         showAlt
-      />
-      <FlowchartPickerModal
-        open={flowchartPickerOpen}
-        onClose={() => closeFlowchartPicker(null)}
-        onSelect={closeFlowchartPicker}
       />
       <WorkPickerModal
         open={workPickerOpen}

@@ -38,11 +38,6 @@ export type RichMarkdownEditorProps = {
   onPickImage?: () => Promise<{ url: string; alt?: string } | null>;
   /** 本文欄に貼り付けられた画像をアップロードし、公開 URL（または失敗理由）を返す */
   onUploadImage?: (file: File) => Promise<{ url: string | null; error: string | null }>;
-  /** 保存済みフローチャートを選び、参照ディレクティブとして挿入する */
-  onPickFlowchart?: () => Promise<{
-    id: string;
-    title: string;
-  } | null>;
   /** 公開中の他の作品を選び、作品カード（::: workcard）として挿入する */
   onPickWork?: () => Promise<{
     id: string;
@@ -284,7 +279,6 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
   onChange,
   placeholder,
   onPickImage,
-  onPickFlowchart,
   onPickWork,
   onUploadImage,
   defaultMode = "split",
@@ -579,18 +573,6 @@ const RichMarkdownEditor: FC<RichMarkdownEditorProps> = ({
           <TBtn label="モックアップ" title="スマホ / ノートPC のモックアップ枠にスクリーンショットを入れて挿入" onClick={() => setDialog("mockup")} />
           <TBtn label="HTML" title="HTML / SVG をそのまま埋め込む（::: html ブロック）" onClick={() => setDialog("html")} />
           <TBtn label="図版" title="図版の枠 / 横フロー / Before・After / 横棒グラフの雛形を挿入" onClick={() => setDialog("figure")} />
-          {onPickFlowchart && (
-            <TBtn
-              label="フローチャート"
-              title="フローチャートを挿入"
-              onClick={async () => {
-                const picked = await onPickFlowchart();
-                if (picked) {
-                  insertLine(`::: flowchart id=${picked.id}`);
-                }
-              }}
-            />
-          )}
           {onPickWork && (
             <TBtn
               label="作品カード"

@@ -36,12 +36,11 @@
       "name": "管理セクション",
       "route": "/admin/<section>",
       "file": "app/admin/[section]/page.tsx",
-      "note": "section = profile / career / works / flowcharts / skills-experience / masters",
+      "note": "section = profile / career / works / skills-experience / masters",
       "examples": [
         "/admin/profile",
         "/admin/career",
         "/admin/works",
-        "/admin/flowcharts",
         "/admin/skills-experience",
         "/admin/masters"
       ]
@@ -55,13 +54,6 @@
       "examples": [
         "/admin/works/edit"
       ]
-    },
-    {
-      "id": "P07",
-      "name": "フローチャートエディタ",
-      "route": "/admin/flowcharts/edit",
-      "file": "app/admin/flowcharts/edit/page.tsx",
-      "note": ""
     },
     {
       "id": "P08",
@@ -217,14 +209,6 @@
       "component": null
     },
     {
-      "id": "P05-FLOWCHARTS",
-      "name": "フローチャートの編集(/admin/flowcharts)",
-      "page": "P05",
-      "file": "app/admin/AdminLayout.tsx",
-      "selector": "#flowcharts",
-      "component": null
-    },
-    {
       "id": "P05-SKILLS",
       "name": "スキルカルーセルの編集(/admin/skills-experience)",
       "page": "P05",
@@ -254,22 +238,6 @@
       "page": "P06",
       "file": "app/admin/AdminLayout.tsx",
       "selector": "main",
-      "component": null
-    },
-    {
-      "id": "P07-LEFT",
-      "name": "フローチャートエディタの左パネル",
-      "page": "P07",
-      "file": "app/admin/flowcharts/edit/FlowchartEditor.tsx",
-      "selector": "aside:first-of-type",
-      "component": null
-    },
-    {
-      "id": "P07-RIGHT",
-      "name": "フローチャートエディタの右パネル",
-      "page": "P07",
-      "file": "app/admin/flowcharts/edit/FlowchartEditor.tsx",
-      "selector": "aside:nth-of-type(2)",
       "component": null
     }
   ],

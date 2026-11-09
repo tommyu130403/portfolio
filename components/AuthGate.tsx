@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ContactDialog, { clearContactDraft } from "./ContactDialog";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/src/lib/supabase";
 import { GUEST_EXPIRED_MESSAGE, isGuestExpiredError, toLoginEmail } from "@/lib/guestId";
@@ -15,6 +16,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return <AccessDenied error={accessRole === "error"} expired={accessRole === "expired"} />;
 }
 
+/** ログインできないときの連絡口。ログイン画面と権限のない画面の下に置く */
+function ContactLink() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+        className="text-[13px] text-primary underline-offset-4 hover:underline"
+      >
+        ログインできないときのお問い合わせ
+      </button>
+      {open && <ContactDialog onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
 function AccessDenied({ error, expired }: { error: boolean; expired: boolean }) {
   const { logout } = useAuth();
   const [logoutError, setLogoutError] = useState("");
@@ -24,6 +43,7 @@ function AccessDenied({ error, expired }: { error: boolean; expired: boolean }) 
       <button
         type="button"
         onClick={() => {
+          clearContactDraft();
           void logout()
             .then((message) => setLogoutError(message ?? ""))
             .catch(() => setLogoutError("ログアウトできませんでした"));
@@ -31,6 +51,7 @@ function AccessDenied({ error, expired }: { error: boolean; expired: boolean }) 
         className="text-primary hover:underline"
       >別のアカウントでログイン</button>
       {logoutError && <p className="text-danger-300" role="alert">{logoutError}</p>}
+      <ContactLink />
     </div>
   );
 }
@@ -98,6 +119,9 @@ function LoginForm() {
             {checking ? "確認中…" : "アクセス"}
           </button>
         </form>
+        <div className="mt-8">
+          <ContactLink />
+        </div>
       </div>
     </div>
   );

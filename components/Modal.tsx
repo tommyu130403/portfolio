@@ -20,6 +20,8 @@ type ModalProps = {
   total?: number;
   /** full = 常に最大 800px いっぱい / content = 中身の幅に合わせる（上限 800px）。既定 full */
   width?: "full" | "content";
+  /** ダイアログの名前になる見出しの id（読み上げで「何のダイアログか」を伝える）。省略可 */
+  ariaLabelledBy?: string;
 };
 
 const Modal: FC<ModalProps> = ({
@@ -32,6 +34,7 @@ const Modal: FC<ModalProps> = ({
   currentIndex = 0,
   total = 1,
   width = "full",
+  ariaLabelledBy,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   // ダイアログ本体 + 閉じるボタンをまとめて包むラッパー（フォーカストラップの境界）
@@ -170,6 +173,7 @@ const Modal: FC<ModalProps> = ({
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
+            aria-labelledby={ariaLabelledBy}
             tabIndex={-1}
             style={{ outline: "none" }}
             className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-border relative flex w-full flex-col min-h-[400px] max-h-[90vh] rounded-r16 bg-surface shadow-wisper"

@@ -1032,6 +1032,7 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
                   <option value="a2">A-2 デスクトップのみ</option>
                   <option value="a3">A-3 モバイルのみ</option>
                   <option value="d">D モックアップなし</option>
+                  <option value="logo">ロゴのみ</option>
                 </select>
               </div>
               {thumbnail === null ? (

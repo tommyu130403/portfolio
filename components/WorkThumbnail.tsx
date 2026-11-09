@@ -99,12 +99,14 @@ const CaptureFrame: FC<Box & { src: string | null }> = ({ src, ...box }) => (
  * ロゴは高さを揃えて幅は比率なり（欄の幅を超えたら縮める）にし、見切れさせない。
  * ロゴを表示できないとき（権限なし・署名失敗・画像切れ）はサービス名に切り替える。
  * ロゴは隠しても残しておき、ProtectedImage の再試行で表示できたら戻す。
- * 左の 520px 幅の欄で縦横中央に置く（ロゴ・サービス名とも幅は 376px まで。モックアップに触れさせない） */
-const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean; light?: boolean }> = ({
+ * 左の 520px 幅の欄で縦横中央に置く（ロゴ・サービス名とも幅は 376px まで。モックアップに触れさせない）。
+ * full のとき（logo レイアウト）は全面の中央に置き、ロゴ高さ 200px・幅 760px まで、サービス名 80px にする */
+const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean; light?: boolean; full?: boolean }> = ({
   logoUrl,
   serviceName,
   padded,
   light,
+  full,
 }) => {
   const [unavailableUrl, setUnavailableUrl] = useState<string | null>(null);
   const showLogo = logoUrl !== null && unavailableUrl !== logoUrl;
@@ -116,7 +118,7 @@ const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean;
         left: 0,
         top: 0,
         bottom: 0,
-        width: x(520),
+        width: full ? "100%" : x(520),
         ...(padded ? { paddingBlock: u(80), paddingInline: u(72) } : {}),
       }}
     >
@@ -127,13 +129,13 @@ const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean;
           draggable={false}
           onUnavailableChange={(unavailable) => setUnavailableUrl(unavailable ? logoUrl : null)}
           className={showLogo ? "block w-auto object-contain object-center" : "invisible absolute w-auto"}
-          style={{ height: u(144), maxWidth: u(376) }}
+          style={{ height: u(full ? 200 : 144), maxWidth: u(full ? 760 : 376) }}
         />
       )}
       {!showLogo && (
         <p
           className={`min-w-0 truncate text-center font-sans font-semibold ${light ? "text-surface-light" : "text-fg"}`}
-          style={{ fontSize: u(56), letterSpacing: "0.02em", maxWidth: u(376) }}
+          style={{ fontSize: u(full ? 80 : 56), letterSpacing: "0.02em", maxWidth: u(full ? 760 : 376) }}
         >
           {serviceName}
         </p>
@@ -171,6 +173,14 @@ const WorkThumbnail: FC<Props> = ({
         backgroundImage: `radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, ${serviceBrand.main} 22%, transparent), transparent 60%), radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, ${serviceBrand.sub} 18%, transparent), transparent 60%)`,
       }
     : undefined;
+
+  if (layout === "logo") {
+    return (
+      <div aria-hidden className={rootClass} style={rootStyle}>
+        <Brand logoUrl={logo} serviceName={service} light={light} full />
+      </div>
+    );
+  }
 
   if (layout === "d") {
     return (

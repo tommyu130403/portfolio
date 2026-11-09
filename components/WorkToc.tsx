@@ -75,7 +75,7 @@ export const useWorkToc = (containerRef: RefObject<HTMLElement | null>, key: unk
     window.addEventListener("keydown", unpin, { passive: true });
     // 選んだ見出しへのスクロールが終わったら固定を外す（スクロールバーのドラッグでも追従に戻すため）
     window.addEventListener("scrollend", unpin, { passive: true });
-    // 画像・フローチャートの読み込みなどで高さが変わったときも位置を取り直す
+    // 画像の読み込みなどで高さが変わったときも位置を取り直す
     const observer = container ? new ResizeObserver(schedule) : null;
     observer?.observe(container!);
     return () => {

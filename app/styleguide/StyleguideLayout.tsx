@@ -28,10 +28,8 @@ import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
 import WorkVizModal from "@/components/WorkVizModal";
-import FlowchartView from "@/components/FlowchartView";
 import Modal from "@/components/Modal";
 import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
-import type { FlowchartData } from "@/lib/flowchart";
 import type { Tables } from "@/src/types/supabase";
 import type { WorkThumbnailData } from "@/lib/work-content";
 
@@ -132,75 +130,6 @@ const HERO_LAYOUT_SAMPLES: { label: string; hero_layout: string | null; hero_scr
   { label: "images ×1（枠なし 1 枚）", hero_layout: "images", hero_screenshots: [HERO_SAMPLE_PC, "", ""] },
   { label: "images ×3（枠なし 3 枚・OOUI と同じ階段状の重ね）", hero_layout: "images", hero_screenshots: [HERO_SAMPLE_PC, HERO_SAMPLE_SP, HERO_SAMPLE_PC] },
 ];
-
-const SAMPLE_FLOWCHART: FlowchartData = {
-  nodes: [
-    { id: "start", kind: "start", label: "開始", x: 20, y: 145 },
-    {
-      id: "card",
-      kind: "card",
-      label: "リサーチ結果",
-      sublabel: "ユーザーの課題を整理し、\n優先度をカードで可視化",
-      x: 245,
-      y: 35,
-      w: 320,
-      h: 160,
-      fontSize: 18,
-      textAlign: "left",
-      verticalAlign: "top",
-      divider: "vertical",
-      color: "primary",
-    },
-    {
-      id: "step",
-      kind: "step",
-      label: "ユーザー調査",
-      sublabel: "課題と期待を整理",
-      x: 285,
-      y: 245,
-      fontSize: 12,
-      textAlign: "right",
-      color: "secondary",
-    },
-    { id: "end", kind: "end", label: "方針決定", x: 620, y: 145 },
-    {
-      id: "note",
-      kind: "note",
-      label: "補足メモ（note）",
-      sublabel: "破線枠・Background/Light",
-      x: 20,
-      y: 245,
-      fontSize: 12,
-      textAlign: "left",
-    },
-  ],
-  edges: [
-    {
-      id: "start-card",
-      source: "start",
-      sourceHandle: "right",
-      target: "card",
-      targetHandle: "left",
-      sourceMarker: "circle",
-      targetMarker: "arrow",
-    },
-    {
-      id: "card-step",
-      source: "card",
-      sourceHandle: "bottom",
-      target: "step",
-      targetHandle: "top",
-      targetMarker: "circle",
-    },
-    {
-      id: "step-end",
-      source: "step",
-      sourceHandle: "right",
-      target: "end",
-      targetHandle: "left",
-    },
-  ],
-};
 
 // ─── 型 ───────────────────────────────────────────────
 export type IconSetData = { name: string; icons: string[] };
@@ -1281,15 +1210,6 @@ function ComponentsSection() {
           description="モードを親の状態で持つ例。エディタ内の切替ボタンは onModeChange を呼び、親からも切り替えられる。作品エディタはこれを使って、プレビュー表示中に右側の見出しボタンが押されたら編集モードへ戻している"
         >
           <MarkdownEditorDemo defaultMode="preview" controlled />
-        </ComponentPreview>
-
-        <ComponentPreview
-          title="FlowchartView"
-          description="React Flowを使った読み取り専用ダイアグラム。全オブジェクト共通の標準・Primary（ミント塗り）・Secondary（ミント枠＋濃緑背景）配色、文字サイズ・整列・カード仕切り・線端マーカー・可変サイズに対応。ボーダー基調（影なし・全ノード Surface + Border/Light 1px）"
-        >
-          <div className="h-[420px] w-full overflow-hidden rounded-[14px] border border-border bg-[#1a1a1a] p-2">
-            <FlowchartView data={SAMPLE_FLOWCHART} />
-          </div>
         </ComponentPreview>
 
         <ComponentPreview

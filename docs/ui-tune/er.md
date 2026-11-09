@@ -21,12 +21,11 @@ erDiagram
   skill_experience ||--o{ skill_experience_tools : "experience_id"
   tools_vocab ||--o{ skill_experience_tools : "tool_id"
   profile
-  flowcharts
   phase_names
   work_categories
 ```
 
-外部キーを持たないテーブル: `profile`(1 件固定)、`flowcharts`、`phase_names`、`work_categories`(works との対応は列で持つ。外部キー定義は未確認)。
+外部キーを持たないテーブル: `profile`(1 件固定)、`phase_names`、`work_categories`(works との対応は列で持つ。外部キー定義は未確認)。
 
 ## テーブル一覧
 
@@ -40,7 +39,6 @@ erDiagram
 | tools_vocab / contents_vocab | ツール名・内容名のマスタ |
 | work_categories | 作品カテゴリ |
 | skill_cards / skill_experience / skill_experience_tools | スキルカード → 経験 → 使ったツール |
-| flowcharts | フローチャート(作品詳細に埋め込む) |
 | phase_names | 工程名のマスタ |
 
 ## 画面との対応
@@ -48,7 +46,6 @@ erDiagram
 | 画面 ID | 読むテーブル | 書くテーブル |
 |---|---|---|
 | P01 トップ | profile, career_items, works(+categories), skill_cards 系 | — |
-| P02 作品詳細 | works と中間 4 テーブル, roles, tools_vocab, contents_vocab, flowcharts | — |
-| P05 管理セクション | 上記すべて | profile, career_items, works 系, skill 系, flowcharts, マスタ各種(save_work_with_relations / rename_* / set_* の関数経由) |
+| P02 作品詳細 | works と中間 4 テーブル, roles, tools_vocab, contents_vocab | — |
+| P05 管理セクション | 上記すべて | profile, career_items, works 系, skill 系, マスタ各種(save_work_with_relations / rename_* / set_* の関数経由) |
 | P06 作品エディタ | works 系 | works 系(save_work_with_relations) |
-| P07 フローチャートエディタ | flowcharts | flowcharts |

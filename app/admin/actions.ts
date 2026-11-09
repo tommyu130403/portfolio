@@ -8,10 +8,6 @@ import type { Json, Tables } from "@/src/types/supabase";
 import { parseTimeline } from "@/components/WorkViz";
 import { normalizeWorkCategoryHue, pickLeastUsedPresetHue } from "@/lib/work-category-color";
 import { invalidateWorkCategoryHues } from "@/src/lib/work-category-colors";
-import {
-  clearFlowchartCache,
-  type FlowchartData,
-} from "@/lib/flowchart";
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
@@ -79,111 +75,6 @@ export async function uploadStorageImage(
 }
 
 type WorkRow = Tables<"works">;
-export type FlowchartRow = Tables<"flowcharts">;
-
-// ─── flowcharts CRUD ──────────────────────────────────────────────────────────
-
-export async function listFlowcharts(): Promise<{
-  data: FlowchartRow[];
-  error: string | null;
-}> {
-  try {
-    const { data, error } = await supabase
-      .from("flowcharts")
-      .select("*")
-      .order("updated_at", { ascending: false });
-    if (error) return { data: [], error: error.message };
-    return { data: data ?? [], error: null };
-  } catch (e) {
-    return { data: [], error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function getFlowchart(id: string): Promise<{
-  data: FlowchartRow | null;
-  error: string | null;
-}> {
-  try {
-    const { data, error } = await supabase
-      .from("flowcharts")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function saveFlowchart(payload: {
-  id?: string;
-  title: string;
-  description?: string | null;
-  data: FlowchartData;
-}): Promise<{ data: FlowchartRow | null; error: string | null }> {
-  try {
-    const values = {
-      title: payload.title.trim() || "無題のフローチャート",
-      description: payload.description?.trim() || null,
-      data: payload.data as unknown as Json,
-      updated_at: new Date().toISOString(),
-    };
-    const query = payload.id
-      ? supabase
-          .from("flowcharts")
-          .upsert({ id: payload.id, ...values }, { onConflict: "id" })
-      : supabase.from("flowcharts").insert(values);
-    const { data, error } = await query.select().single();
-    if (error) return { data: null, error: error.message };
-    clearFlowchartCache(data.id);
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function deleteFlowchart(
-  id: string,
-): Promise<{ error: string | null }> {
-  try {
-    const { data, error } = await supabase.from("flowcharts").delete().eq("id", id).select("id");
-    if (error) return { error: error.message };
-    if (!data?.length) return { error: "フローチャートを削除できませんでした（権限またはデータを確認してください）" };
-    clearFlowchartCache(id);
-    return { error: null };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
-export async function duplicateFlowchart(id: string): Promise<{
-  data: FlowchartRow | null;
-  error: string | null;
-}> {
-  try {
-    const current = await getFlowchart(id);
-    if (current.error || !current.data) {
-      return {
-        data: null,
-        error: current.error ?? "複製元のフローチャートが見つかりません",
-      };
-    }
-    const { data, error } = await supabase
-      .from("flowcharts")
-      .insert({
-        title: `${current.data.title}（コピー）`,
-        description: current.data.description,
-        data: current.data.data,
-      })
-      .select()
-      .single();
-    if (error) return { data: null, error: error.message };
-    return { data, error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : String(e) };
-  }
-}
 
 /**
  * 作品・制作内容・ツール・担当役割・体制内訳を一つの DB トランザクションで保存する。

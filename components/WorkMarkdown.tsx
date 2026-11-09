@@ -1,5 +1,5 @@
 import type { CSSProperties, FC, ReactNode } from "react";
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext } from "react";
 import Headline from "./Headline";
 import Icon from "./Icon";
 import {
@@ -8,7 +8,6 @@ import {
   type ImageAlign,
 } from "@/lib/image-layout";
 import { BLOCK_CLOSE, HTML_BLOCK_OPEN, closedBlockEnd, findBlockEnd, takeLeafBlock, type LeafKind } from "@/lib/work-sections";
-import FlowchartEmbed, { FlowchartFigureContext } from "./FlowchartEmbed";
 import WorkCardEmbed from "./WorkCardEmbed";
 import MockupEmbed from "./MockupEmbed";
 import InfoCard from "./InfoCard";
@@ -289,7 +288,6 @@ type Block =
   | { type: "hr" }
   | { type: "code"; lang: string; content: string }
   | { type: "caption"; content: string }
-  | { type: "flowchart"; id: string }
   | { type: "workcard"; id: string }
   | { type: "mockup"; device: "phone" | "laptop"; srcs: string[]; browser: boolean; url: string | null; caption: string }
   | { type: "card"; title: string; body: string; tone: "default" | "accent" }
@@ -477,7 +475,7 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     FENCE_OPEN.test(line) ||
-    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|flowchart|caption|figure|beforeafter|flow|bars)\b/.test(line) ||
+    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|caption|figure|beforeafter|flow|bars)\b/.test(line) ||
     HTML_BLOCK_OPEN.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
@@ -490,16 +488,6 @@ function parseBlocks(src: string): Block[] {
     // 既存本文に残る行は何も描画せず読み飛ばす（isBlockStart と同じ \b 判定で、
     // 後続テキスト付きの行もリテラル露出させない）。
     if (/^:::\s*(timeline|stakeholders)\b/.test(line)) {
-      i++;
-      continue;
-    }
-
-    // フローチャートは1行完結。既存の数値属性パーサはUUIDに使えないため専用正規表現で読む。
-    const flowchart = line.match(
-      /^:::\s*flowchart\s+id\s*=\s*([0-9a-fA-F-]{36})\s*$/,
-    );
-    if (flowchart) {
-      blocks.push({ type: "flowchart", id: flowchart[1] });
       i++;
       continue;
     }
@@ -913,8 +901,6 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "caption":
       return <p className="text-[12px] leading-[18px] tracking-[0.03em] mb-4 mt-2 text-fg-caption">{renderInline(block.content, k)}</p>;
-    case "flowchart":
-      return <FlowchartEmbed id={block.id} />;
     case "workcard":
       return <WorkCardEmbed id={block.id} />;
     case "mockup": {
@@ -1093,52 +1079,31 @@ export const WorkSections: FC<{
   /** admin プレビュー専用。見出しの編集ボタンを出す（引数 = sections 内の何番目か）。渡さなければ見た目は変わらない */
   onEditSection?: (index: number) => void;
 }> = ({ sections, onEditSection }) => {
-  // 本文全体で登場順にフローチャートへ Fig. 番号を振る（同じ id は最初の番号を使う）
-  const figureNumbers = useMemo(() => {
-    const map = new Map<string, number>();
-    // MarkdownBody と同じ解析結果をたどる（コードブロック内や分割行は数えず、grid のセルは再帰して数える）
-    const collect = (md: string) => {
-      for (const block of parseBlocks(md)) {
-        if (block.type === "flowchart") {
-          if (!map.has(block.id)) map.set(block.id, map.size + 1);
-        } else if (block.type === "grid") {
-          block.cells.forEach(collect);
-        } else if (block.type === "card" || block.type === "figure") {
-          collect(block.body);
-        }
-      }
-    };
-    sections.forEach((sec) => collect(sec.md));
-    return map;
-  }, [sections]);
-
   // 1カラム。見出し（Headline section-aside = Library Headline type=01 + 右罫線）→ 32px → 本文。セクション間 80px。
   // 区切り線は見出しの罫線が兼ねる（Claude Design「Works 詳細 1カラム 提案」B案）
   return (
-    <FlowchartFigureContext.Provider value={figureNumbers}>
-      <div className="flex flex-col gap-20">
-        {sections.map((sec, i) => (
-          <section key={i} className="flex w-full flex-col gap-8">
-            {onEditSection ? (
-              <div className="relative">
-                {sec.heading ? (
-                  <Headline title={sec.heading} variant="section-aside" />
-                ) : (
-                  <p className="text-[12px] text-fg-muted">見出しなし</p>
-                )}
-                <EditButton label={sec.heading || "見出しなしのセクション"} onClick={() => onEditSection(i)} />
-              </div>
-            ) : (
-              sec.heading && <Headline title={sec.heading} variant="section-aside" />
-            )}
-            {/* 本文は左右 16px 内側（Figma 888:3167） */}
-            <div className="min-w-0 w-full px-4">
-              <MarkdownBody md={sec.md} />
+    <div className="flex flex-col gap-20">
+      {sections.map((sec, i) => (
+        <section key={i} className="flex w-full flex-col gap-8">
+          {onEditSection ? (
+            <div className="relative">
+              {sec.heading ? (
+                <Headline title={sec.heading} variant="section-aside" />
+              ) : (
+                <p className="text-[12px] text-fg-muted">見出しなし</p>
+              )}
+              <EditButton label={sec.heading || "見出しなしのセクション"} onClick={() => onEditSection(i)} />
             </div>
-          </section>
-        ))}
-      </div>
-    </FlowchartFigureContext.Provider>
+          ) : (
+            sec.heading && <Headline title={sec.heading} variant="section-aside" />
+          )}
+          {/* 本文は左右 16px 内側（Figma 888:3167） */}
+          <div className="min-w-0 w-full px-4">
+            <MarkdownBody md={sec.md} />
+          </div>
+        </section>
+      ))}
+    </div>
   );
 };
 

@@ -24,7 +24,6 @@ const E1 = "00000000-0000-4000-8000-000000000501";
 const E2 = "00000000-0000-4000-8000-000000000502";
 const E3 = "00000000-0000-4000-8000-000000000503";
 const E4 = "00000000-0000-4000-8000-000000000504";
-const F1 = "00000000-0000-4000-8000-000000000601";
 
 const workBase = {
   hero_bg_color: null,
@@ -52,7 +51,6 @@ export const FIXTURE_TABLES: {
   skill_cards: Tables<"skill_cards">[];
   skill_experience: Tables<"skill_experience">[];
   skill_experience_tools: Tables<"skill_experience_tools">[];
-  flowcharts: Tables<"flowcharts">[];
 } = {
   profile: [
     {
@@ -116,7 +114,7 @@ export const FIXTURE_TABLES: {
       sections: [
         {
           heading: "概要",
-          body: `### 背景\nフィクスチャ用の本文です。\n\n::: flowchart id=${F1}`,
+          body: `### 背景\nフィクスチャ用の本文です。`,
         },
       ],
     },
@@ -277,25 +275,5 @@ export const FIXTURE_TABLES: {
     { experience_id: E2, tool_id: T4, sort_order: 0 },
     { experience_id: E4, tool_id: T2, sort_order: 0 },
     { experience_id: E4, tool_id: T3, sort_order: 1 },
-  ],
-  flowcharts: [
-    {
-      id: F1,
-      title: "サンプルフロー",
-      description: null,
-      created_at: null,
-      updated_at: null,
-      data: {
-        nodes: [
-          { id: "start", kind: "start", label: "開始", x: 120, y: 40 },
-          { id: "step", kind: "step", label: "処理", x: 100, y: 190 },
-          { id: "end", kind: "end", label: "終了", x: 120, y: 350 },
-        ],
-        edges: [
-          { id: "start-step", source: "start", target: "step", sourceHandle: "bottom", targetHandle: "top" },
-          { id: "step-end", source: "step", target: "end", sourceHandle: "bottom", targetHandle: "top" },
-        ],
-      },
-    },
   ],
 };

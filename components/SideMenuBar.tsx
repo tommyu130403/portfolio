@@ -5,6 +5,7 @@ import type { FC } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Icon, { IconProps } from "./Icon";
+import ContactDialog, { clearContactDraft } from "./ContactDialog";
 import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
 import { useAuth } from "@/lib/auth";
 
@@ -13,10 +14,14 @@ export type SideMenuSectionId = "introduction" | "career" | "works" | "skills";
 const AVATAR_URL =
   "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=88&q=80";
 
-// URL 未入手。入手後に href を足す
-const SOCIAL_LINKS: { label: string; icon: Pick<IconProps, "set" | "name">; href?: string }[] = [
-  { label: "GitHub", icon: { set: "Brand", name: "logo-github" } },
-  { label: "YOUTRUST", icon: { set: "Brand", name: "logo-youtrust" } },
+// 外部サイトは新しいタブで開く(SideMenuItem が http から始まる href を外部と見なす)
+const SOCIAL_LINKS: { label: string; icon: Pick<IconProps, "set" | "name">; href: string }[] = [
+  { label: "GitHub", icon: { set: "Brand", name: "logo-github" }, href: "https://github.com/tommyu130403" },
+  {
+    label: "YOUTRUST",
+    icon: { set: "Brand", name: "logo-youtrust" },
+    href: "https://youtrust.jp/users/d9c58189b5ae60afa33c27d939759f7c",
+  },
 ];
 
 // ─────────────────────────────────────────────
@@ -26,6 +31,10 @@ type SideMenuItemProps = {
   icon: Pick<IconProps, "set" | "name">;
   label: string;
   href?: string;
+  /** href が無いとき(ボタンとして描くとき)に押したら呼ぶ */
+  onClick?: () => void;
+  /** 押すとダイアログが開くボタンのとき "dialog"(読み上げで伝える) */
+  hasPopup?: "dialog";
   active?: boolean;
   collapsed?: boolean;
   /** Figma の _Item width=short。ラベルを表示せず、aria-label とツールチップで示す */
@@ -36,6 +45,8 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
   icon,
   label,
   href,
+  onClick,
+  hasPopup,
   active = false,
   collapsed = false,
   iconOnly = false,
@@ -128,6 +139,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       : null;
 
   if (href) {
+    const external = /^https?:\/\//.test(href);
     return (
       <div
         ref={wrapperRef}
@@ -137,14 +149,26 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
         onFocusCapture={() => setShowTooltip(true)}
         onBlurCapture={hideTooltip}
       >
-        <Link
-          href={href}
-          className={className}
-          aria-current={active ? "page" : undefined}
-          aria-label={iconOnly ? label : undefined}
-        >
-          {content}
-        </Link>
+        {external ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={className}
+            aria-label={iconOnly ? `${label}(新しいタブで開きます)` : undefined}
+          >
+            {content}
+          </a>
+        ) : (
+          <Link
+            href={href}
+            className={className}
+            aria-current={active ? "page" : undefined}
+            aria-label={iconOnly ? label : undefined}
+          >
+            {content}
+          </Link>
+        )}
         {tooltip}
       </div>
     );
@@ -161,6 +185,8 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
     >
       <button
         type="button"
+        onClick={onClick}
+        aria-haspopup={hasPopup}
         className={className}
         aria-current={active ? "true" : undefined}
         aria-label={iconOnly ? label : undefined}
@@ -199,8 +225,10 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
 
   const { supabaseSession, accessRole, logout } = useAuth();
   const [logoutError, setLogoutError] = useState("");
+  const [contactOpen, setContactOpen] = useState(false);
 
   return (
+    <>
     <aside
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
@@ -359,6 +387,8 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         <SideMenuItem
           icon={{ set: "Office", name: "mail" }}
           label="Contact"
+          onClick={() => setContactOpen(true)}
+          hasPopup="dialog"
           collapsed={collapsed}
         />
 
@@ -367,6 +397,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             type="button"
             onClick={() => {
               setLogoutError("");
+              clearContactDraft();
               void logout()
                 .then((error) => { if (error) setLogoutError(error); })
                 .catch(() => setLogoutError("ログアウトできませんでした"));
@@ -388,6 +419,9 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
         {logoutError && <p className="text-[12px] text-danger-300" role="alert">{logoutError}</p>}
       </div>
     </aside>
+    {/* aside の外に置く(メニューのホバー・フォーカス展開の判定にダイアログ内の操作を混ぜないため) */}
+    {contactOpen && <ContactDialog onClose={() => setContactOpen(false)} />}
+    </>
   );
 };
 

@@ -28,6 +28,7 @@ import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
 import WorkVizModal from "@/components/WorkVizModal";
+import ContactDialog from "@/components/ContactDialog";
 import Modal from "@/components/Modal";
 import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
 import type { Tables } from "@/src/types/supabase";
@@ -868,6 +869,22 @@ function ModalDemo() {
   );
 }
 
+function ContactDialogDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex w-full flex-wrap gap-3">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-[8px] border border-border-light px-3 py-1.5 text-[13px] text-fg-muted transition-colors hover:border-system-700 hover:text-white"
+      >
+        Contact ダイアログを開く
+      </button>
+      {open && <ContactDialog onClose={() => setOpen(false)} />}
+    </div>
+  );
+}
+
 function WorkVizModalDemo() {
   const [kind, setKind] = useState<"timeline" | "stakeholders" | null>(null);
   return (
@@ -1052,7 +1069,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="SideMenuBar"
-          description="サイドナビゲーション。Figma Master 62:545 / Library 55-296 準拠。角丸なし・右境界線は inside stroke(after 疑似要素)。Social はロゴのみ(GitHub / YOUTRUST、リンク先未設定)。既定は折りたたみ(96px)で、ホバー / キーボードフォーカス時に 216px(最も幅の広い中身に合わせて 8 の倍数へ切り上げ)へ展開しページ内容に重なる(内容は動かない)。collapsed prop で状態を固定できる(モバイルのオーバーレイは collapsed={false})。トグルボタンなし"
+          description="サイドナビゲーション。Figma Master 62:545 / Library 55-296 準拠。角丸なし・右境界線は inside stroke(after 疑似要素)。Social はロゴのみ(GitHub / YOUTRUST。外部サイトなので新しいタブで開く)。Contact を押すと ContactDialog が開く。既定は折りたたみ(96px)で、ホバー / キーボードフォーカス時に 216px(最も幅の広い中身に合わせて 8 の倍数へ切り上げ)へ展開しページ内容に重なる(内容は動かない)。collapsed prop で状態を固定できる(モバイルのオーバーレイは collapsed={false})。トグルボタンなし"
         >
           <div className="flex flex-wrap gap-8">
             <div className="overflow-hidden rounded-[12px] border border-border-light">
@@ -1089,9 +1106,16 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="Modal"
-          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）。Escape で閉じる／開くとモーダルへフォーカス、閉じると開いたボタンへ戻る／width=&quot;content&quot; で中身の幅（上限 800px）"
+          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）。Escape で閉じる／開くとモーダルへフォーカス、閉じると開いたボタンへ戻る／width=&quot;content&quot; で中身の幅（上限 800px）／ariaLabelledBy に見出しの id を渡すとダイアログの名前になる"
         >
           <ModalDemo />
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="ContactDialog"
+          description="サイドメニューの Contact と、ログイン画面・権限のない画面の「お問い合わせ」から開く問い合わせフォーム(components/ContactDialog.tsx。ログイン前でも送れる)。body 直下に z-80 で出す。Modal width=&quot;content&quot;・幅 480px(スマホは画面幅)。項目は お名前 / 返信用メールアドレス / ご用件。入力欄はログイン画面と同じ形(角丸 10・Surface/Light・枠 Border/Light・フォーカスで Primary・誤りは Danger/300)。空欄とメールの形式を送信時に確かめ、最初の誤りの欄へ移る。送信内容は Supabase の contact_messages に保存(24 時間あたりログイン済みは 1 人 5 件、ログイン前は接続元ごとに 3 件・全体で 30 件まで)。閉じても入力は下書きとして残り、送信成功・ログアウトで消える。見本から送っても実際に保存される(接続先が無い環境では保存されない)"
+        >
+          <ContactDialogDemo />
         </ComponentPreview>
 
         <ComponentPreview title="Card" description="制作・企画(Works)一覧カード。Figma の Card に対応。href を渡すとカード全体がリンク(<a>)になり詳細ページ(/works?id=)へ遷移。⌘+クリック・中クリックで別タブに開ける。幅は容器に従うため、実ページ（本文 800px の 3 列）と同じ 256px を与えている。通常時は影なし(Figma では内側の影が外枠の clip で切れて画面に出ない)。ホバー時は背景 Action/hover・枠 Border/Light・影 shadow-base（Library Card Status=hover。href 指定時のみ）。切り替えは 300ms ease-out で、ホバーするカード共通（lib/hover-card.ts の HOVER_CARD。WorkPagerCard・スキルカードも同じ）。Figma Master 494:1363。カテゴリチップ・期間・作品名・制作内容タグ。画像は thumbnail（構成）があれば WorkThumbnail、無ければ image、無ければ既定画像">

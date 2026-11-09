@@ -33,7 +33,10 @@ function HomeContent() {
   useEffect(() => {
     if (!mobileMenuOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileMenuOpen(false);
+      if (e.key !== "Escape") return;
+      // Contact などのダイアログがメニューの手前に開いている間は、Esc でそちらだけを閉じる
+      if (document.querySelectorAll('[role="dialog"][aria-modal="true"]').length > 1) return;
+      setMobileMenuOpen(false);
     };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;

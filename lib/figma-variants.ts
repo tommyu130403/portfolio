@@ -4,7 +4,7 @@
  *
  * _Item: Size (default|small), Status (defalut|hover|Active), Width (default|short)
  *
- * _Item の実ノード: 59:24643（Library）。Active は背景なし・文字 System/300、hover は白5%＋System/300
+ * _Item の実ノード: 59:24643（Library）。Active は背景なし・文字とアイコン白、hover は白5%＋文字とアイコン白（通常時のアイコンは System/500）
  */
 
 export type ItemStatus = "defalut" | "hover" | "Active";
@@ -14,8 +14,8 @@ export type ItemSize = "default" | "small";
 /** _Item Status に応じたスタイル（CSS） */
 export const ITEM_STATUS_CLASSES: Record<ItemStatus, string> = {
   defalut: "text-white/50",
-  hover: "hover:bg-action-hover hover:text-system-300",
-  Active: "text-system-300",
+  hover: "hover:bg-action-hover hover:text-white",
+  Active: "text-white",
 };
 
 /**
@@ -30,7 +30,7 @@ export const ITEM_WIDTH_CLASSES: Record<ItemWidth, string> = {
 
 /** _Item 共通ベース */
 export const ITEM_BASE =
-  "flex cursor-pointer items-center rounded-[8px] shrink-0 transition-[width,background-color,color] duration-300 overflow-hidden gap-3 px-3 py-[10px]";
+  "group/item flex cursor-pointer items-center rounded-[8px] shrink-0 transition-[width,background-color,color] duration-300 overflow-hidden gap-3 px-3 py-[10px]";
 
 /** フォーカス時のアクセシビリティ */
 export const ITEM_FOCUS =

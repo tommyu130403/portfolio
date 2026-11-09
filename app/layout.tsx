@@ -1,36 +1,9 @@
 import type { Metadata } from "next";
-import { Afacad, Geist_Mono, Noto_Sans_JP, Figtree } from "next/font/google";
+// フォントはリポジトリに同梱したものを配る(取得元・ライセンスは app/fonts/fonts.css の冒頭)。
+// 英字: Afacad / 日本語本文: Noto Sans JP / Avenir の代替: Figtree / 等幅: Geist Mono
+import "./fonts/fonts.css";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
-
-// 英字フォント: Afacad (variable font, 400–700)
-const afacad = Afacad({
-  variable: "--font-afacad",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-// 日本語本文フォント: Noto Sans JP (typo.body.jp)
-const notoSansJP = Noto_Sans_JP({
-  variable: "--font-noto-sans-jp",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-// Avenir の代替: Avenir は Mac / iOS にしか無いため、それ以外の端末ではこれで表示する。
-// 800 は読み込まない: Figtree の 800 は Avenir Heavy より太いため、800 指定時は 700 で描かせる。
-const figtree = Figtree({
-  variable: "--font-figtree",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 // GitHub Pages プロジェクトサイト（basePath: /portfolio）を想定した公開URL。
 // 実際のデプロイ先が異なる場合はここを差し替える。
@@ -70,7 +43,7 @@ export default function RootLayout({
     // globals.css の scroll-behavior: smooth を、Next.js が画面切り替え中だけ外せるようにする目印
     <html lang="ja" data-scroll-behavior="smooth">
       <body
-        className={`${afacad.variable} ${notoSansJP.variable} ${figtree.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
       >
         <AuthProvider>
           {children}

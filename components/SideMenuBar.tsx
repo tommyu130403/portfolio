@@ -82,7 +82,14 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
 
   const content = (
     <>
-      <Icon set={icon.set} name={icon.name} className="h-[18px] w-[18px] shrink-0" aria-hidden />
+      {/* アイコンは文字色に追従させる（通常時 System/500、ホバーと表示中は白。Figma 59:24643） */}
+      <Icon
+        set={icon.set}
+        name={icon.name}
+        tintColor="currentColor"
+        className={`h-[18px] w-[18px] shrink-0 transition-colors duration-300 ${active ? "text-white" : "text-system-500 group-hover/item:text-white"}`}
+        aria-hidden
+      />
       {!iconOnly && (
         <span
           className={[

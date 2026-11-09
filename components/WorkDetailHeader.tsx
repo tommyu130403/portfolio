@@ -360,8 +360,9 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
 
         {/* メタ表（Figma 787:9916）。列比は 1fr : 4fr（Figma 0.25fr : 1fr）。
             ラベル列の下限は max-content にして、ブラウザの既定フォントサイズを上げても
-            ラベル文字（12px 固定）が仕切り線を越えないようにする（root 24px で「関係者」が越えた実績）。 */}
-        <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] overflow-hidden rounded-r8 border border-border">
+            ラベル文字（12px 固定）が仕切り線を越えないようにする（root 24px で「関係者」が越えた実績）。
+            地は本文の表（components/Table.tsx・Library 188:355）と同じ bg-surface-light。 */}
+        <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] overflow-hidden rounded-r8 border border-border bg-surface-light">
           {/* 期間 */}
           <div className="flex min-h-10 items-center border-b border-border px-4">
             <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">

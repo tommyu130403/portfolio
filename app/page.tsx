@@ -213,17 +213,17 @@ function HomeContent() {
                 <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
             </div>
-            {/* 肩書: 職種と英語名だけ（Figma Master 47:210）。名前は 46px・Avenir Heavy・行間 100% */}
-            <div className="flex flex-1 flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <p className="font-en text-[16px] leading-6 tracking-[-0.3125px] text-fg-muted">
+            {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 14px Main/050・名前 46px Avenir Heavy・行間 100%・一言紹介 18px Bold Tertiary */}
+            <div className="flex flex-1 flex-col gap-4 sm:pt-3">
+              <div className="flex flex-col gap-3">
+                <p className="font-en text-[14px] leading-none tracking-[0.03em] text-main-050">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-surface-light" /> : profile?.title}
                 </p>
                 <p className="font-en text-[46px] font-extrabold leading-none tracking-[-0.4492px] text-main-050">
                   {loading ? <span className="inline-block h-[46px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_en || profile?.name_jp}
                 </p>
               </div>
-              {profile?.bio && <p className="text-[15px] leading-6 text-fg-muted">{profile.bio}</p>}
+              {profile?.bio && <p className="text-[18px] font-bold leading-[1.6] tracking-[0.03em] text-fg-subtle">{profile.bio}</p>}
             </div>
           </section>
 
@@ -242,20 +242,14 @@ function HomeContent() {
                   <p>自己紹介はまだ登録されていません。</p>
                 )}
               </div>
-              {/* Figma の点は本文と同じ 13px の「•」を字下げ 19.5px の中央に置いたもの。list-disc は 5×5 の図形になるため不使用 */}
-              <ul className="list-none text-[13px] leading-[21px] tracking-[0.39px] text-fg-muted" role="list">
-                <li className="relative ms-[19.5px]">
-                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
-                  説明責任を果たす (透明性)
-                </li>
-                <li className="relative ms-[19.5px]">
-                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
-                  あらゆる専門性によって最適解を模索する (異能の掛け算)
-                </li>
-                <li className="relative ms-[19.5px]">
-                  <span aria-hidden className="absolute top-0 left-[-19.5px] w-[19.5px] text-center">•</span>
-                  ビジネスを作る (UXの証明)
-                </li>
+              {/* 価値観（Figma Master 1241:7589・Tag-single の上書き）: 「# 」付き・Noto 12px・字間 5%・Main/base 文字・Main α10 地・余白 8・角丸 4・gap 8 で折り返し */}
+              <ul className="flex flex-wrap gap-2" role="list">
+                {["説明責任を果たす (透明性)", "あらゆる専門性によって最適解を模索する (異能の掛け算)", "ビジネスを作る (UXの証明)"].map((value) => (
+                  // Figma は行間 100%（1 行で高さ 28）。スマホ幅で長い値が折り返すと行が重なって見えるため、行間 1.4・上下 6px（1 行で約 29）にしている
+                  <li key={value} className="rounded-r4 bg-main-100/10 px-2 py-[6px] text-[12px] leading-[1.4] tracking-[0.05em] text-primary">
+                    # {value}
+                  </li>
+                ))}
               </ul>
             </div>
           </section>

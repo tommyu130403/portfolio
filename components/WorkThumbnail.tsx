@@ -174,6 +174,15 @@ const WorkThumbnail: FC<Props> = ({
       }
     : undefined;
 
+  /* 画像のみ: ロゴ・サービス名を出さず、資料キャプチャ 1 枚目（管理画面の欄どおり。空き枠は詰めない）を 16:9 の枠で中央に置く */
+  if (layout === "image") {
+    return (
+      <div aria-hidden className={rootClass} style={rootStyle}>
+        <CaptureFrame src={captureUrls[0] || null} left={160} top={90} width={960} height={540} />
+      </div>
+    );
+  }
+
   if (layout === "logo") {
     return (
       <div aria-hidden className={rootClass} style={rootStyle}>

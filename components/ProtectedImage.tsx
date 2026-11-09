@@ -81,6 +81,11 @@ function classifySource(src: string): { protected: boolean; path: string | null 
   }
 }
 
+/** Storage の公開 URL から bucket 内のパスを取り出す。Storage の URL でなければ null */
+export function storagePathFromUrl(src: string): string | null {
+  return classifySource(src).path;
+}
+
 export default function ProtectedImage({ src, alt = "", onUnavailableChange, onError, onLoad, ...props }: ProtectedImageProps) {
   const { accessRole } = useAuth();
   const source = classifySource(src);

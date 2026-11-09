@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 
 export type SupabaseSessionState = "loading" | "signedOut" | "signedIn";
-export type PortfolioAccessRole = "loading" | "owner" | "reader" | "denied" | "error";
+export type PortfolioAccessRole = "loading" | "owner" | "reader" | "expired" | "denied" | "error";
 
 type AuthContextValue = {
   supabaseSession: SupabaseSessionState;
@@ -13,6 +13,10 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function keepOnError(prev: PortfolioAccessRole): PortfolioAccessRole {
+  return prev === "owner" || prev === "reader" ? prev : "error";
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabaseSession, setSupabaseSession] = useState<SupabaseSessionState>("loading");
@@ -39,12 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
       authEventSeen = true;
       const userId = session?.user.id ?? null;
       if (userId !== sessionUserId.current) {
         setAccessRole(userId ? "loading" : "denied");
+        setAuthEpoch((epoch) => epoch + 1);
+      } else if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
         setAuthEpoch((epoch) => epoch + 1);
       }
       sessionUserId.current = userId;
@@ -63,16 +69,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // The generated DB types are refreshed only after the migration is applied.
     const client = supabase as unknown as {
       rpc: (name: "portfolio_access_role") => Promise<{
-        data: "owner" | "reader" | "denied" | null;
+        data: "owner" | "reader" | "expired" | "denied" | null;
         error: { message: string } | null;
       }>;
     };
     client.rpc("portfolio_access_role")
       .then(({ data, error }) => {
-        if (active) setAccessRole(error ? "error" : data ?? "error");
+        // トークン更新時の取り直しが一時的に失敗しても、閲覧中の画面を消さない
+        // (データ自体は RLS が守るので、直前の owner / reader を保つ)。
+        if (active) setAccessRole((prev) => (data ? data : keepOnError(prev)));
+        if (active && error) console.error("portfolio_access_role failed:", error.message);
       })
       .catch(() => {
-        if (active) setAccessRole("error");
+        if (active) setAccessRole(keepOnError);
       });
     return () => { active = false; };
   }, [supabaseSession, authEpoch]);

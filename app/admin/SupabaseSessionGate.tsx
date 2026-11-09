@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { GUEST_EXPIRED_MESSAGE, isGuestExpiredError, toLoginEmail } from "@/lib/guestId";
 
 /**
  * 管理画面の書き込みは Supabase Auth のログイン済みユーザー (private.owners 登録者) だけが
@@ -26,22 +27,22 @@ export function SupabaseSessionGate({ children }: { children: React.ReactNode })
 }
 
 function LoginForm() {
-  const [email, setEmail]       = useState("");
+  const [loginId, setLoginId]   = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [checking, setChecking] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!loginId.trim() || !password) return;
     setChecking(true);
     setError("");
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: toLoginEmail(loginId),
         password,
       });
-      if (signInError) setError("メールアドレスまたはパスワードが正しくありません");
+      if (signInError) setError(isGuestExpiredError(signInError) ? GUEST_EXPIRED_MESSAGE : "IDまたはパスワードが正しくありません");
     } catch {
       setError("エラーが発生しました");
     } finally {
@@ -59,11 +60,14 @@ function LoginForm() {
         <p className="mb-10 text-[14px] text-fg-muted">管理画面ログイン</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="メールアドレス"
+            type="text"
+            value={loginId}
+            onChange={(e) => setLoginId(e.target.value)}
+            placeholder="ID"
             autoFocus
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             autoComplete="username"
             className="w-full rounded-[10px] border border-border-light bg-[#1a1a1a] px-4 py-3.5 text-[15px] text-white outline-none transition-colors focus:border-primary"
           />
@@ -80,7 +84,7 @@ function LoginForm() {
           )}
           <button
             type="submit"
-            disabled={checking || !email || !password}
+            disabled={checking || !loginId.trim() || !password}
             className="mt-1 rounded-[10px] bg-primary py-3.5 text-[15px] font-semibold text-[#0a0a0a] transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             {checking ? "確認中…" : "ログイン"}

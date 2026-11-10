@@ -961,7 +961,7 @@ function ComponentsSection() {
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy・text-fg）" variant="section" /></div>
-          <div className="w-full"><Headline title="見出し 01（Headline type=02・16px Bold・文字 main-050・横線 Border/Main・h3）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="見出し 01（Headline type=02・16px Bold・文字 fg-subtle・横線 Border/Light・h3）" variant="markdown-h1" /></div>
           <div className="w-full"><Headline title="見出し 02（01 と同形・h3・Library Headline type=02 304:302）" variant="markdown-h2" /></div>
           <div className="w-full"><Headline title="背景と課題（section-aside・22px Bold 白 + 右罫線。作品詳細のセクション見出し）" variant="section-aside" /></div>
         </ComponentPreview>
@@ -969,7 +969,7 @@ function ComponentsSection() {
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
             <p className="text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-system-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
-            <Headline title="見出し02（### / Headline type=02・横線 Border/Main＋Noto Bold 16px main-050）" variant="markdown-h2" />
+            <Headline title="見出し02（### / Headline type=02・横線 Border/Light＋Noto Bold 16px fg-subtle）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
             <p className="text-[15px] leading-[22px] tracking-[0.45px] text-fg">Body01（通常段落 / Noto Regular 15px text-fg = Text/Body/Primary #D6D6D8）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-fg-muted">引用 blockquote（&gt; / 13px text-fg-muted・左ボーダー）</p>

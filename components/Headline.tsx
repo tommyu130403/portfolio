@@ -11,7 +11,7 @@ type HeadlineProps = {
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px text-fg）
    * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 22px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
-   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px。横線 Border/Main・文字 main-050）
+   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px。横線 Border/Light・文字 Text/Body/Tertiary（fg-subtle））
    */
   variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2";
 };
@@ -48,12 +48,12 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Library Headline type=02（304:302）: 横線 16×1px Border/Main + Noto Sans JP Bold 16px・lh 150%・ls 5%・文字 main-050（2026-11-06 見出し階層 B案）、gap 8。h1・h2 とも同形の h3
+  // Library Headline type=02（304:302）: 横線 16×1px Border/Light + Noto Sans JP Bold 16px・lh 150%・ls 5%・文字 Text/Body/Tertiary（2026-11-10 Library 更新）、gap 8。h1・h2 とも同形の h3
   if (variant === "markdown-h1" || variant === "markdown-h2") {
     return (
       <div className="flex w-full items-center gap-2">
-        <span aria-hidden className="h-px w-4 shrink-0 bg-border-main" />
-        <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
+        <span aria-hidden className="h-px w-4 shrink-0 bg-border-light" />
+        <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-subtle">
           {title}
         </h3>
       </div>

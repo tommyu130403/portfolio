@@ -350,73 +350,78 @@ const MixedText: FC<{ text: string }> = ({ text }) => {
   return <>{nodes}</>;
 };
 
+/** 「担当」バッジ（Figma MeBadge）: 左右 6px・上下 4px・Caption/01/JP（行間 100%）・地 main-100 / 文字 surface */
 const MeBadge: FC<{ className?: string }> = ({ className = "" }) => (
-  <span className={`w-fit rounded-full bg-main-100 px-1.5 py-0.5 text-caption-01-jp text-surface ${className}`}>担当</span>
+  <span className={`w-fit shrink-0 rounded-full bg-main-100 px-1.5 py-1 text-caption-01-jp leading-none text-surface ${className}`}>担当</span>
 );
 
+/** チーム行・組織カード行（Figma Row）: 地 indigo-base・角丸 4・左右 8 / 上下 4・Body/03/JP */
+const ROW_CLASS = "flex items-center rounded-r4 bg-indigo-base px-2 py-1 text-body-03-jp";
+
 export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data }) => (
-  <div className="flex flex-col gap-1.5 md:gap-2">
+  /* Figma _Stakeholder（Master 848:3218）: 層の間隔 10px */
+  <div className="flex flex-col gap-2.5">
     {data.layers.map((layer, li) => {
       const icon = layerIcon(layer.icon);
       return (
-      <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[88px_minmax(0,1fr)] md:gap-3">
-        {/* 層のラベル。md 以上はアイコン → 層名を中央揃えで縦に積む（スマホは横並び）。層のメモ（note）は表示しない */}
-        <div className="flex items-center gap-2 md:flex-col md:items-center md:gap-1 md:py-2 md:text-center">
+      <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[104px_minmax(0,1fr)] md:gap-3">
+        {/* 層のラベル。md 以上はアイコン 20px → 4px → 層名（Afacad Bold 14px）を中央揃えで縦に積む（スマホは横並び）。層のメモ（note）は表示しない */}
+        <div className="flex items-center gap-2 md:flex-col md:items-center md:gap-1 md:py-2.5 md:text-center">
           {icon && (
             <Icon
               set={icon.set}
               name={icon.name}
-              tintColor="var(--color-fg-muted)"
+              tintColor="var(--color-main-100)"
               alt=""
               aria-hidden
-              className="h-4 w-4 shrink-0"
+              className="h-5 w-5 shrink-0"
             />
           )}
           {layer.name && (
-            <p className="min-w-0 text-body-02-jp-bold text-fg-muted">
-              <MixedText text={layer.name} />
-            </p>
+            <p className="min-w-0 [font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[14px] font-bold leading-none tracking-[0.05em] text-system-500">{layer.name}</p>
           )}
         </div>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-1">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-2">
           {layer.cards.map((card, ci) =>
             card.kind === "role" ? (
               <div
                 key={ci}
-                className={`flex min-w-0 flex-col rounded-md border px-3 py-2.5 ${
-                  card.me ? "border-main-100/60 bg-main-100/10" : "border-border bg-surface-light"
+                className={`flex min-w-0 flex-col rounded-r8 border px-3 py-[9px] ${
+                  card.me ? "border-main-100/40 bg-main-100/6" : "border-border bg-surface-light"
                 }`}
               >
                 {(card.name || card.me) && (
-                  <p className="min-w-0 text-body-02-jp-bold text-fg">
-                    <MixedText text={card.name} />
-                    {card.me && <MeBadge className="ml-1.5 inline-block align-[1px]" />}
-                  </p>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <p className="min-w-0 text-body-02-jp-bold text-fg">
+                      <MixedText text={card.name} />
+                    </p>
+                    {card.me && <MeBadge />}
+                  </div>
                 )}
-                <p className="mt-0.5 text-body-02-jp text-fg-muted">
+                <p className="mt-0.5 text-body-03-jp text-system-500">
                   <MixedText text={card.note} />
                 </p>
                 {card.teams && card.teams.length > 0 && (
-                  <ul className="mt-2 flex flex-col gap-1">
+                  <ul className="mt-2.5 flex flex-col gap-1">
                     {card.teams.map((t, ti) => (
-                      <li key={ti} className="flex items-center justify-between gap-2 rounded-r4 bg-system-900 px-2 py-1 text-body-02-jp text-fg">
-                        <span className="min-w-0">
+                      <li key={ti} className={ROW_CLASS}>
+                        <span className="min-w-0 text-fg">
                           <MixedText text={t.name} />
                         </span>
-                        <span className="shrink-0 text-fg-muted">{t.headcount}名</span>
+                        <span className="shrink-0 text-system-500">{t.headcount}名</span>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
             ) : (
-              <div key={ci} className="flex min-w-0 flex-col rounded-md border border-border bg-surface-light px-3 py-2.5">
+              <div key={ci} className="flex min-w-0 flex-col rounded-r8 border border-border bg-surface-light px-3 py-[9px]">
                 <p className="text-body-02-jp-bold text-fg">
                   <MixedText text={card.title} />
                 </p>
-                <ul className="mt-2 flex flex-col gap-1">
+                <ul className="mt-2.5 flex flex-col gap-1">
                   {card.rows.map((row, ri) => (
-                    <li key={ri} className={`flex items-center gap-1.5 rounded-r4 bg-system-900 px-2 py-1 text-body-02-jp ${row.me ? "text-main-050" : "text-fg"}`}>
+                    <li key={ri} className={`${ROW_CLASS} gap-1.5 ${row.me ? "text-main-050" : "text-fg"}`}>
                       <span className="min-w-0">
                         <MixedText text={row.text} />
                       </span>

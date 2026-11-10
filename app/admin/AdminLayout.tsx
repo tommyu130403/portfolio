@@ -734,11 +734,11 @@ export function ProofreadPanel({
 // ─── Profile セクション ────────────────────────────────
 
 // profile.introduction は jsonb カラムだが実体は string[] なのでローカル型で上書き
-type ProfileForm = Omit<Profile, "updated_at" | "introduction"> & { introduction: string[] };
+type ProfileForm = Omit<Profile, "updated_at" | "introduction" | "career_lead"> & { introduction: string[] };
 
 function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => void }) {
   const [form, setForm] = useState<ProfileForm>({
-    id: 1, name_jp: "", name_en: "", title: "", bio: "", career_lead: "", hero_image_url: "", introduction: [],
+    id: 1, name_jp: "", name_en: "", title: "", bio: "", hero_image_url: "", introduction: [],
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -784,7 +784,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   };
 
   const handleProofread = async () => {
-    const text = [form.bio, ...(form.introduction as string[]), form.career_lead].filter(Boolean).join("\n\n");
+    const text = [form.bio, ...(form.introduction as string[])].filter(Boolean).join("\n\n");
     setProofChecking(true); setProofIssues(null); setProofError("");
     try {
       const { issues, error } = await runProofread(text);
@@ -800,7 +800,12 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
   useEffect(() => {
     supabase.from("profile").select("*").eq("id", 1).single().then(({ data, error }) => {
       if (error || !data) setLoadError(error?.message ?? "プロフィールが見つかりません");
-      else setForm({ ...data, career_lead: data.career_lead ?? "", introduction: Array.isArray(data.introduction) ? data.introduction as string[] : [] });
+      else {
+        // career_lead は経歴セクションで編集する。ここで持つと保存時に古い値で上書きするため外す
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { career_lead, ...rest } = data;
+        setForm({ ...rest, introduction: Array.isArray(data.introduction) ? data.introduction as string[] : [] });
+      }
       setFetching(false);
     });
   }, []);
@@ -965,12 +970,6 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
         </div>
       </div>
 
-      {/* 経歴のリード文（トップ Career 見出しの下。空なら出さない） */}
-      <div className="mb-8">
-        <FieldLabel>経歴のリード文（Career 見出しの下。空欄なら表示しない）</FieldLabel>
-        <Textarea value={form.career_lead} onChange={(v) => set("career_lead", v)} rows={3} />
-      </div>
-
       <div className="flex flex-wrap items-center gap-3">
         <SaveButton onClick={handleSave} loading={loading} saved={saved} error={error} />
         <button
@@ -1002,6 +1001,9 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  // リード文（profile.career_lead。トップの Career 見出しの下に出る）
+  const [lead, setLead] = useState("");
+  const [originalLead, setOriginalLead] = useState("");
   // 文章チェック（アイテムごと）
   const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
   const [proofResultsMap, setProofResultsMap] = useState<
@@ -1014,9 +1016,12 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       supabase.from("career_items").select("*").order("sort_order", { ascending: true }),
       listNameMaster("companies"),
       listNameMaster("roles"),
-    ]).then(([career, co, ro]) => {
+      supabase.from("profile").select("career_lead").eq("id", 1).maybeSingle(),
+    ]).then(([career, co, ro, prof]) => {
         if (cancelled) return;
-        const failure = career.error?.message ?? co.error ?? ro.error;
+        const failure = career.error?.message ?? co.error ?? ro.error ?? prof.error?.message;
+        setLead(prof.data?.career_lead ?? "");
+        setOriginalLead(prof.data?.career_lead ?? "");
         if (failure) setLoadError(`読み込みに失敗しました: ${failure}`);
         const rows = career.data ?? [];
         setItems(rows);
@@ -1044,7 +1049,8 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       periodChanged(it)
     );
   };
-  const dirty = items.some(isRowDirty);
+  const leadDirty = lead !== originalLead;
+  const dirty = leadDirty || items.some(isRowDirty);
   useEffect(() => {
     onDirtyChange(dirty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1167,6 +1173,18 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     }
     setRowErrors({});
     setSaving(true);
+    if (leadDirty) {
+      const { error: leadErr } = await supabase
+        .from("profile")
+        .update({ career_lead: lead, updated_at: new Date().toISOString() })
+        .eq("id", 1);
+      if (leadErr) {
+        setSaving(false);
+        setSaveError(`リード文の保存に失敗しました: ${leadErr.message}`);
+        return;
+      }
+      setOriginalLead(lead);
+    }
     const companiesById = new Map(companies.map((c) => [c.id, c]));
     const rolesById = new Map(roles.map((r) => [r.id, r]));
     const savedRows: CareerItem[] = [];
@@ -1235,6 +1253,10 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       {dirty && <p className="mb-3 text-[11px] text-[#f4c248]">未保存の変更があります</p>}
 
       <fieldset disabled={saving || deletingId !== null} className="min-w-0">
+      <div className="mb-6">
+        <FieldLabel>リード文（トップの Career 見出しの下に出る。空欄なら表示しない）</FieldLabel>
+        <Textarea value={lead} onChange={(v) => { setLead(v); setSaveError(""); }} rows={3} />
+      </div>
       <div className="mb-6 flex flex-col gap-4">
         {items.map((item, idx) => (
           <div

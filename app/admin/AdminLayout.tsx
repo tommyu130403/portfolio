@@ -1004,6 +1004,8 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
   // リード文（profile.career_lead。トップの Career 見出しの下に出る）
   const [lead, setLead] = useState("");
   const [originalLead, setOriginalLead] = useState("");
+  // 読み込みに失敗したまま保存すると既存のリード文を空で上書きするため、そのときは編集させない
+  const [leadLoadFailed, setLeadLoadFailed] = useState(false);
   // 文章チェック（アイテムごと）
   const [proofCheckingId, setProofCheckingId] = useState<string | null>(null);
   const [proofResultsMap, setProofResultsMap] = useState<
@@ -1020,6 +1022,7 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     ]).then(([career, co, ro, prof]) => {
         if (cancelled) return;
         const failure = career.error?.message ?? co.error ?? ro.error ?? prof.error?.message;
+        setLeadLoadFailed(!!prof.error || !prof.data);
         setLead(prof.data?.career_lead ?? "");
         setOriginalLead(prof.data?.career_lead ?? "");
         if (failure) setLoadError(`読み込みに失敗しました: ${failure}`);
@@ -1153,6 +1156,21 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     if (saving) return;
     setSaveError("");
     setSaved(false);
+    // リード文は経歴の行と独立して保存する（未入力の行があってもリード文は保存できるように）
+    if (leadDirty && !leadLoadFailed) {
+      setSaving(true);
+      const { data: leadRows, error: leadErr } = await supabase
+        .from("profile")
+        .update({ career_lead: lead, updated_at: new Date().toISOString() })
+        .eq("id", 1)
+        .select("id");
+      setSaving(false);
+      if (leadErr || !leadRows?.length) {
+        setSaveError(`リード文の保存に失敗しました: ${leadErr?.message ?? "プロフィールが見つかりません"}`);
+        return;
+      }
+      setOriginalLead(lead);
+    }
     const errs: Record<string, string> = {};
     for (const it of items) {
       if (!isRowDirty(it)) continue; // 触っていない既存行は検証しない（DB 上の空行で全体が止まらないように）
@@ -1173,18 +1191,6 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
     }
     setRowErrors({});
     setSaving(true);
-    if (leadDirty) {
-      const { error: leadErr } = await supabase
-        .from("profile")
-        .update({ career_lead: lead, updated_at: new Date().toISOString() })
-        .eq("id", 1);
-      if (leadErr) {
-        setSaving(false);
-        setSaveError(`リード文の保存に失敗しました: ${leadErr.message}`);
-        return;
-      }
-      setOriginalLead(lead);
-    }
     const companiesById = new Map(companies.map((c) => [c.id, c]));
     const rolesById = new Map(roles.map((r) => [r.id, r]));
     const savedRows: CareerItem[] = [];
@@ -1255,7 +1261,13 @@ function CareerSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => v
       <fieldset disabled={saving || deletingId !== null} className="min-w-0">
       <div className="mb-6">
         <FieldLabel>リード文（トップの Career 見出しの下に出る。空欄なら表示しない）</FieldLabel>
-        <Textarea value={lead} onChange={(v) => { setLead(v); setSaveError(""); }} rows={3} />
+        {leadLoadFailed ? (
+          <p className="text-[13px] text-danger-300" role="alert">
+            リード文を読み込めなかったため編集できません。ページを再読み込みしてください。
+          </p>
+        ) : (
+          <Textarea value={lead} onChange={(v) => { setLead(v); setSaveError(""); }} rows={3} />
+        )}
       </div>
       <div className="mb-6 flex flex-col gap-4">
         {items.map((item, idx) => (

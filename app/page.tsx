@@ -267,17 +267,17 @@ function HomeContent() {
                 <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
             </div>
-            {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 14px Main/050・名前 46px Avenir Heavy・行間 100%・一言紹介 18px Bold Tertiary */}
+            {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 Afacad 14px・名前 Afacad Bold 46px 字間 5%・行間 100%・Main/050。一言紹介 Body/01/JP/Regular・Tertiary（2026-11-10 再照合） */}
             <div className="flex flex-1 flex-col gap-4 sm:pt-3">
               <div data-reveal="" className="flex flex-col gap-3">
-                <p className="font-en text-[14px] leading-none tracking-[0.03em] text-main-050">
+                <p className="font-sans text-[14px] leading-none tracking-[0.03em] text-main-050">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-surface-light" /> : profile?.title}
                 </p>
-                <p className="font-en text-[46px] font-extrabold leading-none tracking-[-0.4492px] text-main-050">
+                <p className="font-sans text-[46px] font-bold leading-none tracking-[0.05em] text-main-050">
                   {loading ? <span className="inline-block h-[46px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_en || profile?.name_jp}
                 </p>
               </div>
-              {profile?.bio && <p data-reveal="" className="text-[18px] font-bold leading-[1.6] tracking-[0.03em] text-fg-subtle">{profile.bio}</p>}
+              {profile?.bio && <p data-reveal="" className="text-body-01-jp text-fg-subtle">{profile.bio}</p>}
             </div>
           </section>
 

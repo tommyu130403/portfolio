@@ -258,6 +258,10 @@ function HomeContent() {
           <section id="career" className="w-full max-w-main">
             <Headline label="経歴" title="Career" />
             <div className="flex flex-col gap-6">
+              {/* リード文（profile.career_lead）。文字は Introduction の段落と同じ。空なら出さない */}
+              {!loading && profile?.career_lead?.trim() && (
+                <p className="whitespace-pre-line text-[15px] leading-[24px] tracking-[0.45px] text-fg">{profile.career_lead.trim()}</p>
+              )}
               {loading ? (
                 <div className="flex flex-col gap-3">
                   <span className="inline-block h-16 w-3/4 animate-pulse rounded-[10px] bg-surface-light" />

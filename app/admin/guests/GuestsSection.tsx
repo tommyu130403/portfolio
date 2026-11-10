@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import SectionTitle from "../SectionTitle";
 
@@ -59,7 +59,36 @@ async function describeInvokeError(error: FunctionsError): Promise<string> {
   return error.message;
 }
 
+async function copyWithClipboardApi(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function copyWithExecCommand(text: string): boolean {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  textarea.style.left = "0";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    textarea.remove();
+  }
+}
+
 export default function GuestsSection() {
+  const issuedIdRef = useRef<HTMLSpanElement>(null);
   const [rows, setRows] = useState<GuestRow[]>([]);
   const [listError, setListError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -113,14 +142,28 @@ export default function GuestsSection() {
     }
   };
 
+  const selectIssuedId = () => {
+    const node = issuedIdRef.current;
+    const selection = window.getSelection();
+    if (!node || !selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+
   const handleCopy = async () => {
     if (!issued) return;
-    try {
-      await navigator.clipboard.writeText(issued.loginId);
+    setActionError("");
+    setCopied(false);
+    // 埋め込みブラウザ（Claude アプリ内など）はクリップボード API の書き込みを拒否するため、旧方式で写す
+    const ok = (await copyWithClipboardApi(issued.loginId)) || copyWithExecCommand(issued.loginId);
+    if (ok) {
       setCopied(true);
-    } catch {
-      setActionError("コピーできませんでした。IDを手で選択してください");
+      return;
     }
+    selectIssuedId();
+    setActionError("コピーできませんでした。IDを選択したので、⌘C（Ctrl+C）で写してください");
   };
 
   const handleStop = async (userId: string) => {
@@ -184,7 +227,7 @@ export default function GuestsSection() {
         <div className="mt-4 rounded-[8px] border border-primary/40 bg-surface p-4">
           <p className="text-[11px] text-fg-muted">発行したID（共通パスワードと一緒に渡してください）</p>
           <div className="mt-2 flex items-center gap-3">
-            <span className="select-all font-mono text-[20px] tracking-[1px] text-white">{issued.loginId}</span>
+            <span ref={issuedIdRef} className="select-all font-mono text-[20px] tracking-[1px] text-white">{issued.loginId}</span>
             <button type="button" onClick={() => void handleCopy()} className={smallButton}>
               {copied ? "コピーしました" : "コピー"}
             </button>

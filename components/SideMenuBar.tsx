@@ -132,7 +132,8 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       {!iconOnly && (
         <span
           className={[
-            "font-en flex-1 text-left text-[15px] leading-[20px] tracking-[0.75px] whitespace-nowrap overflow-hidden max-w-[160px] transition-opacity duration-300",
+            // Figma Library 60:194: Afacad Regular 15px・行間 AUTO(実測 20px)・字間 5%
+            "font-guide font-normal flex-1 text-left text-[15px] leading-[20px] tracking-[0.75px] whitespace-nowrap overflow-hidden max-w-[160px] transition-opacity duration-300",
             // 幅は動かさず透明度だけ切り替える(折りたたみ時は親の幅でクリップされる)
             collapsed ? "opacity-0" : "opacity-100",
           ].join(" ")}
@@ -148,9 +149,11 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
       ? createPortal(
           <span
             className={[
-              "font-en pointer-events-none fixed z-[70]",
-              "rounded-r4 border border-border bg-surface px-3 py-[10px]",
-              "text-[14px] leading-[20px] whitespace-nowrap text-white/80",
+              // Figma Library 60:263 の Tooltip: Afacad Regular 14px・行間 100%・字間 3%・枠の高さ 34px。
+              // Figma の余白 12/10 は内側の枠線 1px を含むため、CSS では border 分を引いて 11/9 にする
+              "font-guide font-normal pointer-events-none fixed z-[70]",
+              "rounded-r4 border border-border bg-surface px-[11px] py-[9px]",
+              "text-[14px] leading-[14px] tracking-[0.42px] whitespace-nowrap text-white/80",
               "shadow-base",
             ].join(" ")}
             style={{
@@ -312,10 +315,11 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               collapsed ? "opacity-0" : "opacity-100",
             ].join(" ")}
           >
-            <span className="font-en font-medium text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
+            <span className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
               Product Designer
             </span>
-            <span className="font-en font-medium text-[14px] leading-5 text-white/80 whitespace-nowrap">Yu Tomita</span>
+            {/* Figma Library 60:194: Afacad Bold 15px・行間 100%・字間 5% */}
+            <span className="font-sans font-bold text-[15px] leading-[15px] tracking-[0.75px] text-white/80 whitespace-nowrap">Yu Tomita</span>
           </div>
         </div>
 
@@ -329,7 +333,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           aria-label="Profile"
           className={["flex flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
         >
-          <p className="font-en font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
             Profile
           </p>
 
@@ -371,7 +375,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           aria-label="Social"
           className={["flex flex-1 flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
         >
-          <p className="font-en font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
             Social
           </p>
           <div className={collapsed ? "flex flex-col gap-2" : "flex gap-2"}>
@@ -395,7 +399,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               aria-label="Developer"
               className={["flex flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
             >
-              <p className="font-en font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+              <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
                 Developer
               </p>
               <SideMenuItem

@@ -318,15 +318,15 @@ export const typo = {
 // size: px / weight: font-weight / lineHeight: CSS の line-height 値。
 //   Figma の行間 AUTO は "normal"。ただし Noto の AUTO は Figma 実測 px（round(1.2×size)）を入れている
 //   （ブラウザの normal は Noto で約1.45倍になり Figma と合わない）。
-//   Avenir の AUTO は title-en の "52px" だけ実測済みで他は "normal" のまま。
+//   Avenir の AUTO は "normal"。Title/EN は 2026-11-10 に Afacad Bold 42px・行 100%（=42px）へ変更。
 //   倍率160%の style は、Figma が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ（2026-10-14 実測）。
-//   Body/01〜03/JP（Regular・Bold）は 160%、Title/PJ・Title/EN・Caption/01/JP・Caption/02/JP は AUTO（2026-10-14 Figma で確認）。
+//   Body/01〜03/JP（Regular・Bold）は 160%、Title/PJ・Caption/01/JP・Caption/02/JP は AUTO（2026-10-14 Figma で確認）。Title/EN は 100%。
 // letterSpacing: em（Figma の % 表記 3 → 0.03em, 5 → 0.05em）/ lang: 想定言語のフォント
 //   lang "jp" → typo.body.jp (Noto Sans JP) / "en" → typo.body.en (Avenir) / "special-en" → typo.special.en (Afacad)
 
 export const textStyle = {
   "title-pj":         { figma: "Title/PJ",              lang: "jp",         size: 40, weight: 700, lineHeight: "48px", letterSpacing: 0.03 },
-  "title-en":         { figma: "Title/EN",              lang: "en",         size: 38, weight: 800, lineHeight: "52px", letterSpacing: 0.03 },
+  "title-en":         { figma: "Title/EN",              lang: "special-en", size: 42, weight: 700, lineHeight: "42px", letterSpacing: 0.03 },
   "body-01-jp":       { figma: "Body/01/JP/Regular",    lang: "jp",         size: 15, weight: 400, lineHeight: "24px", letterSpacing: 0.03 },
   "body-01-jp-bold":  { figma: "Body/01/JP/Bold",       lang: "jp",         size: 15, weight: 700, lineHeight: "24px", letterSpacing: 0.03 },
   "body-01-en":       { figma: "Body/01/EN/Regular",    lang: "en",         size: 17, weight: 400, lineHeight: "normal", letterSpacing: 0 },

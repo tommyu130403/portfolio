@@ -255,7 +255,7 @@ html:has([data-work-detail]) {
    line-height / letter-spacing の 5 プロパティをまとめて当てるため、@theme ではなく
    @utility を使う（Tailwind v4）。
    font-family の対応: lang jp → Noto Sans JP / en → Avenir→Figtree→Noto（Avenir の無い端末は Figtree）/ special-en → Afacad→Noto
-   Noto の AUTO は Figma 実測 px（round(1.2×size)）。Avenir の AUTO は title-en の 52 だけ実測済みで他は normal。
+   Noto の AUTO は Figma 実測 px（round(1.2×size)）。Avenir の AUTO は normal。
    % 表記の文字間は em に変換している。
    倍率160%の style は、Figma が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。 */
 
@@ -269,11 +269,11 @@ html:has([data-work-detail]) {
 }
 
 @utility text-title-en {
-  /* Figma: Title/EN */
-  font-family: Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif;
-  font-size: 38px;
-  font-weight: 800;
-  line-height: 52px;
+  /* Figma: Title/EN（Library・2026-11-10: Afacad Bold 42px・行 100%=42px） */
+  font-family: var(--font-afacad), var(--font-noto-sans-jp), sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 42px;
   letter-spacing: 0.03em;
 }
 

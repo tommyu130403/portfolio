@@ -19,7 +19,7 @@ import ProtectedImage from "./ProtectedImage";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（横線 border-main＋Noto Bold 16px main-050・Library Headline type=02 304:302。2026-11-06 見出し階層 B案）
+ *  - `## `   → 見出し01（横線 border-light＋Noto Bold 16px fg-subtle・Library Headline type=02 304:302。2026-11-06 見出し階層 B案）
  *  - `### `  → 見出し02（01 と同形）
  *  - `> `    → 引用（13px fg-muted・左ボーダー、連続行対応）
  * 拡張記法:
@@ -813,8 +813,8 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "h1":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-border-main" />
-          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-border-light" />
+          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-subtle">
             {renderInline(block.content, k)}
           </h3>
         </div>
@@ -822,8 +822,8 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "h2":
       return (
         <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-border-main" />
-          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
+          <span aria-hidden className="h-px w-4 shrink-0 bg-border-light" />
+          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-subtle">
             {renderInline(block.content, k)}
           </h3>
         </div>

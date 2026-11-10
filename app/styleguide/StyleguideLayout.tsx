@@ -456,7 +456,7 @@ function TypographySection() {
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge>、
         クラスからは <TokenBadge>text-body-02-jp</TokenBadge>（app/globals.css の <TokenBadge>@utility</TokenBadge>）で参照。
         lineHeight は px か <TokenBadge>normal</TokenBadge>。Noto の AUTO は Figma 実測 px（round(1.2×size)）、Avenir は
-        <TokenBadge>title-en</TokenBadge> の 52px 以外は <TokenBadge>normal</TokenBadge>。倍率160%の style は、Figma
+        <TokenBadge>normal</TokenBadge>（<TokenBadge>title-en</TokenBadge> は Afacad・行 100%=42px）。倍率160%の style は、Figma
         が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。letterSpacing は em（Figma 3% → 0.03em）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
@@ -957,7 +957,7 @@ function ComponentsSection() {
         <ComponentPreview title="ProtectedImage" description="Portfolio ストレージの画像は認証後に署名付きURLで表示。ローカル画像や外部画像はそのまま表示する">
           <ProtectedImage src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/figma.svg`} alt="Figma" className="h-8 w-8" />
         </ComponentPreview>
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px Main/base + Title/EN 38px Avenir Heavy・Text/Body/Primary、間 8・下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px Main/base + Title/EN 42px Afacad Bold・Text/Body/Primary、間 8・下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy・text-fg）" variant="section" /></div>

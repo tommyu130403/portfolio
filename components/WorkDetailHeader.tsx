@@ -247,6 +247,37 @@ export const parseStakeholderBreakdown = (
   return items;
 };
 
+/* ------------------------------------------------------------------ *
+ * メタ表のセル（Library Table/CellLabel・Table/CellContent）。last = 最終行（下線なし）
+ * ------------------------------------------------------------------ */
+
+const MetaLabel: FC<{ children: ReactNode; last?: boolean }> = ({ children, last }) => (
+  <div className={`flex min-h-10 items-center px-4${last ? "" : " border-b border-border"}`}>
+    <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">{children}</span>
+  </div>
+);
+
+/** 値のセル。左の仕切り線は疑似要素で引く（ラベル列の幅を変えずに 1px を足す） */
+const MetaValue: FC<{ children: ReactNode; last?: boolean; className?: string }> = ({ children, last, className = "" }) => (
+  <div
+    className={`relative flex min-h-10 items-center px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']${last ? "" : " border-b border-border"} ${className}`}
+  >
+    {children}
+  </div>
+);
+
+/** 値の横に置く「全画面で見る」ボタン（Button/Function 24px。押せる範囲は疑似要素で 44px に広げる） */
+const VizButton: FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={label}
+    className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-border-light"
+  >
+    <Icon set="Arrows" name="full-screen-two" tintColor="var(--color-fg-muted)" className="h-full w-full" aria-hidden />
+  </button>
+);
+
 /** admin プレビューで「編集」ボタンを出せる領域（クリックで左カラムの該当入力欄へ移動する） */
 export type WorkDetailEditRegion = "screenshots" | "title" | "tags" | "period" | "roles" | "stakeholders";
 
@@ -317,130 +348,93 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
         </div>
       )}
 
-      {/* カテゴリ + タイトル + 制作内容/Tools（gap-8）→ メタ表（gap-8）。Figma 787:9916 の Frame 427318239 は 3 要素とも gap 32 */}
-      <div className="flex w-full flex-col gap-8">
-        <div className="flex w-full flex-col gap-8">
-          <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
-            {work.category && <Tag variant="category" label={work.category} hue={categoryHue} className="self-start" />}
-            <h1 className="text-title-pj text-fg">{work.title}</h1>
-            {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
-          </div>
-
-          {/* 制作内容 → Tools を 1 行で並べる（Tools は icon_url があればアイコン、無ければ文字 Tag） */}
-          {(contents.length > 0 || tools.length > 0) && (
-            <div className={`${relPad}flex w-full flex-wrap items-center gap-2`}>
-              {contents.map((s) => (
-                <Tag key={s} label={s} variant="content" />
-              ))}
-              {tools.map((t) => {
-                const iconSrc = resolveToolIconSrc(t, brokenIcons);
-                return iconSrc ? (
-                  <Tooltip key={t.name} label={t.name}>
-                    <ProtectedImage
-                      src={iconSrc}
-                      alt={t.name}
-                      className="h-4 w-4 shrink-0 object-contain"
-                      onError={() => setBrokenIcons((prev) => ({ ...prev, [iconSrc]: true }))}
-                    />
-                  </Tooltip>
-                ) : (
-                  <Tag key={t.name} label={t.name} variant="small" />
-                );
-              })}
-              {onEdit && <EditButton label="制作内容・ツール" onClick={() => onEdit("tags")} />}
-            </div>
-          )}
-          {contents.length === 0 && tools.length === 0 && onEdit && (
-            <div className="relative flex min-h-10 items-center justify-center text-[12px] text-fg-muted">
-              制作内容・ツール未設定
-              <EditButton label="制作内容・ツール" onClick={() => onEdit("tags")} />
-            </div>
-          )}
+      {/* カテゴリ + タイトル → メタ表（gap-12 = 48px。Figma 787:9916 は 32 だが、詰まって見えるため広げた。ユーザー指示 2026-11-10） */}
+      <div className="flex w-full flex-col gap-12">
+        <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
+          {work.category && <Tag variant="category" label={work.category} hue={categoryHue} className="self-start" />}
+          <h1 className="text-title-pj text-fg">{work.title}</h1>
+          {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
         </div>
 
-        {/* メタ表（Figma 787:9916）。列比は 1fr : 4fr（Figma 0.25fr : 1fr）。
-            ラベル列の下限は max-content にして、ブラウザの既定フォントサイズを上げても
-            ラベル文字（12px 固定）が仕切り線を越えないようにする（root 24px で「関係者」が越えた実績）。
-            地は本文の表（components/Table.tsx・Library 188:355）と同じ bg-surface-light。 */}
-        <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] overflow-hidden rounded-r8 border border-border bg-surface-light">
-          {/* 期間 */}
-          <div className="flex min-h-10 items-center border-b border-border px-4">
-            <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
-              期間
-            </span>
-          </div>
-          <div className="relative flex min-h-10 items-center gap-2 border-b border-border px-4 after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
-            {/* 値が無い行も表として残す。フォールバックは "—" に統一する
-                （旧実装は "タイムライン（RACI）" と出していたが、期間データのように読めてしまう。
-                  ボタンが何を開くかは aria-label が担う） */}
-            <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.period ?? undefined}>
-              {work.period || "—"}
-            </span>
-            {timeline && (
-              <button
-                type="button"
-                onClick={() => setVizModal("timeline")}
-                aria-label="タイムライン（RACI）を表示"
-                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-border-light"
-              >
-                <Icon
-                  set="Arrows"
-                  name="full-screen-two"
-                  tintColor="var(--color-fg-muted)"
-                  className="h-full w-full"
-                  aria-hidden
-                />
-              </button>
-            )}
-            {onEdit && <EditButton label="期間" onClick={() => onEdit("period")} className="ml-auto shrink-0" />}
-          </div>
-
-          {/* 役割 */}
-          <div className="flex min-h-10 items-center border-b border-border px-4">
-            <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
-              役割
-            </span>
-          </div>
-          <div className="relative flex min-h-10 flex-wrap items-center gap-2 border-b border-border px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
-            {roles.length > 0 ? (
-              roles.map((r, i) => <Tag key={`${i}-${r}`} variant="tool" filled label={r} />)
-            ) : (
-              <span className="min-w-0 truncate text-body-03-jp text-fg-muted">—</span>
-            )}
-            {onEdit && <EditButton label="役割" onClick={() => onEdit("roles")} className="ml-auto shrink-0" />}
-          </div>
-
-          {/* 関係者 */}
-          <div className="flex min-h-10 items-center px-4">
-            <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">
-              関係者
-            </span>
-          </div>
-          <div className="relative flex min-h-10 flex-wrap items-center gap-2 px-4 py-[6px] after:pointer-events-none after:absolute after:inset-y-0 after:left-0 after:border-l after:border-border after:content-['']">
-            {stakeholderTags ? (
-              stakeholderTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
-            ) : (
-              <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
-                {work.stakeholder_breakdown || "—"}
+        {/* メタ表（Figma 787:9916 / 1257:8372）。左右 16px 内側に置き、本文テキストの左端（x=16）にそろえる。
+            行は 期間 → 制作内容 → 役割 → 関係者 → ツール（ユーザー指定 2026-11-10）。値が無い行も表として残し "—" を出す。
+            列比は 1fr : 4fr（Figma 0.25fr : 1fr）。ラベル列の下限は max-content にして、ブラウザの既定フォントサイズを
+            上げてもラベル文字（12px 固定）が仕切り線を越えないようにする（root 24px で「関係者」が越えた実績）。
+            地は本文の表（components/Table.tsx・Library 188:355）と同じ bg-surface-light。
+            overflow-hidden は付けない（最終行のツールのツールチップが表の下へはみ出して出るため。セルに地色は無いので角丸は崩れない） */}
+        <div className="w-full px-4">
+          <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] rounded-r8 border border-border bg-surface-light">
+            {/* 期間 */}
+            <MetaLabel>期間</MetaLabel>
+            <MetaValue className="gap-2">
+              {/* フォールバックは "—"（ボタンが何を開くかは aria-label が担う） */}
+              <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.period ?? undefined}>
+                {work.period || "—"}
               </span>
-            )}
-            {stakeholders && (
-              <button
-                type="button"
-                onClick={() => setVizModal("stakeholders")}
-                aria-label="ステークホルダー体制を表示"
-                className="relative flex size-6 shrink-0 items-center justify-center rounded-r8 bg-surface p-[6px] transition-colors before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:border-border after:transition-colors after:content-[''] hover:after:border-border-light"
-              >
-                <Icon
-                  set="Arrows"
-                  name="full-screen-two"
-                  tintColor="var(--color-fg-muted)"
-                  className="h-full w-full"
-                  aria-hidden
-                />
-              </button>
-            )}
-            {onEdit && <EditButton label="関係者" onClick={() => onEdit("stakeholders")} className="ml-auto shrink-0" />}
+              {timeline && <VizButton label="タイムライン（RACI）を表示" onClick={() => setVizModal("timeline")} />}
+              {onEdit && <EditButton label="期間" onClick={() => onEdit("period")} className="ml-auto shrink-0" />}
+            </MetaValue>
+
+            {/* 制作内容 */}
+            <MetaLabel>制作内容</MetaLabel>
+            <MetaValue className="flex-wrap gap-2 py-[6px]">
+              {contents.length > 0 ? (
+                contents.map((s) => <Tag key={s} label={s} variant="content" />)
+              ) : (
+                <span className="min-w-0 truncate text-body-03-jp text-fg-muted">—</span>
+              )}
+              {onEdit && <EditButton label="制作内容" onClick={() => onEdit("tags")} className="ml-auto shrink-0" />}
+            </MetaValue>
+
+            {/* 役割 */}
+            <MetaLabel>役割</MetaLabel>
+            <MetaValue className="flex-wrap gap-2 py-[6px]">
+              {roles.length > 0 ? (
+                roles.map((r, i) => <Tag key={`${i}-${r}`} variant="tool" filled label={r} />)
+              ) : (
+                <span className="min-w-0 truncate text-body-03-jp text-fg-muted">—</span>
+              )}
+              {onEdit && <EditButton label="役割" onClick={() => onEdit("roles")} className="ml-auto shrink-0" />}
+            </MetaValue>
+
+            {/* 関係者 */}
+            <MetaLabel>関係者</MetaLabel>
+            <MetaValue className="flex-wrap gap-2 py-[6px]">
+              {stakeholderTags ? (
+                stakeholderTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
+              ) : (
+                <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
+                  {work.stakeholder_breakdown || "—"}
+                </span>
+              )}
+              {stakeholders && <VizButton label="ステークホルダー体制を表示" onClick={() => setVizModal("stakeholders")} />}
+              {onEdit && <EditButton label="関係者" onClick={() => onEdit("stakeholders")} className="ml-auto shrink-0" />}
+            </MetaValue>
+
+            {/* ツール（icon_url か手元のロゴがあればアイコン、無ければ文字 Tag）。最終行は下線なし */}
+            <MetaLabel last>ツール</MetaLabel>
+            <MetaValue last className="flex-wrap gap-2 py-[6px]">
+              {tools.length > 0 ? (
+                tools.map((t) => {
+                  const iconSrc = resolveToolIconSrc(t, brokenIcons);
+                  return iconSrc ? (
+                    <Tooltip key={t.name} label={t.name}>
+                      <ProtectedImage
+                        src={iconSrc}
+                        alt={t.name}
+                        className="h-4 w-4 shrink-0 object-contain"
+                        onError={() => setBrokenIcons((prev) => ({ ...prev, [iconSrc]: true }))}
+                      />
+                    </Tooltip>
+                  ) : (
+                    <Tag key={t.name} label={t.name} variant="small" />
+                  );
+                })
+              ) : (
+                <span className="min-w-0 truncate text-body-03-jp text-fg-muted">—</span>
+              )}
+              {onEdit && <EditButton label="ツール" onClick={() => onEdit("tags")} className="ml-auto shrink-0" />}
+            </MetaValue>
           </div>
         </div>
       </div>

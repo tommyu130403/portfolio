@@ -32,19 +32,15 @@ const WorkDetailSkeleton: FC = () => (
     <div className="flex justify-center">
       <HeroShotsSkeleton />
     </div>
+    {/* WorkDetailHeader と同じ形: カテゴリ + タイトル → gap-12 → メタ表（左右 16px 内側・5 行 × 40px + 上下の枠線 2px） */}
     <div className="flex flex-col gap-12">
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-4">
-          <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-surface-light" />
-          <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-surface-light" />
-        </div>
-        <div className="flex gap-2">
-          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-surface-light" />
-          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-surface-light" />
-          <div className="h-6 w-14 motion-safe:animate-pulse rounded-full bg-surface-light" />
-        </div>
+      <div className="flex flex-col gap-4">
+        <div className="h-5 w-16 motion-safe:animate-pulse rounded bg-surface-light" />
+        <div className="h-10 w-2/3 motion-safe:animate-pulse rounded bg-surface-light" />
       </div>
-      <div className="h-[120px] w-full motion-safe:animate-pulse rounded-r8 bg-surface-light" />
+      <div className="px-4">
+        <div className="h-[202px] w-full motion-safe:animate-pulse rounded-r8 bg-surface-light" />
+      </div>
     </div>
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-4">

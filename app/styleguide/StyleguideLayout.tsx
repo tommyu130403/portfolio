@@ -1329,7 +1329,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailHeader"
-          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック(最大 2 枚。横長の画像はノート PC 枠・縦長はスマホ枠。PC 1 枚 + スマホ 1 枚のときは Library の WorkThumbnail a1 にならいスマホを PC の右下に実寸寄りの倍率で重ねる。Figma 側は未同期)/ カテゴリ・タイトル / 制作内容・Tools(タイトル直下の1行)/ メタ表(期間・役割・関係者＋Timeline・Stakeholder の全画面ボタン)"
+          description="Works 詳細ページの上部ブロック(Figma 787:9916 / _ProjectContents)。デバイスモック(最大 2 枚。横長の画像はノート PC 枠・縦長はスマホ枠。PC 1 枚 + スマホ 1 枚のときは Library の WorkThumbnail a1 にならいスマホを PC の右下に実寸寄りの倍率で重ねる。Figma 側は未同期)/ カテゴリ・タイトル / メタ表(左右 16px 内側。期間・制作内容・役割・関係者・ツールの 5 行＋Timeline・Stakeholder の全画面ボタン。Figma 1257:8372)"
         >
           <div className="rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailHeader

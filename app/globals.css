@@ -85,6 +85,34 @@ html:has([data-work-detail]) {
   to   { opacity: 1; }
 }
 
+/* TOP ページの順次フェードイン(data-reveal を付けた要素が、画面に入った順に下から浮かび上がる)。
+   速さ・間隔・移動量はここの変数だけで調整する */
+:root {
+  --reveal-duration: 600ms; /* 1 要素が現れるまでの時間 */
+  --reveal-stagger: 120ms; /* 同時に現れる要素どうしの時間差 */
+  --reveal-distance: 16px; /* 下から浮かぶ距離 */
+  --reveal-easing: cubic-bezier(0.37, 0, 0.63, 1); /* ease-in-out-sine */
+}
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--reveal-distance));
+  transition: opacity var(--reveal-duration) var(--reveal-easing), transform var(--reveal-duration) var(--reveal-easing);
+  transition-delay: calc(var(--reveal-order, 0) * var(--reveal-stagger));
+}
+/* 表示後は transform: none に戻す(残すと中の position: fixed(モーダル等)が閉じ込められるため) */
+[data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+/* 動きを減らす設定と印刷では、演出なしで最初から表示する(印刷で未表示の部分が白紙にならないように) */
+@media (prefers-reduced-motion: reduce), print {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

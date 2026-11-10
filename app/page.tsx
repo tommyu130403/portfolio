@@ -54,15 +54,23 @@ function HomeContent() {
   // Supabase からプロフィール・経歴を取得
   useEffect(() => {
     const fetchData = async () => {
-      const [profileRes, careerRes] = await Promise.all([
-        supabase.from("profile").select("*").eq("id", 1).single(),
-        supabase.from("career_items").select("*").order("sort_order", { ascending: true }),
-      ]);
-      if (profileRes.data) setProfile(profileRes.data);
-      if (profileRes.error) setProfileError(true);
-      if (careerRes.data) setCareer(careerRes.data);
-      if (careerRes.error) setCareerError(true);
-      setLoading(false);
+      // 順次表示は loading=false を合図に始まるため、通信が例外で終わっても必ず解除する
+      // (解除されないとセクションが透明のまま残る)
+      try {
+        const [profileRes, careerRes] = await Promise.all([
+          supabase.from("profile").select("*").eq("id", 1).single(),
+          supabase.from("career_items").select("*").order("sort_order", { ascending: true }),
+        ]);
+        if (profileRes.data) setProfile(profileRes.data);
+        if (profileRes.error) setProfileError(true);
+        if (careerRes.data) setCareer(careerRes.data);
+        if (careerRes.error) setCareerError(true);
+      } catch {
+        setProfileError(true);
+        setCareerError(true);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -103,6 +111,52 @@ function HomeContent() {
     userEvents.forEach((e) => window.addEventListener(e, stop, { passive: true }));
     return stop;
   }, []);
+
+  // 読み込み中はスケルトン(仮の灰色表示)が出るため、読み込みが終わってからフェードインを始める。
+  // 待たないと、スケルトンが現れた直後に実データへ差し替わってパッと変わってしまう。
+  // ただし通信が返ってこないとページ全体が透明のまま残るため、5 秒で待つのをやめる(スケルトンのまま表示)
+  const [revealReady, setRevealReady] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setRevealReady(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setRevealReady(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!revealReady) return;
+    const targets = Array.from(
+      document.querySelectorAll<HTMLElement>("main [data-reveal]:not(.is-revealed)")
+    );
+    if (typeof IntersectionObserver === "undefined") {
+      targets.forEach((el) => el.classList.add("is-revealed"));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 同じタイミングで見えた要素は DOM 順に 0,1,2… と時間差をつける
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .map((entry) => entry.target as HTMLElement)
+          .sort((a, b) =>
+            a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+          );
+        visible.forEach((el, i) => {
+          el.style.setProperty("--reveal-order", String(i));
+          el.classList.add("is-revealed");
+          observer.unobserve(el);
+        });
+      },
+      // 下端に余白を取ると、ページ最下部の短い要素(スキルの読み込みエラー文など)が
+      // 最後までスクロールしても判定線を越えず表示されないため、画面端で判定する
+      { threshold: 0 }
+    );
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+    // 5 秒で先に始めた場合、後から届いたデータで増えた要素(一言紹介など)も拾うため loading でもかけ直す
+  }, [revealReady, loading]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -206,7 +260,7 @@ function HomeContent() {
         <div className="flex w-full flex-col items-center gap-[120px] px-6 lg:px-8 xl:px-10 py-20">
           {/* Hero */}
           <section className="flex w-full max-w-main flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-16">
-            <div className="relative aspect-square w-[120px] flex-none sm:w-auto sm:flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
+            <div data-reveal="" className="relative aspect-square w-[120px] flex-none sm:w-auto sm:flex-1 max-w-[200px] max-h-[200px] shrink-0 overflow-hidden rounded-[32px]">
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-surface-light" />
               ) : (
@@ -215,7 +269,7 @@ function HomeContent() {
             </div>
             {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 14px Main/050・名前 46px Avenir Heavy・行間 100%・一言紹介 18px Bold Tertiary */}
             <div className="flex flex-1 flex-col gap-4 sm:pt-3">
-              <div className="flex flex-col gap-3">
+              <div data-reveal="" className="flex flex-col gap-3">
                 <p className="font-en text-[14px] leading-none tracking-[0.03em] text-main-050">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-surface-light" /> : profile?.title}
                 </p>
@@ -223,14 +277,14 @@ function HomeContent() {
                   {loading ? <span className="inline-block h-[46px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_en || profile?.name_jp}
                 </p>
               </div>
-              {profile?.bio && <p className="text-[18px] font-bold leading-[1.6] tracking-[0.03em] text-fg-subtle">{profile.bio}</p>}
+              {profile?.bio && <p data-reveal="" className="text-[18px] font-bold leading-[1.6] tracking-[0.03em] text-fg-subtle">{profile.bio}</p>}
             </div>
           </section>
 
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
-            <Headline label="自己紹介" title="Introduction" />
-            <div className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
+            <div data-reveal=""><Headline label="自己紹介" title="Introduction" /></div>
+            <div data-reveal="" className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
               <div className="flex flex-col gap-4">
                 {loading ? (
                   <div className="h-16 w-full animate-pulse rounded bg-surface-light" />
@@ -256,8 +310,8 @@ function HomeContent() {
 
           {/* Career */}
           <section id="career" className="w-full max-w-main">
-            <Headline label="経歴" title="Career" />
-            <div className="flex flex-col gap-6">
+            <div data-reveal=""><Headline label="経歴" title="Career" /></div>
+            <div data-reveal="" className="flex flex-col gap-6">
               {/* リード文（profile.career_lead）。文字は Introduction の段落と同じ。空なら出さない */}
               {!loading && profile?.career_lead?.trim() && (
                 <p className="whitespace-pre-line text-[15px] leading-[24px] tracking-[0.45px] text-fg">{profile.career_lead.trim()}</p>
@@ -278,8 +332,8 @@ function HomeContent() {
 
           {/* Works */}
           <section id="works" className="w-full max-w-main">
-            <Headline label="制作・企画" title="Works" />
-            <WorksList />
+            <div data-reveal=""><Headline label="制作・企画" title="Works" /></div>
+            <div data-reveal=""><WorksList /></div>
           </section>
 
           {/* Skills */}
@@ -287,8 +341,8 @@ function HomeContent() {
               内側の div で幅を作ると section の実幅が親いっぱい（1104px）になり、
               セクションの境界とコンテンツの境界がずれる */}
           <section id="skills" className="w-full max-w-main">
-            <Headline label="スキル" title="Skills" />
-            <SkillsCardGrid />
+            <div data-reveal=""><Headline label="スキル" title="Skills" /></div>
+            <div data-reveal=""><SkillsCardGrid /></div>
           </section>
         </div>
       </main>

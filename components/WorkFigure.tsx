@@ -42,7 +42,7 @@ const stepClass = (tone: StepTone) =>
     ? `${STEP_BASE} text-body-02-jp border-main-100/60 bg-main-100/10 text-main-050`
     : tone === "bad"
       ? `${STEP_BASE} text-body-02-jp border-danger-300/60 bg-danger-300/10 text-danger-100`
-      : `${STEP_BASE} text-body-02-jp border-border bg-indigo-800`;
+      : `${STEP_BASE} text-body-02-jp border-border bg-indigo-800 text-fg-muted`;
 
 const Arrow: FC = () => (
   <span aria-hidden className="text-body-02-jp flex items-center justify-center text-fg-subtle">

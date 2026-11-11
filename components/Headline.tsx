@@ -11,7 +11,7 @@ type HeadlineProps = {
    * - sub: 小見出し
    * - section: Work詳細のセクションタイトル（Headline/Section = Avenir Heavy 34px text-fg）
    * - section-aside: 作品詳細のセクション見出し（Library Headline type=01・425:416: 22px Noto Sans JP Bold 白・lh 150%・ls 5% + 右へ伸びる 1px 罫線 border、gap 16）
-   * - markdown-h1 / -h2: コンテンツ内見出し（Library Headline type=02・304:302 の 16px。横線 Border/Light・文字 Text/Body/Tertiary（fg-subtle））
+   * - markdown-h1 / -h2: コンテンツ内見出し（Noto Sans JP Bold 18px・Main/050・線なし。2026-11-11 G3 の読みやすさ調整でオーナーが画面で決定。Library 304:302 は要更新）
    */
   variant?: "default" | "sub" | "section" | "section-aside" | "markdown-h1" | "markdown-h2";
 };
@@ -48,12 +48,11 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     );
   }
 
-  // Library Headline type=02（304:302）: 横線 16×1px Border/Light + Noto Sans JP Bold 16px・lh 150%・ls 5%・文字 Text/Body/Tertiary（2026-11-10 Library 更新）、gap 8。h1・h2 とも同形の h3
+  // Headline type=02（Library 304:302 は未更新・要反映）。2026-11-11 にコードを変更: 線なし・Noto Sans JP Bold 18px・lh 150%・ls 5%・文字 Main/050（背景との差 16.8:1）。h1・h2 とも同形の h3
   if (variant === "markdown-h1" || variant === "markdown-h2") {
     return (
-      <div className="flex w-full items-center gap-2">
-        <span aria-hidden className="h-px w-4 shrink-0 bg-border-light" />
-        <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-subtle">
+      <div className="flex w-full items-center">
+        <h3 className="flex-1 text-[18px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
           {title}
         </h3>
       </div>
@@ -64,7 +63,7 @@ const Headline: FC<HeadlineProps> = ({ label, title, variant = "default" }) => {
     <div className="flex flex-col items-start pb-6 w-full">
       <div className="flex flex-col gap-2 w-full [word-break:break-word]">
         <p className="font-body text-[12px] font-normal leading-[14px] tracking-[0.36px] text-primary w-full">{label ?? ""}</p>
-        <p className="text-title-en text-fg w-full">{title}</p>
+        <h2 className="text-title-en text-fg w-full">{title}</h2>
       </div>
     </div>
   );

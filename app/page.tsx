@@ -273,9 +273,9 @@ function HomeContent() {
                 <p className="font-sans text-[14px] leading-none tracking-[0.03em] text-main-050">
                   {loading ? <span className="inline-block h-4 w-32 animate-pulse rounded bg-surface-light" /> : profile?.title}
                 </p>
-                <p className="font-sans text-[46px] font-bold leading-none tracking-[0.05em] text-main-050">
+                <h1 className="font-sans text-[46px] font-bold leading-none tracking-[0.05em] text-main-050">
                   {loading ? <span className="inline-block h-[46px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_en || profile?.name_jp}
-                </p>
+                </h1>
               </div>
               {profile?.bio && <p data-reveal="" className="text-body-01-jp text-fg-subtle">{profile.bio}</p>}
             </div>

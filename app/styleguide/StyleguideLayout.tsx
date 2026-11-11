@@ -957,11 +957,11 @@ function ComponentsSection() {
         <ComponentPreview title="ProtectedImage" description="Portfolio ストレージの画像は認証後に署名付きURLで表示。ローカル画像や外部画像はそのまま表示する">
           <ProtectedImage src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/figma.svg`} alt="Figma" className="h-8 w-8" />
         </ComponentPreview>
-        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px Main/base + Title/EN 42px Afacad Bold・Text/Body/Primary、間 8・下余白 24）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
+        <ComponentPreview title="Headline" description="見出しコンポーネント。default は Library SectionTitle 20:37（JP ラベル 12px Main/base + Title/EN 42px Afacad Bold・Text/Body/Primary、間 8・下余白 24。英題は h2）。sub / section / コンテンツ見出し 01・02（Library 304:302・同形）">
           <div className="w-full"><Headline label="制作・企画" title="Works" /></div>
           <div className="w-full"><Headline title="見出し" variant="sub" /></div>
           <div className="w-full"><Headline title="Section（34px Avenir Heavy・text-fg）" variant="section" /></div>
-          <div className="w-full"><Headline title="見出し 01（Headline type=02・16px Bold・文字 fg-subtle・横線 Border/Light・h3）" variant="markdown-h1" /></div>
+          <div className="w-full"><Headline title="見出し 01（Headline type=02・18px Bold・文字 Main/050・線なし・h3）" variant="markdown-h1" /></div>
           <div className="w-full"><Headline title="見出し 02（01 と同形・h3・Library Headline type=02 304:302）" variant="markdown-h2" /></div>
           <div className="w-full"><Headline title="背景と課題（section-aside・22px Bold 白 + 右罫線。作品詳細のセクション見出し）" variant="section-aside" /></div>
         </ComponentPreview>
@@ -969,12 +969,12 @@ function ComponentsSection() {
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
           <div className="flex w-full flex-col gap-3">
             <p className="text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-system-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
-            <Headline title="見出し02（### / Headline type=02・横線 Border/Light＋Noto Bold 16px fg-subtle）" variant="markdown-h2" />
+            <Headline title="見出し02（### / Headline type=02・線なし Noto Bold 18px Main/050。作品本文の中では上 56 下 12）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
-            <p className="text-[15px] leading-[22px] tracking-[0.45px] text-fg">Body01（通常段落 / Noto Regular 15px text-fg = Text/Body/Primary #D6D6D8）</p>
+            <p className="text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted">Body01（通常段落 / Noto Regular 15px・行間 27px・text-fg-muted = Text/Body/Secondary #9696A0）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-fg-muted">引用 blockquote（&gt; / 13px text-fg-muted・左ボーダー）</p>
             <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption">補足テキスト（画像キャプション / ::: caption / 12px・行の高さ 18px text-fg-caption。作品本文の中だけ）</p>
-            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-fg">
+            <p className="text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted">
               インラインコード（<code className="rounded bg-action-hover px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">code</code>）
             </p>
             <div className="flex flex-col gap-2">
@@ -1450,7 +1450,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg（Text/Body/Primary #D6D6D8）。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・出典は 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 24 / 小ブロック間 40"
+          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg-muted（Text/Body/Secondary #9696A0・行間 27px）。図版の中も見出し・題以外の文字（表のセル・流れ図の段）は同じ色。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・出典は 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 12（見出し02 の上 56）/ 小ブロック間 40"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

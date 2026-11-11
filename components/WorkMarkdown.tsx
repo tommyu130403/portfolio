@@ -19,7 +19,7 @@ import ProtectedImage from "./ProtectedImage";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（横線 border-light＋Noto Bold 16px fg-subtle・Library Headline type=02 304:302。2026-11-06 見出し階層 B案）
+ *  - `## `   → 見出し01（Noto Bold 18px main-050・線なし・上 56 下 12。本文は 15px・行間 27px・fg-muted。2026-11-11 G3 の読みやすさ調整でオーナーが画面で決定）
  *  - `### `  → 見出し02（01 と同形）
  *  - `> `    → 引用（13px fg-muted・左ボーダー、連続行対応）
  * 拡張記法:
@@ -238,7 +238,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[15px] leading-[24px] tracking-[0.45px] text-fg">
+            <p className="text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -812,18 +812,16 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     // 見出しの階層: 作品名 h1 → セクション見出し h2 → `##`・`###` とも h3（同形の同格。見た目は変えない）
     case "h1":
       return (
-        <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-border-light" />
-          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-subtle">
+        <div className="mb-3 mt-14 flex w-full items-center">
+          <h3 className="flex-1 text-[18px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
             {renderInline(block.content, k)}
           </h3>
         </div>
       );
     case "h2":
       return (
-        <div className="mb-6 mt-10 flex w-full items-center gap-2">
-          <span aria-hidden className="h-px w-4 shrink-0 bg-border-light" />
-          <h3 className="flex-1 text-[16px] font-bold leading-[1.5] tracking-[0.05em] text-fg-subtle">
+        <div className="mb-3 mt-14 flex w-full items-center">
+          <h3 className="flex-1 text-[18px] font-bold leading-[1.5] tracking-[0.05em] text-main-050">
             {renderInline(block.content, k)}
           </h3>
         </div>
@@ -831,7 +829,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "paragraph":
       return (
         <p
-          className={`mb-6 text-fg ${inFigure ? "text-body-02-jp" : "text-[15px] leading-[24px] tracking-[0.45px]"}`}
+          className={`mb-6 text-fg-muted ${inFigure ? "text-body-02-jp" : "text-[15px] leading-[27px] tracking-[0.45px]"}`}
         >
           {renderInline(block.content, k)}
         </p>
@@ -871,7 +869,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <ul
           className={`mb-4 list-disc pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
+            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted"
           }`}
         >
           {block.items.map((it, i) => (
@@ -883,7 +881,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <ol
           className={`mb-4 list-decimal pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[24px] tracking-[0.45px] text-fg"
+            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted"
           }`}
         >
           {block.items.map((it, i) => (

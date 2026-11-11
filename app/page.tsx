@@ -13,6 +13,56 @@ import type { Tables } from "@/src/types/supabase";
 
 const SECTION_IDS: SideMenuSectionId[] = ["introduction", "career", "works", "skills"];
 
+// 作品詳細からブラウザの「戻る」で帰ったとき、押したカードを画面内に戻すための記録。
+// トップは経歴・作品をマウント後に読み込むため、戻った直後はページが短く、
+// ブラウザ(Next.js)が戻した位置ではカードが画面の外に出る(段階 3 の C5)。
+const RETURN_WORK_KEY = "portfolio:return-work-id";
+// 履歴の移動(戻る・進む)でトップに来たか。popstate で立て、画面のどこかを押したら下ろす。
+// パンくず・メニュー等のリンクはクリックを伴い popstate は起きないので、カードへは合わせない。
+// ページを開き直す形の「戻る」(bfcache 外の再読み込み)は popstate が来ないため、読み込みの種類で初期値を決める。
+// マウント時に読むだけで書き換えないので、開発時に effect が 2 回走っても結果は同じ
+let arrivedByHistory = false;
+if (typeof window !== "undefined") {
+  arrivedByHistory =
+    (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined)
+      ?.type === "back_forward";
+  window.addEventListener("popstate", () => {
+    arrivedByHistory = true;
+  });
+  window.addEventListener(
+    "click",
+    (e) => {
+      arrivedByHistory = false;
+      const link = (e.target as Element | null)?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement)) return;
+      try {
+        if (link.closest("#works")) {
+          // 作品カードを押したら、戻ってきたときに合わせる先として作品 ID を覚えておく
+          const workId = workIdFromHref(link.href);
+          if (workId) sessionStorage.setItem(RETURN_WORK_KEY, workId);
+        } else if (!workIdFromHref(link.href)) {
+          // 作品詳細以外へのリンク(パンくず・メニュー等)で移ったら、その先から戻っても古いカードへ合わせない。
+          // 前後の作品へのリンクは作品詳細の中の移動なので残す
+          sessionStorage.removeItem(RETURN_WORK_KEY);
+        }
+      } catch {
+        // 保存できなくても遷移はそのまま
+      }
+    },
+    true
+  );
+}
+
+/** 作品カードの href(…/works?id=<id>)から作品 ID を取り出す */
+function workIdFromHref(href: string): string | null {
+  try {
+    const url = new URL(href, window.location.href);
+    return url.pathname.replace(/\/$/, "").endsWith("/works") ? url.searchParams.get("id") : null;
+  } catch {
+    return null;
+  }
+}
+
 type Profile = Tables<"profile">;
 type CareerItem = Tables<"career_items">;
 
@@ -84,30 +134,60 @@ function HomeContent() {
   // 別ページから /#works 等で来たとき、Next.js のクライアント遷移はデータ読み込み前の高さで
   // 位置を決める(または移動しない)ため、経歴・作品・スキルが読み込まれて伸びた分だけずれる。
   // 読み込みで高さが変わる間はハッシュの位置に合わせ直し、ユーザーが操作したらやめる
+  // 作品詳細から「戻る」で帰ったときは、ハッシュより押したカードを優先して同じ仕組みで合わせる
   useEffect(() => {
+    let returnWorkId: string | null = null;
+    if (arrivedByHistory) {
+      try {
+        returnWorkId = sessionStorage.getItem(RETURN_WORK_KEY);
+      } catch {
+        // 保存領域が使えない環境では合わせない
+      }
+    }
+
     // /#% のような壊れたハッシュで decodeURIComponent が投げるとページ全体が落ちる
-    let id: string;
+    let id = "";
     try {
       id = decodeURIComponent(window.location.hash.slice(1));
     } catch {
-      return;
+      if (!returnWorkId) return;
     }
-    if (!id) return;
+    if (!id && !returnWorkId) return;
+
+    const findCard = () =>
+      Array.from(document.querySelectorAll<HTMLAnchorElement>("#works a[href]")).find(
+        (a) => workIdFromHref(a.href) === returnWorkId
+      );
 
     // html の scroll-behavior: smooth のままだと合わせ直しのたびにアニメーションが割り込む
-    const align = () =>
+    // カードはまだ読み込み中なら見つからないので、高さが変わるたびに探し直す
+    const align = () => {
+      if (returnWorkId) {
+        findCard()?.scrollIntoView({ block: "center", behavior: "instant" });
+        return;
+      }
       document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "instant" });
+    };
     const resizeObserver = new ResizeObserver(align);
+    // カードの出現はタブが裏にあると ResizeObserver(描画に連動)で拾えないため、要素の追加でも合わせる
+    const mutationObserver = returnWorkId ? new MutationObserver(align) : null;
     const userEvents = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
     const stop = () => {
       resizeObserver.disconnect();
+      mutationObserver?.disconnect();
       window.clearTimeout(timer);
       userEvents.forEach((e) => window.removeEventListener(e, stop));
     };
 
-    const timer = window.setTimeout(stop, 5000);
+    // カードへ戻すときは、遅い回線でもログイン確認と作品の読み込みが終わるまで待てるよう長めにとる
+    const timer = window.setTimeout(stop, returnWorkId ? 15000 : 5000);
     align();
     resizeObserver.observe(document.body);
+    // 作品一覧の中だけを見る(ページ全体だと、フェードインや画像の差し替えのたびに無駄に合わせ直す)
+    mutationObserver?.observe(document.getElementById("works") ?? document.body, {
+      childList: true,
+      subtree: true,
+    });
     userEvents.forEach((e) => window.addEventListener(e, stop, { passive: true }));
     return stop;
   }, []);

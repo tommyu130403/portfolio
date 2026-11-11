@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import type { FC } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Icon, { IconProps } from "./Icon";
 import ContactDialog, { clearContactDraft } from "./ContactDialog";
-import { getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
+import { ITEM_FOCUS, getItemClasses, resolveItemStatus } from "@/lib/figma-variants";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/src/lib/supabase";
 import ProtectedImage from "./ProtectedImage";
@@ -255,6 +256,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
   const collapsed = fixedCollapsed ?? !(hovered || keyboardFocusWithin);
 
   const { supabaseSession, accessRole, logout } = useAuth();
+  const pathname = usePathname();
   const avatarUrl = useAvatarUrl();
   const [logoutError, setLogoutError] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
@@ -298,8 +300,31 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           Portfolio
         </p>
 
-        {/* Profile */}
-        <div className="flex items-center w-full gap-3">
+        {/* Profile(Figma Library 55:311)。押すと TOP の冒頭へ戻る。
+            別ページからは "/" へ移動(Next.js が先頭から表示する)。TOP 上では同じ URL への移動になり
+            スクロールしないため、自前で先頭へ戻し、残った #works などのハッシュも消す */}
+        <Link
+          href="/"
+          onClick={(e) => {
+            // 新しいタブで開く操作(Cmd/Ctrl/Shift/中クリック)はブラウザに任せる
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            // pathname は basePath(本番の /portfolio)を除いた値。window.location とは比べない
+            if (pathname !== "/") return;
+            e.preventDefault();
+            window.scrollTo({ top: 0 });
+            const { hash, pathname: fullPath, search } = window.location;
+            if (hash) window.history.replaceState(window.history.state, "", fullPath + search);
+          }}
+          aria-label="Yu Tomita(TOP へ戻る)"
+          // ホバーは他の項目(_Item)と同じ: 白 5% の背景・角丸 8px・文字を白に。
+          // -m-2 p-2: 背景だけ外へ 8px 広げ、アバターと文字の位置は変えない
+          // 左の角丸 30px = アバターの半径 22px + 余白 8px(アバターと同じ中心の弧にする)。右は他の項目と同じ 8px
+          className={[
+            "group/profile -m-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-l-[30px] rounded-r-[8px] p-2",
+            "transition-colors duration-300 hover:bg-action-hover",
+            ITEM_FOCUS,
+          ].join(" ")}
+        >
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[36px] bg-surface-light">
             {avatarUrl && (
               <ProtectedImage
@@ -315,13 +340,13 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               collapsed ? "opacity-0" : "opacity-100",
             ].join(" ")}
           >
-            <span className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap">
+            <span className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap transition-colors duration-300 group-hover/profile:text-white">
               Product Designer
             </span>
             {/* Figma Library 60:194: Afacad Bold 15px・行間 100%・字間 5% */}
-            <span className="font-sans font-bold text-[15px] leading-[15px] tracking-[0.75px] text-white/80 whitespace-nowrap">Yu Tomita</span>
+            <span className="font-sans font-bold text-[15px] leading-[15px] tracking-[0.75px] text-white/80 whitespace-nowrap transition-colors duration-300 group-hover/profile:text-white">Yu Tomita</span>
           </div>
-        </div>
+        </Link>
 
         {/* Divider */}
         <div className="h-px w-full rounded-[2px] bg-border shrink-0" />

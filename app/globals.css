@@ -257,15 +257,17 @@ html:has([data-work-detail]) {
    font-family の対応: lang jp → Noto Sans JP / en → Avenir→Figtree→Noto（Avenir の無い端末は Figtree）/ special-en → Afacad→Noto
    Noto の AUTO は Figma 実測 px（round(1.2×size)）。Avenir の AUTO は normal。
    % 表記の文字間は em に変換している。
-   倍率160%の style は、Figma が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。 */
+   倍率指定の style は、Figma が描く size×倍率 の端数切り上げ px で持つ。
+   2026-11-11 に Library を全件照合: JP の Body/01〜03・Title/PJ は行間 180%（27 / 23.4→24 / 19.8→20 / 72）、
+   全スタイルの字間 0%。Caption JP は AUTO のまま。 */
 
 @utility text-title-pj {
-  /* Figma: Title/PJ（Master 888:3257・2026-11-09: 40px・AUTO=実測 48px） */
+  /* Figma: Title/PJ（Library・2026-11-11: 40px・行間 180%=72px・字間 0%） */
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 40px;
   font-weight: 700;
-  line-height: 48px;
-  letter-spacing: 0.03em;
+  line-height: 72px;
+  letter-spacing: 0em;
 }
 
 @utility text-title-en {
@@ -274,7 +276,7 @@ html:has([data-work-detail]) {
   font-size: 42px;
   font-weight: 700;
   line-height: 42px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0em;
 }
 
 @utility text-body-01-jp {
@@ -282,8 +284,8 @@ html:has([data-work-detail]) {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 400;
-  line-height: 24px;
-  letter-spacing: 0.03em;
+  line-height: 27px;
+  letter-spacing: 0em;
 }
 
 @utility text-body-01-jp-bold {
@@ -291,8 +293,8 @@ html:has([data-work-detail]) {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 15px;
   font-weight: 700;
-  line-height: 24px;
-  letter-spacing: 0.03em;
+  line-height: 27px;
+  letter-spacing: 0em;
 }
 
 @utility text-body-01-en {
@@ -309,8 +311,8 @@ html:has([data-work-detail]) {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 400;
-  line-height: 21px;
-  letter-spacing: 0.03em;
+  line-height: 24px;
+  letter-spacing: 0em;
 }
 
 @utility text-body-02-jp-bold {
@@ -318,8 +320,8 @@ html:has([data-work-detail]) {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 13px;
   font-weight: 700;
-  line-height: 21px;
-  letter-spacing: 0.03em;
+  line-height: 24px;
+  letter-spacing: 0em;
 }
 
 @utility text-body-02-en {
@@ -336,8 +338,8 @@ html:has([data-work-detail]) {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 400;
-  line-height: 18px;
-  letter-spacing: 0.03em;
+  line-height: 20px;
+  letter-spacing: 0em;
 }
 
 @utility text-body-03-jp-bold {
@@ -345,8 +347,8 @@ html:has([data-work-detail]) {
   font-family: var(--font-noto-sans-jp), sans-serif;
   font-size: 11px;
   font-weight: 700;
-  line-height: 18px;
-  letter-spacing: 0.03em;
+  line-height: 20px;
+  letter-spacing: 0em;
 }
 
 @utility text-body-03-en {
@@ -364,7 +366,7 @@ html:has([data-work-detail]) {
   font-size: 10px;
   font-weight: 400;
   line-height: 12px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0em;
 }
 
 @utility text-caption-01-en {
@@ -382,7 +384,7 @@ html:has([data-work-detail]) {
   font-size: 9px;
   font-weight: 400;
   line-height: 11px;
-  letter-spacing: 0.03em;
+  letter-spacing: 0em;
 }
 
 @utility text-caption-02-en {

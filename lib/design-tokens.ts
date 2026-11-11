@@ -44,7 +44,7 @@
  *   Main:   400 / 500 / 600 ／ danger 全段 ／ warning 全段
  *   Semantic: Text/Caption・Border/Main・Action/hover の不透明度
  *             （Action/hover は get_variable_defs が #FFFFFF しか返さず α を持たない）
- *   （TextStyle は 2026-10-14 に Library のローカルスタイル15種を全件照合済み。下の textStyle を参照）
+ *   （TextStyle は 2026-10-14 に Library のローカルスタイル15種を全件照合済み。2026-11-11 に再照合し JP の行間 180%・全スタイル字間 0% を反映。下の textStyle を参照）
  *   （Text/* は 2026-10-25 に Library のカラースタイル6種を照合済み。semantic の fg* を参照。
  *     旧名 Text/Body/Main・Text/Body/Sub は Text/Body/Primary・Text/Body/Secondary に改名されている）
  *   これらの現在値は docs/requests/20260908-styleguide-figma-sync.md 付録 A の実測値が出所。
@@ -319,26 +319,26 @@ export const typo = {
 //   Figma の行間 AUTO は "normal"。ただし Noto の AUTO は Figma 実測 px（round(1.2×size)）を入れている
 //   （ブラウザの normal は Noto で約1.45倍になり Figma と合わない）。
 //   Avenir の AUTO は "normal"。Title/EN は 2026-11-10 に Afacad Bold 42px・行 100%（=42px）へ変更。
-//   倍率160%の style は、Figma が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ（2026-10-14 実測）。
-//   Body/01〜03/JP（Regular・Bold）は 160%、Title/PJ・Caption/01/JP・Caption/02/JP は AUTO（2026-10-14 Figma で確認）。Title/EN は 100%。
+//   倍率指定の style は、Figma が描く size×倍率 の端数切り上げ px で持つ（2026-10-14 実測の規則）。
+//   2026-11-11 Library 照合: Body/01〜03/JP（Regular・Bold）と Title/PJ は行間 180%（27 / 24 / 20 / 72px）、Caption/01・02/JP は AUTO、Title/EN は 100%。字間は全スタイル 0%。
 // letterSpacing: em（Figma の % 表記 3 → 0.03em, 5 → 0.05em）/ lang: 想定言語のフォント
 //   lang "jp" → typo.body.jp (Noto Sans JP) / "en" → typo.body.en (Avenir) / "special-en" → typo.special.en (Afacad)
 
 export const textStyle = {
-  "title-pj":         { figma: "Title/PJ",              lang: "jp",         size: 40, weight: 700, lineHeight: "48px", letterSpacing: 0.03 },
-  "title-en":         { figma: "Title/EN",              lang: "special-en", size: 42, weight: 700, lineHeight: "42px", letterSpacing: 0.03 },
-  "body-01-jp":       { figma: "Body/01/JP/Regular",    lang: "jp",         size: 15, weight: 400, lineHeight: "24px", letterSpacing: 0.03 },
-  "body-01-jp-bold":  { figma: "Body/01/JP/Bold",       lang: "jp",         size: 15, weight: 700, lineHeight: "24px", letterSpacing: 0.03 },
+  "title-pj":         { figma: "Title/PJ",              lang: "jp",         size: 40, weight: 700, lineHeight: "72px", letterSpacing: 0 },
+  "title-en":         { figma: "Title/EN",              lang: "special-en", size: 42, weight: 700, lineHeight: "42px", letterSpacing: 0 },
+  "body-01-jp":       { figma: "Body/01/JP/Regular",    lang: "jp",         size: 15, weight: 400, lineHeight: "27px", letterSpacing: 0 },
+  "body-01-jp-bold":  { figma: "Body/01/JP/Bold",       lang: "jp",         size: 15, weight: 700, lineHeight: "27px", letterSpacing: 0 },
   "body-01-en":       { figma: "Body/01/EN/Regular",    lang: "en",         size: 17, weight: 400, lineHeight: "normal", letterSpacing: 0 },
-  "body-02-jp":       { figma: "Body/02/JP/Regular",    lang: "jp",         size: 13, weight: 400, lineHeight: "21px", letterSpacing: 0.03 },
-  "body-02-jp-bold":  { figma: "Body/02/JP/Bold",       lang: "jp",         size: 13, weight: 700, lineHeight: "21px", letterSpacing: 0.03 },
+  "body-02-jp":       { figma: "Body/02/JP/Regular",    lang: "jp",         size: 13, weight: 400, lineHeight: "24px", letterSpacing: 0 },
+  "body-02-jp-bold":  { figma: "Body/02/JP/Bold",       lang: "jp",         size: 13, weight: 700, lineHeight: "24px", letterSpacing: 0 },
   "body-02-en":       { figma: "Body/02/EN/Regular",    lang: "en",         size: 15, weight: 400, lineHeight: "normal", letterSpacing: 0 },
-  "body-03-jp":       { figma: "Body/03/JP/Regular",    lang: "jp",         size: 11, weight: 400, lineHeight: "18px", letterSpacing: 0.03 },
-  "body-03-jp-bold":  { figma: "Body/03/JP/Bold",       lang: "jp",         size: 11, weight: 700, lineHeight: "18px", letterSpacing: 0.03 },
+  "body-03-jp":       { figma: "Body/03/JP/Regular",    lang: "jp",         size: 11, weight: 400, lineHeight: "20px", letterSpacing: 0 },
+  "body-03-jp-bold":  { figma: "Body/03/JP/Bold",       lang: "jp",         size: 11, weight: 700, lineHeight: "20px", letterSpacing: 0 },
   "body-03-en":       { figma: "Body/03/EN/Regular",    lang: "en",         size: 13, weight: 400, lineHeight: "normal", letterSpacing: 0 },
-  "caption-01-jp":    { figma: "Caption/01/JP",         lang: "jp",         size: 10, weight: 400, lineHeight: "12px", letterSpacing: 0.03 },
+  "caption-01-jp":    { figma: "Caption/01/JP",         lang: "jp",         size: 10, weight: 400, lineHeight: "12px", letterSpacing: 0 },
   "caption-01-en":    { figma: "Caption/01/EN",         lang: "en",         size: 12, weight: 400, lineHeight: "normal", letterSpacing: 0 },
-  "caption-02-jp":    { figma: "Caption/02/JP",         lang: "jp",         size: 9,  weight: 400, lineHeight: "11px", letterSpacing: 0.03 },
+  "caption-02-jp":    { figma: "Caption/02/JP",         lang: "jp",         size: 9,  weight: 400, lineHeight: "11px", letterSpacing: 0 },
   "caption-02-en":    { figma: "Caption/02/EN",         lang: "en",         size: 11, weight: 400, lineHeight: "normal", letterSpacing: 0 },
 } as const;
 

@@ -238,7 +238,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted">
+            <p className="text-body-01-jp text-fg-muted">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -829,7 +829,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "paragraph":
       return (
         <p
-          className={`mb-6 text-fg-muted ${inFigure ? "text-body-02-jp" : "text-[15px] leading-[27px] tracking-[0.45px]"}`}
+          className={`mb-6 text-fg-muted ${inFigure ? "text-body-02-jp" : "text-body-01-jp"}`}
         >
           {renderInline(block.content, k)}
         </p>
@@ -869,7 +869,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <ul
           className={`mb-4 list-disc pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted"
+            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-body-01-jp text-fg-muted"
           }`}
         >
           {block.items.map((it, i) => (
@@ -881,7 +881,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <ol
           className={`mb-4 list-decimal pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted"
+            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-body-01-jp text-fg-muted"
           }`}
         >
           {block.items.map((it, i) => (

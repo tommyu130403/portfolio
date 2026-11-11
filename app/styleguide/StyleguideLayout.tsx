@@ -456,8 +456,8 @@ function TypographySection() {
         Figma の命名済み text style。JS からは <TokenBadge>tokens.textStyle[&quot;body-02-jp&quot;]</TokenBadge>、
         クラスからは <TokenBadge>text-body-02-jp</TokenBadge>（app/globals.css の <TokenBadge>@utility</TokenBadge>）で参照。
         lineHeight は px か <TokenBadge>normal</TokenBadge>。Noto の AUTO は Figma 実測 px（round(1.2×size)）、Avenir は
-        <TokenBadge>normal</TokenBadge>（<TokenBadge>title-en</TokenBadge> は Afacad・行 100%=42px）。倍率160%の style は、Figma
-        が描く size×1.6 の端数切り上げ px（24 / 20.8→21 / 17.6→18）で持つ。letterSpacing は em（Figma 3% → 0.03em）。
+        <TokenBadge>normal</TokenBadge>（<TokenBadge>title-en</TokenBadge> は Afacad・行 100%=42px）。倍率指定の style は、Figma
+        が描く size×倍率 の端数切り上げ px で持つ（JP の Body・Title/PJ は 180%: 27 / 23.4→24 / 19.8→20 / 72）。letterSpacing は em（2026-11-11 時点で全スタイル 0%）。
       </p>
       <div className="flex flex-col divide-y divide-[#2a2a2a]">
         {(Object.entries(textStyle) as [string, (typeof textStyle)[keyof typeof textStyle]][]).map(
@@ -971,10 +971,10 @@ function ComponentsSection() {
             <p className="text-[22px] font-bold leading-[1.5] tracking-[0.05em] text-system-white">見出し01（# / Headline type=01・作品詳細ではセクション見出し・22px Noto Bold 白 + 右罫線。Headline section-aside）</p>
             <Headline title="見出し02（### / Headline type=02・線なし Noto Bold 18px Main/050。作品本文の中では上 56 下 12）" variant="markdown-h2" />
             <Headline title="旧見出し（## / 見出し02 と同形・エディタのボタンなし）" variant="markdown-h1" />
-            <p className="text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted">Body01（通常段落 / Noto Regular 15px・行間 27px・text-fg-muted = Text/Body/Secondary #9696A0）</p>
+            <p className="text-body-01-jp text-fg-muted">Body01（通常段落 / Noto Regular 15px・行間 27px・text-fg-muted = Text/Body/Secondary #9696A0）</p>
             <p className="border-l-2 border-border-light pl-3 text-[13px] leading-[21px] tracking-[0.39px] text-fg-muted">引用 blockquote（&gt; / 13px text-fg-muted・左ボーダー）</p>
             <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption">補足テキスト（画像キャプション / ::: caption / 12px・行の高さ 18px text-fg-caption。作品本文の中だけ）</p>
-            <p className="text-[15px] leading-[27px] tracking-[0.45px] text-fg-muted">
+            <p className="text-body-01-jp text-fg-muted">
               インラインコード（<code className="rounded bg-action-hover px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">code</code>）
             </p>
             <div className="flex flex-col gap-2">

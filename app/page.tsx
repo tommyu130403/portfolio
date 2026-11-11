@@ -267,7 +267,7 @@ function HomeContent() {
                 <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
             </div>
-            {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 Afacad 14px・名前 Afacad Bold 46px 字間 5%・行間 100%・Main/050。一言紹介 Body/01/JP/Regular・Tertiary（2026-11-10 再照合） */}
+            {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 Afacad 14px・名前 Afacad Bold 46px 字間 5%・行間 100%・Main/050。一言紹介 Body/01/JP/Regular・Secondary（2026-11-11 作品本文に合わせて変更） */}
             <div className="flex flex-1 flex-col gap-4 sm:pt-3">
               <div data-reveal="" className="flex flex-col gap-3">
                 <p className="font-sans text-[14px] leading-none tracking-[0.03em] text-main-050">
@@ -277,14 +277,14 @@ function HomeContent() {
                   {loading ? <span className="inline-block h-[46px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_en || profile?.name_jp}
                 </h1>
               </div>
-              {profile?.bio && <p data-reveal="" className="text-body-01-jp text-fg-subtle">{profile.bio}</p>}
+              {profile?.bio && <p data-reveal="" className="text-body-01-jp text-fg-muted">{profile.bio}</p>}
             </div>
           </section>
 
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
             <div data-reveal=""><Headline label="自己紹介" title="Introduction" /></div>
-            <div data-reveal="" className="flex flex-col gap-10 text-[15px] leading-[24px] tracking-[0.45px] text-fg">
+            <div data-reveal="" className="flex flex-col gap-10 text-body-01-jp text-fg-muted">
               <div className="flex flex-col gap-4">
                 {loading ? (
                   <div className="h-16 w-full animate-pulse rounded bg-surface-light" />
@@ -314,7 +314,7 @@ function HomeContent() {
             <div data-reveal="" className="flex flex-col gap-6">
               {/* リード文（profile.career_lead）。文字は Introduction の段落と同じ。空なら出さない */}
               {!loading && profile?.career_lead?.trim() && (
-                <p className="whitespace-pre-line text-[15px] leading-[24px] tracking-[0.45px] text-fg">{profile.career_lead.trim()}</p>
+                <p className="whitespace-pre-line text-body-01-jp text-fg-muted">{profile.career_lead.trim()}</p>
               )}
               {loading ? (
                 <div className="flex flex-col gap-3">

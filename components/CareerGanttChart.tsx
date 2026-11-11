@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
+import { SHEET_CLOSE_DRAG, SHEET_MEDIA_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { createPortal, flushSync } from "react-dom";
 import Icon from "@/components/Icon";
 import { ButtonFunction } from "@/components/ButtonFunction";
@@ -35,8 +36,6 @@ const CHART_START = CURRENT_YEAR - (CHART_TOTAL - 1);
 const CHART_YEARS = Array.from({ length: CHART_TOTAL }, (_, i) => CHART_START + i);
 // 詳細パネルの開閉アニメーションの長さ。閉じ終わるまで描画を残す時間と揃える
 const PANEL_MS = 300;
-// ボトムシートを下へドラッグして閉じるしきい値（px）
-const SHEET_CLOSE_DRAG = 100;
 // Modal.tsx（z-50）と同じ層。サイドメニュー（sticky z-[2]）より手前に出す
 const PANEL_Z = 50;
 
@@ -119,20 +118,6 @@ function parsePeriod(period: string): {
   const endVal = endYear - CHART_START + endMonth / 12;
 
   return { startVal, endVal, startYear, endYear, isCurrent };
-}
-
-function useMediaQuery(query: string) {
-  // useSyncExternalStore で matchMedia を購読（SSR は false を返す）。
-  // effect 内同期 setState を避けつつ、ハイドレーション後に正しい値へ同期する。
-  return useSyncExternalStore(
-    (onChange) => {
-      const mq = window.matchMedia(query);
-      mq.addEventListener("change", onChange);
-      return () => mq.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia(query).matches,
-    () => false
-  );
 }
 
 /* 期間行（カレンダーアイコン + 期間 + 現在バッジ）。カードと詳細パネルで共通 */
@@ -771,7 +756,7 @@ function CareerPanel({
    ────────────────────────────────────────────────────────────────────────── */
 export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
   const [worksByCareer, setWorksByCareer] = useState<Record<string, WorkLink[]>>({});
-  const isMobile = useMediaQuery("(max-width: 727px)");
+  const isMobile = useMediaQuery(SHEET_MEDIA_QUERY);
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   // 開いている経歴（古い順の番号）。null = 閉じている
   const [openIndex, setOpenIndex] = useState<number | null>(null);

@@ -1112,14 +1112,14 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="Modal"
-          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）。Escape で閉じる／開くとモーダルへフォーカス、閉じると開いたボタンへ戻る／width=&quot;content&quot; で中身の幅（上限 800px）／ariaLabelledBy に見出しの id を渡すとダイアログの名前になる"
+          description="全画面オーバーレイモーダル(components/Modal.tsx)。ボタンで開閉するデモ用パターン。carousel バリアントで prev/next とドット表示に切り替え可能（Figma 120:383）。Escape で閉じる／開くとモーダルへフォーカス、閉じると開いたボタンへ戻る／width=&quot;content&quot; で中身の幅（上限 800px）／ariaLabelledBy に見出しの id を渡すとダイアログの名前になる／727px 以下は下部シート（下からせり上がるシート・上の角丸 16・つまみを下へ 100px 引くと閉じる・閉じるボタンはシート右上の外(背景の上)に出す・carousel は前後ボタンとドットをシート下部に出す）"
         >
           <ModalDemo />
         </ComponentPreview>
 
         <ComponentPreview
           title="ContactDialog"
-          description="サイドメニューの Contact と、ログイン画面・権限のない画面の「お問い合わせ」から開く問い合わせフォーム(components/ContactDialog.tsx。ログイン前でも送れる)。body 直下に z-80 で出す。Modal width=&quot;content&quot;・幅 480px(スマホは画面幅)。項目は お名前 / 返信用メールアドレス / ご用件。入力欄はログイン画面と同じ形(角丸 10・Surface/Light・枠 Border/Light・フォーカスで Primary・誤りは Danger/300)。空欄とメールの形式を送信時に確かめ、最初の誤りの欄へ移る。送信内容は Supabase の contact_messages に保存(24 時間あたりログイン済みは 1 人 5 件、ログイン前は接続元ごとに 3 件・全体で 30 件まで)。閉じても入力は下書きとして残り、送信成功・ログアウトで消える。見本から送っても実際に保存される(接続先が無い環境では保存されない)"
+          description="サイドメニューの Contact と、ログイン画面・権限のない画面の「お問い合わせ」から開く問い合わせフォーム(components/ContactDialog.tsx。ログイン前でも送れる)。body 直下に z-80 で出す。Modal width=&quot;content&quot;・幅 480px(スマホ(727px 以下)は下部シート)。項目は お名前 / 返信用メールアドレス / ご用件。入力欄はログイン画面と同じ形(角丸 10・Surface/Light・枠 Border/Light・フォーカスで Primary・誤りは Danger/300)。空欄とメールの形式を送信時に確かめ、最初の誤りの欄へ移る。送信内容は Supabase の contact_messages に保存(24 時間あたりログイン済みは 1 人 5 件、ログイン前は接続元ごとに 3 件・全体で 30 件まで)。閉じても入力は下書きとして残り、送信成功・ログアウトで消える。見本から送っても実際に保存される(接続先が無い環境では保存されない)"
         >
           <ContactDialogDemo />
         </ComponentPreview>
@@ -1322,7 +1322,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkVizModal"
-          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画。幅は timeline・stakeholder とも full"
+          description="メタ表の全画面ボタンで開く Timeline / Stakeholder モーダル（Figma 839:3499 / 848:2944）。汎用 Modal を流用し見出し＋viz を描画。幅は timeline・stakeholder とも full。727px 以下は Modal の下部シートで開く"
         >
           <WorkVizModalDemo />
         </ComponentPreview>

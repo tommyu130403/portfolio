@@ -23,6 +23,8 @@ async function listFolderRecursive(prefix: string): Promise<StorageImage[]> {
     if (error) throw new Error(error.message);
     if (!data) throw new Error("画像一覧を取得できませんでした");
     for (const item of data) {
+      // _v/ は表示用の縮小版(scripts/make-image-variants.mjs が作る)。作品の画像として選ばせない
+      if (!prefix && item.name === "_v") continue;
       const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
       if (item.metadata) {
         const { data: urlData } = supabase.storage

@@ -1,0 +1,30 @@
+# 本番 Supabase(無料プラン)の休止を防ぐ。無料プランは 1 週間データベースが使われないと止まり、
+# 公式は「1 日に数回の利用で足りる」としているため、1 日 2 回データベースへ読み取りの問い合わせを送る。
+# 公開の鍵(anon)で profile 表を読む。権限の規則で 0 件が返ることもあるが、問い合わせ自体はデータベースで実行される。
+# 応答の中身は表示しない(状態コードだけを見る)。
+# 注意: 公開リポジトリでは、60 日間コミットが無いと GitHub が定期実行を止める(docs/prod-test-result-stage5-20261112.md K5)
+name: Supabase keep-alive
+on:
+  schedule:
+    - cron: "17 0 * * *" # 毎日 09:17(日本時間)
+    - cron: "17 12 * * *" # 毎日 21:17(日本時間)
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: データベースへ読み取りの問い合わせを送る
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          [ -n "${SUPABASE_URL// /}" ] && [ -n "${SUPABASE_ANON_KEY// /}" ] || { echo "Supabase の設定値が空です"; exit 1; }
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-all-errors --max-time 30 \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            "${SUPABASE_URL%/}/rest/v1/profile?select=id&limit=1")
+          echo "応答の状態コード: ${code}"
+          [ "$code" = "200" ]

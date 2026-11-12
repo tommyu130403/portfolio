@@ -78,8 +78,9 @@ export const WorksList: FC = () => {
 
   if (error) {
     return (
-      <div className="rounded-md border border-red-500/40 bg-red-900/20 p-4 text-sm text-red-200">
-        制作・企画の取得に失敗しました: {error}
+      <div role="alert" className="rounded-md border border-red-500/40 bg-red-900/20 p-4 text-sm text-red-200">
+        {/* 原因の英文(TypeError など)は console に出し、画面には日本語だけを出す */}
+        制作・企画を読み込めませんでした。通信状況を確かめて、ページを再読み込みしてください。
       </div>
     );
   }

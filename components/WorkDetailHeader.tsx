@@ -6,7 +6,7 @@ import Tag from "./Tag";
 import Tooltip from "./Tooltip";
 import { resolveLogoSlug } from "@/src/components/SkillsCardGrid";
 import WorkVizModal from "./WorkVizModal";
-import ProtectedImage from "./ProtectedImage";
+import ProtectedImage, { type VariantWidth } from "./ProtectedImage";
 import { LaptopMock, PhoneMock, ScreenshotLightbox } from "./DeviceMock";
 import { parseTimeline, parseStakeholders } from "./WorkViz";
 import { EditButton } from "./WorkMarkdown";
@@ -22,11 +22,14 @@ export type WorkToolItem = { name: string; icon_url: string | null; slug?: strin
  * 画像の縦横を調べる 1px の見えない画像（ProtectedImage は画面内に入ったときだけ署名・読み込みをするので、display:none にはできない）。
  * 読めない（404・署名失敗・権限なし）ときは縦長扱いで確定させ、従来どおりスマホ枠（壊れた画像の表示）を出す — ヒーローを消さない
  */
+// 縦横判定と、判定後の端末枠の表示で同じ縮小版を読む(別の幅だと判定のあとに読み直しが直列に入り、低速回線で約 2 秒遅れた。F3 2026-11-12)
+const PROBE_WIDTH: VariantWidth = 960;
+
 const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void }> = ({ src, onResult }) => (
   <div className="relative h-px w-px overflow-hidden">
     <ProtectedImage
       src={src}
-      variantWidth={480}
+      variantWidth={PROBE_WIDTH}
       alt=""
       className="absolute left-0 top-0 h-px w-px opacity-0"
       onLoad={(e) => onResult(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight)}
@@ -73,13 +76,13 @@ const toDeviceShot = (raw: string): DeviceShot => {
 };
 
 /** PC 1 枚 + スマホ 1 枚の重ね（幅 560px。PC は中央に幅 74%、スマホは幅 20% で PC の右端より 5% 外側に重ねる。ユーザー決定 2026-11-02: A-1 案） */
-const HeroOverlap: FC<{ pc: DeviceShot; sp: DeviceShot; onClick: () => void }> = ({ pc, sp, onClick }) => (
+const HeroOverlap: FC<{ pc: DeviceShot; sp: DeviceShot; onClick: () => void; variantWidth?: VariantWidth }> = ({ pc, sp, onClick, variantWidth }) => (
   <div className="relative w-[560px] max-w-full">
     <div className="mx-auto w-[74%]">
-      <LaptopMock src={pc.src} onClick={onClick} browser={pc.browser} url={pc.url} />
+      <LaptopMock src={pc.src} onClick={onClick} browser={pc.browser} url={pc.url} variantWidth={variantWidth} />
     </div>
     <div className="absolute bottom-[2%] right-[8%] w-[20%]">
-      <PhoneMock src={sp.src} onClick={onClick} className="w-full" browser={sp.browser} url={sp.url} />
+      <PhoneMock src={sp.src} onClick={onClick} className="w-full" browser={sp.browser} url={sp.url} variantWidth={variantWidth} />
     </div>
   </div>
 );
@@ -202,6 +205,7 @@ const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawSho
         pc={{ src: pc, browser: pc in browserOf, url: browserOf[pc] || undefined }}
         sp={{ src: sp, browser: sp in browserOf, url: browserOf[sp] || undefined }}
         onClick={onClick}
+        variantWidth={PROBE_WIDTH}
       />
     );
   }
@@ -210,10 +214,10 @@ const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawSho
       {shots.map((src) =>
         landscape[src] ? (
           <div key={src} className="w-[420px] max-w-full">
-            <LaptopMock src={src} onClick={onClick} browser={src in browserOf} url={browserOf[src] || undefined} />
+            <LaptopMock src={src} onClick={onClick} browser={src in browserOf} url={browserOf[src] || undefined} variantWidth={PROBE_WIDTH} />
           </div>
         ) : (
-          <PhoneMock key={src} src={src} onClick={onClick} browser={src in browserOf} url={browserOf[src] || undefined} />
+          <PhoneMock key={src} src={src} onClick={onClick} browser={src in browserOf} url={browserOf[src] || undefined} variantWidth={PROBE_WIDTH} />
         ),
       )}
     </>

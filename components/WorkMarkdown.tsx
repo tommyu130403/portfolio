@@ -33,7 +33,7 @@ import ProtectedImage from "./ProtectedImage";
  *  - `::: flow ラベル highlight=N` 〜 `:::` の横フロー（`- ` 行が1手順。N 番目を強調、省略=最後、0=なし）
  *  - `::: bars base=1.0 max=1.4` 〜 `:::` の横棒グラフ（`- ラベル | 補助 | 値 | 表示文 | up/down/flat`、`legend:` 行で凡例）
  *  - `::: mockup phone src=<url> [src=<url>] [browser] [url=example.com]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
- *  - `::: html` 〜 `:::` の生 HTML / SVG 埋め込み（script・iframe・style・イベント属性は除去）
+ *  - `::: html` 〜 `:::` の生 HTML / SVG 埋め込み（script・iframe・style・SVG のアニメーション・イベント属性は除去）
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
  *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
  */
@@ -318,6 +318,10 @@ const FENCE_CLOSE = /^```\s*$/;
 
 const HTML_REMOVE_TAGS =
   "script|iframe|object|embed|style|link|meta|base|form|input|button|textarea|select";
+// SVG のアニメーション要素は、a の href を後から javascript: に書き換えられるため除く。
+// 自己終了（<animate … />）で書くのが普通なので、中身ごと消す対象にはせずタグだけ消す
+// （中身ごとにすると、自己終了タグから次の </animate> までの正当な図形も消える）
+const HTML_STRIP_TAGS = `${HTML_REMOVE_TAGS}|animate|animatemotion|animatetransform|set`;
 
 /** URL 属性の値を判定用に整える（HTML 実体参照を戻し、空白・制御文字を除いて小文字化） */
 function normalizeUrlValue(v: string): string {
@@ -336,7 +340,8 @@ function normalizeUrlValue(v: string): string {
 /**
  * `::: html` ブロック用の簡易サニタイザ（文字列操作のみ。サーバーでも動く）。
  * 危険なタグ（中身ごと）・イベント属性・srcdoc を除き、リンク系属性の javascript: 等は # に置き換える。
- * 1 回の置換で消した文字の残りが新しいタグに組み上がる（`<scr<style>ipt>` → `<script>`）ため、出力が変わらなくなるまで繰り返す
+ * 1 回の置換で消した文字の残りが新しいタグに組み上がる（`<scr<style>ipt>` → `<script>`）ため、出力が変わらなくなるまで繰り返す。
+ * 上限まで繰り返しても変わり続ける（入れ子を深くして除去をすり抜けようとしている）ときは、HTML として出さず文字として見せる
  */
 function sanitizeHtml(html: string): string {
   let prev = html;
@@ -345,13 +350,13 @@ function sanitizeHtml(html: string): string {
     if (next === prev) return next;
     prev = next;
   }
-  return prev;
+  return prev.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function sanitizeHtmlOnce(html: string): string {
   return html
     .replace(new RegExp(`<(${HTML_REMOVE_TAGS})\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>`, "gi"), "")
-    .replace(new RegExp(`<\\/?(?:${HTML_REMOVE_TAGS})\\b[^>]*>`, "gi"), "")
+    .replace(new RegExp(`<\\/?(?:${HTML_STRIP_TAGS})\\b[^>]*>`, "gi"), "")
     .replace(/([\s/"'])on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "$1")
     .replace(/([\s/"'])srcdoc\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "$1")
     .replace(

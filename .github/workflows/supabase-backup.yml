@@ -1,0 +1,77 @@
+# 本番 Supabase(無料プラン)の控えを月 1 回取る。無料プランには自動の控えが無いため、
+# 公式の手順(supabase db dump で 役割・表の構造・データ の 3 ファイル)で書き出し、非公開リポジトリへ保存する。
+# このリポジトリは公開なので、控えを Actions の成果物やコミットとしてここに残してはいけない。
+# 画像の置き場の中身は控えに含まれない(公式の仕様)。
+# supabase db dump に --dry-run や --debug を付けない(DB のパスワードがログに平文で出る)。
+# 必要な秘密(オーナーが Settings → Secrets and variables → Actions で登録):
+#   SUPABASE_DB_URL   … Supabase の「Connect」→ Session pooler の接続文字列(DB のパスワード入り)
+#   BACKUP_REPO_TOKEN … 控え用の非公開リポジトリ <owner>/portfolio-db-backups だけに Contents の読み書きを許した鍵
+name: Supabase backup
+on:
+  schedule:
+    - cron: "40 18 1 * *" # 毎月 2 日 03:40(日本時間)
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+env:
+  BACKUP_REPO: ${{ github.repository_owner }}/portfolio-db-backups
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 秘密が登録されているか確認
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+        run: |
+          [ -n "${SUPABASE_DB_URL// /}" ] || { echo "秘密 SUPABASE_DB_URL が未登録です"; exit 1; }
+          [ -n "${BACKUP_REPO_TOKEN// /}" ] || { echo "秘密 BACKUP_REPO_TOKEN が未登録です"; exit 1; }
+
+      # package.json の supabase と同じ版にそろえる
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.75.2
+
+      - name: 控えを書き出す(役割・表の構造・データ)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/dump"
+          cd "$RUNNER_TEMP/dump"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f data.sql --use-copy --data-only \
+            -x "storage.buckets_vectors" -x "storage.vector_indexes"
+          for f in roles.sql schema.sql data.sql; do
+            [ -s "$f" ] || { echo "$f が空です"; exit 1; }
+          done
+          # 中身は表示せず、大きさだけを記録する
+          ls -l roles.sql schema.sql data.sql | awk '{print $5, $9}'
+
+      - name: 非公開リポジトリへ保存する
+        env:
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          # 公開リポジトリへ誤って保存しないための確認(GitHub の API で非公開であることを確かめる)
+          visibility=$(curl -fsS -H "Authorization: Bearer ${BACKUP_REPO_TOKEN}" \
+            "https://api.github.com/repos/${BACKUP_REPO}" | jq -r '.private')
+          [ "$visibility" = "true" ] || { echo "${BACKUP_REPO} が非公開ではないため保存を中止します"; exit 1; }
+          dest="$RUNNER_TEMP/backup-repo"
+          git clone --quiet --depth 1 "https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${BACKUP_REPO}.git" "$dest"
+          stamp=$(date -u +%Y%m%d-%H%M%S)
+          mkdir -p "$dest/$stamp"
+          cp "$RUNNER_TEMP/dump/"*.sql "$dest/$stamp/"
+          cd "$dest"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$stamp"
+          git commit --quiet -m "backup: ${stamp} (from ${GITHUB_REPOSITORY} run ${GITHUB_RUN_ID})"
+          # 空のリポジトリでも main に保存されるよう、送り先を main に固定する
+          git push --quiet origin HEAD:refs/heads/main
+          echo "保存先: ${BACKUP_REPO} / ${stamp}"

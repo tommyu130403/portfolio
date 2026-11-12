@@ -62,8 +62,10 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
   );
 
   return (
+    // 先読みしない理由は SideMenuBar のリンクと同じ(作品詳細のヒーロー画像と回線を取り合うため)
     <Link
       href={href}
+      prefetch={false}
       aria-label={direction ? `${isNext ? "次" : "前"}のWork: ${title}` : `Work: ${title}`}
       className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border hover:border-border-light ${HOVER_CARD} ${
         hasThumb

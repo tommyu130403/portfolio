@@ -9,8 +9,6 @@ on:
     - cron: "17 0 * * *" # 毎日 09:17(日本時間)
     - cron: "17 12 * * *" # 毎日 21:17(日本時間)
   workflow_dispatch:
-  push: # TEMP: 試し実行用。PR 前に消す
-    branches: ["chore/20261112-supabase-keepalive-backup"]
 permissions:
   contents: read
 jobs:

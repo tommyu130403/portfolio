@@ -112,6 +112,12 @@
 - `BACKUP_REPO_TOKEN` は期限の前に作り直して登録し直す。データベースのパスワードを変えたら `SUPABASE_DB_URL` も登録し直す。
 - 控えから戻す手順は公式の [Backup and Restore using the CLI](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore) の「Restore backup using CLI」。
 
+##### 試し実行の記録
+| 日時(日本時間) | 自動処理 | 結果 | 証拠 |
+|---|---|---|---|
+| 2026-11-12 18:21 | 休止防止 | 成功 | [実行の記録](https://github.com/tommyu130403/portfolio/actions/runs/43190740583)で「応答の状態コード: 200」。Supabase 側の記録にも同じ時刻に `profile` の読み取り(200)が残っている |
+| 未実施 | 控え | — | オーナーの「最初の設定」の後に試す |
+
 ### K6: 戻し方の稽古 — 合格
 
 #### 戻し方の手順(計画 §5-2「変更のあとに壊れた」から参照)

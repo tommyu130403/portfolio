@@ -258,6 +258,8 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
                     onClick={() => {
                       onSelect(i);
                       setOpen(false);
+                      // 押した項目は閉じると消えるため、選択の位置を目次ボタンへ戻す（ページ全体に落ちて枠が消えないように。ドロワーと同じ）
+                      buttonRef.current?.focus({ preventScroll: true });
                     }}
                     className={`block w-full truncate py-1.5 text-left text-[14px] leading-[1.5] ${
                       item.level === 2 ? "pl-4" : ""

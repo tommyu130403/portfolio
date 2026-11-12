@@ -17,6 +17,16 @@ import { loadPublishedWorksOrder, releasePublishedWorksOrder, type PublishedWork
 type Work = Tables<"works">;
 type OrderItem = PublishedWorkItem;
 
+// 画面に出す文言。Supabase の英文(TypeError: Failed to fetch など)はそのまま出さない
+const NOT_FOUND_MESSAGE = "この作品は見つかりませんでした。公開が終わったか、URL が違う可能性があります。";
+const LOAD_FAILED_MESSAGE = "作品を読み込めませんでした。通信状況を確かめて、ページを再読み込みしてください。";
+
+/**
+ * 取得の失敗を「作品が無い」と「読み込めない」に分ける。
+ * PGRST116 = 該当 0 行(.single())、22P02 = ID が uuid の形でない。どちらも URL の作品が存在しない
+ */
+const isNotFoundError = (error: { code?: string } | null) => !error || error.code === "PGRST116" || error.code === "22P02";
+
 type WorkDetailClientProps = {
   /** クエリ文字列 ?id= から受け取った Work ID */
   id: string | null;
@@ -78,7 +88,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
 
       if (!id) {
         if (!cancelled) {
-          setError("Work ID が指定されていません。");
+          setError("作品が指定されていません。URL が正しいかご確認ください。");
           setLoading(false);
         }
         return;
@@ -105,7 +115,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       if (cancelled) return;
 
       if (workError || !workData) {
-        setError(workError?.message ?? "Work が見つかりませんでした。");
+        if (workError && !isNotFoundError(workError)) console.error("Failed to fetch work:", workError);
+        setError(isNotFoundError(workError) ? NOT_FOUND_MESSAGE : LOAD_FAILED_MESSAGE);
         setWork(null);
         setLoading(false);
         return;
@@ -171,7 +182,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
     if (error || !work) {
       return (
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-          <p className="text-[15px] text-fg-muted">{error ?? "Work が見つかりませんでした。"}</p>
+          <p role="alert" className="text-[15px] text-fg-muted">{error ?? NOT_FOUND_MESSAGE}</p>
           <button
             type="button"
             onClick={handleBack}

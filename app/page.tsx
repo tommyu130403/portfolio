@@ -391,7 +391,7 @@ function HomeContent() {
               {loading ? (
                 <div className="h-full w-full animate-pulse bg-surface-light" />
               ) : (
-                <ProtectedImage src={profile?.hero_image_url ?? ""} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
+                <ProtectedImage src={profile?.hero_image_url ?? ""} variantWidth={480} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
             </div>
             {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 Afacad 14px・名前 Afacad Bold 46px 字間 5%・行間 100%・Main/050。一言紹介 Body/01/JP/Regular・Secondary（2026-11-11 作品本文に合わせて変更） */}

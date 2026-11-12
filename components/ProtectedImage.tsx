@@ -4,8 +4,13 @@ import { useEffect, useRef, useState, type ImgHTMLAttributes } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/src/lib/supabase";
 
+/** 縮小版の幅。scripts/make-image-variants.mjs と閲覧規則(supabase/migrations の image_variants)の幅と揃える */
+export type VariantWidth = 480 | 960;
+
 type ProtectedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src: string;
+  /** 表示の大きさに合わせた縮小版(WebP)を先に読む。縮小版が無い・読めないときは元の画像に戻る。拡大表示など原寸が要る所では渡さない */
+  variantWidth?: VariantWidth;
   /** 表示できない状態（権限なし・署名失敗・読み込み失敗）に入った / 抜けたときに呼ぶ。代わりの表示に切り替える用 */
   onUnavailableChange?: (unavailable: boolean) => void;
 };
@@ -21,6 +26,12 @@ const storageRoot = publicPathPrefix.split("/object/public/")[0];
 
 type SignedEntry = { url: string; expiresAt: number };
 
+const RASTER_PATH = /\.(png|jpe?g|webp)$/i;
+/** 縮小版の置き場所。元のパスの後ろに .webp を足す(元の拡張子を残し、閲覧規則が元のパスに戻せるようにする) */
+const variantPathFor = (path: string, width: VariantWidth) => `_v/${width}/${path}.webp`;
+// 縮小版が無い(まだ作っていない新しい画像など)と分かったパス。以後は元の画像を直接読む
+const missingVariants = new Set<string>();
+
 // 署名結果は画面全体で共有する。署名 URL は毎回トークンが変わりブラウザのキャッシュが効かないため、
 // 同じ画像を別の部品や作り直された部品が署名し直すと、画像の取得まで二重になる
 const signedCache = new Map<string, SignedEntry>();
@@ -35,6 +46,7 @@ supabase.auth.onAuthStateChange((_event, session) => {
     cacheGeneration += 1;
     signedCache.clear();
     pendingSigns.clear();
+    missingVariants.clear();
   }
   cacheUserId = userId;
 });
@@ -86,18 +98,22 @@ export function storagePathFromUrl(src: string): string | null {
   return classifySource(src).path;
 }
 
-export default function ProtectedImage({ src, alt = "", onUnavailableChange, onError, onLoad, ...props }: ProtectedImageProps) {
+export default function ProtectedImage({ src, alt = "", variantWidth, onUnavailableChange, onError, onLoad, ...props }: ProtectedImageProps) {
   const { accessRole } = useAuth();
   const source = classifySource(src);
   const path = source.path;
+  const variantPath = path && variantWidth && RASTER_PATH.test(path) ? variantPathFor(path, variantWidth) : null;
+  // 署名するパス。縮小版が無いと分かったら元の画像にする(missingVariants への追加は refresh で描き直して反映する)
+  const signTarget = variantPath && !missingVariants.has(variantPath) ? variantPath : path;
   const mayRead = accessRole === "owner" || accessRole === "reader";
   const imageRef = useRef<HTMLImageElement>(null);
   const [visible, setVisible] = useState(false);
   const [refresh, setRefresh] = useState(0);
   // 作り直されたときも、共有の署名が生きていれば最初の描画から使う（署名・画像の取り直しを起こさない）
+  // source は署名したパス(縮小版か元の画像か)。src が変われば署名するパスも変わる
   const [signed, setSigned] = useState<{ source: string; url: string; expiresAt: number } | null>(() => {
-    const cached = path ? signedCache.get(path) : undefined;
-    return isFresh(cached) ? { source: src, ...cached } : null;
+    const cached = signTarget ? signedCache.get(signTarget) : undefined;
+    return signTarget && isFresh(cached) ? { source: signTarget, ...cached } : null;
   });
   const [signFailure, setSignFailure] = useState<string | null>(null);
   const [loadErrorSrc, setLoadErrorSrc] = useState<string | null>(null);
@@ -121,26 +137,30 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
   }, [source.protected]);
 
   useEffect(() => {
-    if (!path || !mayRead || !visible) return;
-    if (signed?.source === src && isFresh(signed)) return;
+    if (!signTarget || !mayRead || !visible) return;
+    if (signed?.source === signTarget && isFresh(signed)) return;
     let active = true;
-    signPath(path).then((entry) => {
+    signPath(signTarget).then((entry) => {
       if (!active) return;
-      if (!entry) setSignFailure(src);
+      if (!entry && signTarget !== path) {
+        // 縮小版が無い・読めない → 元の画像で署名し直す
+        missingVariants.add(signTarget);
+        setRefresh((value) => value + 1);
+      } else if (!entry) setSignFailure(src);
       else {
         setSignFailure(null);
-        setSigned({ source: src, ...entry });
+        setSigned({ source: signTarget, ...entry });
       }
     });
     return () => { active = false; };
-  }, [path, src, mayRead, visible, signed, refresh]);
+  }, [signTarget, path, src, mayRead, visible, signed, refresh]);
 
   useEffect(() => {
-    if (!visible || !source.protected || !signed || signed.source !== src) return;
+    if (!visible || !source.protected || !signed || signed.source !== signTarget) return;
     const remaining = signed.expiresAt - Date.now() - REFRESH_BEFORE_SECONDS * 1000;
     const timer = window.setTimeout(() => setRefresh((value) => value + 1), Math.max(remaining, 1000));
     return () => window.clearTimeout(timer);
-  }, [visible, source.protected, signed, src]);
+  }, [visible, source.protected, signed, signTarget]);
 
   useEffect(() => {
     if (!signed) return;
@@ -158,8 +178,18 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
 
   // Never send a private bucket's old public URL to the browser as an image request.
   const renderSrc = source.protected
-    ? (mayRead && signed?.source === src ? signed.url : undefined)
+    ? (mayRead && signed?.source === signTarget ? signed.url : undefined)
     : src || undefined;
+  const showingVariant = !!renderSrc && !!variantPath && signTarget === variantPath;
+  // 縮小版の読み込みに失敗したら、表示できない扱いにせず元の画像に切り替える
+  const handleLoadFailure = (failedSrc: string | null) => {
+    if (showingVariant && variantPath) {
+      missingVariants.add(variantPath);
+      setRefresh((value) => value + 1);
+    } else setLoadErrorSrc(failedSrc);
+  };
+  const handleLoadFailureRef = useRef(handleLoadFailure);
+  useEffect(() => { handleLoadFailureRef.current = handleLoadFailure; });
   const failed = source.protected && signFailure === src && !renderSrc;
   // 権限の判定中（loading）と署名待ちは「まだ」であって表示不可ではない
   const unavailable =
@@ -172,7 +202,7 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
     const image = imageRef.current;
     if (!renderSrc || !image?.complete || image.naturalWidth > 0) return;
     let active = true;
-    queueMicrotask(() => { if (active) setLoadErrorSrc(renderSrc); });
+    queueMicrotask(() => { if (active) handleLoadFailureRef.current(renderSrc); });
     return () => { active = false; };
   }, [renderSrc]);
   // 画面の処理が動く前に読み込みが終わっている画像は onLoad が届かないため、描画後にも確かめる
@@ -201,7 +231,11 @@ export default function ProtectedImage({ src, alt = "", onUnavailableChange, onE
       alt={failed ? `${alt || "画像"}を表示できません` : alt}
       title={failed ? "画像を表示できません。再試行中です" : props.title}
       onLoad={(e) => { setLoaded(true); onLoad?.(e); }}
-      onError={(e) => { setLoadErrorSrc(renderSrc ?? null); onError?.(e); }}
+      onError={(e) => {
+        // 縮小版から元の画像へ切り替えるときは、呼び出し側には失敗を知らせない(元の画像が届く)
+        if (showingVariant) handleLoadFailure(renderSrc ?? null);
+        else { setLoadErrorSrc(renderSrc ?? null); onError?.(e); }
+      }}
     />
   );
 }

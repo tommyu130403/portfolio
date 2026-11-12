@@ -93,6 +93,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
             <div className="relative hidden w-[128px] shrink-0 self-stretch overflow-hidden md:block">
               <ProtectedImage
                 src={thumbSrc!}
+                variantWidth={480}
                 alt=""
                 loading="lazy"
                 onError={() => setFailedSrc(thumbSrc)}

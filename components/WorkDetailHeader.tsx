@@ -26,6 +26,7 @@ const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void
   <div className="relative h-px w-px overflow-hidden">
     <ProtectedImage
       src={src}
+      variantWidth={480}
       alt=""
       className="absolute left-0 top-0 h-px w-px opacity-0"
       onLoad={(e) => onResult(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight)}
@@ -124,7 +125,7 @@ const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => 
     if (imgs.length === 1) {
       return (
         <button type="button" onClick={onClick} aria-label="画像を拡大表示" className="w-[560px] max-w-full cursor-zoom-in">
-          <ProtectedImage src={imgs[0]} alt="" className="block h-auto w-full" />
+          <ProtectedImage src={imgs[0]} variantWidth={960} alt="" className="block h-auto w-full" />
         </button>
       );
     }
@@ -143,7 +144,7 @@ const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => 
             className="absolute aspect-video cursor-zoom-in overflow-hidden rounded-[6px] border border-border shadow-[0_8px_24px_color-mix(in_srgb,var(--color-system-black)_35%,transparent)]"
             style={{ left: `${step * i}%`, top: `${step * i}%`, width: `${size}%`, zIndex: imgs.length - i }}
           >
-            <ProtectedImage src={src} alt="" className="block h-full w-full object-cover" />
+            <ProtectedImage src={src} variantWidth={960} alt="" className="block h-full w-full object-cover" />
           </button>
         ))}
       </div>
@@ -177,7 +178,7 @@ const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawSho
   if (plain.length > 0 && shots.length === 0) {
     return (
       <button type="button" onClick={onClick} aria-label="画像を拡大表示" className="w-[560px] max-w-full cursor-zoom-in">
-        <ProtectedImage src={plain[0]} alt="" className="block h-auto w-full [aspect-ratio:auto_16/10]" />
+        <ProtectedImage src={plain[0]} variantWidth={960} alt="" className="block h-auto w-full [aspect-ratio:auto_16/10]" />
       </button>
     );
   }

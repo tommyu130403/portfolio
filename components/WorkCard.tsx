@@ -50,6 +50,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
         ) : (
           <ProtectedImage
             src={image || DEFAULT_IMAGE}
+            variantWidth={960}
             alt={title}
             className="absolute inset-0 h-full w-full object-cover pointer-events-none"
           />

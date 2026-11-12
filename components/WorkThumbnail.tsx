@@ -49,6 +49,7 @@ const Shot: FC<{ src: string | null; tintKey?: string }> = ({ src, tintKey }) =>
   src ? (
     <ProtectedImage
       src={src}
+      variantWidth={480}
       alt=""
       draggable={false}
       className="absolute inset-0 h-full w-full object-cover object-top"
@@ -127,6 +128,7 @@ const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean;
       {logoUrl && (
         <ProtectedImage
           src={logoUrl}
+          variantWidth={480}
           alt=""
           draggable={false}
           onUnavailableChange={(unavailable) => setUnavailableUrl(unavailable ? logoUrl : null)}

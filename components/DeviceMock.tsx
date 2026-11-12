@@ -24,7 +24,7 @@ export const PhoneMock: FC<{ src: string; onClick?: () => void; className?: stri
       aria-label="スクリーンショットを拡大表示"
       className="relative block w-full cursor-zoom-in overflow-hidden rounded-[12cqw] border-[3cqw] border-thumbnail bg-thumbnail shadow-xl"
     >
-      <ProtectedImage src={src} alt="" className="block h-auto w-full rounded-[9cqw] [aspect-ratio:auto_9/19]" />
+      <ProtectedImage src={src} variantWidth={480} alt="" className="block h-auto w-full rounded-[9cqw] [aspect-ratio:auto_9/19]" />
       {/* iOS Safari 風の下部バー（任意・ダーク配色で PC のバーと統一）。画像の下端に残る帯（切れた端末イラストや背景だけの部分）を隠す（ユーザー指示 2026-11-02） */}
       {browser && (
         <div
@@ -82,7 +82,7 @@ export const LaptopMock: FC<{ src: string; browser?: boolean; url?: string; onCl
             </div>
           </div>
         )}
-        <ProtectedImage src={src} alt="" className="block aspect-[16/10] w-full bg-thumbnail object-cover object-left-top" />
+        <ProtectedImage src={src} variantWidth={960} alt="" className="block aspect-[16/10] w-full bg-thumbnail object-cover object-left-top" />
       </div>
     </div>
     {/* 土台（全幅・高さは幅の 2.5%・下角だけ丸い。上中央に小さな切り欠き） */}

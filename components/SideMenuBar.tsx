@@ -329,6 +329,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             {avatarUrl && (
               <ProtectedImage
                 src={avatarUrl}
+                variantWidth={480}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
               />

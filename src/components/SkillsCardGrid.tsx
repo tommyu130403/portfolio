@@ -387,7 +387,9 @@ export default function SkillsCardGrid() {
     fetchSkillCards()
       .then((data) => { if (active) setCards(data); })
       .catch((failure: unknown) => {
-        if (active) setError(failure instanceof Error ? failure.message : "スキルを読み込めませんでした");
+        // 原因の英文(TypeError など)は console に出し、画面には日本語だけを出す
+        console.error("Failed to fetch skills:", failure);
+        if (active) setError("スキルを読み込めませんでした。通信状況を確かめて、ページを再読み込みしてください。");
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -403,7 +405,7 @@ export default function SkillsCardGrid() {
     );
   }
 
-  if (error) return <p className="text-[13px] text-danger-300" role="alert">スキルの取得に失敗しました: {error}</p>;
+  if (error) return <p className="text-[13px] text-danger-300" role="alert">{error}</p>;
 
   // Figma (Master 502:1344) はカテゴリカード（400px・余白24）を本文幅 800px に 2×2 で並べ、
   // カード内のスキル項目は 1 列。2×2 のときカード間の gap は無し（カードの余白が間隔になる）。1 列のときは従来どおり 24 空ける。

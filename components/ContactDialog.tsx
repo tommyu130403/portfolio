@@ -5,6 +5,12 @@ import { createPortal } from "react-dom";
 import Modal from "./Modal";
 import { supabase } from "@/src/lib/supabase";
 
+// 通信が切れているときの文言。supabase-js は通信の失敗を例外にせず、error.message に
+// 「TypeError: Failed to fetch」(Chrome)・「NetworkError …」(Firefox)・「Load failed」(Safari)を入れて返す
+const NETWORK_ERROR_MESSAGE = "通信できず、送信できませんでした。インターネットの接続を確かめて、もう一度お試しください。入力した内容は残っています。";
+const isNetworkError = (message: string) =>
+  (typeof navigator !== "undefined" && !navigator.onLine) || /Failed to fetch|NetworkError|Load failed/.test(message);
+
 // 上限は supabase/migrations/20261109130000_contact_messages.sql の check と同じ。片方を変えたら両方直す
 const MAX_NAME = 100;
 const MAX_EMAIL = 254;
@@ -91,7 +97,9 @@ const ContactDialog: FC<ContactDialogProps> = ({ onClose }) => {
         setSubmitError(
           error.message.includes("contact_rate_limited")
             ? "送信できる件数の上限に達しました。24時間ほどおいて、もう一度お試しください。"
-            : "送信できませんでした。時間をおいて、もう一度お試しください。解決しないときは YOUTRUST のメッセージからご連絡ください。"
+            : isNetworkError(error.message)
+              ? NETWORK_ERROR_MESSAGE
+              : "送信できませんでした。時間をおいて、もう一度お試しください。解決しないときは YOUTRUST のメッセージからご連絡ください。"
         );
         setStatus("idle");
         return;
@@ -99,7 +107,7 @@ const ContactDialog: FC<ContactDialogProps> = ({ onClose }) => {
       draft = EMPTY;
       setStatus("sent");
     } catch {
-      setSubmitError("送信できませんでした。通信状況を確かめて、もう一度お試しください。");
+      setSubmitError(NETWORK_ERROR_MESSAGE);
       setStatus("idle");
     }
   };

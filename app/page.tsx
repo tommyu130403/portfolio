@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SideMenuBar, { type SideMenuSectionId } from "@/components/SideMenuBar";
 import Headline from "@/components/Headline";
 import CareerGanttChart from "@/components/CareerGanttChart";
@@ -79,21 +79,60 @@ function HomeContent() {
   // lg 未満のモバイルナビ（ハンバーガー → オーバーレイ）の開閉状態
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // オーバーレイ表示中は Esc で閉じ、背面スクロールをロックする
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuOverlayRef = useRef<HTMLDivElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
+  // メニューの節リンクで閉じたときは ☰ へ戻さない(移動先の節から Tab を続けられるように)
+  const menuClosedByLinkRef = useRef(false);
+
+  // オーバーレイ表示中は Esc で閉じ、背面スクロールをロックする。
+  // 開いたら選択の位置を「閉じる」へ移し、Tab はメニューの中で循環させる(aria-modal のため裏の画面へ抜けない)。
+  // 閉じたら ☰ へ戻す
   useEffect(() => {
     if (!mobileMenuOpen) return;
+    menuClosedByLinkRef.current = false;
+    const overlay = menuOverlayRef.current;
+    // Contact などのダイアログがメニューの手前に開いている間は、キー操作をそちらに任せる
+    const otherDialogOpen = () => document.querySelectorAll('[role="dialog"][aria-modal="true"]').length > 1;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      // Contact などのダイアログがメニューの手前に開いている間は、Esc でそちらだけを閉じる
-      if (document.querySelectorAll('[role="dialog"][aria-modal="true"]').length > 1) return;
-      setMobileMenuOpen(false);
+      if (otherDialogOpen()) return;
+      if (e.key === "Escape") {
+        setMobileMenuOpen(false);
+        return;
+      }
+      if (e.key !== "Tab" || !overlay) return;
+      const focusables = Array.from(
+        overlay.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')
+      ).filter((el) => el.getClientRects().length > 0);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (!overlay.contains(active)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
+    // 開くときは visibility を即時に切り替えている(下の className)ので、この時点で focus() が効く
+    menuCloseRef.current?.focus({ preventScroll: true });
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      // 選択の位置がメニューの中(閉じると inert で外れる)かページ全体にあるときだけ ☰ へ戻す
+      const active = document.activeElement;
+      if (menuClosedByLinkRef.current) return;
+      if (!active || active === document.body || overlay?.contains(active)) {
+        menuButtonRef.current?.focus({ preventScroll: true });
+      }
     };
   }, [mobileMenuOpen]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -278,6 +317,7 @@ function HomeContent() {
 
         {/* モバイル: ハンバーガー（lg 未満のみ表示） */}
         <button
+          ref={menuButtonRef}
           type="button"
           aria-label="メニューを開く"
           aria-expanded={mobileMenuOpen}
@@ -294,10 +334,13 @@ function HomeContent() {
         {/* モバイル: オーバーレイ（lg 未満のみ表示） */}
         {/* 常に描画し、開閉は opacity / translate で動かす(閉じている間は inert + invisible で操作・読み上げ対象外) */}
         <div
+          ref={menuOverlayRef}
           inert={!mobileMenuOpen}
           className={[
-            "fixed inset-0 z-[60] lg:hidden transition-[opacity,visibility] duration-300 ease-in-out",
-            mobileMenuOpen ? "visible opacity-100" : "invisible opacity-0",
+            "fixed inset-0 z-[60] lg:hidden duration-300 ease-in-out",
+            // 開くときは visibility を動かさず即時に visible にする(動かすと最初のフレームが hidden のままで、選択の位置を中へ移せない)。
+            // 閉じるときだけ visibility も遅らせ、フェードアウトを見せる
+            mobileMenuOpen ? "visible opacity-100 transition-opacity" : "invisible opacity-0 transition-[opacity,visibility]",
           ].join(" ")}
           // 閉じている間は dialog として数えない(Modal の「最前面のダイアログ」判定に混ざらないように)
           role={mobileMenuOpen ? "dialog" : undefined}
@@ -316,7 +359,10 @@ function HomeContent() {
               mobileMenuOpen ? "translate-x-0" : "-translate-x-full",
             ].join(" ")}
             onClick={(e) => {
-              if ((e.target as HTMLElement).closest("a")) setMobileMenuOpen(false);
+              if ((e.target as HTMLElement).closest("a")) {
+                menuClosedByLinkRef.current = true;
+                setMobileMenuOpen(false);
+              }
             }}
           >
             <SideMenuBar
@@ -326,6 +372,7 @@ function HomeContent() {
           </div>
           {/* 閉じるボタン */}
           <button
+            ref={menuCloseRef}
             type="button"
             aria-label="メニューを閉じる"
             onClick={() => setMobileMenuOpen(false)}

@@ -194,6 +194,8 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
         ) : (
           <Link
             href={href}
+            // 画面に入っただけで移動先を先読みしない(低速回線で表示中のページの画像・データと回線を取り合うため。F3 2026-11-13)
+            prefetch={false}
             className={className}
             aria-current={active ? "page" : undefined}
             aria-label={iconOnly ? label : undefined}
@@ -305,6 +307,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             スクロールしないため、自前で先頭へ戻し、残った #works などのハッシュも消す */}
         <Link
           href="/"
+          prefetch={false}
           onClick={(e) => {
             // 新しいタブで開く操作(Cmd/Ctrl/Shift/中クリック)はブラウザに任せる
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
@@ -330,6 +333,8 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               <ProtectedImage
                 src={avatarUrl}
                 variantWidth={480}
+                // 小さな飾りの写真なので、ページの主画像(作品のヒーローなど)より後に読む
+                fetchPriority="low"
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
               />

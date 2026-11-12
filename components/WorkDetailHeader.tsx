@@ -30,6 +30,8 @@ const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void
     <ProtectedImage
       src={src}
       variantWidth={PROBE_WIDTH}
+      // 判定用の取得がそのまま表示に使われる(同じ署名 URL)。ヒーローはページの主画像なので最優先で読む
+      fetchPriority="high"
       alt=""
       className="absolute left-0 top-0 h-px w-px opacity-0"
       onLoad={(e) => onResult(e.currentTarget.naturalWidth > e.currentTarget.naturalHeight)}

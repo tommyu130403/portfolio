@@ -33,7 +33,8 @@ const ArrowLink: FC<{ href: string; direction: "left" | "right"; label: string }
   label,
 }) => (
   // hover は 44px のリンク全体で反応させる（group をリンクに付け、見た目の span は group-hover で変える）
-  <Link href={href} aria-label={label} className="group flex h-11 w-11 items-center justify-center">
+  // 先読みしない理由は SideMenuBar のリンクと同じ(作品詳細のヒーロー画像と回線を取り合うため)
+  <Link href={href} prefetch={false} aria-label={label} className="group flex h-11 w-11 items-center justify-center">
     <span
       className={[
         BUTTON_FUNCTION.base,
@@ -79,6 +80,7 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
             高さ 36px の見た目に対し、当たり判定だけ縦 44px に広げる */}
         <Link
           href="/#works"
+          prefetch={false}
           className={`${BUTTON_FUNCTION.base} ${BUTTON_FUNCTION.border.off} relative px-[6px] text-fg-subtle hover:text-fg after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']`}
           aria-label="Works一覧へ戻る"
         >

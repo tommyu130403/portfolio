@@ -81,7 +81,7 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
         <Link
           href="/#works"
           prefetch={false}
-          className={`${BUTTON_FUNCTION.base} ${BUTTON_FUNCTION.border.off} relative px-[6px] text-fg-subtle hover:text-fg after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']`}
+          className={`${BUTTON_FUNCTION.base} ${BUTTON_FUNCTION.border.off} relative px-[6px] text-fg-muted hover:text-fg after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']`}
           aria-label="Works一覧へ戻る"
         >
           <span className="flex size-6 shrink-0 items-center justify-center md:hidden" aria-hidden>

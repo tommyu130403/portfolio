@@ -809,10 +809,15 @@ function groupImageText(blocks: Block[]): Block[] {
 
 /** `::: figure` の内側かどうか（段落・リスト・カードを図版向けの小さい文字にする） */
 const InFigureContext = createContext(false);
+/** `::: card` の内側かどうか（Figma InfoCard の本文は Text/Body-01） */
+const InCardContext = createContext(false);
 
 function RenderBlock({ block, idx }: { block: Block; idx: number }) {
   const k = `b-${idx}`;
   const inFigure = useContext(InFigureContext);
+  const inCard = useContext(InCardContext);
+  // 本文の地の文は Text/Body-02。図版の枠・カードの中だけ Text/Body-01（Figma WorkFigure figure・InfoCard の Body）
+  const bodyColor = inFigure || inCard ? "text-fg" : "text-fg-muted";
   switch (block.type) {
     // 見出しの階層: 作品名 h1 → セクション見出し h2 → `##`・`###` とも h3（同形の同格。見た目は変えない）
     case "h1":
@@ -834,7 +839,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "paragraph":
       return (
         <p
-          className={`mb-6 text-fg-muted ${inFigure ? "text-body-02-jp" : "text-body-01-jp"}`}
+          className={`mb-6 ${bodyColor} ${inFigure ? "text-body-02-jp" : "text-body-01-jp"}`}
         >
           {renderInline(block.content, k)}
         </p>
@@ -873,8 +878,8 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "ul":
       return (
         <ul
-          className={`mb-4 list-disc pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-body-01-jp text-fg-muted"
+          className={`mb-4 list-disc pl-6 marker:text-fg-muted ${bodyColor} ${
+            inFigure ? "text-body-02-jp space-y-0.5" : "space-y-1 text-body-01-jp"
           }`}
         >
           {block.items.map((it, i) => (
@@ -885,8 +890,8 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "ol":
       return (
         <ol
-          className={`mb-4 list-decimal pl-6 marker:text-fg-muted ${
-            inFigure ? "text-body-02-jp space-y-0.5 text-fg-muted" : "space-y-1 text-body-01-jp text-fg-muted"
+          className={`mb-4 list-decimal pl-6 marker:text-fg-muted ${bodyColor} ${
+            inFigure ? "text-body-02-jp space-y-0.5" : "space-y-1 text-body-01-jp"
           }`}
         >
           {block.items.map((it, i) => (
@@ -929,7 +934,9 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <div className="mb-4 mt-10">
           <InfoCard title={block.title ? renderInline(block.title, `${k}-ct`) : undefined} tone={block.tone} inFigure={inFigure}>
-            <MarkdownBody md={block.body} />
+            <InCardContext.Provider value={true}>
+              <MarkdownBody md={block.body} />
+            </InCardContext.Provider>
           </InfoCard>
         </div>
       );

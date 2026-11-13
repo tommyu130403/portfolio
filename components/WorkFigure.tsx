@@ -22,8 +22,8 @@ export const FigureFrame: FC<{ title?: ReactNode; lead?: ReactNode; children?: R
   <div className="flex flex-col gap-5 rounded-2xl bg-surface-light px-4 pb-6 pt-7 @min-[560px]:px-8">
     {title || lead ? (
       <div className="flex flex-col gap-0.5">
-        {title ? <p className="text-body-01-jp-bold text-fg">{title}</p> : null}
-        {lead ? <p className="text-body-02-jp text-fg-muted">{lead}</p> : null}
+        {title ? <p className="text-body-01-jp-bold text-fg-title">{title}</p> : null}
+        {lead ? <p className="text-caption-01-jp text-fg-caption">{lead}</p> : null}
       </div>
     ) : null}
     {children}
@@ -42,7 +42,7 @@ const stepClass = (tone: StepTone) =>
     ? `${STEP_BASE} text-body-02-jp border-main-100/60 bg-main-100/10 text-main-050`
     : tone === "bad"
       ? `${STEP_BASE} text-body-02-jp border-danger-300/60 bg-danger-300/10 text-danger-100`
-      : `${STEP_BASE} text-body-02-jp border-border bg-indigo-800 text-fg-muted`;
+      : `${STEP_BASE} text-body-02-jp border-border bg-system-900/25 text-fg-muted`;
 
 const Arrow: FC = () => (
   <span aria-hidden className="text-body-02-jp flex items-center justify-center text-fg-subtle">
@@ -134,7 +134,12 @@ export type BarRowData = {
   tone: BarTone;
 };
 
-const FILL: Record<BarTone, string> = { up: "bg-secondary", down: "bg-danger-400", flat: "bg-border-light" };
+/** 棒の塗り: Figma WorkFigure Kind=bars（2026-11-13 照合）。up / down は色の 10% 地 + 60% 枠、flat は Indigo/850 地 + Border/Default 枠 */
+const FILL: Record<BarTone, string> = {
+  up: "border border-main-100/60 bg-main-100/10",
+  down: "border border-danger-300/60 bg-danger-300/10",
+  flat: "border border-border bg-surface-light",
+};
 const VALUE: Record<BarTone, string> = { up: "text-primary", down: "text-danger-300", flat: "text-fg-muted" };
 
 /** `::: bars base=1.0 max=1.4` — ラベル / 棒 / 値の横棒。base（%位置）があれば白い基準線を引く */
@@ -152,7 +157,7 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
         </div>
         <div className="relative h-[22px] rounded bg-surface">
           <div
-            className={`h-full rounded ${FILL[r.tone]} ${r.width > 0 ? "min-w-1.5" : ""}`}
+            className={`h-full rounded ${r.width > 0 ? `${FILL[r.tone]} min-w-1.5` : ""}`}
             style={{ width: `${r.width}%` }}
           />
           {base !== null ? (
@@ -162,6 +167,6 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
         <p className={`text-body-01-jp-bold text-right ${VALUE[r.tone]}`}>{r.display}</p>
       </div>
     ))}
-    {legend ? <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-muted">{legend}</p> : null}
+    {legend ? <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption">{legend}</p> : null}
   </div>
 );

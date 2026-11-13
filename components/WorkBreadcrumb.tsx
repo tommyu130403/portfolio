@@ -81,7 +81,7 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
         <Link
           href="/#works"
           prefetch={false}
-          className={`${BUTTON_FUNCTION.base} ${BUTTON_FUNCTION.border.off} relative px-[6px] text-fg-muted hover:text-fg after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']`}
+          className={`${BUTTON_FUNCTION.base} ${BUTTON_FUNCTION.border.off} relative px-[6px] text-fg-subtle hover:text-fg after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']`}
           aria-label="Works一覧へ戻る"
         >
           <span className="flex size-6 shrink-0 items-center justify-center md:hidden" aria-hidden>
@@ -115,7 +115,7 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
         // 矢印リンクは見た目(36px)より左右 4px 大きいので、右の余白は pr-1 で見た目 8px に揃える
         <div className="pointer-events-auto flex shrink-0 items-center gap-2 self-stretch py-0 pl-2 pr-1">
           <span
-            className={`${GUIDE_TEXT} tabular-nums text-fg-muted [text-shadow:0_0_2px_var(--color-surface),0_0_4px_var(--color-surface),0_0_6px_var(--color-surface),0_0_8px_var(--color-surface)]`}
+            className={`${GUIDE_TEXT} tabular-nums text-fg-subtle [text-shadow:0_0_2px_var(--color-surface),0_0_4px_var(--color-surface),0_0_6px_var(--color-surface),0_0_8px_var(--color-surface)]`}
           >
             <span className="text-fg">{pad(index + 1)}</span> / {pad(total)}
           </span>

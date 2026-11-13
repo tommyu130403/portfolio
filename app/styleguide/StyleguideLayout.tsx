@@ -160,15 +160,18 @@ const NAV_SECTIONS = [
 const SEMANTIC_SWATCHES = [
   { kind: "bg",     cls: "bg-primary",          token: "semantic.primary",      value: semantic.primary,      figma: "Main/Primary",       ref: "main-base" },
   { kind: "bg",     cls: "bg-secondary",        token: "semantic.secondary",    value: semantic.secondary,    figma: "Main/Secondary",     ref: "main-300" },
-  { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body/Primary",   ref: "indigo-050" },
-  { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body/Secondary", ref: "indigo-200" },
-  { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",        ref: "indigo-200" },
-  { kind: "text",   cls: "text-fg-subtle",      token: "semantic.fgSubtle",     value: semantic.fgSubtle,     figma: "Text/Body/Tertiary",  ref: "indigo-500" },
+  { kind: "text",   cls: "text-fg-title",       token: "semantic.fgTitle",      value: semantic.fgTitle,      figma: "Text/Title-01",       ref: "system-white" },
+  { kind: "text",   cls: "text-fg-title-sub",   token: "semantic.fgTitleSub",   value: semantic.fgTitleSub,   figma: "Text/Title-02",       ref: "indigo-200" },
+  { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body-01",        ref: "indigo-050" },
+  { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body-02",        ref: "indigo-200" },
+  { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",        ref: "indigo-500" },
+  { kind: "text",   cls: "text-fg-subtle",      token: "semantic.fgSubtle",     value: semantic.fgSubtle,     figma: "（スタイル廃止）",     ref: "indigo-500" },
+  { kind: "text",   cls: "text-fg-placeholder", token: "semantic.fgPlaceholder", value: semantic.fgPlaceholder, figma: "Text/Placeholder",  ref: "indigo-700" },
   { kind: "text",   cls: "text-fg-link",        token: "semantic.fgLink",       value: semantic.fgLink,       figma: "Text/Link",           ref: "main-base" },
   { kind: "text",   cls: "text-fg-link-hover",  token: "semantic.fgLinkHover",  value: semantic.fgLinkHover,  figma: "Text/Link-hover",     ref: "main-050" },
   { kind: "bg",     cls: "bg-surface",          token: "semantic.surface",      value: semantic.surface,      figma: "Background/Default", ref: "indigo-900" },
   { kind: "bg",     cls: "bg-surface-light",    token: "semantic.surfaceLight", value: semantic.surfaceLight, figma: "Background/Light",   ref: "indigo-850" },
-  { kind: "bg",     cls: "bg-thumbnail",        token: "semantic.thumbnail",    value: semantic.thumbnail,    figma: "（未登録）",          ref: "indigo-950" },
+  { kind: "bg",     cls: "bg-thumbnail",        token: "semantic.thumbnail",    value: semantic.thumbnail,    figma: "Background/Thumbnail", ref: "indigo-950" },
   { kind: "border", cls: "border-border",       token: "semantic.border",       value: semantic.border,       figma: "Border/Default",     ref: "indigo-750" },
   { kind: "border", cls: "border-border-light", token: "semantic.borderLight",  value: semantic.borderLight,  figma: "Border/Light",       ref: "indigo-700" },
   { kind: "border", cls: "border-border-main",  token: "semantic.borderMain",   value: semantic.borderMain,   figma: "Border/Main",        ref: "main-100 40%" },
@@ -993,7 +996,7 @@ function ComponentsSection() {
           <ButtonAction label="With Icon" type="primary" iconRight={{ set: "Arrows", name: "right" }} />
         </ComponentPreview>
 
-        <ComponentPreview title="ButtonFunction" description="アイコンのみのアクションボタン。Border on / off バリアント。hover で背景 白 2%・アイコンとラベル文字が白、Border on は枠が Border/Light（Library 120:395）">
+        <ComponentPreview title="ButtonFunction" description="アイコンのみのアクションボタン。Border on / off バリアント。アイコンは通常 Indigo/500、hover で Text/Body-01。hover で背景 白 2%、Border on は枠が Border/Light（Library 120:395）。モーダルの閉じる × だけ Indigo/200（Library Modal 120:383 の上書き）">
           <ButtonFunction direction="left"  border="on"  aria-label="Left border-on" />
           <ButtonFunction direction="right" border="on"  aria-label="Right border-on" />
           <ButtonFunction direction="left"  border="off" aria-label="Left border-off" />
@@ -1190,21 +1193,21 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="InfoCard"
-          description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma WorkFigure Kind=figure (578:498) に準拠 — 角丸16・余白 上28 左右32(本文の容器が 560px 未満は 16)下24・Background/Light・枠なし・見出し Body/01 Bold。accent は Border/Main + main-100 10% の地。inFigure は図版の中に置くときの地(indigo-800)"
+          description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma InfoCard (574:503) に準拠 — 角丸14・余白 上28 左右32(本文の容器が 560px 未満は 16)下24・地 Background/Dark-α25(System/900 25%)+ 枠 Indigo/750・見出し Body/01 Bold(Title-01 白)・本文 Body-01。accent は Border/Main + main-100 10% の地。inFigure(図版の中)は地と枠が同じで見出しだけ Title-02"
         >
           <div className="flex w-[360px] max-w-full flex-col gap-4">
             <InfoCard title="見出しあり">
-              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">本文テキストがここに入ります。</p>
+              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-fg">本文テキストがここに入ります。</p>
             </InfoCard>
             <InfoCard>
-              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">見出しなしのカード。</p>
+              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-fg">見出しなしのカード。</p>
             </InfoCard>
             <InfoCard title="tone=accent（次の一手など）" tone="accent">
-              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">Border/Main・main-100 の薄い地・見出しは primary。`::: card tone=accent 見出し` で書く。</p>
+              <p className="text-[13px] leading-[21px] tracking-[0.39px] text-fg">Border/Main・main-100 の薄い地・見出しは primary。`::: card tone=accent 見出し` で書く。</p>
             </InfoCard>
             <div className="rounded-2xl bg-surface-light p-4">
               <InfoCard title="図版の中" inFigure>
-                <p className="text-[13px] leading-[21px] tracking-[0.39px] text-white">`::: figure` の内側に置いたカード。</p>
+                <p className="text-[13px] leading-[21px] tracking-[0.39px] text-fg">`::: figure` の内側に置いたカード。</p>
               </InfoCard>
             </div>
           </div>
@@ -1212,7 +1215,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkFigure（図版ブロック）"
-          description="作品本文の `::: figure`（枠。panel 地 surface-light・角丸 16・中に任意の本文ブロック）/ `::: beforeafter`（上罫線で区切った Before/After の行。ラベル 96px・After は main-100 文字。注記は地なしの色文字）/ `::: flow`（横フロー。highlight=N で強調）/ `::: bars`（横棒グラフ。up=secondary・down=danger-400・flat=border-light、base= で白い基準線）と、`::: card tone=accent`。560px 未満（本文コンテナ幅）はステップが縦積み（矢印 ↓）になる。手順の強調は good=main-100・bad=danger-300 の淡いトーン（地 10%・枠 60%）。Figma: Library WorkFigure 578:582"
+          description="作品本文の `::: figure`（枠。panel 地 surface-light・角丸 16・中に任意の本文ブロック）/ `::: beforeafter`（上罫線で区切った Before/After の行。ラベル 96px・After は main-100 文字。注記は地なしの色文字）/ `::: flow`（横フロー。highlight=N で強調）/ `::: bars`（横棒グラフ。up=main-100・down=danger-300 の淡いトーン（地 10%・枠 60%）・flat=surface-light 地 + border 枠、base= で白い基準線）と、`::: card tone=accent`。560px 未満（本文コンテナ幅）はステップが縦積み（矢印 ↓）になる。手順の既定は地 System/900 25% + border 枠、強調は good=main-100・bad=danger-300 の淡いトーン（地 10%・枠 60%）。Figma: Library WorkFigure 578:582"
         >
           <div className="w-[704px] max-w-full">
             <MarkdownBody md={FIGURE_SAMPLE_MD} />
@@ -1450,7 +1453,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg-muted（Text/Body/Secondary #9696A0・行間 27px）。図版の中も見出し・題以外の文字（表のセル・流れ図の段）は同じ色。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・出典は 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 12（見出し02 の上 56）/ 小ブロック間 40"
+          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg-muted（Text/Body-02 #9696A0・行間 27px）。図版の枠とカードの中だけ text-fg（Text/Body-01 #D6D6D8）。図版の枠とカードの中の段落・箇条書きは text-fg（Text/Body-01）。表のセル・流れ図の段は text-fg-muted のまま。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・出典は 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 12（見出し02 の上 56）/ 小ブロック間 40"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />

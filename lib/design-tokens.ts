@@ -45,8 +45,9 @@
  *   Semantic: Text/Caption・Border/Main・Action/hover の不透明度
  *             （Action/hover は get_variable_defs が #FFFFFF しか返さず α を持たない）
  *   （TextStyle は 2026-10-14 に Library のローカルスタイル15種を全件照合済み。2026-11-11 に再照合し JP の行間 180%・全スタイル字間 0% を反映。下の textStyle を参照）
- *   （Text/* は 2026-10-25 に Library のカラースタイル6種を照合済み。semantic の fg* を参照。
- *     旧名 Text/Body/Main・Text/Body/Sub は Text/Body/Primary・Text/Body/Secondary に改名されている）
+ *   （Text/* は 2026-11-13 に Library のカラースタイル9種を照合済み。semantic の fg* を参照。
+ *     Text/Body/Primary・Text/Body/Secondary は Text/Body-01・Text/Body-02 に改名、Text/Body/Tertiary は廃止。
+ *     Text/Title-01・Text/Title-02・Text/Placeholder を追加、Text/Caption は Indigo/500 に変更）
  *   これらの現在値は docs/requests/20260908-styleguide-figma-sync.md 付録 A の実測値が出所。
  *   MCP からは列挙できないため、実際に使うときに個別確認する（2026-09-08 ユーザー合意）。
  *
@@ -169,14 +170,20 @@ export const semantic = {
   primary: color.main.base, //                       Figma: Main/Primary
   /** Main/Secondary — ブランドアクセントのサブカラー */
   secondary: color.main["300"], //                    Figma: Main/Secondary
-  /** Text/Body/Primary — 本文の主要テキスト */
-  fg: color.indigo["050"], //                         Figma: Text/Body/Primary（surface 上 13.3:1）
-  /** Text/Body/Secondary — 補助・弱めテキスト */
-  fgMuted: color.indigo["200"], //                    Figma: Text/Body/Secondary（surface 上 6.6:1）
-  /** Text/Caption — キャプション用テキスト */
-  fgCaption: color.indigo["200"], //                  Figma: Text/Caption
-  /** Text/Body/Tertiary — 最も弱いテキスト（surface 上 3.0:1。無効表示など読ませない文字だけ） */
-  fgSubtle: color.indigo["500"], //                   Figma: Text/Body/Tertiary
+  /** Text/Title-01 — カード・図版の見出し */
+  fgTitle: color.system.white, //                     Figma: Text/Title-01
+  /** Text/Title-02 — 図版の中のカードの見出し */
+  fgTitleSub: color.indigo["200"], //                 Figma: Text/Title-02
+  /** Text/Body-01 — 本文の主要テキスト */
+  fg: color.indigo["050"], //                         Figma: Text/Body-01（surface 上 13.3:1）
+  /** Text/Body-02 — 補助・弱めテキスト */
+  fgMuted: color.indigo["200"], //                    Figma: Text/Body-02（surface 上 6.6:1）
+  /** Text/Caption — キャプション用テキスト（surface 上 3.0:1。AA 未満はオーナー承知 2026-11-13） */
+  fgCaption: color.indigo["500"], //                  Figma: Text/Caption
+  /** 最も弱いテキスト（旧 Text/Body/Tertiary。Figma のスタイルは廃止。無効表示など読ませない文字だけ） */
+  fgSubtle: color.indigo["500"], //                   Figma: なし（値は Text/Caption と同じ）
+  /** Text/Placeholder — 入力欄の仮の文字 */
+  fgPlaceholder: color.indigo["700"], //              Figma: Text/Placeholder
   /** Text/Link — テキストリンク */
   fgLink: color.main.base, //                         Figma: Text/Link
   /** Text/Link-hover — テキストリンクのホバー */
@@ -186,7 +193,7 @@ export const semantic = {
   /** Background/Light — 一段明るいサーフェス */
   surfaceLight: color.indigo["850"], //               Figma: Background/Light
   /** 作品サムネイルの地 — surface より暗くして一覧の背景（surface）と分ける */
-  thumbnail: color.indigo["950"], //                  Figma: 未登録
+  thumbnail: color.indigo["950"], //                  Figma: Background/Thumbnail
   /** Border/Default — 標準ボーダー */
   border: color.indigo["750"], //                     Figma: Border/Default
   /** Border/Light — コントラストの高い（目立つ）ボーダー */

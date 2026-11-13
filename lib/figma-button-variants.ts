@@ -39,8 +39,10 @@ export const BUTTON_ACTION = {
   },
 } as const;
 
-/** Button/Function 内のアイコン・ラベル文字の色: 通常 System/500、hover で白（Text/Body/Primary・Library 324:293） */
-export const BUTTON_FUNCTION_ICON = "text-system-500 transition-colors group-hover:text-system-white";
+/** Button/Function 内のアイコンの色: 通常 Indigo/500、hover で Text/Body-01（Library Button/Function 120:395 のアイコン Union の塗り。2026-11-13 に描画の画素で照合） */
+export const BUTTON_FUNCTION_ICON = "text-indigo-500 transition-colors group-hover:text-indigo-050";
+/** モーダルの閉じる × の色: Library Modal 120:383 でアイコンの塗りを Indigo/200 に上書きしている。hover は Button/Function と同じ Text/Body-01 */
+export const MODAL_CLOSE_ICON = "text-indigo-200 transition-colors group-hover:text-indigo-050";
 
 export type ButtonFunctionBorder = "on" | "off";
 export type ButtonFunctionStatus = "default" | "hover";
@@ -53,7 +55,7 @@ export type ButtonFunctionStatus = "default" | "hover";
  * 見た目を Figma と揃えるため padding は付けず、36px の箱の中央にアイコンを置いている。
  */
 export const BUTTON_FUNCTION = {
-  // group: hover 時に中のアイコンを白にする（子に BUTTON_FUNCTION_ICON を付ける）
+  // group: hover 時に中のアイコンを Text/Body-01 にする（子に BUTTON_FUNCTION_ICON を付ける）
   base: "group flex h-[36px] min-w-[36px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] transition-colors",
   // hover（Library 120:396 / 120:404・2026-10-18）: 背景 白 2%（Figma 側も変数でなく直値）、枠ありは枠を Border/Light に
   border: {

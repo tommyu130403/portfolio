@@ -5,7 +5,7 @@ import { SHEET_CLOSE_DRAG, SHEET_MEDIA_QUERY, useMediaQuery } from "@/lib/use-me
 import { createPortal, flushSync } from "react-dom";
 import Icon from "@/components/Icon";
 import { ButtonFunction } from "@/components/ButtonFunction";
-import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
+import { MODAL_CLOSE_ICON } from "@/lib/figma-button-variants";
 import { supabase } from "@/src/lib/supabase";
 import type { Json, Tables } from "@/src/types/supabase";
 import WorkPagerCard from "@/components/WorkPagerCard";
@@ -60,7 +60,7 @@ const C = {
   panelBg: "var(--color-surface)", // Background/Default
   period: "var(--color-fg-muted)",
   role: "var(--color-fg)", // Text/Body/Primary
-  company: "var(--color-fg-muted)",
+  company: "var(--color-fg-caption)", // Text/Caption（Master TOP 45:128 の _CareerCard。2026-11-13 照合）
   desc: "var(--color-fg)",
   muted: "var(--color-fg-muted)",
   caption: "var(--color-fg-muted)",
@@ -68,7 +68,7 @@ const C = {
   iconArrowCurrent: "var(--color-main-300)",
   label: "var(--color-main-050)", // Main/050（セクション見出しの和文ラベルと同じ）
   badgeBg: "var(--color-main-100)",
-  badgeText: "var(--color-main-700)", // ミント地の上の文字
+  badgeText: "var(--color-surface)", // ミント地の上の文字（Master TOP の「現在」= Background/Default。2026-11-13 照合）
   divider: "var(--color-border)",
   dot: "var(--color-border)", // Border/Default
   dotSelected: "var(--color-main-300)", // Main/300（開いている経歴）
@@ -514,7 +514,7 @@ function CloseButton({ onClose }: { onClose: (viaKeyboard: boolean) => void }) {
   return (
     // detail === 0 = Enter / Space での押下
     <ButtonFunction border="off" onClick={(e) => onClose(e.detail === 0)} aria-label="閉じる">
-      <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${BUTTON_FUNCTION_ICON}`} />
+      <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${MODAL_CLOSE_ICON}`} />
     </ButtonFunction>
   );
 }

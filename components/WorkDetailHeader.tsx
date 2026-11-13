@@ -357,7 +357,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
       <div className="flex w-full flex-col gap-12">
         <div className={`${relPad}flex w-full flex-col gap-4 [word-break:break-word]`}>
           {work.category && <Tag variant="category" label={work.category} hue={categoryHue} className="self-start" />}
-          <h1 className="text-title-pj text-fg">{work.title}</h1>
+          <h1 className="text-title-pj text-fg-title">{work.title}</h1>
           {onEdit && <EditButton label="カテゴリ・タイトル" onClick={() => onEdit("title")} />}
         </div>
 
@@ -365,10 +365,10 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
             行は 期間 → 制作内容 → 役割 → 関係者 → ツール（ユーザー指定 2026-11-10）。値が無い行も表として残し "—" を出す。
             列比は 1fr : 4fr（Figma 0.25fr : 1fr）。ラベル列の下限は max-content にして、ブラウザの既定フォントサイズを
             上げてもラベル文字（12px 固定）が仕切り線を越えないようにする（root 24px で「関係者」が越えた実績）。
-            地は本文の表（components/Table.tsx・Library 188:355）と同じ bg-surface-light。
+            地は Master の Sample 枠と同じ Background/Dark-α25（System/900 25%）。本文の表（components/Table.tsx）は地なし。
             overflow-hidden は付けない（最終行のツールのツールチップが表の下へはみ出して出るため。セルに地色は無いので角丸は崩れない） */}
         <div className="w-full px-4">
-          <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] rounded-r8 border border-border bg-surface-light">
+          <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] rounded-r8 border border-border bg-system-900/25">
             {/* 期間 */}
             <MetaLabel>期間</MetaLabel>
             <MetaValue className="gap-2">

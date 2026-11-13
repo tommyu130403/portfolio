@@ -241,7 +241,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
             key={i}
             aria-hidden
             className={`h-0.5 rounded-full ${item.level === 1 ? "w-3.5 md:w-4 lg:w-5" : "w-2 md:w-2.5 lg:w-3.5"} ${
-              i === activeIndex ? "bg-primary" : "bg-fg-subtle"
+              i === activeIndex ? "bg-primary" : "bg-fg-placeholder"
             }`}
           />
         ))}

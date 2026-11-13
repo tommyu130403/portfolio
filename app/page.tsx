@@ -411,7 +411,7 @@ function HomeContent() {
           {/* Introduction */}
           <section id="introduction" className="w-full max-w-main">
             <div data-reveal=""><Headline label="自己紹介" title="Introduction" /></div>
-            <div data-reveal="" className="flex flex-col gap-10 text-body-01-jp text-fg-muted">
+            <div data-reveal="" className="flex flex-col gap-10 text-body-01-jp text-fg">
               <div className="flex flex-col gap-4">
                 {loading ? (
                   <div className="h-16 w-full animate-pulse rounded bg-surface-light" />

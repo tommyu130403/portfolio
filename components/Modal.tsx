@@ -11,7 +11,7 @@ import {
 } from "react";
 import { SHEET_CLOSE_DRAG, SHEET_MEDIA_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { ButtonFunction } from "./ButtonFunction";
-import { BUTTON_FUNCTION_ICON } from "@/lib/figma-button-variants";
+import { MODAL_CLOSE_ICON } from "@/lib/figma-button-variants";
 import Icon from "./Icon";
 
 type ModalProps = {
@@ -194,7 +194,7 @@ const Modal: FC<ModalProps> = ({
     ) : null;
   const closeButton = (
     <ButtonFunction border="off" onClick={requestClose} aria-label="Close">
-      <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${BUTTON_FUNCTION_ICON}`} />
+      <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${MODAL_CLOSE_ICON}`} />
     </ButtonFunction>
   );
   const dots =

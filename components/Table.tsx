@@ -1,12 +1,15 @@
 import type { FC, ReactNode } from "react";
 
-/** 外枠（Figma Library 188:355 共通: 1px border・角丸 8px・はみ出しを切る。地は図版ブロック 578:498 と同じ Background/Light） */
-const FRAME = "overflow-hidden rounded-[8px] border border-border bg-surface-light";
+/** 外枠（Figma Library 188:355 共通: 1px border・角丸 8px・はみ出しを切る。地なし（Figma Table/Stack 620:431・Table/Grid 444:361 とも塗りなし。2026-11-13 照合）） */
+const FRAME = "overflow-hidden rounded-[8px] border border-border";
 /** 横スクロールする外枠（TableGrid 用。overflow-hidden ではなく overflow-x-auto） */
-const FRAME_SCROLL = "overflow-x-auto rounded-[8px] border border-border bg-surface-light";
+const FRAME_SCROLL = "overflow-x-auto rounded-[8px] border border-border";
 const ROW_DIVIDER = "[&:not(:last-child)]:border-b [&:not(:last-child)]:border-border";
-/** ラベル: 12px / 行間 18px / 字間 0.03em / 太字 / Text/Body/Tertiary（Figma _Table 部品の既定。既存 @utility に一致するものが無いため直書き） */
+/** ラベル: 12px / 行間 18px / 字間 0.03em / 太字 / Indigo/500（Figma Table/Grid のラベル。既存 @utility に一致するものが無いため直書き） */
 const LABEL_TYPO = "text-[12px] leading-[18px] tracking-[0.03em] font-bold text-fg-subtle";
+/** 縦積み（狭い幅）のラベル / 値: Figma Table/Stack（620:431）の Indigo/200 / System/White */
+const STACK_LABEL_TYPO = "text-[12px] leading-[18px] tracking-[0.03em] font-bold text-fg-muted";
+const STACK_VALUE = "min-w-0 break-words text-fg-title text-body-02-jp";
 
 type TableKeyValueProps = {
   rows: { label: ReactNode; value: ReactNode }[];
@@ -79,7 +82,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
       <div className={`@min-[480px]:hidden ${FRAME}`}>
         {/* 行が 0 件なら見出しだけを 1 ブロックで出す（広い幅と同じく見出し行は消さない） */}
         {rows.length === 0 && (
-          <div className={`flex flex-col gap-y-1 px-4 py-3 ${LABEL_TYPO}`}>
+          <div className={`flex flex-col gap-y-1 px-4 py-3 ${STACK_LABEL_TYPO}`}>
             {header.filter((h) => !isBlank(h)).map((h, ci) => <div key={ci}>{h}</div>)}
           </div>
         )}
@@ -91,8 +94,8 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
               const hasLabel = !isBlank(h);
               return (
                 <div key={ci} className="flex min-w-0 flex-col gap-y-1">
-                  {hasLabel && <div className={`${LABEL_TYPO}`}>{h}</div>}
-                  <div className="min-w-0 break-words text-fg-muted text-body-02-jp">{v}</div>
+                  {hasLabel && <div className={STACK_LABEL_TYPO}>{h}</div>}
+                  <div className={STACK_VALUE}>{v}</div>
                 </div>
               );
             })}

@@ -32,7 +32,7 @@ export const PhoneMock: FC<{ src: string; onClick?: () => void; className?: stri
       {browser && (
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-[2cqw] rounded-b-[9cqw] border-t border-white/10 bg-surface/95 px-[5cqw] pb-[4cqw] pt-[3cqw] backdrop-blur-[2px]"
+          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-[2cqw] rounded-b-[9cqw] border-t border-white/10 bg-surface px-[5cqw] pb-[4cqw] pt-[3cqw] backdrop-blur-[2px]"
         >
           <div className="flex h-[11cqw] w-full items-center justify-center rounded-[3cqw] bg-white/10 text-[4.5cqw] leading-none text-white/80">
             <span className="truncate px-[2cqw]">{url ?? "example.com"}</span>

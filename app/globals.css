@@ -213,13 +213,14 @@ html:has([data-work-detail]) {
 
   /* Semantic（Figma Semantic コレクション）: primitive を意味ベースで参照するエイリアス層。
      エルゴノミック命名。生成ユーティリティ例: bg-primary / bg-secondary / text-fg /
-     text-fg-muted / text-fg-caption / text-fg-subtle / text-fg-title / text-fg-title-sub / text-fg-placeholder / text-fg-link / bg-surface / bg-surface-light / border-border /
+     text-fg-muted / text-fg-caption / text-fg-subtle / text-fg-title / text-fg-headline-01 / text-fg-headline-02 / text-fg-placeholder / text-fg-link / bg-surface / bg-surface-light / border-border /
      border-border-light / border-border-main / bg-action-hover。右コメントは対応する Figma semantic 名。 */
   --color-primary:       var(--color-main-base);       /* Main/Primary */
   --color-secondary:     var(--color-main-300);        /* Main/Secondary */
   /* Text/* は Figma Library のカラースタイル（2026-11-13 照合）。 */
-  --color-fg-title:      var(--color-system-white);    /* Text/Title-01（カード・図版の見出し） */
-  --color-fg-title-sub:  var(--color-indigo-200);      /* Text/Title-02（図版の中のカードの見出し） */
+  --color-fg-title:      var(--color-system-white);    /* Text/Title（作品タイトル・縦積み表の値） */
+  --color-fg-headline-01: var(--color-indigo-200);     /* Text/Headline-01（カード・図版の見出し） */
+  --color-fg-headline-02: var(--color-indigo-500);     /* Text/Headline-02（表のラベル） */
   --color-fg:            var(--color-indigo-050);      /* Text/Body-01 */
   --color-fg-muted:      var(--color-indigo-200);      /* Text/Body-02 */
   --color-fg-caption:    var(--color-indigo-500);      /* Text/Caption（surface 上 3.0:1。AA 未満はオーナー承知 2026-11-13） */

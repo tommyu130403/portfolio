@@ -160,8 +160,9 @@ const NAV_SECTIONS = [
 const SEMANTIC_SWATCHES = [
   { kind: "bg",     cls: "bg-primary",          token: "semantic.primary",      value: semantic.primary,      figma: "Main/Primary",       ref: "main-base" },
   { kind: "bg",     cls: "bg-secondary",        token: "semantic.secondary",    value: semantic.secondary,    figma: "Main/Secondary",     ref: "main-300" },
-  { kind: "text",   cls: "text-fg-title",       token: "semantic.fgTitle",      value: semantic.fgTitle,      figma: "Text/Title-01",       ref: "system-white" },
-  { kind: "text",   cls: "text-fg-title-sub",   token: "semantic.fgTitleSub",   value: semantic.fgTitleSub,   figma: "Text/Title-02",       ref: "indigo-200" },
+  { kind: "text",   cls: "text-fg-title",       token: "semantic.fgTitle",      value: semantic.fgTitle,      figma: "Text/Title",          ref: "system-white" },
+  { kind: "text",   cls: "text-fg-headline-01", token: "semantic.fgHeadline01", value: semantic.fgHeadline01, figma: "Text/Headline-01",    ref: "indigo-200" },
+  { kind: "text",   cls: "text-fg-headline-02", token: "semantic.fgHeadline02", value: semantic.fgHeadline02, figma: "Text/Headline-02",    ref: "indigo-500" },
   { kind: "text",   cls: "text-fg",             token: "semantic.fg",           value: semantic.fg,           figma: "Text/Body-01",        ref: "indigo-050" },
   { kind: "text",   cls: "text-fg-muted",       token: "semantic.fgMuted",      value: semantic.fgMuted,      figma: "Text/Body-02",        ref: "indigo-200" },
   { kind: "text",   cls: "text-fg-caption",     token: "semantic.fgCaption",    value: semantic.fgCaption,    figma: "Text/Caption",        ref: "indigo-500" },

@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async (): Promise<string | null> => {
     const { error } = await supabase.auth.signOut({ scope: "local" });
-    return error?.message ?? null;
+    return error ? "ログアウトできませんでした。もう一度お試しください。" : null;
   };
 
   return (

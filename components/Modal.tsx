@@ -177,7 +177,7 @@ const Modal: FC<ModalProps> = ({
           e.stopPropagation();
           onPrev();
         }}
-        aria-label="Previous"
+        aria-label="前へ"
       />
     ) : null;
   const nextButton =
@@ -189,11 +189,11 @@ const Modal: FC<ModalProps> = ({
           e.stopPropagation();
           onNext();
         }}
-        aria-label="Next"
+        aria-label="次へ"
       />
     ) : null;
   const closeButton = (
-    <ButtonFunction border="off" onClick={requestClose} aria-label="Close">
+    <ButtonFunction border="off" onClick={requestClose} aria-label="閉じる">
       <Icon set="Character" name="close" alt="" aria-hidden tintColor="currentColor" className={`h-6 w-6 shrink-0 ${MODAL_CLOSE_ICON}`} />
     </ButtonFunction>
   );

@@ -66,7 +66,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
     <Link
       href={href}
       prefetch={false}
-      aria-label={direction ? `${isNext ? "次" : "前"}のWork: ${title}` : `Work: ${title}`}
+      aria-label={direction ? `${isNext ? "次" : "前"}の作品: ${title}` : `作品: ${title}`}
       className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border hover:border-border-light ${HOVER_CARD} ${
         hasThumb
           ? `items-stretch ${isNext ? "md:flex-row-reverse" : ""}`

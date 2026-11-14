@@ -466,7 +466,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               clearContactDraft();
               void logout()
                 .then((error) => { if (error) setLogoutError(error); })
-                .catch(() => setLogoutError("ログアウトできませんでした"));
+                .catch(() => setLogoutError("ログアウトできませんでした。"));
             }}
             className="flex items-center gap-2 w-full transition-colors duration-200"
             title="ログアウト"

@@ -853,11 +853,7 @@ function ProfileSection({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => 
 
       {/* 基本情報 */}
       <div className="mb-8 grid grid-cols-2 gap-4">
-        <div>
-          <FieldLabel>名前（日本語）</FieldLabel>
-          <Input value={form.name_jp} onChange={(v) => set("name_jp", v)} placeholder="山田 太郎" />
-        </div>
-        <div>
+        <div className="col-span-2">
           <FieldLabel>名前（英語）</FieldLabel>
           <Input value={form.name_en} onChange={(v) => set("name_en", v)} placeholder="Taro Yamada" />
         </div>

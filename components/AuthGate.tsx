@@ -46,7 +46,7 @@ function AccessDenied({ error, expired }: { error: boolean; expired: boolean }) 
           clearContactDraft();
           void logout()
             .then((message) => setLogoutError(message ?? ""))
-            .catch(() => setLogoutError("ログアウトできませんでした"));
+            .catch(() => setLogoutError("ログアウトできませんでした。"));
         }}
         className="text-primary hover:underline"
       >別のアカウントでログイン</button>
@@ -69,9 +69,9 @@ function LoginForm() {
     setError("");
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email: toLoginEmail(loginId), password: input });
-      if (signInError) setError(isGuestExpiredError(signInError) ? GUEST_EXPIRED_MESSAGE : "IDまたはパスワードが正しくありません");
+      if (signInError) setError(isGuestExpiredError(signInError) ? GUEST_EXPIRED_MESSAGE : "IDまたはパスワードが正しくありません。");
     } catch {
-      setError("エラーが発生しました");
+      setError("ログインできませんでした。通信状況を確かめて、もう一度お試しください。");
     } finally {
       setChecking(false);
     }
@@ -104,7 +104,7 @@ function LoginForm() {
             type="password"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="パスワードを入力"
+            placeholder="パスワード"
             autoComplete="current-password"
             className="w-full rounded-[10px] border border-border-light bg-surface-light px-4 py-3.5 text-[15px] text-fg outline-none transition-colors focus:border-primary"
           />
@@ -116,7 +116,7 @@ function LoginForm() {
             disabled={checking || !loginId.trim() || !input}
             className="mt-1 rounded-[10px] bg-primary py-3.5 text-[15px] font-semibold text-main-700 transition-opacity hover:opacity-80 disabled:opacity-40"
           >
-            {checking ? "確認中…" : "アクセス"}
+            {checking ? "確認中…" : "ログイン"}
           </button>
         </form>
         <div className="mt-8">

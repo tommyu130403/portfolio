@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/src/lib/supabase";
 import { useAuth } from "@/lib/auth";
-import { GUEST_EXPIRED_MESSAGE, isGuestExpiredError, toLoginEmail } from "@/lib/guestId";
+import { isGuestExpiredError, toLoginEmail } from "@/lib/guestId";
 
 /**
  * 管理画面の書き込みは Supabase Auth のログイン済みユーザー (private.owners 登録者) だけが
@@ -42,9 +42,9 @@ function LoginForm() {
         email: toLoginEmail(loginId),
         password,
       });
-      if (signInError) setError(isGuestExpiredError(signInError) ? GUEST_EXPIRED_MESSAGE : "IDまたはパスワードが正しくありません");
+      if (signInError) setError(isGuestExpiredError(signInError) ? "閲覧期限が切れています。" : "IDまたはパスワードが正しくありません。");
     } catch {
-      setError("エラーが発生しました");
+      setError("ログインできませんでした。通信状況を確かめて、もう一度お試しください。");
     } finally {
       setChecking(false);
     }

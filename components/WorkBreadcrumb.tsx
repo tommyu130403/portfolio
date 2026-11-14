@@ -82,7 +82,7 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
           href="/#works"
           prefetch={false}
           className={`${BUTTON_FUNCTION.base} ${BUTTON_FUNCTION.border.off} relative px-[6px] text-fg-subtle hover:text-fg after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']`}
-          aria-label="Works一覧へ戻る"
+          aria-label="Works(作品一覧)へ戻る"
         >
           <span className="flex size-6 shrink-0 items-center justify-center md:hidden" aria-hidden>
             <Icon
@@ -120,8 +120,8 @@ const WorkBreadcrumb: FC<WorkBreadcrumbProps> = ({
             <span className="text-fg">{pad(index + 1)}</span> / {pad(total)}
           </span>
           <div className="flex items-center">
-            {prevHref && <ArrowLink href={prevHref} direction="left" label="前のWork" />}
-            {nextHref && <ArrowLink href={nextHref} direction="right" label="次のWork" />}
+            {prevHref && <ArrowLink href={prevHref} direction="left" label="前の作品" />}
+            {nextHref && <ArrowLink href={nextHref} direction="right" label="次の作品" />}
           </div>
         </div>
       )}

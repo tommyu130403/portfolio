@@ -378,7 +378,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
               <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.period ?? undefined}>
                 {work.period || "—"}
               </span>
-              {timeline && <VizButton label="タイムライン（RACI）を表示" onClick={() => setVizModal("timeline")} />}
+              {timeline && <VizButton label="タイムライン(RACI)を表示" onClick={() => setVizModal("timeline")} />}
               {onEdit && <EditButton label="期間" onClick={() => onEdit("period")} className="ml-auto shrink-0" />}
             </MetaValue>
 
@@ -414,7 +414,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
                   {work.stakeholder_breakdown || "—"}
                 </span>
               )}
-              {stakeholders && <VizButton label="ステークホルダー体制を表示" onClick={() => setVizModal("stakeholders")} />}
+              {stakeholders && <VizButton label="関係者の体制を表示" onClick={() => setVizModal("stakeholders")} />}
               {onEdit && <EditButton label="関係者" onClick={() => onEdit("stakeholders")} className="ml-auto shrink-0" />}
             </MetaValue>
 

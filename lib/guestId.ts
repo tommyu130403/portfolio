@@ -1,7 +1,7 @@
 // supabase/functions/guest-admin/index.ts と マイグレーション 20261108120000 の LIKE 条件にも同じ値がある。変えるときは3か所そろえる。
 export const GUEST_EMAIL_DOMAIN = "guest.invalid";
 
-export const GUEST_EXPIRED_MESSAGE = "閲覧期限が切れています。オーナーにお問い合わせください";
+export const GUEST_EXPIRED_MESSAGE = "閲覧期限が切れています。下の「ログインできないときのお問い合わせ」からご連絡ください。";
 
 /** ID だけの入力は予約ドメインのメールアドレスに変換する。"@" を含むものはそのまま使う。 */
 export function toLoginEmail(input: string): string {

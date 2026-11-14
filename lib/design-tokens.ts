@@ -48,6 +48,7 @@
  *   （Text/* は 2026-11-13 に Library のカラースタイル9種を照合済み。semantic の fg* を参照。
  *     Text/Body/Primary・Text/Body/Secondary は Text/Body-01・Text/Body-02 に改名、Text/Body/Tertiary は廃止。
  *     Text/Title-01・Text/Title-02・Text/Placeholder を追加、Text/Caption は Indigo/500 に変更）
+ *     2026-11-14 に再照合: Text/Title-01 → Text/Title、Text/Title-02 → Text/Headline-01 に改名、Text/Headline-02（Indigo/500）を追加
  *   これらの現在値は docs/requests/20260908-styleguide-figma-sync.md 付録 A の実測値が出所。
  *   MCP からは列挙できないため、実際に使うときに個別確認する（2026-09-08 ユーザー合意）。
  *
@@ -170,10 +171,12 @@ export const semantic = {
   primary: color.main.base, //                       Figma: Main/Primary
   /** Main/Secondary — ブランドアクセントのサブカラー */
   secondary: color.main["300"], //                    Figma: Main/Secondary
-  /** Text/Title-01 — カード・図版の見出し */
-  fgTitle: color.system.white, //                     Figma: Text/Title-01
-  /** Text/Title-02 — 図版の中のカードの見出し */
-  fgTitleSub: color.indigo["200"], //                 Figma: Text/Title-02
+  /** Text/Title — 作品タイトル・縦積み表の値 */
+  fgTitle: color.system.white, //                     Figma: Text/Title
+  /** Text/Headline-01 — カード・図版の見出し */
+  fgHeadline01: color.indigo["200"], //               Figma: Text/Headline-01
+  /** Text/Headline-02 — 表のラベル */
+  fgHeadline02: color.indigo["500"], //               Figma: Text/Headline-02
   /** Text/Body-01 — 本文の主要テキスト */
   fg: color.indigo["050"], //                         Figma: Text/Body-01（surface 上 13.3:1）
   /** Text/Body-02 — 補助・弱めテキスト */

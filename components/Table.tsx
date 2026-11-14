@@ -5,8 +5,8 @@ const FRAME = "overflow-hidden rounded-[8px] border border-border";
 /** 横スクロールする外枠（TableGrid 用。overflow-hidden ではなく overflow-x-auto） */
 const FRAME_SCROLL = "overflow-x-auto rounded-[8px] border border-border";
 const ROW_DIVIDER = "[&:not(:last-child)]:border-b [&:not(:last-child)]:border-border";
-/** ラベル: 12px / 行間 18px / 字間 0.03em / 太字 / Indigo/500（Figma Table/Grid のラベル。既存 @utility に一致するものが無いため直書き） */
-const LABEL_TYPO = "text-[12px] leading-[18px] tracking-[0.03em] font-bold text-fg-subtle";
+/** ラベル: 12px / 行間 18px / 字間 0.03em / 太字 / Text/Headline-02（Figma Table/Grid のラベル。既存 @utility に一致するものが無いため直書き） */
+const LABEL_TYPO = "text-[12px] leading-[18px] tracking-[0.03em] font-bold text-fg-headline-02";
 /** 縦積み（狭い幅）のラベル / 値: Figma Table/Stack（620:431）の Indigo/200 / System/White */
 const STACK_LABEL_TYPO = "text-[12px] leading-[18px] tracking-[0.03em] font-bold text-fg-muted";
 const STACK_VALUE = "min-w-0 break-words text-fg-title text-body-02-jp";
@@ -31,7 +31,7 @@ export const TableKeyValue: FC<TableKeyValueProps> = ({ rows }) => (
           <div className={`min-w-0 ${LABEL_TYPO} @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:px-4`}>
             {row.label}
           </div>
-          <div className="min-w-0 break-words text-fg-muted text-body-02-jp @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:border-l @min-[480px]:border-border @min-[480px]:px-4">
+          <div className="min-w-0 break-words text-fg text-body-02-jp @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:border-l @min-[480px]:border-border @min-[480px]:px-4">
             {row.value}
           </div>
         </div>
@@ -71,7 +71,7 @@ export const TableGrid: FC<TableGridProps> = ({ header, rows }) => {
             header.map((_, ci) => (
               <div
                 key={`${ri}-${ci}`}
-                className={`${cell} text-fg-muted text-body-02-jp ${ri < rows.length - 1 ? "border-b border-border" : ""} ${colBorder(ci)}`}
+                className={`${cell} text-fg text-body-02-jp ${ri < rows.length - 1 ? "border-b border-border" : ""} ${colBorder(ci)}`}
               >
                 {r[ci] ?? null}
               </div>

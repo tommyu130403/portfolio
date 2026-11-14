@@ -23,7 +23,7 @@ export const FigureFrame: FC<{ title?: ReactNode; lead?: ReactNode; children?: R
     {title || lead ? (
       <div className="flex flex-col gap-0.5">
         {title ? <p className="text-body-01-jp-bold text-fg-title">{title}</p> : null}
-        {lead ? <p className="text-caption-01-jp text-fg-caption">{lead}</p> : null}
+        {lead ? <p className="text-caption-01-jp text-fg-muted">{lead}</p> : null}
       </div>
     ) : null}
     {children}

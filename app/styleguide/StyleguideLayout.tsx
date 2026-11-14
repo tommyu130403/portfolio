@@ -1403,15 +1403,15 @@ function ComponentsSection() {
               <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" thumbnail="/window.svg" href="#" />
-              <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" thumbnail="/window.svg" href="#" />
+              <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" thumbnail="/images/fixture-placeholder.svg" href="#" />
+              <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" thumbnail="/images/fixture-placeholder.svg" href="#" />
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <WorkPagerCard direction="prev" category="プラットフォーム開発" title={SAMPLE_THUMB_TITLE} composedThumbnail={SAMPLE_THUMBNAILS[0]} serviceName={SAMPLE_THUMB_SERVICE} href="#" />
               <WorkPagerCard direction="next" category="プラットフォーム開発" title={SAMPLE_THUMB_TITLE} composedThumbnail={SAMPLE_THUMBNAILS[0]} serviceName={SAMPLE_THUMB_SERVICE} href="#" />
             </div>
             <div className="w-full max-w-[394px]">
-              <WorkPagerCard category="UI デザイン" title="社内向け管理ツールの刷新（direction なし・作品本文の作品カード）" thumbnail="/window.svg" href="#" />
+              <WorkPagerCard category="UI デザイン" title="社内向け管理ツールの刷新（direction なし・作品本文の作品カード）" thumbnail="/images/fixture-placeholder.svg" href="#" />
             </div>
             <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" href="#" />
           </div>

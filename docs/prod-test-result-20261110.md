@@ -104,6 +104,7 @@ ERROR 0 件。記録として残す WARN / INFO:
 - 対処: オーナーが GitHub の Settings → Advanced Security → 「Secret Protection」を有効にし、Push protection も On にした(2026-11-10)。
 - 再確認: 同じ `gh api` で `secret_scanning`・`secret_scanning_push_protection` が `enabled`。`secret-scanning/alerts` の件数は 0。ただし GitHub 側の過去分の走査が終わっているかは未確認のため、後日もう一度件数を見る。`dependabot_security_updates` は `disabled` のまま(B1 の基準外。K4 で扱う)。
 - 判定: 合格。基準の「検出 0 件」は、Claude の走査(手元の全履歴)と検証役の走査(GitHub 上の PR の参照を含む全コミット)の両方で満たしている。GitHub 自身の走査結果が 0 件のままかは後日見る(合否の根拠には使っていない)。
+- 後日の再確認(2026-11-14): 有効にしてから 4 日後に同じ `gh api` で見直した。`secret-scanning/alerts` は未解決 0 件・解決済み 0 件で、`secret_scanning`・`secret_scanning_push_protection` はどちらも `enabled` のまま。GitHub が過去分の走査を終えたかは外から直接は見えないが、4 日たっても 0 件なので追跡は終える。
 - §4-1 のやり直し: 対処は GitHub の設定変更だけで、サイトやリポジトリの中身は変わっていない。同じ領域の B3・B4・B5 は、検証役が修正後に独立に再確認し、同じ結果だった。
 
 ### B2 公開リポジトリの下書きと SQL(合格)
@@ -144,8 +145,8 @@ ERROR 0 件。記録として残す WARN / INFO:
 
 | 後の作業 | 内容 |
 |---|---|
-| B4 の後始末 | `public/` の見本画像 5 つを削除する(別の依頼) |
-| B1 の追跡 | 後日、GitHub の秘密検出の件数がまだ 0 件かを見る |
+| B4 の後始末 | `public/` の見本画像 5 つを削除する。完了(2026-11-14、[PR #283](https://github.com/tommyu130403/portfolio/pull/283)。本番で 5 つとも 404 を確認) |
+| B1 の追跡 | 後日、GitHub の秘密検出の件数がまだ 0 件かを見る。完了(2026-11-14 に 0 件を確認。上の B1 を参照) |
 | H2 | 段階 3 で、非公開作品の URL に出る英語のエラー文を扱う |
 | 外部リンク | 作品本文と下書きの外部リンク(会社の募集ページなど)を一括で外す(別の作業として実施中) |
 | 確認用 ID | 追加試験で発行した確認用のゲスト ID を止める(オーナー) |

@@ -49,10 +49,10 @@ const OrientationProbe: FC<{ src: string; onResult: (landscape: boolean) => void
 export const HeroShotsSkeleton: FC<{ children?: ReactNode }> = ({ children }) => (
   <div className="relative w-[560px] max-w-full motion-safe:animate-pulse">
     <div className="mx-auto w-[74%]">
-      <div className="mx-auto w-[92%] rounded-t-[10px] bg-border px-[3%] pb-[4%] pt-[3%]">
+      <div className="mx-auto w-[92%] rounded-t-[10px] bg-border-light px-[3%] pb-[4%] pt-[3%]">
         <div className="aspect-[16/10] w-full rounded-[3px] bg-surface-light" />
       </div>
-      <div className="aspect-[40/1] w-full rounded-b-[8px] bg-border" />
+      <div className="aspect-[40/1] w-full rounded-b-[8px] bg-border-light" />
     </div>
     <div className="@container absolute bottom-[2%] right-[8%] w-[20%]">
       <div className="aspect-[9/19] w-full rounded-[12cqw] border-[3cqw] border-border-light bg-surface-light" />
@@ -146,7 +146,7 @@ const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => 
             type="button"
             onClick={onClick}
             aria-label="画像を拡大表示"
-            className="absolute aspect-video cursor-zoom-in overflow-hidden rounded-[6px] border border-border shadow-[0_8px_24px_color-mix(in_srgb,var(--color-system-black)_35%,transparent)]"
+            className="absolute aspect-video cursor-zoom-in overflow-hidden rounded-[6px] border border-border shadow-[0_8px_24px_var(--color-system-black-a35)]"
             style={{ left: `${step * i}%`, top: `${step * i}%`, width: `${size}%`, zIndex: imgs.length - i }}
           >
             <ProtectedImage src={src} variantWidth={960} alt="" className="block h-full w-full object-cover" />
@@ -260,7 +260,7 @@ export const parseStakeholderBreakdown = (
 
 const MetaLabel: FC<{ children: ReactNode; last?: boolean }> = ({ children, last }) => (
   <div className={`flex min-h-10 items-center px-4${last ? "" : " border-b border-border"}`}>
-    <span className="text-[12px] font-normal leading-[1.5] tracking-[0.36px] whitespace-nowrap text-fg-muted">{children}</span>
+    <span className="text-[12px] font-bold leading-[1.5] tracking-[0.03em] whitespace-nowrap text-fg-headline-02">{children}</span>
   </div>
 );
 
@@ -370,7 +370,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
             地は Master の Sample 枠と同じ Background/Dark-α25（System/900 25%）。本文の表（components/Table.tsx）は地なし。
             overflow-hidden は付けない（最終行のツールのツールチップが表の下へはみ出して出るため。セルに地色は無いので角丸は崩れない） */}
         <div className="w-full px-4">
-          <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] rounded-r8 border border-border bg-system-900/25">
+          <div className="grid w-full grid-cols-[minmax(max-content,1fr)_minmax(0,4fr)] rounded-r8 border border-border bg-system-900-a25">
             {/* 期間 */}
             <MetaLabel>期間</MetaLabel>
             <MetaValue className="gap-2">
@@ -408,7 +408,7 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
             <MetaLabel>関係者</MetaLabel>
             <MetaValue className="flex-wrap gap-2 py-[6px]">
               {stakeholderTags ? (
-                stakeholderTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled label={s.name} count={s.count} />)
+                stakeholderTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled jp label={s.name} count={s.count} />)
               ) : (
                 <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
                   {work.stakeholder_breakdown || "—"}

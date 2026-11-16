@@ -138,7 +138,7 @@ const Brand: FC<{ logoUrl: string | null; serviceName: string; padded?: boolean;
       )}
       {!showLogo && (
         <p
-          className={`min-w-0 truncate text-center font-sans font-semibold ${light ? "text-surface-light" : "text-fg"}`}
+          className={`min-w-0 truncate text-center font-sans font-semibold ${light ? "text-surface-light" : "text-system-white"}`}
           style={{ fontSize: u(full ? 80 : 56), letterSpacing: "0.02em", maxWidth: u(full ? 760 : 376) }}
         >
           {serviceName}
@@ -211,7 +211,8 @@ const WorkThumbnail: FC<Props> = ({
     .join(" ");
   const rootStyle: CSSProperties | undefined = gradient
     ? {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "var(--color-system-white)",
+        // token-exception: ブランド色(承認済みの例外 lib/service-brands.ts)から作る地
         backgroundImage: `radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, ${gradient.main} 22%, transparent), transparent 60%), radial-gradient(120% 90% at 100% 100%, color-mix(in srgb, ${gradient.sub} 18%, transparent), transparent 60%)`,
       }
     : undefined;

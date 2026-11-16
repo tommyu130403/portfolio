@@ -19,7 +19,7 @@ import ProtectedImage from "./ProtectedImage";
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
  *
  * タイポ体系（Figma 457:2366）:
- *  - `## `   → 見出し01（Noto Bold 18px main-050・線なし・上 56 下 12。本文は 15px・行間 27px・fg-muted。2026-11-11 G3 の読みやすさ調整でオーナーが画面で決定）
+ *  - `## `   → 見出し01（Noto Bold 18px main-050・線なし・上 56 下 12。本文は Body/01/JP（15px・行間 27px。2026-11-11 G3 でオーナーが画面で決定）。色は fg（Text/Body-01。2026-11-15 オーナー指示「Figma の色を優先」で Master 787:9916 に合わせた）
  *  - `### `  → 見出し02（01 と同形）
  *  - `> `    → 引用（13px fg-muted・左ボーダー、連続行対応）
  * 拡張記法:
@@ -89,7 +89,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
         <a
           href={link[2]}
           {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-          className="text-main-100 underline decoration-main-100/50 underline-offset-4 transition-colors hover:decoration-main-100"
+          className="text-main-100 underline decoration-main-100-a50 underline-offset-4 transition-colors hover:decoration-main-100"
         >
           {link[1]}
           {external && <ExternalIcon />}
@@ -103,7 +103,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
     const code = rest.match(/^`([^`]+)`/);
     if (code) {
       push(
-        <code className="rounded bg-action-hover px-1.5 py-0.5 font-mono text-[0.88em] text-main-050">
+        <code className="rounded bg-action-hover px-1.5 py-0.5 font-mono text-[13px] text-main-050">
           {code[1]}
         </code>
       );
@@ -133,7 +133,7 @@ function renderInlineLine(text: string, keyBase: string): ReactNode[] {
           href={url[1]}
           target="_blank"
           rel="noopener noreferrer"
-          className="break-all text-main-100 underline decoration-main-100/50 underline-offset-4 hover:decoration-main-100"
+          className="break-all text-main-100 underline decoration-main-100-a50 underline-offset-4 hover:decoration-main-100"
         >
           {url[1]}
           <ExternalIcon />
@@ -201,7 +201,7 @@ const ImageFigure: FC<{
       </div>
       {caption && (
         <figcaption
-          className={`mt-2 text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption ${align === "center" ? "text-center" : ""}`}
+          className={`mt-2 text-[12px] leading-[18px] tracking-[0.03em] text-fg-muted ${align === "center" ? "text-center" : ""}`}
         >
           {caption}
         </figcaption>
@@ -238,12 +238,12 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-body-01-jp text-fg-muted">
+            <p className="text-body-01-jp text-fg">
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
           {caption && (
-            <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption">{caption}</p>
+            <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-muted">{caption}</p>
           )}
         </div>
       )}
@@ -809,15 +809,12 @@ function groupImageText(blocks: Block[]): Block[] {
 
 /** `::: figure` の内側かどうか（段落・リスト・カードを図版向けの小さい文字にする） */
 const InFigureContext = createContext(false);
-/** `::: card` の内側かどうか（Figma InfoCard の本文は Text/Body-01） */
-const InCardContext = createContext(false);
 
 function RenderBlock({ block, idx }: { block: Block; idx: number }) {
   const k = `b-${idx}`;
   const inFigure = useContext(InFigureContext);
-  const inCard = useContext(InCardContext);
-  // 本文の地の文は Text/Body-02。図版の枠・カードの中だけ Text/Body-01（Figma WorkFigure figure・InfoCard の Body）
-  const bodyColor = inFigure || inCard ? "text-fg" : "text-fg-muted";
+  // 本文は図版の内外とも Text/Body-01（fg）。Figma 787:9916 で照合
+  const bodyColor = "text-fg"; // Figma: 本文は Text/Body-01(Indigo/050)。2026-11-15 Master 787:9916 で照合
   switch (block.type) {
     // 見出しの階層: 作品名 h1 → セクション見出し h2 → `##`・`###` とも h3（同形の同格。見た目は変えない）
     case "h1":
@@ -908,7 +905,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
         </pre>
       );
     case "caption":
-      return <p className="text-[12px] leading-[18px] tracking-[0.03em] mb-4 mt-2 text-fg-caption">{renderInline(block.content, k)}</p>;
+      return <p className="text-[12px] leading-[18px] tracking-[0.03em] mb-4 mt-2 text-fg-muted">{renderInline(block.content, k)}</p>;
     case "workcard":
       return <WorkCardEmbed id={block.id} />;
     case "mockup": {
@@ -918,7 +915,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <div className="mb-4 mt-10 [&>div]:my-0">
           {mock}
-          <p className="text-[12px] leading-[18px] tracking-[0.03em] mt-3 text-center text-fg-caption">{renderInline(block.caption, `${k}-mc`)}</p>
+          <p className="text-[12px] leading-[18px] tracking-[0.03em] mt-3 text-center text-fg-muted">{renderInline(block.caption, `${k}-mc`)}</p>
         </div>
       );
     }
@@ -934,9 +931,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       return (
         <div className="mb-4 mt-10">
           <InfoCard title={block.title ? renderInline(block.title, `${k}-ct`) : undefined} tone={block.tone} inFigure={inFigure}>
-            <InCardContext.Provider value={true}>
               <MarkdownBody md={block.body} />
-            </InCardContext.Provider>
           </InfoCard>
         </div>
       );
@@ -1073,7 +1068,7 @@ export const EditButton: FC<{ label: string; onClick: () => void; className?: st
     type="button"
     onClick={onClick}
     aria-label={`${label}を編集`}
-    className={`flex size-7 items-center justify-center rounded-full border border-border-light bg-surface/90 text-fg-muted shadow-base transition-colors hover:border-primary hover:text-primary ${className}`}
+    className={`flex size-7 items-center justify-center rounded-full border border-border-light bg-indigo-900-a90 text-fg-muted shadow-base transition-colors hover:border-primary hover:text-primary ${className}`}
   >
     <Icon set="Edit" name="edit" tintColor="currentColor" className="size-3.5" aria-hidden />
   </button>

@@ -48,7 +48,7 @@ const Tooltip: FC<TooltipProps> = ({ label, children, focusable = true, classNam
         ref={tipRef}
         id={id}
         role="tooltip"
-        className={`pointer-events-none absolute top-full z-10 mt-1 hidden whitespace-nowrap rounded-[4px] border border-border bg-surface px-3 py-[10px] font-en text-[10px] leading-none text-white/80 shadow-base group-hover/tooltip:block group-focus-visible/tooltip:block ${alignRight ? "right-0" : "left-0"}`}
+        className={`pointer-events-none absolute top-full z-10 mt-1 hidden whitespace-nowrap rounded-[4px] border border-border bg-surface px-3 py-[10px] font-en text-[10px] leading-none text-system-white-a80 shadow-base group-hover/tooltip:block group-focus-visible/tooltip:block ${alignRight ? "right-0" : "left-0"}`}
       >
         {label}
       </span>

@@ -65,7 +65,7 @@ const WorkCard: FC<WorkCardProps> = ({ category, categoryHue, title, contents, p
             <div className="flex items-center justify-between gap-2">
               {category ? <Tag variant="category" label={category} size="card" hue={categoryHue} className="min-w-0" /> : null}
               {period ? (
-                <p className="ml-auto shrink-0 font-en text-[11px] font-extrabold leading-none tracking-[0.33px] text-fg-subtle whitespace-nowrap [text-box:trim-both_cap_alphabetic]">
+                <p className="ml-auto shrink-0 font-en text-[11px] font-extrabold leading-[1.6] tracking-[0.33px] text-fg-subtle whitespace-nowrap [text-box:trim-both_cap_alphabetic]">
                   {period}
                 </p>
               ) : null}

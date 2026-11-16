@@ -30,7 +30,7 @@ import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
 import WorkVizModal from "@/components/WorkVizModal";
 import ContactDialog from "@/components/ContactDialog";
 import Modal from "@/components/Modal";
-import { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
+import { color, semantic, alpha, shadow, radius, size, container, typo, textStyle, breakpoint } from "@/lib/design-tokens";
 import type { Tables } from "@/src/types/supabase";
 import type { WorkThumbnailData } from "@/lib/work-content";
 
@@ -177,6 +177,31 @@ const SEMANTIC_SWATCHES = [
   { kind: "border", cls: "border-border-light", token: "semantic.borderLight",  value: semantic.borderLight,  figma: "Border/Light",       ref: "indigo-700" },
   { kind: "border", cls: "border-border-main",  token: "semantic.borderMain",   value: semantic.borderMain,   figma: "Border/Main",        ref: "main-100 40%" },
   { kind: "bg",     cls: "bg-action-hover",     token: "semantic.actionHover",  value: semantic.actionHover,  figma: "Action/hover",       ref: "white 5%" },
+] as const;
+
+// Alpha（Figma Library の α 付き変数）。cls は literal な bg ユーティリティ（生成検出のため文字列で持つ）
+const ALPHA_SWATCHES = [
+  { cls: "bg-system-white-a80",  token: "alpha.systemWhiteA80", value: alpha.systemWhiteA80, figma: "System/White-α80" },
+  { cls: "bg-system-white-a60",  token: "alpha.systemWhiteA60", value: alpha.systemWhiteA60, figma: "System/White-α60" },
+  { cls: "bg-system-white-a50",  token: "alpha.systemWhiteA50", value: alpha.systemWhiteA50, figma: "System/White-α50" },
+  { cls: "bg-system-white-a30",  token: "alpha.systemWhiteA30", value: alpha.systemWhiteA30, figma: "System/White-α30" },
+  { cls: "bg-system-white-a10",  token: "alpha.systemWhiteA10", value: alpha.systemWhiteA10, figma: "System/White-α10" },
+  { cls: "bg-system-white-a02",  token: "alpha.systemWhiteA02", value: alpha.systemWhiteA02, figma: "System/White-α02" },
+  { cls: "bg-system-black-a25",  token: "alpha.systemBlackA25", value: alpha.systemBlackA25, figma: "System/Black-α25" },
+  { cls: "bg-system-black-a10",  token: "alpha.systemBlackA10", value: alpha.systemBlackA10, figma: "System/Black-α10" },
+  { cls: "bg-main-100-a06",    token: "alpha.main100A06",   value: alpha.main100A06,   figma: "Main/100-α06" },
+  { cls: "bg-main-100-a10",    token: "alpha.main100A10",   value: alpha.main100A10,   figma: "Main/100-α10" },
+  { cls: "bg-main-100-a15",    token: "alpha.main100A15",   value: alpha.main100A15,   figma: "Main/100-α15" },
+  { cls: "bg-main-100-a40",    token: "alpha.main100A40",   value: alpha.main100A40,   figma: "Main/100-α40" },
+  { cls: "bg-main-100-a60",    token: "alpha.main100A60",   value: alpha.main100A60,   figma: "Main/100-α60" },
+  { cls: "bg-system-900-a25",   token: "alpha.system900A25",  value: alpha.system900A25,  figma: "Background/Dark-α25（System/900 25%）" },
+  { cls: "bg-system-white-a08", token: "alpha.systemWhiteA08", value: alpha.systemWhiteA08, figma: "System/White-α08" },
+  { cls: "bg-system-black-a35", token: "alpha.systemBlackA35", value: alpha.systemBlackA35, figma: "System/Black-α35" },
+  { cls: "bg-system-black-a80", token: "alpha.systemBlackA80", value: alpha.systemBlackA80, figma: "System/Black-α80" },
+  { cls: "bg-indigo-900-a90", token: "alpha.indigo900A90", value: alpha.indigo900A90, figma: "Indigo/900-α90" },
+  { cls: "bg-main-100-a50", token: "alpha.main100A50", value: alpha.main100A50, figma: "Main/100-α50" },
+  { cls: "bg-danger-300-a60",    token: "alpha.danger300A60",   value: alpha.danger300A60,   figma: "Danger/300-α60" },
+  { cls: "bg-danger-300-a10",    token: "alpha.danger300A10",   value: alpha.danger300A10,   figma: "Danger/300-α10" },
 ] as const;
 
 // ─── タイポグラフィ（textStyle トークンから生成）────────────────────────────
@@ -394,6 +419,45 @@ function ColorsSection() {
                   <p className="truncate text-[12px] font-medium text-white">{figma}</p>
                   <p className="font-mono text-[10px] text-system-700">
                     {copied === value ? "✓ コピー" : `${value} → ${ref}`}
+                  </p>
+                  <TokenBadge>{cls}</TokenBadge>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Alpha（Figma Library の α 付き変数） */}
+        <div>
+          <div className="mb-4 flex items-baseline gap-3">
+            <SubHeading>Alpha</SubHeading>
+            <p className="text-[11px] text-system-700">
+              半透明の色（Figma Library の「-αNN」。名前は「-aNN」）。値は色の変数を指定の割合で透明にしたもの
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {ALPHA_SWATCHES.map(({ cls, token, value, figma }) => (
+              <button
+                key={token}
+                type="button"
+                onClick={() => copy(value)}
+                title={`${token}\n${value}\nFigma: ${figma}`}
+                className="group flex items-center gap-3 rounded-[8px] border border-transparent p-2 text-left transition-colors hover:border-border-light hover:bg-action-hover"
+              >
+                <div
+                  className="h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-system-white-a10 bg-[length:8px_8px]"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(45deg,var(--color-system-800) 25%,transparent 25%),linear-gradient(-45deg,var(--color-system-800) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,var(--color-system-800) 75%),linear-gradient(-45deg,transparent 75%,var(--color-system-800) 75%)",
+                    backgroundPosition: "0 0,0 4px,4px -4px,-4px 0",
+                  }}
+                >
+                  <div className={`h-full w-full ${cls}`} />
+                </div>
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="truncate text-[12px] font-medium text-system-white">{figma}</p>
+                  <p className="font-mono text-[10px] text-system-700">
+                    {copied === value ? "✓ コピー" : value}
                   </p>
                   <TokenBadge>{cls}</TokenBadge>
                 </div>
@@ -1007,7 +1071,7 @@ function ComponentsSection() {
           </ButtonFunction>
         </ComponentPreview>
 
-        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 581:444: bg main-600・p8・r4・Avenir Heavy・字間 5%・行の上下は削らない。size=md は 13px/高さ 29（作品詳細上部）、sm・card は 10px/高さ 26（前後ナビ・作品カード）。hue（カテゴリ色の色相。D案: 保存値 h を青緑〜ローズ 190〜352° の H に縮め、背景 oklch(0.28 0.05 H)・文字 oklch(0.88 0.085 H)。未指定は Main/600 地））/ tool(border付き・10px fg-muted。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる">
+        <ComponentPreview title="Tag" description="作品の制作内容・カテゴリ・ツール表示用バッジ。default / small(bg black/25・11px white。作品詳細の Tools 代替表示用)/ content(作品の制作内容タグ。border 1px・10px fg-muted)/category（Library Tag-single 581:444: bg main-600・p8・r4・Avenir Heavy・字間 5%・行の上下は削らない。size=md は 13px/高さ 29（作品詳細上部）、sm・card は 10px/高さ 26（前後ナビ・作品カード）。hue（カテゴリ色の色相。D案: 保存値 h を青緑〜ローズ 190〜352° の H に縮め、背景 oklch(0.28 0.05 H)・文字 oklch(0.88 0.085 H)。未指定は Main/600 地））/ tool(border付き・10px fg-muted。スキル展開パネル用・アイコン前置)。tool は filled(bg-surface で塗る・作品詳細の役割)と count(人数バッジ付き・作品詳細の関係者)を任意指定できる。jp を付けると filled のラベルを Noto（Body/JP）で描く（関係者タグ用。役割タグは未指定で Avenir）">
           <div className="flex flex-wrap gap-2 items-center">
             <Tag label="UI Design" />
             <Tag label="UX Research" />
@@ -1039,6 +1103,7 @@ function ComponentsSection() {
           <div className="flex flex-wrap gap-2 items-center mt-2 p-2 rounded bg-surface-light">
             <Tag label="デザインリード" variant="tool" filled />
             <Tag label="エンジニア" variant="tool" filled count={3} />
+            <Tag label="エンジニア（jp・関係者タグ）" variant="tool" filled jp count={3} />
           </div>
         </ComponentPreview>
 

@@ -122,12 +122,12 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
 
   const content = (
     <>
-      {/* アイコンは文字色に追従させる（通常時 System/500、ホバーと表示中は白。Figma 59:24643） */}
+      {/* アイコンは文字色に追従させる（通常時 Indigo/200（text-fg-muted）、ホバーと表示中は白。Figma 59:24643） */}
       <Icon
         set={icon.set}
         name={icon.name}
         tintColor="currentColor"
-        className={`h-[18px] w-[18px] shrink-0 transition-colors duration-300 ${active ? "text-white" : "text-system-500 group-hover/item:text-white"}`}
+        className={`h-[18px] w-[18px] shrink-0 transition-colors duration-300 ${active ? "text-system-white" : "text-fg-muted group-hover/item:text-system-white"}`}
         aria-hidden
       />
       {!iconOnly && (
@@ -154,7 +154,7 @@ const SideMenuItem: FC<SideMenuItemProps> = ({
               // Figma の余白 12/10 は内側の枠線 1px を含むため、CSS では border 分を引いて 11/9 にする
               "font-guide font-normal pointer-events-none fixed z-[70]",
               "rounded-r4 border border-border bg-surface px-[11px] py-[9px]",
-              "text-[14px] leading-[14px] tracking-[0.42px] whitespace-nowrap text-white/80",
+              "text-[14px] leading-[14px] tracking-[0.42px] whitespace-nowrap text-system-white-a80",
               "shadow-base",
             ].join(" ")}
             style={{
@@ -346,11 +346,11 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               collapsed ? "opacity-0" : "opacity-100",
             ].join(" ")}
           >
-            <span className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] text-white/50 leading-[12px] whitespace-nowrap transition-colors duration-300 group-hover/profile:text-white">
+            <span className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] text-system-white-a50 leading-[12px] whitespace-nowrap transition-colors duration-300 group-hover/profile:text-system-white">
               Product Designer
             </span>
             {/* Figma Library 60:194: Afacad Bold 15px・行間 100%・字間 5% */}
-            <span className="font-sans font-bold text-[15px] leading-[15px] tracking-[0.75px] text-white/80 whitespace-nowrap transition-colors duration-300 group-hover/profile:text-white">Yu Tomita</span>
+            <span className="font-sans font-bold text-[15px] leading-[15px] tracking-[0.75px] text-main-050 whitespace-nowrap transition-colors duration-300 group-hover/profile:text-system-white">Yu Tomita</span>
           </div>
         </Link>
 
@@ -364,7 +364,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           aria-label="Profile"
           className={["flex flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
         >
-          <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-system-white-a50 whitespace-nowrap px-0">
             Profile
           </p>
 
@@ -406,7 +406,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
           aria-label="Social"
           className={["flex flex-1 flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
         >
-          <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+          <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-system-white-a50 whitespace-nowrap px-0">
             Social
           </p>
           <div className={collapsed ? "flex flex-col gap-2" : "flex gap-2"}>
@@ -430,7 +430,7 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
               aria-label="Developer"
               className={["flex flex-col gap-2 w-full items-start", collapsed ? "pl-[2px]" : ""].join(" ")}
             >
-              <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-white/50 whitespace-nowrap px-0">
+              <p className="font-sans font-medium text-[10px] uppercase tracking-[0.4px] leading-[12px] text-system-white-a50 whitespace-nowrap px-0">
                 Developer
               </p>
               <SideMenuItem
@@ -471,10 +471,10 @@ export const SideMenuBar: FC<SideMenuBarProps> = ({
             className="flex items-center gap-2 w-full transition-colors duration-200"
             title="ログアウト"
           >
-            <Icon set="Arrows" name="logout" className="h-[18px] w-[18px] shrink-0 text-white/30" />
+            <Icon set="Arrows" name="logout" className="h-[18px] w-[18px] shrink-0 text-system-white-a30" />
             <span
               className={[
-                "text-[10px] tracking-[0.4px] text-white/30 whitespace-nowrap overflow-hidden max-w-[160px] transition-opacity duration-300",
+                "text-[10px] tracking-[0.4px] text-system-white-a30 whitespace-nowrap overflow-hidden max-w-[160px] transition-opacity duration-300",
                 collapsed ? "opacity-0" : "opacity-100",
               ].join(" ")}
             >

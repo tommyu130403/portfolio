@@ -216,7 +216,7 @@ const Modal: FC<ModalProps> = ({
     ) : null;
 
   const scrimStyle = {
-    backgroundColor: "color-mix(in srgb, var(--color-system-black) 25%, transparent)",
+    backgroundColor: "var(--color-system-black-a25)",
     backdropFilter: "blur(8px)",
   };
   // 開いてすぐ閉じたときも、出てくる途中の濃さからフェードアウトさせる(アニメーションを外して遷移に引き継ぐ)。

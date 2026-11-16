@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FC, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FC, type RefObject } from "react";
 import { Icon, ICON_SETS, type IconSet } from "@/components/Icon";
 import { labelStep, scaleForTimeline, type TimelinePeriod, type TimelineScale } from "@/lib/timeline-scale";
 
@@ -160,9 +160,9 @@ export function parseStakeholders(raw: unknown): StakeholdersData | null {
 // RACI バッジ（Figma 814:3872〜3875）
 const RACI_STYLE: Record<RaciKey, string> = {
   R: "bg-main-100 text-surface",
-  A: "bg-white text-surface",
+  A: "bg-system-white text-surface",
   C: "bg-system-600 text-surface",
-  I: "bg-system-800 text-system-500",
+  I: "bg-system-800 text-fg-muted",
 };
 const RACI_LEGEND: { key: RaciKey; label: string }[] = [
   { key: "R", label: "Responsible / 実行責任" },
@@ -245,7 +245,7 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
   return (
     <div className="w-full max-md:overflow-x-auto">
       <div
-        className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-[rgba(0,0,0,0.1)] relative flex flex-col gap-6 rounded-[14px] px-[25px] pt-[25px] pb-[9px] max-md:min-w-[var(--tl-min-w)]"
+        className="after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-[''] after:border-system-black-a10 relative flex flex-col gap-6 rounded-[14px] px-[25px] pt-[25px] pb-[9px] max-md:min-w-[var(--tl-min-w)]"
         style={{ "--tl-min-w": `${minW}px` } as CSSProperties}
       >
         <div ref={axisRef} className="flex flex-col gap-4">
@@ -284,7 +284,7 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
                       // 非アクティブは Background/Dark-α25。縦線が透けないよう、地（surface）に重ねて不透明にする
                       active
                         ? "bg-main-700 after:border-border-main"
-                        : "bg-[linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),linear-gradient(var(--color-surface),var(--color-surface))] after:border-border"
+                        : "bg-[linear-gradient(var(--color-system-black-a25),var(--color-system-black-a25)),linear-gradient(var(--color-surface),var(--color-surface))] after:border-border"
                     }`}
                     style={{ "--bar-w": barWidth, ...barPos } as CSSProperties}
                   >
@@ -295,7 +295,7 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
                     </span>
                     <span
                       className={`font-en min-w-0 truncate text-[10px] font-extrabold leading-[14px] tracking-[0.4px] ${
-                        active ? "text-main-100" : "text-system-500"
+                        p.raci.includes("A") ? "text-fg" : active ? "text-main-100" : "text-fg-muted"
                       }`}
                       title={p.label}
                     >
@@ -303,9 +303,9 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
                     </span>
                     {/* ツールチップ */}
                     {p.note?.body && (
-                      <div className={`pointer-events-none absolute ${left >= 50 ? "right-2" : "left-2"} ${i >= Math.ceil(phases.length / 2) ? "bottom-full mb-1.5" : "top-full mt-1.5"} z-10 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-[#0a0a0a] px-3 py-2 group-hover:block`}>
+                      <div className={`pointer-events-none absolute ${left >= 50 ? "right-2" : "left-2"} ${i >= Math.ceil(phases.length / 2) ? "bottom-full mb-1.5" : "top-full mt-1.5"} z-10 hidden w-max max-w-[280px] rounded-[8px] border border-border-light bg-indigo-950 px-3 py-2 group-hover:block`}>
                         <p className="text-[10px] tracking-[0.3px] text-fg-muted">{p.label}</p>
-                        <p className="text-[12px] leading-[1.5] text-white">{p.note.body}</p>
+                        <p className="text-[12px] leading-[1.5] text-system-white">{p.note.body}</p>
                       </div>
                     )}
                   </div>
@@ -331,28 +331,11 @@ export const WorkProcessChart: FC<{ data: TimelineData; period?: TimelinePeriod 
 
 /* ─── Stakeholders（_Stakeholder）────────────────────── */
 
-/** 英数字の連なり（"API" "Next.js" "PjM" など）だけ欧文フォントにする。大きさ・太さは親から引き継ぐ */
-const MIXED_RE = /[A-Za-z0-9]+(?:[ .\-/][A-Za-z0-9]+)*/g;
-const MixedText: FC<{ text: string }> = ({ text }) => {
-  const nodes: ReactNode[] = [];
-  let last = 0;
-  for (const m of text.matchAll(MIXED_RE)) {
-    const at = m.index ?? 0;
-    if (at > last) nodes.push(text.slice(last, at));
-    nodes.push(
-      <span key={at} className="font-en tracking-normal">
-        {m[0]}
-      </span>,
-    );
-    last = at + m[0].length;
-  }
-  if (last < text.length) nodes.push(text.slice(last));
-  return <>{nodes}</>;
-};
+/* 関係者図の文字は英数字も含めて Noto（Figma Body/JP）のまま描く */
 
 /** 「担当」バッジ（Figma MeBadge）: 左右 6px・上下 4px・Caption/01/JP（行間 100%）・地 main-100 / 文字 surface */
 const MeBadge: FC<{ className?: string }> = ({ className = "" }) => (
-  <span className={`w-fit shrink-0 rounded-full bg-main-100 px-1.5 py-1 text-caption-01-jp leading-none text-surface ${className}`}>担当</span>
+  <span className={`w-fit shrink-0 rounded-full bg-main-100 px-1.5 py-1 text-caption-01-jp text-surface ${className}`}>担当</span>
 );
 
 /** チーム行・組織カード行（Figma Row）: 地 indigo-base・角丸 4・左右 8 / 上下 4・Body/03/JP */
@@ -378,7 +361,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
             />
           )}
           {layer.name && (
-            <p className="min-w-0 [font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[14px] font-bold leading-none tracking-[0.05em] text-system-500">{layer.name}</p>
+            <p className="min-w-0 font-guide text-[14px] font-bold leading-none tracking-[0.05em] text-system-500">{layer.name}</p>
           )}
         </div>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-2">
@@ -387,26 +370,26 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
               <div
                 key={ci}
                 className={`flex min-w-0 flex-col rounded-r8 border px-3 py-[9px] ${
-                  card.me ? "border-main-100/40 bg-main-100/6" : "border-border bg-surface-light"
+                  card.me ? "border-main-100-a40 bg-main-100-a06" : "border-border bg-surface-light"
                 }`}
               >
                 {(card.name || card.me) && (
                   <div className="flex min-w-0 items-center gap-1.5">
                     <p className="min-w-0 text-body-02-jp-bold text-fg">
-                      <MixedText text={card.name} />
+                      {card.name}
                     </p>
                     {card.me && <MeBadge />}
                   </div>
                 )}
                 <p className="mt-0.5 text-body-03-jp text-system-500">
-                  <MixedText text={card.note} />
+                  {card.note}
                 </p>
                 {card.teams && card.teams.length > 0 && (
                   <ul className="mt-2.5 flex flex-col gap-1">
                     {card.teams.map((t, ti) => (
                       <li key={ti} className={ROW_CLASS}>
                         <span className="min-w-0 text-fg">
-                          <MixedText text={t.name} />
+                          {t.name}
                         </span>
                         <span className="shrink-0 text-system-500">{t.headcount}名</span>
                       </li>
@@ -417,13 +400,13 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
             ) : (
               <div key={ci} className="flex min-w-0 flex-col rounded-r8 border border-border bg-surface-light px-3 py-[9px]">
                 <p className="text-body-02-jp-bold text-fg">
-                  <MixedText text={card.title} />
+                  {card.title}
                 </p>
                 <ul className="mt-2.5 flex flex-col gap-1">
                   {card.rows.map((row, ri) => (
                     <li key={ri} className={`${ROW_CLASS} gap-1.5 ${row.me ? "text-main-050" : "text-fg"}`}>
                       <span className="min-w-0">
-                        <MixedText text={row.text} />
+                        {row.text}
                       </span>
                       {row.me && <MeBadge />}
                     </li>

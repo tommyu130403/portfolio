@@ -39,13 +39,7 @@ const PANEL_MS = 300;
 // Modal.tsx（z-50）と同じ層。サイドメニュー（sticky z-[2]）より手前に出す
 const PANEL_Z = 50;
 
-/* Figma フォント指定（node 770-6652 準拠）
-   period / 年ラベル = Avenir Heavy（英数）、role/company/説明/Works = Noto Sans JP */
-// FONT_JP は Noto のみ（日本語テキスト用）。FONT_EN は英数字表示用に Avenir を明示する（Avenir の無い端末は Figtree）。
-const FONT_EN = "Avenir, var(--font-figtree), var(--font-noto-sans-jp), sans-serif";
-const FONT_JP = "var(--font-noto-sans-jp), sans-serif";
-// 詳細パネルの見出し用（globals.css の --font-guide と同じ並び。@theme inline の変数は CSS 変数として出ないため実体を直接指定）
-const FONT_GUIDE = "var(--font-afacad), var(--font-noto-sans-jp), sans-serif";
+/* Figma node 770-6652 準拠の文字指定: 書体はトークン（font-en = Avenir / font-body = Noto / font-guide = Afacad + Noto）、大きさ・太さ・行間・字間は Figma の数値 */
 
 /* Figma node 770-6652 / 781-9583 準拠カラー */
 const C = {
@@ -53,7 +47,7 @@ const C = {
   // 選択中・ホバー時は他のカードと同じ Action/hover を重ねる（lib/hover-card.ts の HOVER_CARD と同じ見た目）
   cardBg: "var(--color-surface)",
   cardHoverOverlay: "inset 0 0 0 9999px var(--color-action-hover)",
-  cardShadowHover: "1px 1px 16px 2px color-mix(in srgb, var(--color-system-black) 25%, transparent)", // shadow-base 相当（@theme の --shadow-base は CSS 変数として出ないため展開）
+  cardShadowHover: "1px 1px 16px 2px var(--color-system-black-a25)", // shadow-base 相当（@theme の --shadow-base は CSS 変数として出ないため展開）
   cardBorder: "var(--color-border)", // Border/Default
   cardBorderHover: "var(--color-border-light)", // Border/Light
   cardBorderSelected: "var(--color-border-main)", // Border/Main
@@ -71,10 +65,10 @@ const C = {
   badgeText: "var(--color-surface)", // ミント地の上の文字（Master TOP の「現在」= Background/Default。2026-11-13 照合）
   divider: "var(--color-border)",
   dot: "var(--color-border)", // Border/Default
-  dotSelected: "var(--color-main-300)", // Main/300（開いている経歴）
+  dotSelected: "var(--color-border-light)", // Border/Light（開いている経歴。Figma _CareerItem Status=active）
   dotCurrent: "var(--color-main-100)", // Main/base
   bar: "var(--color-border)", // Border/Default
-  barSelected: "var(--color-main-300)", // Main/300（開いている経歴）
+  barSelected: "var(--color-border-light)", // Border/Light（開いている経歴。Figma _CareerItem Status=active）
   gridLine: "var(--color-border)",
   yearText: "var(--color-fg-muted)",
   yearCurrent: "var(--color-main-050)",
@@ -127,13 +121,9 @@ function PeriodRow({ item }: { item: EnrichedItem }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <Icon set="Time" name="calendar-line" tintColor="var(--color-fg-muted)" style={{ width: 12, height: 12, flexShrink: 0 }} />
         <span
+          className="font-en text-[11px] font-extrabold leading-none tracking-[0.33px]"
           style={{
-            fontFamily: FONT_EN,
-            fontWeight: 800,
             color: C.period,
-            fontSize: 11,
-            letterSpacing: ".33px",
-            lineHeight: 1,
             whiteSpace: "nowrap",
             textBox: "trim-both cap alphabetic",
           }}
@@ -143,13 +133,10 @@ function PeriodRow({ item }: { item: EnrichedItem }) {
       </div>
       {item.isCurrent && (
         <span
+          className="font-body text-[9px] leading-none tracking-[0.1172px]"
           style={{
-            fontFamily: FONT_JP,
             background: C.badgeBg,
             color: C.badgeText,
-            fontSize: 9,
-            lineHeight: 1,
-            letterSpacing: "0.1172px",
             padding: "3px 7px",
             borderRadius: 9999,
             whiteSpace: "nowrap",
@@ -227,12 +214,12 @@ function CareerCard({
       {/* 左列（期間行 + 役職 + 会社）— Figma: gap 6 */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
         <PeriodRow item={item} />
-        {/* 役職 — Noto Sans JP Bold */}
-        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 13, lineHeight: "20px", letterSpacing: ".39px", margin: 0, ...clampStyle }}>
+        {/* 役職 — Figma Body/02/JP/Bold */}
+        <p className="text-body-02-jp-bold" style={{ color: C.role, margin: 0, ...clampStyle }}>
           {item.role}
         </p>
-        {/* 会社 — Noto Sans JP Regular */}
-        <p style={{ fontFamily: FONT_JP, color: C.company, fontSize: 10, lineHeight: "12px", letterSpacing: ".3px", margin: 0, ...clampStyle }}>
+        {/* 会社 — Figma Caption/01/JP */}
+        <p className="text-caption-01-jp" style={{ color: C.company, margin: 0, ...clampStyle }}>
           {item.company}
         </p>
       </div>
@@ -254,7 +241,7 @@ function CareerCard({
           }}
         >
           <Icon set="Arrows" name="up" tintColor={item.isCurrent ? C.iconArrowCurrent : C.muted} style={{ width: 14, height: 14, flexShrink: 0 }} />
-          <span style={{ fontFamily: FONT_JP, fontSize: 10, lineHeight: 1, color: C.muted }}>詳細</span>
+          <span className="font-body text-[10px] leading-none" style={{ color: C.muted }}>詳細</span>
         </span>
       ) : (
         <Icon set="Arrows" name="right" tintColor={chevronColor} style={{ width: 16, height: 16, flexShrink: 0 }} />
@@ -395,10 +382,10 @@ function DetailBody({
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <PeriodRow item={item} />
-        <p style={{ fontFamily: FONT_JP, fontWeight: 700, color: C.role, fontSize: 22, lineHeight: 1.4, letterSpacing: ".96px", margin: 0, overflowWrap: "anywhere" }}>
+        <p className="font-body text-[22px] font-bold leading-[1.4] tracking-[0.96px]" style={{ color: C.role, margin: 0, overflowWrap: "anywhere" }}>
           {item.role}
         </p>
-        <p style={{ fontFamily: FONT_JP, color: C.muted, fontSize: 12, lineHeight: 1.6, letterSpacing: ".36px", margin: 0, overflowWrap: "anywhere" }}>
+        <p className="font-body text-[12px] leading-[1.6] tracking-[0.36px]" style={{ color: C.muted, margin: 0, overflowWrap: "anywhere" }}>
           {item.company}
         </p>
       </div>
@@ -407,12 +394,9 @@ function DetailBody({
       )}
       {item.description && (
         <p
+          className="font-body text-[14px] leading-[1.9] tracking-[0.04em]"
           style={{
-            fontFamily: FONT_JP,
             color: C.desc,
-            fontSize: 14,
-            lineHeight: 1.9,
-            letterSpacing: ".04em",
             margin: 0,
             textWrap: "pretty",
             whiteSpace: "pre-wrap",
@@ -424,7 +408,7 @@ function DetailBody({
       )}
       {works.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ fontFamily: FONT_EN, fontSize: 10, lineHeight: "12px", letterSpacing: ".4px", textTransform: "uppercase", color: C.caption, margin: 0 }}>
+          <p className="font-en text-[10px] leading-[12px] tracking-[0.4px]" style={{ textTransform: "uppercase", color: C.caption, margin: 0 }}>
             Works
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -471,6 +455,7 @@ function PrevNext({
     return (
       <button
         type="button"
+        className="font-body text-[12px] leading-none"
         disabled={disabled}
         onClick={onClick}
         onMouseEnter={() => setHovered(kind)}
@@ -485,9 +470,6 @@ function PrevNext({
           border: `1px solid ${C.cardBorder}`,
           background: isHover ? "var(--color-action-hover)" : "transparent",
           color: isHover ? "var(--color-fg)" : C.muted,
-          fontFamily: FONT_JP,
-          fontSize: 12,
-          lineHeight: 1,
           opacity: disabled ? 0.35 : 1,
           cursor: disabled ? "default" : "pointer",
           transition: "background-color .15s ease, color .15s ease",
@@ -502,7 +484,7 @@ function PrevNext({
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       {btn("prev", index <= 0, onPrev)}
-      <span style={{ fontFamily: FONT_EN, fontSize: 11, color: C.caption, whiteSpace: "nowrap" }}>
+      <span className="font-en text-[11px]" style={{ color: C.caption, whiteSpace: "nowrap" }}>
         {index + 1} / {total}
       </span>
       {btn("next", index >= total - 1, onNext)}
@@ -519,7 +501,7 @@ function CloseButton({ onClose }: { onClose: (viaKeyboard: boolean) => void }) {
   );
 }
 
-const PANEL_SHADOW = "1px 1px 16px 2px color-mix(in srgb, var(--color-system-black) 25%, transparent)";
+const PANEL_SHADOW = "1px 1px 16px 2px var(--color-system-black-a25)";
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -617,7 +599,7 @@ function CareerPanel({
     position: "fixed",
     inset: 0,
     zIndex: PANEL_Z,
-    background: "color-mix(in srgb, var(--color-system-black) 25%, transparent)",
+    background: "var(--color-system-black-a25)",
     opacity: visible ? 1 : 0,
     pointerEvents: open ? "auto" : "none",
     transition: reducedMotion ? "none" : `opacity ${PANEL_MS}ms ease-in-out`,
@@ -626,8 +608,8 @@ function CareerPanel({
   // 配色はセクション見出し（Headline: 和文ラベル = Main/050、英字タイトル = fg）に揃える
   const eyebrow = (
     <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-      <span style={{ fontFamily: FONT_GUIDE, fontSize: 14, lineHeight: 1, letterSpacing: ".4px", color: "var(--color-fg)" }}>Career</span>
-      <span style={{ fontFamily: FONT_JP, fontSize: 11, lineHeight: 1, color: C.label }}>経歴詳細</span>
+      <span className="font-guide text-[14px] leading-none tracking-[0.4px]" style={{ color: "var(--color-fg)" }}>Career</span>
+      <span className="font-body text-[11px] leading-none" style={{ color: C.label }}>経歴詳細</span>
     </div>
   );
 
@@ -909,13 +891,9 @@ export default function CareerGanttChart({ career }: { career: CareerItem[] }) {
           {CHART_YEARS.map((year, i) => (
             <div
               key={year}
+              className="font-en text-[11px] font-extrabold leading-[16.5px] tracking-[0.3945px]"
               style={{
-                fontFamily: FONT_EN,
-                fontWeight: 800,
-                fontSize: 11,
                 color: year === CURRENT_YEAR ? C.yearCurrent : C.yearText,
-                letterSpacing: ".3945px",
-                lineHeight: "16.5px",
                 textAlign: "center",
                 borderLeft: i === 0 ? "none" : `1px solid ${C.gridLine}`,
                 height: 17,

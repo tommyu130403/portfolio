@@ -39,10 +39,10 @@ const STEP_BASE =
 
 const stepClass = (tone: StepTone) =>
   tone === "good"
-    ? `${STEP_BASE} text-body-02-jp border-main-100/60 bg-main-100/10 text-main-050`
+    ? `${STEP_BASE} text-body-02-jp border-main-100-a60 bg-main-100-a10 text-main-050`
     : tone === "bad"
-      ? `${STEP_BASE} text-body-02-jp border-danger-300/60 bg-danger-300/10 text-danger-100`
-      : `${STEP_BASE} text-body-02-jp border-border bg-system-900/25 text-fg-muted`;
+      ? `${STEP_BASE} text-body-02-jp border-danger-300-a60 bg-danger-300-a10 text-danger-100`
+      : `${STEP_BASE} text-body-02-jp border-border bg-system-900-a25 text-fg-muted`;
 
 const Arrow: FC = () => (
   <span aria-hidden className="text-body-02-jp flex items-center justify-center text-fg-subtle">
@@ -136,8 +136,8 @@ export type BarRowData = {
 
 /** 棒の塗り: Figma WorkFigure Kind=bars（2026-11-13 照合）。up / down は色の 10% 地 + 60% 枠、flat は Indigo/850 地 + Border/Default 枠 */
 const FILL: Record<BarTone, string> = {
-  up: "border border-main-100/60 bg-main-100/10",
-  down: "border border-danger-300/60 bg-danger-300/10",
+  up: "border border-main-100-a60 bg-main-100-a10",
+  down: "border border-danger-300-a60 bg-danger-300-a10",
   flat: "border border-border bg-surface-light",
 };
 const VALUE: Record<BarTone, string> = { up: "text-primary", down: "text-danger-300", flat: "text-fg-muted" };

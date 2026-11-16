@@ -309,7 +309,7 @@ function HomeContent() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-start bg-surface text-white">
+    <div className="flex min-h-screen items-start bg-surface text-system-white">
         {/* Side Menu（lg 以上のみ表示） */}
         <div className="sticky top-0 shrink-0 z-[2] hidden w-[96px] lg:block">
           <SideMenuBar activeSection={activeSection} />
@@ -325,9 +325,9 @@ function HomeContent() {
           className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-light lg:hidden"
         >
           <span className="flex flex-col gap-[4px]">
-            <span className="block h-[2px] w-4 rounded bg-white" />
-            <span className="block h-[2px] w-4 rounded bg-white" />
-            <span className="block h-[2px] w-4 rounded bg-white" />
+            <span className="block h-[2px] w-4 rounded bg-system-white" />
+            <span className="block h-[2px] w-4 rounded bg-system-white" />
+            <span className="block h-[2px] w-4 rounded bg-system-white" />
           </span>
         </button>
 
@@ -349,7 +349,7 @@ function HomeContent() {
         >
           {/* 背景（クリックで閉じる） */}
           <div
-            className="absolute inset-0 bg-black/25"
+            className="absolute inset-0 bg-system-black-a25"
             onClick={() => setMobileMenuOpen(false)}
           />
           {/* パネル: 既存 SideMenuBar を展開状態で再利用。ナビリンククリックで閉じる */}
@@ -376,7 +376,7 @@ function HomeContent() {
             type="button"
             aria-label="メニューを閉じる"
             onClick={() => setMobileMenuOpen(false)}
-            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-light text-[18px] text-white"
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-surface-light text-[18px] text-system-white"
           >
             ✕
           </button>
@@ -394,7 +394,7 @@ function HomeContent() {
                 <ProtectedImage src={profile?.hero_image_url ?? ""} variantWidth={480} alt="Profile" fetchPriority="high" className="h-full w-full object-cover" />
               )}
             </div>
-            {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 Afacad 14px・名前 Afacad Bold 46px 字間 5%・行間 100%・Main/050。一言紹介 Body/01/JP/Regular・Secondary（2026-11-11 作品本文に合わせて変更） */}
+            {/* 肩書: 職種・英語名・一言紹介（Figma Master 47:210・2026-11-09）。職種 Afacad 14px・行間 100%・字間 3%、名前 Afacad Bold 46px・行間 100%・字間 5%、いずれも Main/050。一言紹介 Noto 15px・行間 160%・字間 3%・fg-muted */}
             <div className="flex flex-1 flex-col gap-4 sm:pt-3">
               <div data-reveal="" className="flex flex-col gap-3">
                 <p className="font-sans text-[14px] leading-none tracking-[0.03em] text-main-050">
@@ -404,7 +404,7 @@ function HomeContent() {
                   {loading ? <span className="inline-block h-[46px] w-64 animate-pulse rounded bg-surface-light" /> : profile?.name_en}
                 </h1>
               </div>
-              {profile?.bio && <p data-reveal="" className="text-body-01-jp text-fg-muted">{profile.bio}</p>}
+              {profile?.bio && <p data-reveal="" className="font-body text-[15px] leading-[1.6] tracking-[0.03em] text-fg-muted">{profile.bio}</p>}
             </div>
           </section>
 
@@ -427,7 +427,7 @@ function HomeContent() {
               <ul className="flex flex-wrap gap-2" role="list">
                 {["説明責任を果たす (透明性)", "あらゆる専門性によって最適解を模索する (異能の掛け算)", "ビジネスを作る (UXの証明)"].map((value) => (
                   // Figma は行間 100%（1 行で高さ 28）。スマホ幅で長い値が折り返すと行が重なって見えるため、行間 1.4・上下 6px（1 行で約 29）にしている
-                  <li key={value} className="rounded-r4 bg-main-100/10 px-2 py-[6px] text-[12px] leading-[1.4] tracking-[0.05em] text-primary">
+                  <li key={value} className="rounded-r4 bg-main-100-a10 px-2 py-[6px] text-[12px] leading-[1.4] tracking-[0.05em] text-primary">
                     # {value}
                   </li>
                 ))}
@@ -441,7 +441,7 @@ function HomeContent() {
             <div data-reveal="" className="flex flex-col gap-6">
               {/* リード文（profile.career_lead）。文字は Introduction の段落と同じ。空なら出さない */}
               {!loading && profile?.career_lead?.trim() && (
-                <p className="whitespace-pre-line text-body-01-jp text-fg-muted">{profile.career_lead.trim()}</p>
+                <p className="whitespace-pre-line text-body-01-jp text-fg">{profile.career_lead.trim()}</p>
               )}
               {loading ? (
                 <div className="flex flex-col gap-3">

@@ -70,7 +70,7 @@ export const WorksList: FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
+      <div className="flex flex-wrap gap-[32px] text-[17px] text-system-white-a50">
         制作・企画を読み込み中…
       </div>
     );
@@ -78,7 +78,7 @@ export const WorksList: FC = () => {
 
   if (error) {
     return (
-      <div role="alert" className="rounded-md border border-red-500/40 bg-red-900/20 p-4 text-sm text-red-200">
+      <div role="alert" className="rounded-md border border-danger-300-a60 bg-danger-300-a10 p-4 text-sm text-danger-100">
         {/* 原因の英文(TypeError など)は console に出し、画面には日本語だけを出す */}
         制作・企画を読み込めませんでした。通信状況を確かめて、ページを再読み込みしてください。
       </div>
@@ -87,7 +87,7 @@ export const WorksList: FC = () => {
 
   if (works.length === 0) {
     return (
-      <div className="flex flex-wrap gap-[32px] text-[17px] text-white/50">
+      <div className="flex flex-wrap gap-[32px] text-[17px] text-system-white-a50">
         制作・企画がありません。
       </div>
     );

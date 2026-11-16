@@ -211,6 +211,29 @@ html:has([data-work-detail]) {
   --color-system-black: #000000;
   --color-system-white: #FFFFFF;
 
+  /* Alpha（Figma Library の α 付き変数。名前は Figma の「-αNN」を「-aNN」に置き換えたもの） */
+  --color-system-white-a80: color-mix(in srgb, var(--color-system-white) 80%, transparent); /* System/White-α80 */
+  --color-system-white-a60: color-mix(in srgb, var(--color-system-white) 60%, transparent); /* System/White-α60 */
+  --color-system-white-a50: color-mix(in srgb, var(--color-system-white) 50%, transparent); /* System/White-α50 */
+  --color-system-white-a30: color-mix(in srgb, var(--color-system-white) 30%, transparent); /* System/White-α30 */
+  --color-system-white-a10: color-mix(in srgb, var(--color-system-white) 10%, transparent); /* System/White-α10 */
+  --color-system-white-a02: color-mix(in srgb, var(--color-system-white) 2%, transparent); /* System/White-α02 */
+  --color-system-black-a25: color-mix(in srgb, var(--color-system-black) 25%, transparent); /* System/Black-α25 */
+  --color-system-black-a10: color-mix(in srgb, var(--color-system-black) 10%, transparent); /* System/Black-α10 */
+  --color-main-100-a06: color-mix(in srgb, var(--color-main-100) 6%, transparent); /* Main/100-α06 */
+  --color-main-100-a10: color-mix(in srgb, var(--color-main-100) 10%, transparent); /* Main/100-α10 */
+  --color-main-100-a15: color-mix(in srgb, var(--color-main-100) 15%, transparent); /* Main/100-α15 */
+  --color-main-100-a40: color-mix(in srgb, var(--color-main-100) 40%, transparent); /* Main/100-α40 */
+  --color-main-100-a60: color-mix(in srgb, var(--color-main-100) 60%, transparent); /* Main/100-α60 */
+  --color-system-900-a25: color-mix(in srgb, var(--color-system-900) 25%, transparent); /* System/900 25%（Figma スタイル Background/Dark-α25。Library 値 #212121@25） */
+  --color-system-white-a08: color-mix(in srgb, var(--color-system-white) 8%, transparent); /* System/White-α08 */
+  --color-system-black-a35: color-mix(in srgb, var(--color-system-black) 35%, transparent); /* System/Black-α35 */
+  --color-system-black-a80: color-mix(in srgb, var(--color-system-black) 80%, transparent); /* System/Black-α80 */
+  --color-indigo-900-a90: color-mix(in srgb, var(--color-indigo-900) 90%, transparent); /* Indigo/900-α90 */
+  --color-main-100-a50: color-mix(in srgb, var(--color-main-100) 50%, transparent); /* Main/100-α50 */
+  --color-danger-300-a60: color-mix(in srgb, var(--color-danger-300) 60%, transparent); /* Danger/300-α60 */
+  --color-danger-300-a10: color-mix(in srgb, var(--color-danger-300) 10%, transparent); /* Danger/300-α10 */
+
   /* Semantic（Figma Semantic コレクション）: primitive を意味ベースで参照するエイリアス層。
      エルゴノミック命名。生成ユーティリティ例: bg-primary / bg-secondary / text-fg /
      text-fg-muted / text-fg-caption / text-fg-subtle / text-fg-title / text-fg-headline-01 / text-fg-headline-02 / text-fg-placeholder / text-fg-link / bg-surface / bg-surface-light / border-border /

@@ -277,7 +277,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
         typeof document !== "undefined" &&
         createPortal(
           <>
-            <div className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--color-system-black)_25%,transparent)]" onClick={closeDrawer} aria-hidden />
+            <div className="fixed inset-0 z-50 bg-system-black-a25" onClick={closeDrawer} aria-hidden />
             <div
               ref={drawerRef}
               role="dialog"
@@ -289,7 +289,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
               }`}
             >
               <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6">
-                <span className="text-[14px] font-bold text-fg">目次</span>
+                <span className="text-[14px] font-bold leading-[1.5] text-fg">目次</span>
                 <button
                   type="button"
                   aria-label="目次を閉じる"

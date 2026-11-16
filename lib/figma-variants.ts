@@ -13,9 +13,9 @@ export type ItemSize = "default" | "small";
 
 /** _Item Status に応じたスタイル（CSS） */
 export const ITEM_STATUS_CLASSES: Record<ItemStatus, string> = {
-  defalut: "text-white/50",
-  hover: "hover:bg-action-hover hover:text-white",
-  Active: "text-white",
+  defalut: "text-system-white-a50",
+  hover: "hover:bg-action-hover hover:text-system-white",
+  Active: "text-system-white",
 };
 
 /**

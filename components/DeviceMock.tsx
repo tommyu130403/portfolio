@@ -32,12 +32,12 @@ export const PhoneMock: FC<{ src: string; onClick?: () => void; className?: stri
       {browser && (
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-[2cqw] rounded-b-[9cqw] border-t border-white/10 bg-surface px-[5cqw] pb-[4cqw] pt-[3cqw] backdrop-blur-[2px]"
+          className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-[2cqw] rounded-b-[9cqw] border-t border-system-white-a10 bg-surface px-[5cqw] pb-[4cqw] pt-[3cqw] backdrop-blur-[2px]"
         >
-          <div className="flex h-[11cqw] w-full items-center justify-center rounded-[3cqw] bg-white/10 text-[4.5cqw] leading-none text-white/80">
+          <div className="flex h-[11cqw] w-full items-center justify-center rounded-[3cqw] bg-system-white-a10 text-[4.5cqw] leading-none text-system-white-a80">
             <span className="truncate px-[2cqw]">{url ?? "example.com"}</span>
           </div>
-          <div className="flex w-full items-center justify-between px-[2cqw] text-[6cqw] leading-none text-white/60">
+          <div className="flex w-full items-center justify-between px-[2cqw] text-[6cqw] leading-none text-system-white-a60">
             <span>‹</span>
             <span className="opacity-40">›</span>
             <span>⇧</span>
@@ -77,11 +77,11 @@ export const LaptopMock: FC<{ src: string; browser?: boolean; url?: string; onCl
         {browser && (
           <div className="relative flex h-[3.5cqw] items-center justify-center bg-surface">
             <div className="absolute left-[1cqw] flex items-center gap-[0.6cqw]">
-              <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#ff5f57]" />
-              <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#febc2e]" />
-              <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#28c840]" />
+              <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#ff5f57]" />{/* token-exception: browser chrome traffic lights（承認済みの例外） */}
+              <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#febc2e]" />{/* token-exception: browser chrome traffic lights（承認済みの例外） */}
+              <span className="h-[0.8cqw] w-[0.8cqw] rounded-full bg-[#28c840]" />{/* token-exception: browser chrome traffic lights（承認済みの例外） */}
             </div>
-            <div className="flex h-[2.1cqw] w-[32cqw] items-center justify-center rounded-[0.5cqw] bg-white/10 px-[1cqw] text-[1.6cqw] leading-none text-white/80">
+            <div className="flex h-[2.1cqw] w-[32cqw] items-center justify-center rounded-[0.5cqw] bg-system-white-a10 px-[1cqw] text-[1.6cqw] leading-none text-system-white-a80">
               <span className="truncate">{url}</span>
             </div>
           </div>
@@ -142,7 +142,7 @@ export const ScreenshotLightbox: FC<{ shots: string[]; onClose: () => void; fram
   return createPortal(
     <div
       className="fixed inset-0 z-[60] flex cursor-pointer items-center justify-center gap-6 overflow-auto p-10"
-      style={{ backgroundColor: "color-mix(in srgb, var(--color-system-black) 80%, transparent)", backdropFilter: "blur(8px)" }}
+      style={{ backgroundColor: "var(--color-system-black-a80)", backdropFilter: "blur(8px)" }}
       onClick={onClose}
     >
       {shots.map((src, i) => (

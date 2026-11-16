@@ -138,7 +138,7 @@ const ContactDialog: FC<ContactDialogProps> = ({ onClose }) => {
         <div className="flex flex-col gap-2">
           <h2
             id={`${id}-title`}
-            className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted"
+            className="font-guide text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-fg-muted"
           >
             Contact
           </h2>

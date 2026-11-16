@@ -21,6 +21,8 @@ type TagProps = {
   filled?: boolean;
   /** tool のみ: 末尾に人数バッジ（16x16・bg-surface-light）を付ける。指定時は pl10 pr8・gap6 になる */
   count?: number;
+  /** tool + filled のみ: ラベルを Noto（Body/JP）で描く。関係者タグ用（役割タグは未指定で Avenir）。大きさ・行間は同じ */
+  jp?: boolean;
   /** category のみ: カテゴリ色の色相（0〜359）。未指定は Main/600 地に Main/base */
   hue?: number | null;
 };
@@ -28,7 +30,7 @@ type TagProps = {
 /** content / tool 共通: 内側に枠線を描く疑似要素（枠の色は呼び出し側でリテラルのまま足す。Tailwind が拾えるように） */
 const INNER_RING = "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:border after:content-['']";
 
-const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md", prefix, suffix, filled, count, hue }) => {
+const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md", prefix, suffix, filled, count, hue, jp }) => {
   if (variant === "category") {
     /* Figma Tag-single（Library 581:444・2026-11-08 照合）: 全サイズ共通で Avenir Heavy・字間 5%・行の上下は削らない。
        違うのは文字の大きさだけ: md 13px（高さ 29）/ sm・card 10px（高さ 26） */
@@ -77,12 +79,12 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md",
         {/* filled（作品詳細の役割・関係者）だけ、容器より長いラベルを省略して全文を title で補う
             （375px 未満で人数バッジが切れないように）。それ以外は従来どおり折り返さず全文を出す */}
         {filled ? (
-          <p className="min-w-0 truncate font-en text-[10px] leading-none text-fg-muted" title={label}>{label}</p>
+          <p className={`min-w-0 truncate ${jp ? "font-body" : "font-en"} text-[10px] leading-none text-fg-muted`} title={label}>{label}</p>
         ) : (
           <p className="font-en text-[10px] leading-none text-fg-muted whitespace-nowrap">{label}</p>
         )}
         {hasCount && (
-          <span className="flex size-4 shrink-0 items-center justify-center rounded-[8px] bg-surface-light p-0.5 font-en text-[10px] font-bold leading-none text-fg-muted">
+          <span className="flex size-4 shrink-0 items-center justify-center rounded-[8px] bg-surface-light p-0.5 font-en text-[10px] font-extrabold leading-none text-fg-placeholder">
             {count}
           </span>
         )}
@@ -96,7 +98,7 @@ const Tag: FC<TagProps> = ({ label, className, variant = "default", size = "md",
     <div
       className={
         isSmall
-          ? `bg-system-black/25 flex gap-2 items-center px-3 py-1 rounded-full shrink-0 ${className ?? ""}`
+          ? `bg-system-black-a25 flex gap-2 items-center px-3 py-1 rounded-full shrink-0 ${className ?? ""}`
           : `flex items-center justify-center rounded-full bg-main-700 px-3 py-[3px] ${className ?? ""}`
       }
     >

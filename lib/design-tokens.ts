@@ -207,6 +207,31 @@ export const semantic = {
   actionHover: "rgba(255, 255, 255, 0.05)", //        Figma: Action/hover
 } as const;
 
+/** Alpha — Figma Library の α 付き変数（名前は「-αNN」を「ANN」に置き換え）。値は globals.css の --color-*-aNN と同じ */
+export const alpha = {
+  systemWhiteA80: withAlpha(color.system.white, 0.8), //    Figma: System/White-α80
+  systemWhiteA60: withAlpha(color.system.white, 0.6), //    Figma: System/White-α60
+  systemWhiteA50: withAlpha(color.system.white, 0.5), //    Figma: System/White-α50
+  systemWhiteA30: withAlpha(color.system.white, 0.3), //    Figma: System/White-α30
+  systemWhiteA10: withAlpha(color.system.white, 0.1), //    Figma: System/White-α10
+  systemWhiteA02: withAlpha(color.system.white, 0.02), //   Figma: System/White-α02
+  systemBlackA25: withAlpha(color.system.black, 0.25), //   Figma: System/Black-α25
+  systemBlackA10: withAlpha(color.system.black, 0.1), //    Figma: System/Black-α10
+  main100A06: withAlpha(color.main["100"], 0.06), //      Figma: Main/100-α06
+  main100A10: withAlpha(color.main["100"], 0.1), //      Figma: Main/100-α10
+  main100A15: withAlpha(color.main["100"], 0.15), //      Figma: Main/100-α15
+  main100A40: withAlpha(color.main["100"], 0.4), //      Figma: Main/100-α40
+  main100A60: withAlpha(color.main["100"], 0.6), //      Figma: Main/100-α60
+  system900A25: withAlpha(color.system["900"], 0.25), //     Figma: スタイル Background/Dark-α25（#212121@25）
+  systemWhiteA08: withAlpha(color.system.white, 0.08), //  Figma: System/White-α08
+  systemBlackA35: withAlpha(color.system.black, 0.35), //  Figma: System/Black-α35
+  systemBlackA80: withAlpha(color.system.black, 0.8), //  Figma: System/Black-α80
+  indigo900A90: withAlpha(color.indigo["900"], 0.9), //  Figma: Indigo/900-α90
+  main100A50: withAlpha(color.main["100"], 0.5), //  Figma: Main/100-α50
+  danger300A60: withAlpha(color.danger["300"], 0.6), //     Figma: Danger/300-α60
+  danger300A10: withAlpha(color.danger["300"], 0.1), //     Figma: Danger/300-α10
+} as const;
+
 export type SemanticKey = keyof typeof semantic;
 
 // ─── Shadow（Figma Effect トークン）──────────────────────────────────────────
@@ -368,5 +393,5 @@ export const breakpoint = {
 
 // ─── Aggregate export ─────────────────────────────────────────────────────────
 
-export const tokens = { color, semantic, shadow, radius, size, container, typo, textStyle, breakpoint } as const;
+export const tokens = { color, semantic, alpha, shadow, radius, size, container, typo, textStyle, breakpoint } as const;
 export type Tokens = typeof tokens;

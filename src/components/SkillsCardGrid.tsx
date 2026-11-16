@@ -201,8 +201,8 @@ function SegBar({ level }: { level: number }) {
               height: 6,
               borderRadius: 999,
               flexShrink: 0,
-              background: on ? litColor : "color-mix(in srgb, var(--color-system-black) 25%, transparent)",
-              border: on ? "none" : "1px solid color-mix(in srgb, var(--color-system-white) 8%, transparent)",
+              background: on ? litColor : "var(--color-system-black-a25)",
+              border: on ? "none" : "1px solid var(--color-system-white-a08)",
               boxSizing: "border-box",
             }}
           />
@@ -297,13 +297,13 @@ function SkillRow({
           >
             <div className="flex flex-col gap-1">
               {skill.labelNote && (
-                <span className="font-body text-[10px] leading-[12px] tracking-[0.3px]" style={{ color: "var(--color-fg-muted)" }}>
+                <span className="text-caption-01-jp" style={{ color: "var(--color-fg-muted)" }}>
                   {skill.labelNote}
                 </span>
               )}
               {skill.description && (
                 <p
-                  className="font-body text-[13px] leading-[21px] tracking-[0.39px] whitespace-pre-line"
+                  className="text-body-02-jp whitespace-pre-line"
                   style={{ color: "var(--color-fg-muted)" }}
                 >
                   {skill.description}
@@ -338,7 +338,7 @@ export function SkillCard({ card }: { card: SkillCardConfig }) {
       style={{
         borderRadius: 16,
         // Figma は塗りなしの枠に drop-shadow → 中身の形に落ちる影。box-shadow だと箱の下辺に線が出る
-        filter: "drop-shadow(0 1px 1.5px color-mix(in srgb, var(--color-system-black) 10%, transparent)) drop-shadow(0 1px 1px color-mix(in srgb, var(--color-system-black) 10%, transparent))",
+        filter: "drop-shadow(0 1px 1.5px var(--color-system-black-a10)) drop-shadow(0 1px 1px var(--color-system-black-a10))",
         display: "flex",
         flexDirection: "column",
       }}
@@ -349,9 +349,9 @@ export function SkillCard({ card }: { card: SkillCardConfig }) {
           <Icon set={card.icon.set} name={card.icon.name} tintColor="var(--color-main-100)" className="w-6 h-6 shrink-0" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <span className="[font-family:var(--font-afacad),var(--font-noto-sans-jp),sans-serif] text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-fg">{card.title}</span>
+          <span className="font-guide text-[20px] font-bold leading-[1.5] tracking-[0.05em] text-fg">{card.title}</span>
           <span
-            className="font-body text-[13px] leading-[21px] tracking-[0.39px]"
+            className="text-body-02-jp"
             style={{ color: "var(--color-fg-muted)" }}
           >
             {card.titleJP}

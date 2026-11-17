@@ -17,7 +17,7 @@ type TableKeyValueProps = {
 
 /**
  * 項目-値テーブル（Figma 188:355）。
- * コンテナ幅 480px 以上は横（ラベル列は内容幅・高さ 40px）、480px 未満は縦積み（CellStack）。
+ * コンテナ幅 480px 以上は横（ラベル列は内容幅・最小高さ 40px・上下 8px。複数行の値が枠線に接しないように）、480px 未満は縦積み（CellStack）。
  * ラベル列の幅は行をまたいで揃える（subgrid）。
  */
 export const TableKeyValue: FC<TableKeyValueProps> = ({ rows }) => (
@@ -28,10 +28,10 @@ export const TableKeyValue: FC<TableKeyValueProps> = ({ rows }) => (
           key={i}
           className={`col-span-full grid grid-cols-subgrid gap-y-3 px-4 py-3 @min-[480px]:gap-y-0 @min-[480px]:p-0 ${ROW_DIVIDER}`}
         >
-          <div className={`min-w-0 ${LABEL_TYPO} @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:px-4`}>
+          <div className={`min-w-0 ${LABEL_TYPO} @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:px-4 @min-[480px]:py-2`}>
             {row.label}
           </div>
-          <div className="min-w-0 break-words text-fg text-body-03-jp @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:border-l @min-[480px]:border-border @min-[480px]:px-4">
+          <div className="min-w-0 break-words text-fg text-body-03-jp @min-[480px]:flex @min-[480px]:min-h-10 @min-[480px]:items-center @min-[480px]:border-l @min-[480px]:border-border @min-[480px]:px-4 @min-[480px]:py-2">
             {row.value}
           </div>
         </div>

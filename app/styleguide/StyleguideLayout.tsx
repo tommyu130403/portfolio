@@ -1107,7 +1107,7 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
-        <ComponentPreview title="Table" description="本文 markdown に挿入できる表（Library 188:355）。外枠 1px Border・角丸 8px。項目-値（TableKeyValue）はコンテナ幅 480px 以上で横（ラベル列は内容幅・高さ 40px）、480px 未満で縦積み。グリッド（TableGrid）は 1 行目が見出し（12px Bold）・列幅は文章量に合わせて自動配分（最小 96px）・収まらないときは枠内で横スクロール。480px 未満では行ごとに「見出し / 値」を縦積みにする（スマホで多列表を横スクロールさせない）。markdown では「| 項目 | 値 |」の行、または 2 行目に「| --- | --- |」を置いた表で書く">
+        <ComponentPreview title="Table" description="本文 markdown に挿入できる表（Library 188:355）。外枠 1px Border・角丸 8px。項目-値（TableKeyValue）はコンテナ幅 480px 以上で横（ラベル列は内容幅・最小高さ 40px・上下 8px）、480px 未満で縦積み。グリッド（TableGrid）は 1 行目が見出し（12px Bold）・列幅は文章量に合わせて自動配分（最小 96px）・収まらないときは枠内で横スクロール。480px 未満では行ごとに「見出し / 値」を縦積みにする（スマホで多列表を横スクロールさせない）。markdown では「| 項目 | 値 |」の行、または 2 行目に「| --- | --- |」を置いた表で書く">
           <div className="flex w-full max-w-main flex-col gap-6">
             <TableKeyValue
               rows={[

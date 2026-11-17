@@ -40,6 +40,7 @@ import {
   type HeroLayout,
 } from "@/lib/work-content";
 import { workPeriodLabel } from "@/lib/work-period";
+import { formatWorkNo } from "@/lib/work-number";
 import { compressImage } from "@/lib/compress-image";
 import {
   parseTimeline,
@@ -144,6 +145,7 @@ function emptyWork(id: string): Work {
     career_item_id: null,
     sort_order: 0,
     created_at: null,
+    work_no: 0, // 新規は未採番。画面には出さず、保存時も送らない（DB が採番する）
   };
 }
 
@@ -971,6 +973,9 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
         >
           ← Works
         </Link>
+        {!isNew && formatWorkNo(work.work_no) && (
+          <span className="shrink-0 text-[12px] font-medium tabular-nums text-fg-muted">{formatWorkNo(work.work_no)}</span>
+        )}
         <input
           ref={titleInputRef}
           value={work.title}

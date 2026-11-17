@@ -568,6 +568,7 @@ export type Database = {
           thumbnail_url: string | null
           timeline: Json | null
           title: string
+          work_no: number
         }
         Insert: {
           career_item_id?: string | null
@@ -593,6 +594,7 @@ export type Database = {
           thumbnail_url?: string | null
           timeline?: Json | null
           title: string
+          work_no?: number
         }
         Update: {
           career_item_id?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           thumbnail_url?: string | null
           timeline?: Json | null
           title?: string
+          work_no?: number
         }
         Relationships: [
           {

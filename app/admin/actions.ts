@@ -90,8 +90,11 @@ export async function saveWork(
   stakeholderCounts: { role_id: string; headcount: number; note: string | null; teams: { name: string; headcount: number }[] }[] | null,
 ): Promise<{ error: string | null }> {
   try {
+    // 作品番号 (work_no) は DB の採番にまかせる。クライアントからは送らない
+    const body: Partial<WorkRow> = { ...payload };
+    delete body.work_no;
     const { error } = await supabase.rpc("save_work_with_relations", {
-      p_work: payload as unknown as Json,
+      p_work: body as unknown as Json,
       p_content_labels: contents,
       p_tool_names: tools,
       p_role_ids: roleIds,

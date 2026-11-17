@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import { setWorkPublished, saveWorksOrder } from "@/app/admin/actions";
 import type { Tables } from "@/src/types/supabase";
+import { formatWorkNo } from "@/lib/work-number";
 import PublishToggle from "./PublishToggle";
 import SectionTitle from "./SectionTitle";
 
@@ -240,6 +241,9 @@ export default function WorksSection() {
               <span aria-hidden="true" className="shrink-0 cursor-grab select-none text-[14px] leading-none text-system-700">⋮⋮</span>
             )}
             <Link href={`/admin/works/edit?id=${project.id}`} draggable={false} className="flex min-w-0 flex-1 items-center gap-3">
+              {formatWorkNo(project.work_no) && (
+                <span className="shrink-0 text-[12px] font-medium tabular-nums text-fg-muted">{formatWorkNo(project.work_no)}</span>
+              )}
               <span className="shrink-0 text-[12px] font-medium text-primary">{project.category ?? "—"}</span>
               <span className={`truncate text-[14px] ${project.is_published ? "text-white" : "text-fg-muted"}`}>{project.title}</span>
             </Link>

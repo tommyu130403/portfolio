@@ -124,6 +124,7 @@ const SAMPLE_WORK_DETAIL = {
   career_item_id: null,
   sort_order: 0,
   created_at: null,
+  work_no: 0,
 } as Tables<"works">;
 
 // ヒーロー構成（works.hero_layout）ごとの見本。画像は SAMPLE_WORK_DETAIL.hero_screenshots の横長・縦長と同じものを使い回す

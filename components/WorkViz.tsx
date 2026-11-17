@@ -346,6 +346,8 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
   <div className="flex flex-col gap-2.5">
     {data.layers.map((layer, li) => {
       const icon = layerIcon(layer.icon);
+      // ミントは担当だけに使う。担当カード（組織カードの担当行を含む）が無い層のアイコンは層名と同じグレー
+      const hasMe = layer.cards.some((c) => (c.kind === "role" ? c.me : c.rows.some((r) => r.me)));
       return (
       <div key={li} className="flex flex-col gap-2 md:grid md:grid-cols-[104px_minmax(0,1fr)] md:gap-3">
         {/* 層のラベル。md 以上はアイコン 20px → 4px → 層名（Afacad Bold 14px）を中央揃えで縦に積む（スマホは横並び）。層のメモ（note）は表示しない */}
@@ -354,7 +356,7 @@ export const WorkStakeholderDiagram: FC<{ data: StakeholdersData }> = ({ data })
             <Icon
               set={icon.set}
               name={icon.name}
-              tintColor="var(--color-main-100)"
+              tintColor={hasMe ? "var(--color-main-100)" : "var(--color-system-500)"}
               alt=""
               aria-hidden
               className="h-5 w-5 shrink-0"

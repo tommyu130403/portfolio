@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import ContactDialog, { clearContactDraft } from "./ContactDialog";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/src/lib/supabase";
@@ -14,6 +14,33 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (supabaseSession === "signedOut") return <LoginForm />;
   if (accessRole === "owner" || accessRole === "reader") return <>{children}</>;
   return <AccessDenied error={accessRole === "error"} expired={accessRole === "expired"} />;
+}
+
+/** サイトの閲覧用コピー(Figma のプロトタイプ)。共有リンクのパスワードはゲスト ID と一緒に送る。
+ *  中身の更新手順は docs/figma-viewer.md */
+const FIGMA_VIEWER_URL =
+  "https://www.figma.com/proto/rWpSqTlCHg7dxHPMFEthod/portfolio-viewer?node-id=16-2&starting-point-node-id=16%3A2&scaling=scale-down-width";
+
+/** ログインできないときの代わりの閲覧先。ログイン画面と権限のない画面の下に置く */
+function FigmaViewerLink() {
+  const noteId = useId();
+  return (
+    <div className="flex flex-col gap-1">
+      <a
+        href={FIGMA_VIEWER_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-describedby={noteId}
+        className="text-[13px] text-primary underline-offset-4 hover:underline"
+      >
+        Figma 版(閲覧用)を開く
+        <span className="sr-only">(新しいタブで開きます)</span>
+      </a>
+      <p id={noteId} className="text-[12px] text-fg-muted">
+        ログインできないときにお使いください。Figma 用のパスワードは、ゲスト ID と一緒にお送りしています。PC での閲覧をおすすめします。
+      </p>
+    </div>
+  );
 }
 
 /** ログインできないときの連絡口。ログイン画面と権限のない画面の下に置く */
@@ -51,7 +78,10 @@ function AccessDenied({ error, expired }: { error: boolean; expired: boolean }) 
         className="text-primary hover:underline"
       >別のアカウントでログイン</button>
       {logoutError && <p className="text-danger-300" role="alert">{logoutError}</p>}
-      <ContactLink />
+      <div className="mt-4 flex w-full max-w-[400px] flex-col items-center gap-4 px-8 text-center">
+        <FigmaViewerLink />
+        <ContactLink />
+      </div>
     </div>
   );
 }
@@ -119,7 +149,8 @@ function LoginForm() {
             {checking ? "確認中…" : "ログイン"}
           </button>
         </form>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-col items-start gap-4">
+          <FigmaViewerLink />
           <ContactLink />
         </div>
       </div>

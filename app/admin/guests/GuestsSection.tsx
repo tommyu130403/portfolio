@@ -28,6 +28,7 @@ const client = supabase as unknown as {
   rpc: {
     (name: "owner_list_guests"): RpcResult<GuestRow[]>;
     (name: "owner_stop_guest", args: { p_user_id: string }): RpcResult<null>;
+    (name: "owner_delete_guest", args: { p_user_id: string }): RpcResult<null>;
     (name: "owner_set_guest_note", args: { p_user_id: string; p_note: string }): RpcResult<null>;
   };
   functions: {
@@ -103,6 +104,7 @@ export default function GuestsSection() {
   const [actionError, setActionError] = useState("");
   const [copied, setCopied] = useState(false);
   const [confirmStopId, setConfirmStopId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetResult, setResetResult] = useState<{ updated: number; failed: number } | null>(null);
 
@@ -205,6 +207,7 @@ export default function GuestsSection() {
 
   const handleStop = async (userId: string) => {
     if (confirmStopId !== userId) {
+      setConfirmDeleteId(null);
       setConfirmStopId(userId);
       return;
     }
@@ -220,6 +223,38 @@ export default function GuestsSection() {
       await load();
     } catch {
       setActionError("止められませんでした");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (confirmDeleteId !== userId) {
+      setConfirmStopId(null);
+      setConfirmReset(false);
+      setConfirmDeleteId(userId);
+      return;
+    }
+    setBusy(true);
+    setActionError("");
+    try {
+      const { error } = await client.rpc("owner_delete_guest", { p_user_id: userId });
+      if (error) {
+        const reason =
+          error.message === "not_deletable"
+            ? "期限切れのゲストIDではないため削除できません"
+            : error.message === "cannot_delete_owner"
+              ? "オーナーのアカウントは削除できません"
+              : error.message;
+        setActionError(`削除できませんでした（${reason}）`);
+        setConfirmDeleteId(null);
+        return;
+      }
+      setConfirmDeleteId(null);
+      if (editingId === userId) cancelEdit();
+      await load();
+    } catch {
+      setActionError("削除できませんでした");
     } finally {
       setBusy(false);
     }
@@ -318,6 +353,7 @@ export default function GuestsSection() {
 
       <div className="mt-10">
         <p className="text-[14px] text-white">発行済みのID</p>
+        <p className="mt-1 text-[12px] text-fg-muted">期限切れのIDは削除できます。削除するとメモも含めて元に戻せません。</p>
         {listError && <p className="mt-2 text-[13px] text-danger-300" role="alert">{listError}</p>}
         <div className="mt-3 overflow-x-auto rounded-[8px] border border-border-light">
           <table className="w-full text-left text-[13px] text-white">
@@ -386,8 +422,8 @@ export default function GuestsSection() {
                   <td className="px-3 py-2">{formatDate(row.created_at)}</td>
                   <td className="px-3 py-2">{row.expires_at ? formatDate(row.expires_at) : "無期限"}</td>
                   <td className="px-3 py-2">{row.last_sign_in_at ? formatDate(row.last_sign_in_at) : "未ログイン"}</td>
-                  <td className="px-3 py-2">{statusOf(row)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="whitespace-nowrap px-3 py-2">{statusOf(row)}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-right">
                     {!isExpired(row) && (
                       <button
                         type="button"
@@ -397,6 +433,23 @@ export default function GuestsSection() {
                       >
                         {confirmStopId === row.user_id ? "本当に止める" : "今すぐ止める"}
                       </button>
+                    )}
+                    {isExpired(row) && !row.login_id.includes("@") && (
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(row.user_id)}
+                          disabled={busy}
+                          className={confirmDeleteId === row.user_id ? dangerButton : smallButton}
+                        >
+                          {confirmDeleteId === row.user_id ? "本当に削除" : "削除"}
+                        </button>
+                        {confirmDeleteId === row.user_id && (
+                          <button type="button" onClick={() => setConfirmDeleteId(null)} disabled={busy} className={smallButton}>
+                            やめる
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>

@@ -11,15 +11,14 @@ type InfoCardProps = {
 
 /**
  * 作品本文の `::: card` で挿入する汎用カード（見出しは任意・本文は Markdown）。
- * Figma Library WorkFigure Kind=figure（578:498）に合わせる:
- * 角丸 14・余白 上28 左右32 下24・gap 20・見出し Body/02/JP/Bold（13px）。
- * 地と枠は Figma InfoCard（574:503）: default / in-figure = 地なし + 枠 Indigo/750(2026-11-17 Figma 更新で地を廃止)、
+ * Figma Library InfoCard（574:503）に合わせる: 角丸 14・余白 四辺 16・gap 8・見出し Body/02/JP/Bold（13px）。
+ * (2026-11-17 オーナー判断で、図版カード 578:498 にそろえていた余白 上28 左右32 下24・gap 20 から Figma の値へ戻した)
+ * 地と枠: default / in-figure = 地なし + 枠 Indigo/750(2026-11-17 Figma 更新で地を廃止)、
  * accent = bg-main-100-a10（Main/100-α10）+ 枠 Border/Main（2026-11-13 照合）。
- * 本文の容器が 560px 未満では左右 16px（図版の中の横棒グラフ・カード本文の幅を確保。8 の倍数に寄せる）。
  */
 const InfoCard: FC<InfoCardProps> = ({ title, tone = "default", children }) => (
   <div
-    className={`flex flex-col gap-5 rounded-[14px] border px-4 pb-6 pt-7 @min-[560px]:px-8 ${
+    className={`flex flex-col gap-2 rounded-[14px] border p-4 ${
       tone === "accent" ? "border-border-main bg-main-100-a10" : "border-border"
     }`}
   >

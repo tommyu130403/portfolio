@@ -1349,7 +1349,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkStakeholderDiagram"
-          description="層ごとにロールカード／組織カードを並べる。メタ表の全画面ボタン → WorkVizModal 内に works.stakeholders を描画"
+          description="層ごとにロールカード／組織カードを並べる。メタ表の全画面ボタン → WorkVizModal 内に works.stakeholders を描画。ミントは担当だけ（担当カードの無い層はアイコンもグレー）"
         >
           <div className="w-full">
             <WorkStakeholderDiagram

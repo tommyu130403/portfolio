@@ -8,6 +8,8 @@ const smallButton =
   "shrink-0 rounded-[6px] border border-border-light px-3 py-1 text-[11px] text-fg-muted transition-colors hover:border-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-40";
 const dangerButton =
   "shrink-0 rounded-[6px] px-2 py-1 text-[11px] text-system-700 hover:bg-danger-300/10 hover:text-danger-300 disabled:cursor-not-allowed disabled:opacity-40";
+const noteInput =
+  "min-w-0 rounded-[6px] border border-border-light bg-surface px-2 py-1 text-[12px] text-white outline-none focus:border-primary placeholder:text-system-750 disabled:cursor-not-allowed disabled:opacity-40";
 
 type GuestRow = {
   user_id: string;
@@ -15,6 +17,7 @@ type GuestRow = {
   created_at: string;
   expires_at: string | null;
   last_sign_in_at: string | null;
+  note: string | null;
 };
 
 type RpcResult<T> = Promise<{ data: T | null; error: { message: string } | null }>;
@@ -25,6 +28,7 @@ const client = supabase as unknown as {
   rpc: {
     (name: "owner_list_guests"): RpcResult<GuestRow[]>;
     (name: "owner_stop_guest", args: { p_user_id: string }): RpcResult<null>;
+    (name: "owner_set_guest_note", args: { p_user_id: string; p_note: string }): RpcResult<null>;
   };
   functions: {
     invoke: (
@@ -92,24 +96,29 @@ export default function GuestsSection() {
   const [rows, setRows] = useState<GuestRow[]>([]);
   const [listError, setListError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [issued, setIssued] = useState<{ loginId: string; expiresAt: string } | null>(null);
+  const [issued, setIssued] = useState<{ loginId: string; expiresAt: string; note: string } | null>(null);
+  const [issueNote, setIssueNote] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingNote, setEditingNote] = useState("");
   const [actionError, setActionError] = useState("");
   const [copied, setCopied] = useState(false);
   const [confirmStopId, setConfirmStopId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetResult, setResetResult] = useState<{ updated: number; failed: number } | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<GuestRow[] | null> => {
     try {
       const { data, error } = await client.rpc("owner_list_guests");
       if (error) {
         setListError(error.message);
-        return;
+        return null;
       }
       setListError("");
       setRows(data ?? []);
+      return data ?? [];
     } catch {
       setListError("一覧を取得できませんでした");
+      return null;
     }
   }, []);
 
@@ -133,8 +142,36 @@ export default function GuestsSection() {
         setActionError("発行結果を読み取れませんでした");
         return;
       }
-      setIssued({ loginId: res.loginId, expiresAt: res.expiresAt });
-      await load();
+      const note = issueNote.trim();
+      setIssued({ loginId: res.loginId, expiresAt: res.expiresAt, note: "" });
+      const list = await load();
+      if (note) {
+        const target = list?.find((r) => r.login_id === res.loginId);
+        let failure = "";
+        if (!target) {
+          failure = "発行したIDを一覧から見つけられませんでした";
+        } else {
+          try {
+            const { error: noteError } = await client.rpc("owner_set_guest_note", {
+              p_user_id: target.user_id,
+              p_note: note,
+            });
+            if (noteError) failure = noteError.message;
+          } catch {
+            failure = "通信に失敗しました";
+          }
+        }
+        if (failure) {
+          setIssueNote("");
+          setActionError(`IDは発行しましたが、メモを保存できませんでした（${failure}）。一覧から書き直してください`);
+        } else {
+          setIssued({ loginId: res.loginId, expiresAt: res.expiresAt, note });
+          setIssueNote("");
+          await load();
+        }
+      } else {
+        setIssueNote("");
+      }
     } catch {
       setActionError("発行できませんでした");
     } finally {
@@ -188,6 +225,34 @@ export default function GuestsSection() {
     }
   };
 
+  const startEdit = (row: GuestRow) => {
+    setEditingId(row.user_id);
+    setEditingNote(row.note ?? "");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingNote("");
+  };
+
+  const handleSaveNote = async (userId: string) => {
+    setBusy(true);
+    setActionError("");
+    try {
+      const { error } = await client.rpc("owner_set_guest_note", { p_user_id: userId, p_note: editingNote.trim() });
+      if (error) {
+        setActionError(`メモを保存できませんでした（${error.message}）`);
+        return;
+      }
+      cancelEdit();
+      await load();
+    } catch {
+      setActionError("メモを保存できませんでした");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleReset = async () => {
     if (!confirmReset) {
       setConfirmReset(true);
@@ -216,10 +281,20 @@ export default function GuestsSection() {
     <section>
       <SectionTitle label="Guests" title="ゲストID" />
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={() => void handleIssue()} disabled={busy} className={smallButton}>
           ゲストIDを発行
         </button>
+        <input
+          type="text"
+          value={issueNote}
+          onChange={(e) => setIssueNote(e.target.value)}
+          maxLength={200}
+          disabled={busy}
+          placeholder="渡す相手のメモ(例: ○○社 △△さん)"
+          aria-label="メモ"
+          className={`${noteInput} w-full max-w-[280px]`}
+        />
         <p className="text-[12px] text-fg-muted">発行から30日間ログインできます</p>
       </div>
 
@@ -233,6 +308,7 @@ export default function GuestsSection() {
             </button>
           </div>
           <p className="mt-2 text-[12px] text-fg-muted">期限: {formatDate(issued.expiresAt)}</p>
+          {issued.note && <p className="mt-1 break-words text-[12px] text-fg-muted">メモ: {issued.note}</p>}
         </div>
       )}
 
@@ -248,6 +324,7 @@ export default function GuestsSection() {
             <thead>
               <tr className="border-b border-border-light text-[11px] text-fg-muted">
                 <th className="px-3 py-2 font-normal">ID</th>
+                <th className="px-3 py-2 font-normal">メモ</th>
                 <th className="px-3 py-2 font-normal">発行日</th>
                 <th className="px-3 py-2 font-normal">期限</th>
                 <th className="px-3 py-2 font-normal">最終ログイン</th>
@@ -258,12 +335,54 @@ export default function GuestsSection() {
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-[12px] text-fg-muted">発行済みのIDはありません</td>
+                  <td colSpan={7} className="px-3 py-4 text-[12px] text-fg-muted">発行済みのIDはありません</td>
                 </tr>
               )}
               {rows.map((row) => (
                 <tr key={row.user_id} className="border-b border-border-light last:border-b-0">
                   <td className="px-3 py-2 font-mono">{row.login_id}</td>
+                  <td className="min-w-[160px] max-w-[240px] break-words px-3 py-2">
+                    {editingId === row.user_id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingNote}
+                          onChange={(e) => setEditingNote(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                              e.preventDefault();
+                              void handleSaveNote(row.user_id);
+                            } else if (e.key === "Escape") {
+                              cancelEdit();
+                            }
+                          }}
+                          maxLength={200}
+                          disabled={busy}
+                          aria-label="メモ"
+                          autoFocus
+                          className={`${noteInput} w-[160px]`}
+                        />
+                        <button type="button" onClick={() => void handleSaveNote(row.user_id)} disabled={busy} className={smallButton}>
+                          保存
+                        </button>
+                        <button type="button" onClick={cancelEdit} disabled={busy} className={smallButton}>
+                          やめる
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-fg-muted">{row.note || "—"}</span>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(row)}
+                          disabled={busy}
+                          className={smallButton}
+                        >
+                          編集
+                        </button>
+                      </div>
+                    )}
+                  </td>
                   <td className="px-3 py-2">{formatDate(row.created_at)}</td>
                   <td className="px-3 py-2">{row.expires_at ? formatDate(row.expires_at) : "無期限"}</td>
                   <td className="px-3 py-2">{row.last_sign_in_at ? formatDate(row.last_sign_in_at) : "未ログイン"}</td>

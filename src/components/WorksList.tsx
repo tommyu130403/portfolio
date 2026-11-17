@@ -26,7 +26,10 @@ export const WorksList: FC = () => {
       setError(null);
 
       const [{ data, error: fetchError }, { data: workContentsRows }] = await Promise.all([
-        supabase.from("works").select("*").eq("is_published", true).order("sort_order", { ascending: true }),
+        supabase.from("works").select("*").eq("is_published", true)
+          // 公開側は着手日の新しい順。日付なしは末尾、同じ日付は admin の並び（sort_order）で決める
+          .order("start_date", { ascending: false, nullsFirst: false })
+          .order("sort_order", { ascending: true }),
         supabase
           .from("work_contents")
           .select("work_id, sort_order, contents_vocab(label)")

@@ -24,8 +24,8 @@ export function loadPublishedWorksOrder(): Promise<PublishedWorkItem[] | null> {
       .from("works")
       .select("id, title, category, thumbnail_url, thumbnail, hero_brand")
       .eq("is_published", true)
-      // 作品一覧（WorksList）と同じ並び: 着手日の新しい順 → admin の並び
-      .order("start_date", { ascending: false, nullsFirst: false })
+      // 作品一覧（WorksList）と同じ並び: 着手日の古い順 → admin の並び
+      .order("start_date", { ascending: true, nullsFirst: false })
       .order("sort_order", { ascending: true }),
   ).then(({ data, error }) => {
     if (error) {

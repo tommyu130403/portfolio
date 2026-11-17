@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC, type ReactNode, useMemo, useState } from "react";
+import { type FC, type ReactNode, useCallback, useId, useLayoutEffect, useRef, useState, useMemo } from "react";
 import Icon from "./Icon";
 import Tag from "./Tag";
 import Tooltip from "./Tooltip";
@@ -285,6 +285,97 @@ const VizButton: FC<{ label: string; onClick: () => void }> = ({ label, onClick 
   </button>
 );
 
+/** 2 行目の上端までは不透明のまま、そこから下端へ向けて透明にする（色は使わず透明度だけ） */
+const peekMask = (row2Top: number) => `linear-gradient(to bottom, var(--color-fg-muted) ${row2Top}px, transparent 100%)`;
+
+/**
+ * チップが 2 行以上に折り返すときだけ「1 行目すべて + 2 行目の半分」に畳み、2 行目を下へフェードさせる（続きが隠れていると分かるように。オーナー指示 2026-11-17）。
+ * 開閉は右上の小さなシェブロンボタン（SkillRow と同じ上下アイコンの入れ替え）で、高さは max-height でアニメーションする。actions（体制図ボタン）と開閉ボタンは畳む領域の外の右上に置き、閉じていても押せる
+ */
+const CollapsibleChips: FC<{ children: ReactNode; actions?: ReactNode; editAction?: ReactNode }> = ({ children, actions, editAction }) => {
+  const id = useId();
+  const listRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [layout, setLayout] = useState<{ overflowing: boolean; row2Top: number; clipHeight: number; fullHeight: number }>({
+    overflowing: false,
+    row2Top: 0,
+    clipHeight: 0,
+    fullHeight: 0,
+  });
+
+  const measure = useCallback(() => {
+    const list = listRef.current;
+    const kids = list ? (Array.from(list.children) as HTMLElement[]) : [];
+    const tops = Array.from(new Set(kids.map((c) => c.offsetTop))).sort((x, y) => x - y);
+    const overflowing = tops.length >= 2;
+    if (!overflowing) setExpanded(false);
+    // 畳んだ高さ = 1 行目の全体 + 2 行目の先頭チップの半分（リスト基準）
+    const second = kids.find((c) => c.offsetTop === tops[1]);
+    const row2Top = second ? second.offsetTop - kids[0].offsetTop : 0;
+    const clipHeight = second ? row2Top + Math.round(second.offsetHeight / 2) : 0;
+    const fullHeight = list ? list.scrollHeight : 0;
+    setLayout((prev) =>
+      prev.overflowing === overflowing && prev.row2Top === row2Top && prev.clipHeight === clipHeight && prev.fullHeight === fullHeight
+        ? prev
+        : { overflowing, row2Top, clipHeight, fullHeight },
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    // 描画の前に 1 回測って、最初のペイントから畳んだ状態にする（RO の通知だけだと描画後に反映され、全部開いた状態が一瞬出る。検証で CLS 0.18 を実測）
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- DOM の実測値で初回レイアウトを決めるため、描画前の同期計測が必要
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  const { overflowing, row2Top, clipHeight, fullHeight } = layout;
+  const clamped = overflowing && !expanded;
+
+  return (
+    <div className="flex min-w-0 flex-1 items-start gap-2 self-stretch">
+      <div className="min-w-0 flex-1">
+        <div
+          className={`overflow-hidden${overflowing ? " transition-[max-height] duration-300 ease-out" : ""}`}
+          style={
+            overflowing && clipHeight
+              ? {
+                  maxHeight: expanded ? fullHeight : clipHeight,
+                  ...(clamped ? { maskImage: peekMask(row2Top), WebkitMaskImage: peekMask(row2Top) } : null),
+                }
+              : undefined
+          }
+        >
+          <div ref={listRef} id={id} className="flex flex-wrap gap-2">
+            {children}
+          </div>
+        </div>
+      </div>
+      {/* 高さはチップ 1 行分（28px）にそろえ、1 行のときに行が高くならないようにする */}
+      <div className="flex h-7 shrink-0 items-center gap-2">
+        {actions}
+        {overflowing && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-controls={id}
+            aria-label={expanded ? "関係者を折りたたむ" : "関係者をすべて表示"}
+            // スキル欄のアコーディオン（SkillsCardGrid の SkillRow）の矢印と同じ見た目: 枠・地色なしの 24px。押せる範囲は疑似要素で 44px
+            className="relative grid size-6 shrink-0 place-items-center rounded-lg p-1.5 before:absolute before:left-1/2 before:top-1/2 before:size-11 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
+          >
+            <Icon set="Arrows" name={expanded ? "up" : "down"} tintColor="var(--color-fg-muted)" className="size-3" aria-hidden />
+          </button>
+        )}
+        {editAction}
+      </div>
+    </div>
+  );
+};
+
 /** admin プレビューで「編集」ボタンを出せる領域（クリックで左カラムの該当入力欄へ移動する） */
 export type WorkDetailEditRegion = "screenshots" | "title" | "tags" | "period" | "roles" | "stakeholders";
 
@@ -406,16 +497,25 @@ const WorkDetailHeader: FC<WorkDetailHeaderProps> = ({ work, contents, tools, sc
 
             {/* 関係者 */}
             <MetaLabel>関係者</MetaLabel>
-            <MetaValue className="flex-wrap gap-2 py-[6px]">
+            <MetaValue className="gap-2 py-[6px]">
               {stakeholderTags ? (
-                stakeholderTags.map((s, i) => <Tag key={`${i}-${s.name}`} variant="tool" filled jp label={s.name} count={s.count} />)
+                <CollapsibleChips
+                  actions={stakeholders && <VizButton label="関係者の体制を表示" onClick={() => setVizModal("stakeholders")} />}
+                  editAction={onEdit && <EditButton label="関係者" onClick={() => onEdit("stakeholders")} className="shrink-0" />}
+                >
+                  {stakeholderTags.map((s, i) => (
+                    <Tag key={`${i}-${s.name}`} variant="tool" filled jp label={s.name} count={s.count} />
+                  ))}
+                </CollapsibleChips>
               ) : (
-                <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
-                  {work.stakeholder_breakdown || "—"}
-                </span>
+                <>
+                  <span className="min-w-0 truncate text-body-03-jp text-fg-muted" title={work.stakeholder_breakdown ?? undefined}>
+                    {work.stakeholder_breakdown || "—"}
+                  </span>
+                  {stakeholders && <VizButton label="関係者の体制を表示" onClick={() => setVizModal("stakeholders")} />}
+                  {onEdit && <EditButton label="関係者" onClick={() => onEdit("stakeholders")} className="ml-auto shrink-0" />}
+                </>
               )}
-              {stakeholders && <VizButton label="関係者の体制を表示" onClick={() => setVizModal("stakeholders")} />}
-              {onEdit && <EditButton label="関係者" onClick={() => onEdit("stakeholders")} className="ml-auto shrink-0" />}
             </MetaValue>
 
             {/* ツール（icon_url か手元のロゴがあればアイコン、無ければ文字 Tag）。最終行は下線なし */}

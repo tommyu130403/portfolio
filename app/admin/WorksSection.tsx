@@ -168,7 +168,7 @@ export default function WorksSection() {
     <section id="works" className="scroll-mt-8">
       <SectionTitle label="Works" title="制作・企画" />
       <p className="mb-6 text-[13px] text-fg-muted">
-        各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。右のスイッチで公開 / 非公開を切り替えられます（すぐに反映されます）。「すべて」「表示順」のときはドラッグまたは ↑↓ で並び順を変更できます（公開サイトは着手日の新しい順。この順は着手月が同じ作品の並びにだけ使われます）。
+        各プロジェクトは専用の編集ページ（本文エディタ + 設定）で管理します。右のスイッチで公開 / 非公開を切り替えられます（すぐに反映されます）。「すべて」「表示順」のときはドラッグまたは ↑↓ で並び順を変更できます（公開サイトは着手日の古い順。この順は着手月が同じ作品の並びにだけ使われます）。
       </p>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div role="group" aria-label="公開状態で絞り込み" className="inline-flex rounded-[8px] border border-border-light bg-[#161616] p-0.5">

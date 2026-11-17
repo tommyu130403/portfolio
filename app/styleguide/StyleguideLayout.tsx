@@ -1260,7 +1260,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="InfoCard"
-          description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma InfoCard (574:503) に準拠 — 角丸14・余白 上28 左右32(本文の容器が 560px 未満は 16)下24・地 Background/Dark-α25(System/900 25%)+ 枠 Indigo/750・見出し Body/01 Bold(Text/Headline-01 #9696A0)・本文 Body-01。accent は Border/Main + main-100 10% の地。inFigure(図版の中)も地・枠・見出しの色は同じ"
+          description="作品本文の `::: card` で挿入する汎用カード。見出しは任意、本文は Markdown。Figma InfoCard (574:503) に準拠 — 角丸14・余白 四辺16・gap 8・地なし + 枠 Indigo/750・見出し Body/01 Bold(Text/Headline-01 #9696A0)・本文 Body-01。accent は Border/Main + main-100 10% の地。inFigure(図版の中)も地・枠・見出しの色は同じ"
         >
           <div className="flex w-[360px] max-w-full flex-col gap-4">
             <InfoCard title="見出しあり">

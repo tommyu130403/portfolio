@@ -73,7 +73,7 @@ export const WorksList: FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-wrap gap-[32px] text-[17px] text-system-white-a50">
+      <div className="flex flex-wrap gap-[32px] text-[15px] leading-[1.6] text-fg-muted">
         制作・企画を読み込み中…
       </div>
     );
@@ -90,7 +90,7 @@ export const WorksList: FC = () => {
 
   if (works.length === 0) {
     return (
-      <div className="flex flex-wrap gap-[32px] text-[17px] text-system-white-a50">
+      <div className="flex flex-wrap gap-[32px] text-[15px] leading-[1.6] text-fg-muted">
         制作・企画がありません。
       </div>
     );

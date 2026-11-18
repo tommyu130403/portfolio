@@ -423,11 +423,13 @@ function HomeContent() {
                   <p>自己紹介はまだ登録されていません。</p>
                 )}
               </div>
-              {/* 価値観（Figma Master 1241:7589・Tag-single の上書き）: 「# 」付き・Noto 12px・字間 5%・Main/base 文字・Main α10 地・余白 8・角丸 4・gap 8 で折り返し */}
+              {/* 価値観（Figma Master 1241:7589・Tag-single の上書き）: 「# 」付き・Noto 12px・字間 5%・余白 8・角丸 4・gap 8 で折り返し。
+                  地は塗らずミントの細枠（Border/Main）＋ main-050 文字（作品詳細 v2 の「ミントは面で塗らない」に合わせた。オーナー判断 2026-11-19）。
+                  枠は ring（内側）にして、塗りのときと同じ大きさを保つ */}
               <ul className="flex flex-wrap gap-2" role="list">
                 {["説明責任を果たす (透明性)", "あらゆる専門性によって最適解を模索する (異能の掛け算)", "ビジネスを作る (UXの証明)"].map((value) => (
                   // Figma は行間 100%（1 行で高さ 28）。スマホ幅で長い値が折り返すと行が重なって見えるため、行間 1.4・上下 6px（1 行で約 29）にしている
-                  <li key={value} className="rounded-r4 bg-main-100-a10 px-2 py-[6px] text-[12px] leading-[1.4] tracking-[0.05em] text-primary">
+                  <li key={value} className="rounded-r4 px-2 py-[6px] text-[12px] leading-[1.4] tracking-[0.05em] text-main-050 ring-1 ring-inset ring-border-main">
                     # {value}
                   </li>
                 ))}

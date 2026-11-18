@@ -6,7 +6,8 @@ export const WORK_FIGURE_TONE = Object.freeze({
   accent: "border border-border-main text-main-050",
   stepMark: "border-t-2 border-primary",
   dotSelf: "bg-primary",
-  dotOther: "bg-fg-caption",
+  // ほかのメンバーの印は中抜きの丸（自分=塗り と色だけでなく形でも見分ける）。線は fg-muted で背景 surface-light に対し 5.9:1
+  dotOther: "ring-[1.5px] ring-inset ring-fg-muted",
   barPlan: "bg-border-light",
   barActual: "bg-primary",
   blocked: "border border-dashed border-danger-200 text-danger-100",

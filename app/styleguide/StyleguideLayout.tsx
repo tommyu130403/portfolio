@@ -1738,9 +1738,11 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkPagerCard"
-          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。composedThumbnail（構成サムネイル）ありは 128px 枠に 16:9 で縦中央・上下は thumbnail（indigo-950）。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）"
+          description="作品詳細の末尾にある前後ナビのカード。Prev は左寄せ、Next は右寄せ。カテゴリが無ければ行ごと省略、作品名は 2 行で省略。thumbnail ありは md 以上だけ画像（幅 128px）をカードの端まで広げて左（Next は右）に置く。md 未満は画像なしと同じ見た目。composedThumbnail（構成サムネイル）ありは 128px 枠に 16:9 で縦中央・上下は thumbnail（indigo-950）。実ページと同じく md 以上で 2 列。direction を省くと方向の行（矢印＋Prev / Next）を出さない形になり、作品本文の `::: workcard id=<作品 id>` の作品カードに使う（Figma Master 973:2191・幅 394px 上限・公開中の作品のみ表示）。作品詳細 v2 では本文の関連作品カード（::: related）と同じ「塗り（surface-light）＋枠」、ホバーの地は indigo-800。v1 は枠だけ（見本の「v1」の行）"
         >
           <div className="flex w-full max-w-main flex-col gap-6">
+            {/* v1 の見本以外は v2 の見た目に固定する（既定レイアウトを v1 に戻しても v2 の塗りを見られるように） */}
+            <WorkLayoutProvider layout="v2">
             <WorkPagerCard direction="prev" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
             <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -1755,10 +1757,20 @@ function ComponentsSection() {
               <WorkPagerCard direction="prev" category="プラットフォーム開発" title={SAMPLE_THUMB_TITLE} composedThumbnail={SAMPLE_THUMBNAILS[0]} serviceName={SAMPLE_THUMB_SERVICE} href="#" />
               <WorkPagerCard direction="next" category="プラットフォーム開発" title={SAMPLE_THUMB_TITLE} composedThumbnail={SAMPLE_THUMBNAILS[0]} serviceName={SAMPLE_THUMB_SERVICE} href="#" />
             </div>
+            </WorkLayoutProvider>
+            <p className="text-[12px] text-fg-muted">v1（?layout=v1）の見た目: 枠だけ</p>
+            <WorkLayoutProvider layout="v1">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <WorkPagerCard direction="prev" category="UI デザイン" title="社内向け管理ツールの刷新" href="#" />
+                <WorkPagerCard direction="next" category="プラットフォーム開発" title="キャリアチケットスカウトサービス" href="#" />
+              </div>
+            </WorkLayoutProvider>
+            <WorkLayoutProvider layout="v2">
             <div className="w-full max-w-[394px]">
               <WorkPagerCard category="UI デザイン" title="社内向け管理ツールの刷新（direction なし・作品本文の作品カード）" thumbnail="/images/fixture-placeholder.svg" href="#" />
             </div>
             <WorkPagerCard direction="next" title="とても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプルとても長い作品名のサンプル" href="#" />
+            </WorkLayoutProvider>
           </div>
         </ComponentPreview>
 

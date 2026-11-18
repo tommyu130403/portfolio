@@ -7,7 +7,7 @@ import { supabase } from "@/src/lib/supabase";
 import { sharedPublishedWorksOrder } from "@/src/lib/published-works-order";
 import { WORK_FIGURE_TONE } from "@/lib/work-figure-tone";
 import type { MergeData, RelatedData, StairsRow, TeamGroup, TriageData } from "@/lib/work-figure-parse";
-import { civilFromDays, formatMD, formatSpan, placeScheduleLabels, scheduleAxisLabels, scheduleSpansYears, schedulePct, summarizeSchedule, type ScheduleData, type ScheduleLabelInput } from "@/lib/work-schedule";
+import { civilFromDays, formatRoughDay, formatSpan, labelHasDate, placeScheduleLabels, scheduleAxisLabels, scheduleSpansYears, schedulePct, summarizeSchedule, type ScheduleData, type ScheduleLabelInput } from "@/lib/work-schedule";
 import { FigureFrame } from "./WorkFigure";
 import { renderInline } from "./WorkInline";
 import { useWorkLayout } from "./WorkLayoutContext";
@@ -265,8 +265,8 @@ export const ScheduleFigure: FC<{ data: ScheduleData; title: string; lead: strin
               cls: "border-border text-fg-muted",
               node: (y) => (
                 <>
-                  {/* ラベルに M/D がすでにあるときは、左の日付列を出さない（日付の二重表示を避ける） */}
-                  {/\d+\/\d+/.test(m.label) ? null : <span className="min-w-10 font-guide">{y ? `${civilFromDays(m.day).y}/` : ""}{formatMD(m.day)}</span>}
+                  {/* ラベルに日付がすでにあるときは、左の日付列を出さない（日付の二重表示を避ける） */}
+                  {labelHasDate(m.label) ? null : <span className="min-w-10 font-guide">{formatRoughDay(m.day, y)}</span>}
                   <span>{m.label ? renderInline(m.label, `${keyBase}-m${li}-${m.day}`) : null}</span>
                 </>
               ),

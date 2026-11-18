@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import { sharedPublishedWorksOrder } from "@/src/lib/published-works-order";
 import { WORK_FIGURE_TONE } from "@/lib/work-figure-tone";
-import type { MergeData, RelatedData, StairsRow, TeamGroup, TriageData } from "@/lib/work-figure-parse";
+import { countTeamMembers, type MergeData, type RelatedData, type StairsRow, type TeamGroup, type TriageData } from "@/lib/work-figure-parse";
 import { civilFromDays, formatRoughDay, formatSpan, labelHasDate, placeScheduleLabels, scheduleAxisLabels, scheduleSpansYears, schedulePct, summarizeSchedule, type ScheduleData, type ScheduleLabelInput } from "@/lib/work-schedule";
 import { FigureFrame } from "./WorkFigure";
 import { renderInline } from "./WorkInline";
@@ -93,12 +93,13 @@ export const TeamPlaceholder: FC = () => (
 /** `::: team` — 役割ごとに人数ぶんのドットを並べる。自分がいる役割は先頭の 1 つを primary にする */
 export const TeamDots: FC<{ groups: TeamGroup[]; title: string; lead: string; framed: boolean; edit?: ReactNode }> = ({ groups, title, lead, framed, edit }) => {
   const layout = useWorkLayout();
-  // 合計は図に描いた人数の和（ドットと同じ数字）。見出し行の右に出す
-  const total = groups.reduce((sum, g) => sum + g.rows.reduce((s2, r) => s2 + r.count, 0), 0);
+  const total = countTeamMembers(groups);
+  // 自分が 2 つ以上の役割にいると、ドットの数（役割ごとの人数の和）が合計より多くなるので一言添える
+  const sharedSelf = groups.flatMap((g) => g.rows).filter((r) => r.me).length > 1;
   const legend = (
     <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-fg-muted">
       <span className="text-body-03-jp text-fg-muted">
-        計 <span className="text-fg">{total}</span> 名
+        計 <span className="text-fg">{total}</span> 名{sharedSelf ? "（自分は 1 名で計上）" : null}
       </span>
       <LegendItem swatch={<Dot self />}>自分</LegendItem>
       <LegendItem swatch={<Dot />}>メンバー</LegendItem>

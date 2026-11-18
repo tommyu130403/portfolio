@@ -86,6 +86,18 @@ export function buildTeamGroups(
   return groups;
 }
 
+/**
+ * 体制の実人数。役割ごとの人数の和から、自分の重複を引く。
+ * 自分は兼務した役割それぞれの人数に 1 人ずつ含まれている（ドットの先頭が自分）ので、
+ * 自分がいる役割が k 行あれば k - 1 人ぶん重ねて数えている。
+ */
+export function countTeamMembers(groups: TeamGroup[]): number {
+  const rows = groups.flatMap((g) => g.rows);
+  const sum = rows.reduce((s, r) => s + r.count, 0);
+  const meRows = rows.filter((r) => r.me).length;
+  return sum - Math.max(0, meRows - 1);
+}
+
 /* ------------------------------------------------------------------ *
  * stairs
  * ------------------------------------------------------------------ */

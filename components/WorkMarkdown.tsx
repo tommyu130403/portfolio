@@ -1,5 +1,5 @@
-import type { CSSProperties, FC, ReactNode } from "react";
-import React, { createContext, useContext } from "react";
+import type { CSSProperties, FC } from "react";
+import { createContext, useContext } from "react";
 import Headline from "./Headline";
 import Icon from "./Icon";
 import {
@@ -7,18 +7,32 @@ import {
   widthToCss,
   type ImageAlign,
 } from "@/lib/image-layout";
-import { BLOCK_CLOSE, HTML_BLOCK_OPEN, closedBlockEnd, findBlockEnd, takeLeafBlock, type LeafKind } from "@/lib/work-sections";
+import {
+  BLOCK_CLOSE,
+  HTML_BLOCK_OPEN,
+  LEAF_BLOCK_START,
+  LEAF_OPEN,
+  closedBlockEnd,
+  findBlockEnd,
+  takeLeafBlock,
+  type LeafKind,
+} from "@/lib/work-sections";
+import { buildTeamGroups, parseMerge, parseRelated, parseStairs, parseSummary, parseTeamLines, parseTriage, splitTitleLead, type MergeData, type RelatedData, type StairsRow, type SummaryData, type TeamGroup, type TeamLine, type TriageData } from "@/lib/work-figure-parse";
+import { parseSchedule, type ScheduleData } from "@/lib/work-schedule";
 import WorkCardEmbed from "./WorkCardEmbed";
 import MockupEmbed from "./MockupEmbed";
 import InfoCard from "./InfoCard";
-import { BarChart, BeforeAfter, FigureFrame, FlowSteps, type BarTone, type StepTone } from "./WorkFigure";
+import { BarChart, BeforeAfter, FigureFrame, FlowSteps, NumberedFlow, type BarTone, type StepTone } from "./WorkFigure";
+import { MergeFigure, RelatedWorks, ScheduleFigure, StairsFigure, SummaryCards, TeamDots, TeamPlaceholder, TriageFigure } from "./WorkFigureBlocks";
+import { renderInline, renderInlineLine } from "./WorkInline";
+import { useWorkBody } from "./WorkBodyContext";
 import { TableGrid, TableKeyValue } from "./Table";
 import ProtectedImage from "./ProtectedImage";
 import { useWorkLayout } from "./WorkLayoutContext";
 import { sectionNumber } from "@/lib/section-number";
 
-// v1 は凍結: 直すのは v2 だけ
-const BODY_COLOR = { v1: "text-fg", v2: "text-fg-muted" } as const;
+// 本文色。v1 は Figma 787:9916 で照合済み・凍結。v2 も同じ text-fg（見出し・ラベルの text-fg-headline-01 / text-fg-muted と差をつけるため。オーナー判断 2026-11-18）
+const BODY_COLOR = "text-fg";
 
 /**
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
@@ -35,140 +49,21 @@ const BODY_COLOR = { v1: "text-fg", v2: "text-fg-muted" } as const;
  *  - `::: card 見出し` 〜 `:::` の汎用カード（`::: card tone=accent 見出し` で強調カード）/ `::: workcard id=<uuid>` の作品リンクカード
  *  - `::: figure 見出し | 補足文` 〜 `:::` の図版の枠（中に任意の本文ブロックを入れ子にできる）
  *  - `::: beforeafter タグ | 見出し` 〜 `:::` の Before/After 図（`before:` / `after:` 行を `→` で区切り、`[!悪い手順]` `[+良い手順]`、直後の `note:` が注記）
- *  - `::: flow ラベル highlight=N` 〜 `:::` の横フロー（`- ` 行が1手順。N 番目を強調、省略=最後、0=なし）
- *  - `::: bars base=1.0 max=1.4` 〜 `:::` の横棒グラフ（`- ラベル | 補助 | 値 | 表示文 | up/down/flat`、`legend:` 行で凡例）
+ *  - `::: flow ラベル highlight=N` 〜 `:::` の横フロー（`- ` 行が1手順。N 番目を強調、省略=最後、0=なし）。`::: flow ラベル numbered` は番号つきステップ（矢印なし）
+ *  - `::: bars base=1.0 max=1.4` 〜 `:::` の横棒グラフ（`- ラベル | 補助 | 値 | 表示文 | up/down/flat`、`legend:` 行で凡例。v2 は塗らず線で描く）
+ *  - `::: team [タイトル]` 体制のドット図（`- 表示名 = 層A, 層B` で層をまとめる。データは作品の関係者）
+ *  - `::: schedule タイトル | 補足` 計画と実際の年表（`range:` / `lane:` / `- plan|actual|delay: 開始 .. 終了 | ラベル` / `- 日付 | 節目`）。狭い幅は縦の一覧
+ *  - `::: stairs` 階段（`- 名前 | タグ | 説明 | 右端の注記 | mid / accent`）
+ *  - `::: summary`（`lead:` / `problem:` / `action:` / `result:`）。v2 ではページ上部へ移る
+ *  - `::: merge 説明` 統合の流れ（`from:` / `into:` / `- タグ | 名前 | accent・dashed | 注記` / `note:`）
+ *  - `::: triage`（`in:` / `cut:` / `defer:` の下に `- 項目`、`note:`）入れた・削った・見送った
+ *  - `::: related 見出し`（`- <作品 id> | ラベル [| accent]`）つながる作品。v2 ではページ末尾へ移る
  *  - `::: mockup phone src=<url> [src=<url>] [browser] [url=example.com]` / `::: mockup laptop src=<url> [browser] [url=example.com]` のデバイスモック
  *  - `::: html` 〜 `:::` の生 HTML / SVG 埋め込み（script・iframe・style・SVG のアニメーション・イベント属性は除去）
  *  - 画像 `![caption](url){width=260 align=left scale=1.2}`（単独行は回り込みブロック。
  *    align=left は画像＋右列（直後の1段落＋キャプション）の横並び。Figma Master 994:5656）
  */
 
-/* ------------------------------------------------------------------ *
- * インライン
- * ------------------------------------------------------------------ */
-
-const ExternalIcon: FC = () => (
-  <svg
-    width="11"
-    height="11"
-    viewBox="0 0 12 12"
-    fill="none"
-    className="ml-0.5 inline-block shrink-0"
-    aria-hidden
-  >
-    <path d="M4 2h6v6M10 2 4.5 7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-  </svg>
-);
-
-function renderInlineLine(text: string, keyBase: string): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  let i = 0;
-  let key = 0;
-  const push = (n: ReactNode) =>
-    nodes.push(<React.Fragment key={`${keyBase}-${key++}`}>{n}</React.Fragment>);
-
-  while (i < text.length) {
-    const rest = text.slice(i);
-
-    // 画像（インライン）: ![alt](url){attrs}
-    const img = rest.match(/^!\[([^\]]*)\]\(([^)\s]+)\)(\{[^}]*\})?/);
-    if (img) {
-      const layout = parseImageAttrs(img[3]?.slice(1, -1), img[2]);
-      push(
-        <ProtectedImage
-          src={layout.base}
-          alt={img[1]}
-          style={{ width: widthToCss(layout.width), maxWidth: "100%" }}
-          className="my-2 inline-block h-auto rounded-r16 align-top [aspect-ratio:auto_16/10]"
-        />
-      );
-      i += img[0].length;
-      continue;
-    }
-
-    // リンク: [text](url)
-    const link = rest.match(/^\[([^\]]+)\]\(([^)\s]+)\)/);
-    if (link) {
-      const external = /^https?:\/\//i.test(link[2]);
-      push(
-        <a
-          href={link[2]}
-          {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-          className="text-main-100 underline decoration-main-100-a50 underline-offset-4 transition-colors hover:decoration-main-100"
-        >
-          {link[1]}
-          {external && <ExternalIcon />}
-        </a>
-      );
-      i += link[0].length;
-      continue;
-    }
-
-    // インラインコード
-    const code = rest.match(/^`([^`]+)`/);
-    if (code) {
-      push(
-        <code className="rounded bg-action-hover px-1.5 py-0.5 font-mono text-[13px] text-main-050">
-          {code[1]}
-        </code>
-      );
-      i += code[0].length;
-      continue;
-    }
-
-    // 太字 / 斜体
-    const bold = rest.match(/^\*\*([^*]+)\*\*/);
-    if (bold) {
-      push(<strong className="font-bold">{renderInlineLine(bold[1], `${keyBase}-b${key}`)}</strong>);
-      i += bold[0].length;
-      continue;
-    }
-    const italic = rest.match(/^\*([^*]+)\*/);
-    if (italic) {
-      push(<em className="italic">{renderInlineLine(italic[1], `${keyBase}-i${key}`)}</em>);
-      i += italic[0].length;
-      continue;
-    }
-
-    // 裸URL
-    const url = rest.match(/^(https?:\/\/[^\s<]+)/);
-    if (url) {
-      push(
-        <a
-          href={url[1]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="break-all text-main-100 underline decoration-main-100-a50 underline-offset-4 hover:decoration-main-100"
-        >
-          {url[1]}
-          <ExternalIcon />
-        </a>
-      );
-      i += url[1].length;
-      continue;
-    }
-
-    // プレーンテキスト（次の特殊トークンまで）
-    let next = text.length;
-    for (const s of ["![", "[", "`", "**", "*", "http"]) {
-      const idx = text.indexOf(s, i + 1);
-      if (idx !== -1 && idx < next) next = idx;
-    }
-    push(text.slice(i, next));
-    i = next;
-  }
-  return nodes;
-}
-
-/** 複数行テキストを <br> 区切りでインライン描画する */
-function renderInline(text: string, keyBase: string): ReactNode[] {
-  const out: ReactNode[] = [];
-  text.split("\n").forEach((line, li) => {
-    if (li > 0) out.push(<br key={`${keyBase}-br${li}`} />);
-    out.push(...renderInlineLine(line, `${keyBase}-l${li}`));
-  });
-  return out;
-}
 
 /* ------------------------------------------------------------------ *
  * 画像ブロック（単独行）
@@ -299,12 +194,23 @@ type Block =
   | { type: "card"; title: string; body: string; tone: "default" | "accent" }
   | { type: "figure"; title: string; lead: string; body: string }
   | { type: "beforeAfter"; tag: string; title: string; rows: BeforeAfterRow[] }
-  | { type: "flow"; label: string; steps: string[]; highlight: number }
+  | { type: "flow"; label: string; steps: string[]; highlight: number; numbered: boolean }
   | { type: "bars"; rows: BarsRow[]; base: number | null; legend: string }
+  | { type: "team"; title: string; lead: string; lines: TeamLine[] }
+  | { type: "schedule"; title: string; lead: string; data: ScheduleData }
+  | { type: "stairs"; title: string; lead: string; rows: StairsRow[] }
+  | { type: "summary"; data: SummaryData }
+  | { type: "merge"; caption: string; data: MergeData }
+  | { type: "triage"; title: string; lead: string; data: TriageData }
+  | { type: "related"; data: RelatedData }
   | { type: "html"; content: string }
   | { type: "grid"; cols: number; gap: number; cells: string[] }
   | { type: "tableKeyValue"; rows: { label: string; value: string }[] }
   | { type: "tableGrid"; header: string[]; rows: string[][] };
+
+/** 本文が 1 段落だけか（空行で分かれず、見出し・リスト・引用・表・コード・ブロック記法・画像で始まる行も無い） */
+const isSingleParagraph = (body: string) =>
+  body.trim() !== "" && !/\n\s*\n/.test(body) && !/^(?:#{1,3}\s|>|\s*[-*+]\s|\s*\d+\.\s|:::|\||```|!\[)/m.test(body);
 
 /** pipe table の1行をセルに分ける（先頭末尾の | を除き、\| は文字の | として扱う） */
 function splitTableRow(line: string): string[] {
@@ -486,7 +392,8 @@ function parseBlocks(src: string): Block[] {
     /^\s*[-*+]\s+/.test(line) ||
     /^\s*\d+\.\s+/.test(line) ||
     FENCE_OPEN.test(line) ||
-    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|caption|figure|beforeafter|flow|bars)\b/.test(line) ||
+    /^:::\s*(grid|card|workcard|mockup|timeline|stakeholders|caption|figure)\b/.test(line) ||
+    LEAF_BLOCK_START.test(line) ||
     HTML_BLOCK_OPEN.test(line) ||
     /^\|/.test(line) ||
     /^(\*\*\*|---|___)\s*$/.test(line) ||
@@ -563,13 +470,14 @@ function parseBlocks(src: string): Block[] {
       continue;
     }
 
-    // 図版（Before/After・横フロー・横棒グラフ）: 開き 〜 最初の閉じ ::: までを行単位で読む（入れ子は無い）
-    const figureOpen = line.match(/^:::\s*(beforeafter|flow|bars)(?:\s+(.*))?$/);
+    // 図版（LEAF_KINDS: Before/After・横フロー・横棒グラフ・体制・年表・階段・要約・統合・仕分け・関連）: 開き 〜 最初の閉じ ::: までを行単位で読む（入れ子は無い）
+    const figureOpen = line.match(LEAF_OPEN);
     if (figureOpen) {
+      const kind = figureOpen[1] as LeafKind;
       const rest = (figureOpen[2] ?? "").trim();
-      const { body, next } = takeLeafBlock(lines, i + 1, figureOpen[1] as LeafKind);
+      const { body, next } = takeLeafBlock(lines, i + 1, kind);
       i = next;
-      if (figureOpen[1] === "beforeafter") {
+      if (kind === "beforeafter") {
         const [tag, title] = splitFirstPipe(rest);
         blocks.push({
           type: "beforeAfter",
@@ -577,19 +485,43 @@ function parseBlocks(src: string): Block[] {
           title: title || tag,
           rows: parseBeforeAfter(body),
         });
-      } else if (figureOpen[1] === "flow") {
+      } else if (kind === "flow") {
         const steps = body.map((l) => l.match(/^\s*[-*+]\s+(.*)$/)?.[1].trim() ?? "").filter(Boolean);
         // highlight=… は値が不正でもラベルに残さず取り除き、不正なら既定（最後）にする
         const hl = rest.match(/(?:^|\s)highlight\s*=\s*(\S*)/);
         const n = hl && /^\d+$/.test(hl[1]) ? parseInt(hl[1], 10) : steps.length;
+        // numbered は単独の語のときだけ番号つきステップ（ラベルからは取り除く）
+        const numbered = /(?:^|\s)numbered(?=\s|$)/.test(rest);
+        const label = rest.replace(/(?:^|\s)highlight\s*=\s*\S*/, "").trim();
         blocks.push({
           type: "flow",
-          label: rest.replace(/(?:^|\s)highlight\s*=\s*\S*/, "").trim(),
+          label: numbered ? label.replace(/(?:^|\s)numbered(?=\s|$)/g, " ").replace(/\s{2,}/g, " ").trim() : label,
           steps,
           highlight: n >= 1 && n <= steps.length ? n - 1 : -1,
+          numbered,
         });
-      } else {
+      } else if (kind === "bars") {
         blocks.push({ type: "bars", ...parseBars(rest, body) });
+      } else if (kind === "team") {
+        blocks.push({ type: "team", ...splitTitleLead(rest), lines: parseTeamLines(body) });
+      } else if (kind === "schedule") {
+        const data = parseSchedule(body);
+        if (data) blocks.push({ type: "schedule", ...splitTitleLead(rest), data });
+      } else if (kind === "stairs") {
+        const rows = parseStairs(body);
+        if (rows.length > 0) blocks.push({ type: "stairs", ...splitTitleLead(rest), rows });
+      } else if (kind === "summary") {
+        const data = parseSummary(body);
+        if (data) blocks.push({ type: "summary", data });
+      } else if (kind === "merge") {
+        const data = parseMerge(body);
+        if (data) blocks.push({ type: "merge", caption: rest, data });
+      } else if (kind === "triage") {
+        const data = parseTriage(body);
+        if (data) blocks.push({ type: "triage", ...splitTitleLead(rest), data });
+      } else {
+        const data = parseRelated(rest, body);
+        if (data) blocks.push({ type: "related", data });
       }
       continue;
     }
@@ -819,9 +751,8 @@ const InFigureContext = createContext(false);
 function RenderBlock({ block, idx }: { block: Block; idx: number }) {
   const k = `b-${idx}`;
   const inFigure = useContext(InFigureContext);
-  const layout = useWorkLayout();
-  // 本文色（図版の内外とも）。v1 は text-fg（Figma 787:9916 で照合済み・凍結）、v2 は text-fg-muted（オーナー判断 2026-11-18）
-  const bodyColor = BODY_COLOR[layout];
+  const workBody = useWorkBody();
+  const bodyColor = BODY_COLOR;
   switch (block.type) {
     // 見出しの階層: 作品名 h1 → セクション見出し h2 → `##`・`###` とも h3（同形の同格。見た目は変えない）
     case "h1":
@@ -938,7 +869,12 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
     case "card":
       return (
         <div className="mb-4 mt-10">
-          <InfoCard title={block.title ? renderInline(block.title, `${k}-ct`) : undefined} tone={block.tone} inFigure={inFigure}>
+          <InfoCard
+            title={block.title ? renderInline(block.title, `${k}-ct`) : undefined}
+            tone={block.tone}
+            inFigure={inFigure}
+            centered={block.tone === "accent" && !block.title && isSingleParagraph(block.body)}
+          >
               <MarkdownBody md={block.body} />
           </InfoCard>
         </div>
@@ -970,6 +906,16 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       );
     case "flow":
       if (block.steps.length === 0) return null;
+      if (block.numbered) {
+        return (
+          <div className="mb-4 mt-10">
+            <NumberedFlow
+              label={block.label ? renderInline(block.label, `${k}-fx`) : undefined}
+              steps={block.steps.map((s, si) => renderInline(s, `${k}-fs${si}`))}
+            />
+          </div>
+        );
+      }
       return (
         <div className="mb-4 mt-10">
           <FlowSteps
@@ -998,6 +944,67 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
           />
         </div>
       );
+    case "team": {
+      // 作品の行が渡されていない場所（スタイルガイド・本文だけのプレビュー）では見本の枠だけを出す
+      if (!workBody) {
+        return (
+          <div className="mb-4 mt-10">
+            <TeamPlaceholder />
+          </div>
+        );
+      }
+      const groups: TeamGroup[] = workBody.stakeholders ? buildTeamGroups(workBody.stakeholders.layers, workBody.breakdown, block.lines) : [];
+      if (groups.length === 0) return null;
+      return (
+        <div className="mb-4 mt-10">
+          <TeamDots
+            groups={groups}
+            title={block.title}
+            lead={block.lead}
+            framed={!inFigure}
+            edit={workBody.onEditStakeholders ? <EditButton label="関係者" onClick={workBody.onEditStakeholders} className="shrink-0" /> : undefined}
+          />
+        </div>
+      );
+    }
+    case "schedule":
+      return (
+        <div className="mb-4 mt-10">
+          <ScheduleFigure data={block.data} title={block.title} lead={block.lead} framed={!inFigure && !!block.title} keyBase={k} />
+        </div>
+      );
+    case "stairs":
+      return (
+        <div className="mb-4 mt-10">
+          <StairsFigure rows={block.rows} title={block.title} lead={block.lead} framed={!inFigure && !!block.title} keyBase={k} />
+        </div>
+      );
+    case "summary": {
+      const showLead = !(workBody?.heroLead && block.data.lead === workBody.heroLead);
+      if (!showLead && !block.data.problem && !block.data.action && !block.data.result) return null;
+      return (
+        <div className="mb-4 mt-10">
+          {showLead && block.data.lead && (
+            <p className={`mb-6 ${bodyColor} ${inFigure ? "text-body-02-jp" : "text-body-01-jp"}`}>{renderInline(block.data.lead, `${k}-sl`)}</p>
+          )}
+          <SummaryCards problem={block.data.problem} action={block.data.action} result={block.data.result} keyBase={k} />
+        </div>
+      );
+    }
+    case "merge":
+      return (
+        <div className="mb-4 mt-10">
+          <MergeFigure data={block.data} caption={block.caption} keyBase={k} />
+        </div>
+      );
+    case "triage":
+      return (
+        <div className="mb-4 mt-10">
+          <TriageFigure data={block.data} title={block.title} lead={block.lead} framed={!inFigure && !!block.title} keyBase={k} />
+        </div>
+      );
+    case "related":
+      return <RelatedWorks data={block.data} className="mb-4 mt-10" />;
     case "tableKeyValue":
       return (
         <div className="mb-4 mt-10">
@@ -1102,6 +1109,8 @@ export const WorkSections: FC<{
       <div className="flex flex-col gap-24">
         {sections.map((sec, i) => {
           const number = numbers[i];
+          // 見出しがなく本文も空（v2 で要約・関連をページ上下へ移したあと）は何も描かない。添字は変えない
+          if (!sec.heading && !sec.md.trim()) return null;
           return (
             <section key={i} className="flex w-full flex-col gap-6">
               {onEditSection ? (

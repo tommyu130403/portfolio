@@ -20,6 +20,8 @@ type InfoCardProps = {
   tone?: "default" | "accent";
   /** `::: figure` の内側（図版の panel 地の上）。地と枠は外と同じ（Figma InfoCard Tone=in-figure）。見出しは外と同じ Text/Headline-01 */
   inFigure?: boolean;
+  /** v2 だけ。見出しなしの強調カードで本文が 1 段落のとき、中央に置いて文字を main-050 にする（コンセプトの中央カード） */
+  centered?: boolean;
   children: ReactNode;
 };
 
@@ -30,10 +32,12 @@ type InfoCardProps = {
  * 地と枠: default / in-figure = 地なし + 枠 Indigo/750(2026-11-17 Figma 更新で地を廃止)、
  * accent = bg-main-100-a10（Main/100-α10）+ 枠 Border/Main（2026-11-13 照合）。
  */
-const InfoCard: FC<InfoCardProps> = ({ title, tone = "default", children }) => {
+const InfoCard: FC<InfoCardProps> = ({ title, tone = "default", centered, children }) => {
   const layout = useWorkLayout();
+  // items-center は付けない: 子（MarkdownBody）は @container なので、幅が中身基準になると 0 に潰れて 1 文字ずつ折り返す
+  const center = layout === "v2" && centered ? " justify-center text-center [text-wrap:balance] [&_p]:text-main-050" : "";
   return (
-    <div className={CARD_CLASS[layout][tone]}>
+    <div className={`${CARD_CLASS[layout][tone]}${center}`}>
       {title ? (
         <p
           className={`text-body-02-jp-bold ${

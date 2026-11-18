@@ -25,11 +25,12 @@ import { PhoneMock, LaptopMock } from "@/components/DeviceMock";
 import WorkDetailHeader from "@/components/WorkDetailHeader";
 import WorkDetailContent from "@/components/WorkDetailContent";
 import WorkHero from "@/components/WorkHero";
-import WorkSummaryStrip from "@/components/WorkSummaryStrip";
 import WorkTocColumn from "@/components/WorkTocColumn";
 import WorkDetailView from "@/components/WorkDetailView";
 import { sectionNumber } from "@/lib/section-number";
 import { WorkLayoutProvider } from "@/components/WorkLayoutContext";
+import { WorkBodyProvider, type WorkBodyData } from "@/components/WorkBodyContext";
+import { RelatedList } from "@/components/WorkFigureBlocks";
 import { WORK_FIGURE_TONE } from "@/lib/work-figure-tone";
 import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
@@ -94,6 +95,90 @@ legend: 白線＝リリース前の水準
 ::: caption 出典: サンプル
 :::
 `;
+
+// 新しい図版ブロック（::: team / schedule / flow numbered / stairs / summary / merge / triage。related は RelatedList を直接並べる）
+const FIGURE_BLOCKS_SAMPLE_MD = `::: summary
+lead: 自己分析とプロフィール入力を進めると、企業からスカウトが届くサービスを立ち上げた。
+problem: 人材紹介主体では、早期に動く学生に価値を出せなかった。
+action: 面談で担ってきた支援を、プロフィール入力の機能に置き換えた。
+result: 決めた機能をすべて実装してリリースできた。
+:::
+::: team 体制と、自分が兼ねた役割
+- 意思決定・進行 = Product, Project
+- デザイン = Designer
+:::
+::: flow 進め方 numbered
+- 憲章で合意
+- 体制の提案
+- リサーチ
+- 範囲決め
+:::
+::: schedule 計画と実際のリリース | 企業側は約 2 か月遅れた
+range: 2021-05 .. 2021-11
+lane: 学生側
+- plan: 2021-05-17 .. 2021-09-01
+- actual: 2021-08-01 .. 2021-09-01 | 実際 8月
+- 2021-05-17 | 仕様すり合わせ
+- 2021-07-02 | スタイル実装
+lane: 企業側
+- plan: 2021-06-14 .. 2021-09-01
+- delay: 2021-09-01 .. 2021-11-01 | 約 2 か月遅れ
+- actual: 2021-11-01 .. 2021-12-01 | 実際 11月
+- 2021-09-01 | リリース予定
+:::
+::: schedule 進め方と期間 | 2021年5月〜11月
+range: 2021-05 .. 2021-11
+lane: 自分が担当した工程
+- actual: 2021-05-17 .. 2021-09-01
+- 2021-05-17 | 仕様すり合わせ
+- 2021-07-02 | スタイル実装
+lane: 関わった工程
+- span: 2021-08-01 .. 2021-11-01
+- 2021-08-01 | バックエンド開発
+:::
+::: stairs 思考フレームと入力ルール | 到達したい状態を積み上げる
+- 適性検査 | 客観 | 定量的に特性を理解している | 受験は 1 回
+- ガクチカ | 分析 | 力を入れたことを書けている | 500 字 × 最大 3 | mid
+- 自己PR | 出力 | 結論と根拠にまとまる | 500 字 × 1 | accent
+:::
+::: merge 土台を 1 つに統合
+from: Before: サービスA | 流入 › 登録 2 段 › 判定 | 別サイト・別 DB
+from: Before: サービスB | 流入 › 会員登録 › 入力 | 入口が重複
+into: After: 1 本の導線
+- STEP1 | 登録情報
+- 通過者のみ | 面談予約 | dashed
+- STEP3 | 会員登録・認証 | accent | ここで初めて認証
+:::
+::: triage 範囲決め
+in: 入れた
+- 強みの項目化
+- 就活の軸は最大 3 つ
+cut: 削った | 目的から逆行するため
+- 希望業種
+- 資格
+defer: 見送った
+- 候補者リスト
+note: 見送った項目は次の期に再検討
+:::
+::: bars base=1.0 max=1.4
+- 優先度 4 | 最もアクティブ | 1.3 | 約1.3倍 | up
+- 優先度 3 |  | 0.9 | 約0.9倍
+- 優先度 2 | 非アクティブ中心 | 0.7 | 約0.7倍 | down
+legend: 白線＝リリース前の水準
+:::
+`;
+
+const FIGURE_BLOCKS_TEAM: WorkBodyData = {
+  stakeholders: {
+    v: 2,
+    layers: [
+      { name: "Product", note: null, icon: null, cards: [{ kind: "role", name: "事業責任者", note: "1名", me: false }, { kind: "role", name: "プロダクトマネージャー", note: "1名", me: true }] },
+      { name: "Project", note: null, icon: null, cards: [{ kind: "role", name: "プロジェクトマネージャー", note: "1名", me: true }] },
+      { name: "Designer", note: null, icon: null, cards: [{ kind: "role", name: "リードデザイナー", note: "1名", me: true }, { kind: "role", name: "UI/UXデザイナー", note: "2名", me: false }] },
+    ],
+  },
+  breakdown: [{ name: "UI/UXデザイナー", count: 2 }],
+};
 
 // Works 詳細ページのプレビュー用サンプルデータ
 const SAMPLE_WORK_DETAIL = {
@@ -1363,6 +1448,38 @@ function ComponentsSection() {
           </div>
         </ComponentPreview>
 
+        <ComponentPreview
+          title="WorkFigure 新ブロック（v2）"
+          description="作品本文の `::: summary`（課題 → 打ち手 → 結果の 3 枚。v2 では lead だけタイトル下へ移り、3 枚は書いた場所に出る。本文幅 760px 以上で横 3 枚）/ `::: team`（関係者データから役割ごとのドット図。`表示名 = 層名, 層名` で層をまとめる。自分は先頭の 1 つが primary）/ `::: flow ラベル numbered`（番号つきステップ。上に 2px の primary 線・矢印なし）/ `::: schedule`（計画と実際の年表。640px 以上は軸つき、未満は縦の一覧）/ `::: stairs`（階段。4% ずつ右へ、上限 24%。mid は main-300・accent は primary の左線。560px 未満は積む）/ `::: merge`（統合の流れ）/ `::: triage`（入れた・削った・見送った）。色と線は WORK_FIGURE_TONE に従い、ミント・danger の広い塗りは使わない。`::: related` は下の RelatedList（v2 ではページ末尾へ移り、上に罫線）。`::: bars` は v2 だけ線で描く（塗らない）"
+        >
+          <div className="flex w-[704px] max-w-full flex-col gap-10">
+            <WorkLayoutProvider layout="v2">
+              <WorkBodyProvider value={FIGURE_BLOCKS_TEAM}>
+                <MarkdownBody md={FIGURE_BLOCKS_SAMPLE_MD} />
+              </WorkBodyProvider>
+              <RelatedList
+                heading="この作品とつながる作品"
+                hoisted
+                cards={[
+                  { id: "a", label: "同時期のリサーチ", accent: false, title: "サービス立ち上げ期のユーザーリサーチ" },
+                  { id: "b", label: "この結果を受けた次の作品", accent: true, title: "価値観マッチング機能" },
+                ]}
+              />
+            </WorkLayoutProvider>
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkFigure 新ブロック（v1 の見え方）"
+          description="v1（公開中の見た目）でも新しい記法は崩れず、枠線で区切った素朴な見た目で出る。team は関係者データが無い場所なので見本の枠になる"
+        >
+          <div className="w-[704px] max-w-full">
+            <WorkLayoutProvider layout="v1">
+              <MarkdownBody md={FIGURE_BLOCKS_SAMPLE_MD} />
+            </WorkLayoutProvider>
+          </div>
+        </ComponentPreview>
+
         <SubHeading>実装のみ(Figma に対応コンポーネントなし)</SubHeading>
 
         <ComponentPreview
@@ -1523,32 +1640,21 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkHero（v2）"
-          description="作品詳細 v2 の最上部。左にカテゴリ・題名・制作内容（期間は要約帯に出す）、右にヒーロー画像（無ければ左だけ）。横幅が足りないと右が下へ折り返す"
+          description="作品詳細 v2 の最上部。どの幅でも 1 列で、上にヒーロー画像（中央）、その下にカテゴリ・題名・制作内容・使用ツール（小さなアイコン列。アイコンが無いものは文字）。文字側は 3 つのまとまり: 見出し（カテゴリ・題名・リード）/ 事実（期間・役割。上下に細い線。幅 440px 以上は横に並べ、未満はラベル左・値右。体制の人数は本文の `::: team` の図に出る）/ 制作内容・ツール（画像が無ければ文字側だけ）"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface p-6">
             <WorkHero
               work={SAMPLE_WORK_DETAIL}
               contents={["UI Design", "UX Research", "PJ Management"]}
+              tools={["Figma", "React", "TypeScript"].map((name) => ({ name, icon_url: null }))}
               screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
             />
           </div>
         </ComponentPreview>
 
         <ComponentPreview
-          title="WorkSummaryStrip（v2）"
-          description="作品詳細 v2 の要約帯（役割・期間・体制・ツール）。値が空の項目は出さない。ツールは 4 件まで。体制は総人数（計 N 名）だけ出し、内訳はデータがあれば全画面ボタンのモーダルで見る。列数は帯の幅で決まる（約 880px 以上は 4 列・480px 以上は 2×2・それ未満は 1 列。項目が少ないときは行を埋める）。仕切り線は残る"
-        >
-          <div className="w-full rounded-[12px] border border-border-light bg-surface p-6">
-            <WorkSummaryStrip
-              work={SAMPLE_WORK_DETAIL}
-              tools={["Figma", "React", "TypeScript", "Supabase", "Vercel"].map((name) => ({ name, icon_url: null }))}
-            />
-          </div>
-        </ComponentPreview>
-
-        <ComponentPreview
           title="WorkDetailView（v2）"
-          description="作品詳細の上部ブロック + 本文を v2 で組み立てた全体見本（WorkLayoutProvider layout=v2。ヒーロー・要約帯・本文。目次カラムは toc を渡したときだけ出るのでここでは出さない）"
+          description="作品詳細の上部ブロック + 本文を v2 で組み立てた全体見本（WorkLayoutProvider layout=v2。ヒーロー・本文。目次カラムは toc を渡したときだけ出るのでここでは出さない）"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface p-6">
             <WorkLayoutProvider layout="v2">
@@ -1571,7 +1677,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent v1 / v2"
-          description="本文のレイアウト切替の比較。v1 は従来（見出し + 右罫線・80px 間隔・左右 16px）、v2 は番号付き見出し + 下罫線・96px 間隔・本文は fg-muted。切替は lib/work-detail-layout.ts の定数、確認だけなら URL に ?layout=v2"
+          description="本文のレイアウト切替の比較。v1 は従来（見出し + 右罫線・80px 間隔・左右 16px）、v2 は番号付き見出し + 下罫線・96px 間隔・本文色は v1 と同じ fg。切替は lib/work-detail-layout.ts の定数、確認だけなら URL に ?layout=v2"
         >
           <div className="flex w-full flex-col gap-6">
             {(["v1", "v2"] as const).map((layout) => (

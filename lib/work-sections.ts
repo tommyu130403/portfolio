@@ -1,4 +1,5 @@
 import { buildImageMarkdown } from "./image-layout";
+import { parseRelated, parseSummary, type RelatedData, type SummaryData } from "./work-figure-parse";
 import type { Json } from "@/src/types/supabase";
 
 /**
@@ -63,23 +64,47 @@ export const HTML_BLOCK_OPEN = /^:::\s*html\s*$/;
 export const BLOCK_CLOSE = /^:::\s*$/;
 
 /**
- * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card / html / figure / beforeafter / flow / bars）。深さの数え上げに使う。
+ * 閉じ `:::` を持てる「中身が行だけの」図版ブロック（leaf）の種類。ここが唯一の一覧で、
+ * 開き行・入れ子の数え上げ・段落の切れ目の判定はすべてここから作る（別の一覧を手書きしない）。
+ */
+export const LEAF_KINDS = ["beforeafter", "flow", "bars", "team", "schedule", "stairs", "summary", "merge", "triage", "related"] as const;
+export type LeafKind = (typeof LEAF_KINDS)[number];
+
+const LEAF_ALT = LEAF_KINDS.join("|");
+/** 図版ブロックの開き行。[1] = 種類、[2] = 開き行の残り（タイトル・属性） */
+export const LEAF_OPEN = new RegExp(`^:::\\s*(${LEAF_ALT})(?:\\s+(.*))?$`);
+/** 入れ子の深さ数えと takeLeafBlock 用。種類だけ取る */
+const LEAF_OPEN_KIND = new RegExp(`^:::\\s*(${LEAF_ALT})(?:\\s|$)`);
+/** 段落を切る行頭（`::: team見出し` のように続く文字がある行は \b で別物として扱う） */
+export const LEAF_BLOCK_START = new RegExp(`^:::\\s*(?:${LEAF_ALT})\\b`);
+
+/**
+ * 閉じ `:::` が必要な入れ子ブロックの開始行（grid / card / html / figure と、LEAF_KINDS の図版）。深さの数え上げに使う。
  * parseBlocks の gridOpen / cardOpen と同じ条件にそろえる（\b だと `::: card見出し` も数えてしまい、閉じが見つからず後続を飲み込む）
  */
-export const NESTABLE_OPEN = /^:::\s*(?:grid|card(?:\s|$)|html\s*$|(?:figure|beforeafter|flow|bars)(?:\s|$))/;
+export const NESTABLE_OPEN = new RegExp(`^:::\\s*(?:grid|card(?:\\s|$)|html\\s*$|(?:figure|${LEAF_ALT})(?:\\s|$))`);
 const BLOCK_WITH_BODY_OPEN = /^:::\s*(?:grid|card(?:\s|$)|figure(?:\s|$))/;
 
-export type LeafKind = "beforeafter" | "flow" | "bars";
+const BULLET_LINE = /^\s*[-*+]\s+/;
 
-/** 各図版ブロックが自分の中身として認める行（空行は常に可） */
-const LEAF_LINE: Record<LeafKind, RegExp> = {
-  flow: /^\s*[-*+]\s+/,
+/** 各図版ブロックが自分の中身として認める行（空行は常に可。`:` は全角 `：` も可） */
+export const LEAF_LINE: Record<LeafKind, RegExp> = {
+  flow: BULLET_LINE,
   bars: /^(?:\s*[-*+]\s+|\s*legend\s*[:：])/i,
   beforeafter: /^\s*(?:before|after|note)\s*[:：]/i,
+  // 普通の箇条書きで終わらせる（閉じ忘れで後ろの箇条書きを飲み込まない）: team は `=`、stairs は `|`、related は UUID 風の id を持つ行だけ
+  team: /^\s*[-*+]\s+.*[=＝]/,
+  schedule: /^(?:\s*[-*+]\s+|\s*(?:range|lane|legend)\s*[:：])/i,
+  stairs: /^\s*[-*+]\s+.*[|｜]/,
+  // release: は廃止した項目。古い本文の行を飲み込んで読み捨てるため、行の形としては受け付け続ける（外すと release: の行でブロックが切れ、後ろの行が本文に漏れる）
+  summary: /^\s*(?:lead|release|problem|action|result)\s*[:：]/i,
+  merge: /^(?:\s*[-*+]\s+|\s*(?:from|into|note)\s*[:：])/i,
+  triage: /^(?:\s*[-*+]\s+|\s*(?:in|cut|defer|note)\s*[:：])/i,
+  related: /^\s*[-*+]\s+[0-9a-f]{8}-/i,
 };
 
 /**
- * 図版ブロック（beforeafter / flow / bars）の開き行の次（start）から、中身の行を集める。
+ * 図版ブロック（LEAF_KINDS）の開き行の次（start）から、中身の行を集める。
  * 自分の行の形でも空行でも `:::` でもない行が来たらそこで終わる（閉じ忘れで後続の本文を飲み込まない）。
  * 止まった行が `:::` ならそれを閉じとして消費し、そうでなければその行は通常のパースに残す。next は次に読む行
  */
@@ -101,7 +126,7 @@ export function takeLeafBlock(lines: string[], start: number, kind: LeafKind): {
  * 図版ブロックは閉じ忘れだと閉じを持たないので、深さを増やさない（増やすと外側の閉じを取ってしまう）
  */
 function opensNested(lines: string[], idx: number): boolean {
-  const leaf = lines[idx].match(/^:::\s*(beforeafter|flow|bars)(?:\s|$)/);
+  const leaf = lines[idx].match(LEAF_OPEN_KIND);
   return leaf ? takeLeafBlock(lines, idx + 1, leaf[1] as LeafKind).closed : true;
 }
 
@@ -137,7 +162,7 @@ function scanBlockEnd(
       if (depth === 0) return { end: i, found: true, splits };
       depth--;
     } else if (NESTABLE_OPEN.test(l)) {
-      const leaf = /^:::\s*(?:beforeafter|flow|bars)(?:\s|$)/.test(l);
+      const leaf = LEAF_OPEN_KIND.test(l);
       if (!leaf || (leafNests && opensNested(lines, i))) {
         depth++;
         inHtml = HTML_BLOCK_OPEN.test(l);
@@ -246,4 +271,81 @@ export function sectionStartLines(md: string, ignoreLine?: (line: string) => boo
     if (s.heading || body) lines.push(s.line);
   }
   return lines;
+}
+
+/** 本文の最上位（深さ 0）にある、指定した種類の図版ブロックの位置。コード・html・card / grid / figure の中は見ない */
+function topLevelLeafBlocks(lines: string[], wanted: readonly LeafKind[]): { kind: LeafKind; start: number; next: number; rest: string; body: string[] }[] {
+  const out: { kind: LeafKind; start: number; next: number; rest: string; body: string[] }[] = [];
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (inFence ? FENCE_CLOSE.test(l) : FENCE_OPEN.test(l)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (HTML_BLOCK_OPEN.test(l)) {
+      i++;
+      while (i < lines.length && !BLOCK_CLOSE.test(lines[i])) i++;
+      continue;
+    }
+    if (BLOCK_WITH_BODY_OPEN.test(l)) {
+      i = findBlockEnd(lines, i + 1).end;
+      continue;
+    }
+    const m = l.trimEnd().match(LEAF_OPEN);
+    if (!m) continue;
+    const kind = m[1] as LeafKind;
+    const { body, next } = takeLeafBlock(lines, i + 1, kind);
+    if (wanted.includes(kind)) out.push({ kind, start: i, next, rest: (m[2] ?? "").trim(), body });
+    i = next - 1;
+  }
+  return out;
+}
+
+export type HoistedParts = { summary: SummaryData | null; related: RelatedData | null };
+
+/**
+ * 新レイアウト（v2）用に、最初の最上位の `::: summary`（lead をヒーローへ出すために読むだけ。本文には残す）と、
+ * 最初の最上位の `::: related`（本文から取り除いてページ末尾へ）を返す。
+ * 取り除くのは related の本文（md / body）だけで、sections の個数と順序は変えない（編集ボタンの番号・目次が添字に頼るため）。
+ * 2 つ目以降・card / grid / figure / コード / html の中にあるものはそのまま残す
+ */
+export function extractHoisted<T extends { heading: string; md?: string; body?: string }>(sections: T[]): HoistedParts & { sections: T[] } {
+  let summary: SummaryData | null = null;
+  let related: RelatedData | null = null;
+  let summaryFound = false;
+  let relatedFound = false;
+  const next = sections.map((sec) => {
+    const field = typeof sec.md === "string" ? "md" : "body";
+    const text = (sec[field] ?? "") as string;
+    const want: LeafKind[] = [];
+    if (!summaryFound) want.push("summary");
+    if (!relatedFound) want.push("related");
+    if (want.length === 0 || !text.includes(":::")) return sec;
+    const lines = text.split("\n");
+    const cuts: { start: number; next: number }[] = [];
+    for (const b of topLevelLeafBlocks(lines, want)) {
+      if (b.kind === "summary" && !summaryFound) {
+        // 要約は本文に残す（lead だけをヒーローへ出す）。読み取るだけで取り除かない
+        summaryFound = true;
+        summary = parseSummary(b.body);
+        continue;
+      } else if (b.kind === "related" && !relatedFound) {
+        relatedFound = true;
+        related = parseRelated(b.rest, b.body);
+      } else {
+        continue;
+      }
+      cuts.push({ start: b.start, next: b.next });
+    }
+    if (cuts.length === 0) return sec;
+    // 後ろから消す。直後の空行を 1 行いっしょに消して、間が 2 行以上空かないようにする
+    for (const c of cuts.reverse()) {
+      const after = lines[c.next]?.trim() === "" ? c.next + 1 : c.next;
+      lines.splice(c.start, after - c.start);
+    }
+    return { ...sec, [field]: lines.join("\n").trim() };
+  });
+  return { summary, related, sections: next };
 }

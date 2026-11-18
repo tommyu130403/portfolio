@@ -8,6 +8,8 @@ export type WorkTocItem = {
   label: string;
   /** 1 = セクション見出し(h2) / 2 = 本文中の小見出し(h3) */
   level: 1 | 2;
+  /** v2 のセクション番号（見出しの data-section-number から読む。無ければ undefined） */
+  number?: string;
 };
 
 /** CSS 変数 --work-header-h を px に解決する。取れなければ 56 */
@@ -38,7 +40,7 @@ export const useWorkToc = (containerRef: RefObject<HTMLElement | null>, key: unk
       const label = el.textContent?.trim();
       if (!label) return;
       found.push(el);
-      next.push({ label, level: el.tagName === "H2" ? 1 : 2 });
+      next.push({ label, level: el.tagName === "H2" ? 1 : 2, number: el.dataset.sectionNumber });
     });
     headingsRef.current = found;
     setItems(next);
@@ -105,6 +107,8 @@ type WorkTocProps = {
   items: WorkTocItem[];
   activeIndex: number;
   onSelect: (index: number) => void;
+  /** true のとき、セクション見出し（level 1）の前に 2 桁の番号を付ける（作品詳細 v2） */
+  numbered?: boolean;
 };
 
 /**
@@ -113,7 +117,7 @@ type WorkTocProps = {
  * マウスはホバーで開閉するポップオーバー、キーボードは線の列のボタンで開閉するポップオーバー、
  * タッチ・ペンは線の列をタップすると左からのドロワー（タップしやすい 44px 行）で開く。見出しが 1 つ以下なら何も出さない。
  */
-const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
+const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect, numbered = false }) => {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -197,6 +201,16 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
 
   if (items.length <= 1) return null;
 
+  const withNumber = (i: number, label: string) =>
+    numbered && items[i].number ? (
+      <>
+        <span className="font-guide mr-2">{items[i].number}</span>
+        {label}
+      </>
+    ) : (
+      label
+    );
+
   return (
     <div
       ref={wrapperRef}
@@ -265,7 +279,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
                       item.level === 2 ? "pl-4" : ""
                     } ${i === activeIndex ? "font-bold text-primary" : "text-fg hover:text-system-white"}`}
                   >
-                    {item.label}
+                    {withNumber(i, item.label)}
                   </button>
                 </li>
               ))}
@@ -315,7 +329,7 @@ const WorkToc: FC<WorkTocProps> = ({ items, activeIndex, onSelect }) => {
                           item.level === 2 ? "pl-10" : ""
                         } ${i === activeIndex ? "font-bold text-primary" : "text-fg active:bg-action-hover"}`}
                       >
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate">{withNumber(i, item.label)}</span>
                       </button>
                     </li>
                   ))}

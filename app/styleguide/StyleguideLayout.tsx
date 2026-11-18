@@ -18,12 +18,19 @@ import InfoCard from "@/components/InfoCard";
 import { MarkdownBody } from "@/components/WorkMarkdown";
 import WorkBreadcrumb from "@/components/WorkBreadcrumb";
 import WorkPagerCard from "@/components/WorkPagerCard";
-import WorkToc, { type WorkTocItem } from "@/components/WorkToc";
+import WorkToc, { useWorkToc, type WorkTocItem } from "@/components/WorkToc";
 import WorkThumbnail from "@/components/WorkThumbnail";
 import ProtectedImage from "@/components/ProtectedImage";
 import { PhoneMock, LaptopMock } from "@/components/DeviceMock";
 import WorkDetailHeader from "@/components/WorkDetailHeader";
 import WorkDetailContent from "@/components/WorkDetailContent";
+import WorkHero from "@/components/WorkHero";
+import WorkSummaryStrip from "@/components/WorkSummaryStrip";
+import WorkTocColumn from "@/components/WorkTocColumn";
+import WorkDetailView from "@/components/WorkDetailView";
+import { sectionNumber } from "@/lib/section-number";
+import { WorkLayoutProvider } from "@/components/WorkLayoutContext";
+import { WORK_FIGURE_TONE } from "@/lib/work-figure-tone";
 import SideMenuBar from "@/components/SideMenuBar";
 import RichMarkdownEditor from "@/components/RichMarkdownEditor";
 import { WorkProcessChart, WorkStakeholderDiagram } from "@/components/WorkViz";
@@ -125,6 +132,39 @@ const SAMPLE_WORK_DETAIL = {
   sort_order: 0,
   created_at: null,
   work_no: 0,
+} as Tables<"works">;
+
+// v1 / v2 の本文比較用。図版（figure > flow）・beforeafter・card・card tone=accent を含む節を足した見本（この比較プレビュー専用）
+const SAMPLE_WORK_DETAIL_FIGURES = {
+  ...SAMPLE_WORK_DETAIL,
+  sections: [
+    ...(SAMPLE_WORK_DETAIL.sections as { heading: string; body: string }[]),
+    {
+      heading: "図版とカード（検証用）",
+      body: `::: figure 送客の流れ | figure の中に flow を入れた例
+::: flow 送客フロー highlight=3
+- 対象を抽出
+- スカウトを一括送信
+- 予約ページへ直接遷移
+:::
+:::
+
+::: beforeafter 施策① | 導線の見直し
+before: スカウトを受信 → サービス LP → [!新規登録（情報を再入力）] → 予約
+note: LP → 登録で大半のユーザーが離脱
+after: 送客スカウトを受信 → [+送客 URL から予約ページへ直接]
+note: LP と再登録をスキップ
+:::
+
+::: card 考察
+通常のカード。
+:::
+
+::: card tone=accent 次の一手
+強調カード（tone=accent）。
+:::`,
+    },
+  ],
 } as Tables<"works">;
 
 // ヒーロー構成（works.hero_layout）ごとの見本。画像は SAMPLE_WORK_DETAIL.hero_screenshots の横長・縦長と同じものを使い回す
@@ -645,6 +685,7 @@ function TokensSection() {
             { label: "Desktop / Screen Width",    token: "container.desktop.width.screen",  value: container.desktop.width.screen },
             { label: "Desktop / Screen Height",   token: "container.desktop.height.screen", value: container.desktop.height.screen },
             { label: "Desktop / Main Width Max",  token: "container.desktop.width.mainMax", value: container.desktop.width.mainMax },
+            { label: "Desktop / Wide Width Max",  token: "container.desktop.width.wideMax", value: container.desktop.width.wideMax },
             { label: "Desktop / Main Width Min",  token: "container.desktop.width.mainMin", value: container.desktop.width.mainMin },
             { label: "Desktop / Sidebar Width",   token: "container.desktop.width.side",    value: container.desktop.width.side },
             { label: "Tablet / Screen Width",     token: "container.tablet.width.screen",   value: container.tablet.width.screen },
@@ -876,16 +917,48 @@ const SAMPLE_TOC_ITEMS: WorkTocItem[] = [
   { label: "振り返り", level: 1 },
 ];
 
-function WorkTocDemo() {
+function WorkTocDemo({ numbered = false }: { numbered?: boolean }) {
   const [activeIndex, setActiveIndex] = useState(1);
+  let n = 0;
+  const items = numbered ? SAMPLE_TOC_ITEMS.map((i) => (i.level === 1 ? { ...i, number: sectionNumber(++n) } : i)) : SAMPLE_TOC_ITEMS;
   return (
     <div className="relative h-[360px] w-full">
       <div className="absolute left-0 top-1/2 -translate-y-1/2">
-        <WorkToc items={SAMPLE_TOC_ITEMS} activeIndex={activeIndex} onSelect={setActiveIndex} />
+        <WorkToc items={items} activeIndex={activeIndex} onSelect={setActiveIndex} numbered={numbered} />
       </div>
     </div>
   );
 }
+
+/** WorkTocColumn は本文の見出し（h2）を読むので、v2 の本文と並べて見せる */
+function WorkTocColumnDemo() {
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const { items, activeIndex, scrollTo } = useWorkToc(bodyRef, "styleguide");
+  return (
+    <WorkLayoutProvider layout="v2">
+      <div className="flex w-full items-start gap-12" style={{ ["--work-header-h" as string]: "0px" }}>
+        <WorkTocColumn items={items} activeIndex={activeIndex} onSelect={scrollTo} />
+        <div ref={bodyRef} className="min-w-0 flex-1">
+          <WorkDetailContent work={SAMPLE_WORK_DETAIL} />
+        </div>
+      </div>
+    </WorkLayoutProvider>
+  );
+}
+
+const WORK_FIGURE_TONE_MEANING: Record<keyof typeof WORK_FIGURE_TONE, string> = {
+  frame: "枠（図版の外枠。塗りなし）",
+  cell: "セル（図版の中の面）",
+  accent: "強調（線と文字だけ。塗らない）",
+  stepMark: "順序の目印（ステップの上線）",
+  dotSelf: "データの印（自分）",
+  dotOther: "データの印（ほか）",
+  barPlan: "データの印（棒・計画）",
+  barActual: "データの印（棒・実績）",
+  blocked: "つまずき・遅れ（破線と文字。塗らない）",
+  deferred: "見送り（破線）",
+  cut: "削った項目（打ち消し線）",
+};
 
 function ModalDemo() {
   const [open, setOpen] = useState(false);
@@ -1033,6 +1106,7 @@ function ComponentsSection() {
           <div className="w-full"><Headline title="見出し 01（Headline type=02・18px Bold・文字 Main/050・線なし・h3）" variant="markdown-h1" /></div>
           <div className="w-full"><Headline title="見出し 02（01 と同形・h3・Library Headline type=02 304:302）" variant="markdown-h2" /></div>
           <div className="w-full"><Headline title="背景と課題（section-aside・22px Bold 白 + 右罫線。作品詳細のセクション見出し）" variant="section-aside" /></div>
+          <div className="w-full"><Headline title="背景と課題（section-numbered・v2。番号は見出しの外・下罫線）" variant="section-numbered" number="01" /></div>
         </ComponentPreview>
 
         <ComponentPreview title="Work詳細タイポグラフィ" description="Work詳細モーダル本文のタイポ体系（Figma 457:2366）。markdown 記法と対応。">
@@ -1448,6 +1522,102 @@ function ComponentsSection() {
         </ComponentPreview>
 
         <ComponentPreview
+          title="WorkHero（v2）"
+          description="作品詳細 v2 の最上部。左にカテゴリ・題名・制作内容（期間は要約帯に出す）、右にヒーロー画像（無ければ左だけ）。横幅が足りないと右が下へ折り返す"
+        >
+          <div className="w-full rounded-[12px] border border-border-light bg-surface p-6">
+            <WorkHero
+              work={SAMPLE_WORK_DETAIL}
+              contents={["UI Design", "UX Research", "PJ Management"]}
+              screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
+            />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkSummaryStrip（v2）"
+          description="作品詳細 v2 の要約帯（役割・期間・体制・ツール）。値が空の項目は出さない。ツールは 4 件まで。体制は総人数（計 N 名）だけ出し、内訳はデータがあれば全画面ボタンのモーダルで見る。列数は帯の幅で決まる（約 880px 以上は 4 列・480px 以上は 2×2・それ未満は 1 列。項目が少ないときは行を埋める）。仕切り線は残る"
+        >
+          <div className="w-full rounded-[12px] border border-border-light bg-surface p-6">
+            <WorkSummaryStrip
+              work={SAMPLE_WORK_DETAIL}
+              tools={["Figma", "React", "TypeScript", "Supabase", "Vercel"].map((name) => ({ name, icon_url: null }))}
+            />
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkDetailView（v2）"
+          description="作品詳細の上部ブロック + 本文を v2 で組み立てた全体見本（WorkLayoutProvider layout=v2。ヒーロー・要約帯・本文。目次カラムは toc を渡したときだけ出るのでここでは出さない）"
+        >
+          <div className="w-full rounded-[12px] border border-border-light bg-surface p-6">
+            <WorkLayoutProvider layout="v2">
+              <WorkDetailView
+                work={SAMPLE_WORK_DETAIL}
+                contents={["UI Design", "UX Research", "PJ Management"]}
+                tools={["Figma", "React"].map((name) => ({ name, icon_url: null }))}
+                screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
+              />
+            </WorkLayoutProvider>
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkTocColumn（v2）"
+          description="作品詳細 v2 の PC 用の目次カラム（xl 以上・幅 200px・sticky）。セクション見出しだけを 44px 行で並べ、読んでいる位置を左線と文字色で示す。下は v2 の本文と並べた見本"
+        >
+          <WorkTocColumnDemo />
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkDetailContent v1 / v2"
+          description="本文のレイアウト切替の比較。v1 は従来（見出し + 右罫線・80px 間隔・左右 16px）、v2 は番号付き見出し + 下罫線・96px 間隔・本文は fg-muted。切替は lib/work-detail-layout.ts の定数、確認だけなら URL に ?layout=v2"
+        >
+          <div className="flex w-full flex-col gap-6">
+            {(["v1", "v2"] as const).map((layout) => (
+              <div key={layout} className="flex flex-col gap-2">
+                <p className="text-[12px] text-fg-muted">{layout}</p>
+                <div className="rounded-[12px] border border-border-light bg-surface p-6">
+                  <WorkLayoutProvider layout={layout}>
+                    <WorkDetailContent work={SAMPLE_WORK_DETAIL_FIGURES} />
+                  </WorkLayoutProvider>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="作品図版の色と線"
+          description="作品の図版（v2）の色と線の決まり。正は lib/work-figure-tone.ts の WORK_FIGURE_TONE。ミントは広い面に塗らず、danger も塗りに使わない（線と文字だけ）"
+        >
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[480px] text-left text-[13px] text-fg">
+              <thead>
+                <tr className="border-b border-border text-fg-muted">
+                  <th className="py-2 pr-4 font-normal">キー</th>
+                  <th className="py-2 pr-4 font-normal">意味</th>
+                  <th className="py-2 font-normal">見本</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(Object.keys(WORK_FIGURE_TONE) as (keyof typeof WORK_FIGURE_TONE)[]).map((key) => (
+                  <tr key={key} className="border-b border-border">
+                    <td className="py-2 pr-4 font-mono">{key}</td>
+                    <td className="py-2 pr-4">{WORK_FIGURE_TONE_MEANING[key]}</td>
+                    <td className="py-2">
+                      <div className={`flex h-8 w-28 items-center justify-center text-[12px] ${WORK_FIGURE_TONE[key]}`}>
+                        サンプル
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ComponentPreview>
+
+        <ComponentPreview
           title="WorkBreadcrumb"
           description="作品詳細の先頭ヘッダー（Library 414:296）。高さ 56px。パンくずは Background/Default（bg-surface = indigo-900 #0E0E14・不透明）＋ぼかし＋1px 枠（border = indigo-750 #343440）の囲みに入れる。件数は囲みなしで、地の色の縁取り（text-shadow）で後ろを通る本文から読み分ける。作品詳細では上部固定（sticky）。md 以上は「Works / 作品名」で、囲みの内側に左右 8px を足して文字から枠までを左右ほぼ同じ(15・16px)にする。md 未満は「‹ Works」。件数と前後矢印は全幅で出す。先頭は前矢印なし・最後は次矢印なし・1 件のみは件数も矢印も出さない。実寸 800px"
         >
@@ -1489,6 +1659,13 @@ function ComponentsSection() {
           description="作品詳細の目次（シークエリア）。閉じた状態は見出しごとの短い横線の縦並びで、いま読んでいる見出しの線だけ primary 色。開いた状態は見出し名を並べた暗い角丸パネル（長い見出しは省略表示、小見出しはインデント）。マウスはホバーで開閉するポップオーバー、キーボード（Enter / Space）も同じポップオーバー。タッチ・ペンは線の列をタップすると左から出るドロワー（1 行 44px 以上・背景タップ / × / Esc で閉じる）。ポップオーバーは Esc・外側タップで閉じ、見出しを選ぶとそこへスクロールして閉じる。見出しが 1 つ以下なら何も出さない。位置は呼び出し側で決める（実ページは画面左端に固定）"
         >
           <WorkTocDemo />
+        </ComponentPreview>
+
+        <ComponentPreview
+          title="WorkToc（numbered・v2）"
+          description="numbered を付けると、セクション見出し（level 1）の前に本文の見出しが持つ 2 桁の番号（Guide フォント）を出す。小見出しには付かない"
+        >
+          <WorkTocDemo numbered />
         </ComponentPreview>
 
         <ComponentPreview

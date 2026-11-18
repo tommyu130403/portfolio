@@ -1,4 +1,18 @@
 import type { FC, ReactNode } from "react";
+import { WORK_FIGURE_TONE } from "@/lib/work-figure-tone";
+import { useWorkLayout } from "./WorkLayoutContext";
+
+// v1 は凍結: 直すのは v2 だけ
+const CARD_CLASS = {
+  v1: {
+    default: "flex flex-col gap-2 rounded-[14px] border p-4 border-border",
+    accent: "flex flex-col gap-2 rounded-[14px] border p-4 border-border-main bg-main-100-a10",
+  },
+  v2: {
+    default: `flex flex-col gap-2 p-4 ${WORK_FIGURE_TONE.cell}`,
+    accent: `flex flex-col gap-2 rounded-r8 p-4 ${WORK_FIGURE_TONE.accent}`,
+  },
+} as const;
 
 type InfoCardProps = {
   title?: ReactNode;
@@ -16,23 +30,22 @@ type InfoCardProps = {
  * 地と枠: default / in-figure = 地なし + 枠 Indigo/750(2026-11-17 Figma 更新で地を廃止)、
  * accent = bg-main-100-a10（Main/100-α10）+ 枠 Border/Main（2026-11-13 照合）。
  */
-const InfoCard: FC<InfoCardProps> = ({ title, tone = "default", children }) => (
-  <div
-    className={`flex flex-col gap-2 rounded-[14px] border p-4 ${
-      tone === "accent" ? "border-border-main bg-main-100-a10" : "border-border"
-    }`}
-  >
-    {title ? (
-      <p
-        className={`text-body-02-jp-bold ${
-          tone === "accent" ? "text-primary" : "text-fg-headline-01"
-        }`}
-      >
-        {title}
-      </p>
-    ) : null}
-    {children}
-  </div>
-);
+const InfoCard: FC<InfoCardProps> = ({ title, tone = "default", children }) => {
+  const layout = useWorkLayout();
+  return (
+    <div className={CARD_CLASS[layout][tone]}>
+      {title ? (
+        <p
+          className={`text-body-02-jp-bold ${
+            tone === "accent" ? "text-primary" : "text-fg-headline-01"
+          }`}
+        >
+          {title}
+        </p>
+      ) : null}
+      {children}
+    </div>
+  );
+};
 
 export default InfoCard;

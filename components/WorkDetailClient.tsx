@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/src/lib/supabase";
 import type { Tables } from "@/src/types/supabase";
 import { DEFAULT_IMAGE, parseScreenshots, parseThumbnail } from "@/lib/work-content";
-import WorkDetailHeader, { HeroShotsSkeleton, type WorkToolItem } from "./WorkDetailHeader";
-import WorkDetailContent from "./WorkDetailContent";
+import { HeroShotsSkeleton, type WorkToolItem } from "./WorkDetailHeader";
+import WorkDetailView from "./WorkDetailView";
+import { useWorkLayout } from "./WorkLayoutContext";
 import WorkBreadcrumb from "./WorkBreadcrumb";
 import WorkPagerCard from "./WorkPagerCard";
 import SideMenuBar from "./SideMenuBar";
@@ -78,7 +79,10 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { items: tocItems, activeIndex: tocActive, scrollTo: scrollToToc } = useWorkToc(contentRef, work?.id ?? null);
+  const layout = useWorkLayout();
+  const { items: tocItems, activeIndex: tocActive, scrollTo: scrollToToc } = useWorkToc(contentRef, work ? `${work.id}:${layout}` : null);
+
+  const hasTocColumn = layout === "v2" && tocItems.filter((i) => i.number).length > 1;
 
   useEffect(() => {
     let cancelled = false;
@@ -214,10 +218,15 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
             nextHref={next ? workHref(next.id) : undefined}
           />
         </div>
-        <WorkDetailHeader work={work} contents={contents} tools={tools} screenshots={screenshots} categoryHue={hueOf(work.category)} />
-        <div ref={contentRef}>
-          <WorkDetailContent work={work} />
-        </div>
+        <WorkDetailView
+          work={work}
+          contents={contents}
+          tools={tools}
+          screenshots={screenshots}
+          categoryHue={hueOf(work.category)}
+          contentRef={contentRef}
+          toc={hasTocColumn ? { items: tocItems, activeIndex: tocActive, onSelect: scrollToToc } : undefined}
+        />
 
         {showNav && (
           <>
@@ -265,8 +274,8 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
       {/* 目次は画面左端に固定。z-30 は固定ヘッダー(z-20)より上、SideMenuBar(z-40)・モーダル(z-50 / z-60)より下。
           lg 未満は本文カラム左の余白(32px / md 40px)に線が収まり、lg 以上は SideMenuBar(96px)の右に置く */}
       {work && !loading && (
-        <div className="fixed left-0 top-1/2 z-30 -translate-y-1/2 lg:left-[112px]">
-          <WorkToc key={work.id} items={tocItems} activeIndex={tocActive} onSelect={scrollToToc} />
+        <div className={`fixed left-0 top-1/2 z-30 -translate-y-1/2 lg:left-[112px]${hasTocColumn ? " xl:hidden" : ""}`}>
+          <WorkToc key={work.id} items={tocItems} activeIndex={tocActive} onSelect={scrollToToc} numbered={layout === "v2"} />
         </div>
       )}
       {/* z-index を付けない。付けるとここがスタックコンテキストになり、内側で開く
@@ -274,7 +283,7 @@ const WorkDetailClient: FC<WorkDetailClientProps> = ({ id }) => {
           下に沈む（2026-09-11 に実測） */}
       <main className="relative flex min-w-0 flex-1 flex-col items-center">
         {/* カラム */}
-        <div className="mx-auto flex w-full max-w-main flex-col gap-12 px-8 py-20 md:px-10 lg:px-6 xl:px-0">
+        <div className={`mx-auto flex w-full ${layout === "v2" ? "max-w-wide" : "max-w-main"} flex-col gap-12 px-8 py-20 md:px-10 lg:px-6 xl:px-0`}>
           {renderBody()}
         </div>
       </main>

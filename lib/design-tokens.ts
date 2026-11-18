@@ -165,6 +165,7 @@ export type ColorScale<G extends ColorGroup> = keyof (typeof color)[G];
 // primitive を意味ベースで参照するエイリアス層。
 // キー名は Tailwind ユーティリティとして自然に読める形へ調整（エルゴノミック命名）。
 // 右側コメントに対応する Figma の semantic 名を併記する。
+// 作品の図版での色の使い方は lib/work-figure-tone.ts を参照。
 
 export const semantic = {
   /** Main/Primary — ブランドアクセント */
@@ -300,6 +301,7 @@ export const container = {
     width: {
       screen:  1440,
       mainMax:  800,  // Device/desktop Main.Max
+      wideMax: 1120,  // 作品詳細 v2 の列幅（globals.css --container-wide と同値）
       mainMin:  728,
       side:     256,
     },

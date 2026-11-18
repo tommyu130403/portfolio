@@ -62,7 +62,7 @@ export const HeroShotsSkeleton: FC<{ children?: ReactNode }> = ({ children }) =>
 );
 
 /** URL 末尾の `#フラグメント` を分ける（サーバーには届かず、データ形式（URL 文字列）も変わらない） */
-const splitFragment = (s: string) => {
+export const splitFragment = (s: string) => {
   const i = s.indexOf("#");
   return i < 0 ? { src: s, frag: "" } : { src: s.slice(0, i), frag: s.slice(i + 1) };
 };
@@ -103,7 +103,7 @@ const HeroSp: FC<{ shot: DeviceShot; onClick: () => void }> = ({ shot, onClick }
  * 管理画面で構成（hero_layout）を選んだ作品のヒーロー。画像の縦横は調べず、枠は構成どおりに決める。
  * slots は構成の枠数ぶんの配列（空き枠は ""）。空き枠は飛ばして描く。全部空なら呼び出し側が出さない
  */
-const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => void }> = ({ layout, slots, onClick }) => {
+export const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => void }> = ({ layout, slots, onClick }) => {
   const filled = slots.filter(Boolean);
   if (layout === "sp2") {
     return (
@@ -165,7 +165,7 @@ const HeroLayoutShots: FC<{ layout: HeroLayout; slots: string[]; onClick: () => 
  * ユーザー指示（2026-11-02）でスマホは PC の右下、倍率は実寸寄り（PC 幅 0.88 に対しスマホ幅 0.15 ≒ 高さは PC 枠の約 2/3）。
  * それ以外は横並び・下端揃え
  */
-const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawShots, onClick }) => {
+export const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots: rawShots, onClick }) => {
   const [landscape, setLandscape] = useState<Record<string, boolean>>({});
   // URL 末尾のフラグメントで描き方を指定する（サーバーには届かず、データ形式（URL 配列）も変わらない。ユーザー指示 2026-11-02）:
   //   `#plain` = 端末の枠を付けず素の画像で出す（透過 PNG の合成図など）
@@ -274,7 +274,7 @@ const MetaValue: FC<{ children: ReactNode; last?: boolean; className?: string }>
 );
 
 /** 値の横に置く「全画面で見る」ボタン（Button/Function 24px。押せる範囲は疑似要素で 44px に広げる） */
-const VizButton: FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
+export const VizButton: FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
   <button
     type="button"
     onClick={onClick}

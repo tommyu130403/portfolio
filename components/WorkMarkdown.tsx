@@ -14,6 +14,11 @@ import InfoCard from "./InfoCard";
 import { BarChart, BeforeAfter, FigureFrame, FlowSteps, type BarTone, type StepTone } from "./WorkFigure";
 import { TableGrid, TableKeyValue } from "./Table";
 import ProtectedImage from "./ProtectedImage";
+import { useWorkLayout } from "./WorkLayoutContext";
+import { sectionNumber } from "@/lib/section-number";
+
+// v1 は凍結: 直すのは v2 だけ
+const BODY_COLOR = { v1: "text-fg", v2: "text-fg-muted" } as const;
 
 /**
  * Work 詳細・本文 markdown の共有レンダラ（公開モーダル / admin プレビュー共用）。
@@ -221,7 +226,8 @@ const ImageTextRow: FC<{
   caption?: string;
   text: string | null;
   keyBase: string;
-}> = ({ url, width, scale, caption, text, keyBase }) => (
+  bodyColor: string;
+}> = ({ url, width, scale, caption, text, keyBase, bodyColor }) => (
   <div className="@container mt-10 mb-10">
     <div className="flex flex-col items-start gap-2 @min-[560px]:flex-row @min-[560px]:gap-6">
       <div
@@ -238,7 +244,7 @@ const ImageTextRow: FC<{
       {(text || caption) && (
         <div className="flex min-w-0 flex-col justify-center gap-2 @min-[560px]:min-w-[200px] @min-[560px]:flex-1">
           {text && (
-            <p className="text-body-01-jp text-fg">
+            <p className={`text-body-01-jp ${bodyColor}`}>
               {renderInline(text, `${keyBase}-t`)}
             </p>
           )}
@@ -813,8 +819,9 @@ const InFigureContext = createContext(false);
 function RenderBlock({ block, idx }: { block: Block; idx: number }) {
   const k = `b-${idx}`;
   const inFigure = useContext(InFigureContext);
-  // 本文は図版の内外とも Text/Body-01（fg）。Figma 787:9916 で照合
-  const bodyColor = "text-fg"; // Figma: 本文は Text/Body-01(Indigo/050)。2026-11-15 Master 787:9916 で照合
+  const layout = useWorkLayout();
+  // 本文色（図版の内外とも）。v1 は text-fg（Figma 787:9916 で照合済み・凍結）、v2 は text-fg-muted（オーナー判断 2026-11-18）
+  const bodyColor = BODY_COLOR[layout];
   switch (block.type) {
     // 見出しの階層: 作品名 h1 → セクション見出し h2 → `##`・`###` とも h3（同形の同格。見た目は変えない）
     case "h1":
@@ -870,6 +877,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
           caption={block.image.caption || undefined}
           text={block.text}
           keyBase={k}
+          bodyColor={bodyColor}
         />
       );
     case "ul":
@@ -923,7 +931,7 @@ function RenderBlock({ block, idx }: { block: Block; idx: number }) {
       if (block.content.trim() === "") return null;
       return (
         <div
-          className="work-html mb-4 mt-10 max-w-full overflow-x-auto text-fg [&_svg[viewBox]]:h-auto [&_svg]:max-w-full"
+          className={`work-html mb-4 mt-10 max-w-full overflow-x-auto ${bodyColor} [&_svg[viewBox]]:h-auto [&_svg]:max-w-full`}
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content) }}
         />
       );
@@ -1084,6 +1092,39 @@ export const WorkSections: FC<{
   /** admin プレビュー専用。見出しの編集ボタンを出す（引数 = sections 内の何番目か）。渡さなければ見た目は変わらない */
   onEditSection?: (index: number) => void;
 }> = ({ sections, onEditSection }) => {
+  const layout = useWorkLayout();
+  if (layout === "v2") {
+    // v2: 番号付き見出し（見出しのあるセクションだけを数える）・セクション間 96px・本文の左右余白なし
+    const numbers: (string | undefined)[] = [];
+    let headingNo = 0;
+    for (const sec of sections) numbers.push(sec.heading.trim() ? sectionNumber(++headingNo) : undefined);
+    return (
+      <div className="flex flex-col gap-24">
+        {sections.map((sec, i) => {
+          const number = numbers[i];
+          return (
+            <section key={i} className="flex w-full flex-col gap-6">
+              {onEditSection ? (
+                <div className="relative">
+                  {sec.heading ? (
+                    <Headline title={sec.heading} variant="section-numbered" number={number} />
+                  ) : (
+                    <p className="text-[12px] text-fg-muted">見出しなし</p>
+                  )}
+                  <EditButton label={sec.heading || "見出しなしのセクション"} onClick={() => onEditSection(i)} />
+                </div>
+              ) : (
+                sec.heading && <Headline title={sec.heading} variant="section-numbered" number={number} />
+              )}
+              <div className="min-w-0 w-full">
+                <MarkdownBody md={sec.md} />
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    );
+  }
   // 1カラム。見出し（Headline section-aside = Library Headline type=01 + 右罫線）→ 32px → 本文。セクション間 80px。
   // 区切り線は見出しの罫線が兼ねる（Claude Design「Works 詳細 1カラム 提案」B案）
   return (

@@ -24,9 +24,9 @@ import RichMarkdownEditor, {
   type PreviewDevice,
   type EditorMode,
 } from "@/components/RichMarkdownEditor";
-import WorkDetailHeader, { type WorkToolItem, type WorkDetailEditRegion } from "@/components/WorkDetailHeader";
+import { type WorkToolItem, type WorkDetailEditRegion } from "@/components/WorkDetailHeader";
+import WorkDetailView from "@/components/WorkDetailView";
 import WorkCard from "@/components/WorkCard";
-import WorkDetailContent from "@/components/WorkDetailContent";
 import { SERVICE_BRANDS } from "@/lib/service-brands";
 import {
   parseScreenshots,
@@ -1485,15 +1485,15 @@ export default function WorkEditor({ workId, iconCatalog }: { workId: string; ic
             <PreviewPane device={settingsDevice}>
               {previewWork && (
                 <div className="flex flex-col gap-12 text-white">
-                  <WorkDetailHeader
+                  <WorkDetailView
                     work={previewWork}
                     contents={contents}
                     tools={previewTools}
                     screenshots={previewScreenshots}
                     categoryHue={previewWork.category ? hues[previewWork.category] ?? null : null}
                     onEdit={handlePreviewEdit}
+                    onEditSection={handleEditSection}
                   />
-                  <WorkDetailContent work={previewWork} onEditSection={handleEditSection} />
                   <section className="flex flex-col gap-3">
                     <p className="text-[11px] text-fg-muted">一覧カードでの見え方</p>
                     <div className="max-w-[339px]">

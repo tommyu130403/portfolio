@@ -267,6 +267,8 @@ html:has([data-work-detail]) {
   /* Container: メインコンテンツの最大表示幅（Figma Device/desktop Main.Max と同期）
      生成ユーティリティ: max-w-main（lib/design-tokens.ts container.desktop.width.mainMax と同値） */
   --container-main: 800px;
+  /* 作品詳細 v2 の列幅 */
+  --container-wide: 1120px;
 
   /* Radius (prefix "r" to avoid collision with Tailwind built-ins) */
   --radius-r2:  2px;

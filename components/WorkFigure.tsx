@@ -1,4 +1,6 @@
 import React, { type FC, type ReactNode } from "react";
+import { WORK_FIGURE_TONE } from "@/lib/work-figure-tone";
+import { useWorkLayout } from "./WorkLayoutContext";
 
 /**
  * 作品本文の「図版」ブロック群（WorkMarkdown の `::: figure` / `beforeafter` / `flow` / `bars` から使う）。
@@ -9,6 +11,29 @@ import React, { type FC, type ReactNode } from "react";
 export type StepTone = "default" | "good" | "bad";
 export type FigureStep = { content: ReactNode; tone: StepTone };
 
+// v1 は凍結: 直すのは v2 だけ
+const FRAME_CLASS = {
+  v1: "flex flex-col gap-5 rounded-2xl bg-surface-light px-4 pb-6 pt-7 @min-[560px]:px-8",
+  v2: `flex flex-col gap-5 ${WORK_FIGURE_TONE.frame} px-4 py-6 @min-[560px]:px-6`,
+} as const;
+
+const STEP_BASE_V1 =
+  "flex min-w-0 items-center justify-center rounded-md border px-2 py-2 text-center @min-[560px]:flex-1";
+const STEP_BASE_V2 = "flex min-w-0 items-center justify-center px-2 py-2 text-center @min-[560px]:flex-1";
+
+const STEP_CLASS = {
+  v1: {
+    good: `${STEP_BASE_V1} text-body-02-jp border-main-100-a60 bg-main-100-a10 text-main-050`,
+    bad: `${STEP_BASE_V1} text-body-02-jp border-danger-300-a60 bg-danger-300-a10 text-danger-100`,
+    default: `${STEP_BASE_V1} text-body-02-jp border-border bg-system-900-a25 text-fg`,
+  },
+  v2: {
+    good: `${STEP_BASE_V2} text-body-02-jp rounded-r8 ${WORK_FIGURE_TONE.accent}`,
+    bad: `${STEP_BASE_V2} text-body-02-jp rounded-r8 ${WORK_FIGURE_TONE.blocked}`,
+    default: `${STEP_BASE_V2} text-body-02-jp text-fg ${WORK_FIGURE_TONE.cell}`,
+  },
+} as const;
+
 /* ------------------------------------------------------------------ *
  * 枠
  * ------------------------------------------------------------------ */
@@ -18,31 +43,26 @@ export const FigureFrame: FC<{ title?: ReactNode; lead?: ReactNode; children?: R
   title,
   lead,
   children,
-}) => (
-  <div className="flex flex-col gap-5 rounded-2xl bg-surface-light px-4 pb-6 pt-7 @min-[560px]:px-8">
-    {title || lead ? (
-      <div className="flex flex-col gap-0.5">
-        {title ? <p className="text-body-01-jp-bold text-fg-headline-01">{title}</p> : null}
-        {lead ? <p className="text-caption-01-jp text-fg-caption">{lead}</p> : null}
-      </div>
-    ) : null}
-    {children}
-  </div>
-);
+}) => {
+  const layout = useWorkLayout();
+  return (
+    <div className={FRAME_CLASS[layout]}>
+      {title || lead ? (
+        <div className="flex flex-col gap-0.5">
+          {title ? <p className="text-body-01-jp-bold text-fg-headline-01">{title}</p> : null}
+          {lead ? <p className="text-caption-01-jp text-fg-caption">{lead}</p> : null}
+        </div>
+      ) : null}
+      {children}
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------------ *
  * ステップ列（横フロー / Before・After 共通）
  * ------------------------------------------------------------------ */
 
-const STEP_BASE =
-  "flex min-w-0 items-center justify-center rounded-md border px-2 py-2 text-center @min-[560px]:flex-1";
-
-const stepClass = (tone: StepTone) =>
-  tone === "good"
-    ? `${STEP_BASE} text-body-02-jp border-main-100-a60 bg-main-100-a10 text-main-050`
-    : tone === "bad"
-      ? `${STEP_BASE} text-body-02-jp border-danger-300-a60 bg-danger-300-a10 text-danger-100`
-      : `${STEP_BASE} text-body-02-jp border-border bg-system-900-a25 text-fg`;
+const stepClass = (layout: "v1" | "v2", tone: StepTone) => STEP_CLASS[layout][tone];
 
 const Arrow: FC = () => (
   <span aria-hidden className="text-body-02-jp flex items-center justify-center text-fg-subtle">
@@ -51,17 +71,20 @@ const Arrow: FC = () => (
   </span>
 );
 
-const StepRow: FC<{ steps: FigureStep[]; spacer?: boolean; gap: string }> = ({ steps, spacer, gap }) => (
-  <div className={`flex flex-col items-stretch @min-[560px]:flex-row ${gap}`}>
-    {steps.map((s, i) => (
-      <React.Fragment key={i}>
-        {i > 0 ? <Arrow /> : null}
-        <div className={stepClass(s.tone)}>{s.content}</div>
-      </React.Fragment>
-    ))}
-    {spacer ? <div aria-hidden className="hidden @min-[560px]:block @min-[560px]:flex-1" /> : null}
-  </div>
-);
+const StepRow: FC<{ steps: FigureStep[]; spacer?: boolean; gap: string }> = ({ steps, spacer, gap }) => {
+  const layout = useWorkLayout();
+  return (
+    <div className={`flex flex-col items-stretch @min-[560px]:flex-row ${gap}`}>
+      {steps.map((s, i) => (
+        <React.Fragment key={i}>
+          {i > 0 ? <Arrow /> : null}
+          <div className={stepClass(layout, s.tone)}>{s.content}</div>
+        </React.Fragment>
+      ))}
+      {spacer ? <div aria-hidden className="hidden @min-[560px]:block @min-[560px]:flex-1" /> : null}
+    </div>
+  );
+};
 
 /** `::: flow ラベル highlight=N` — 横並びの手順（狭い幅では縦積み） */
 export const FlowSteps: FC<{ label?: ReactNode; steps: FigureStep[] }> = ({ label, steps }) => (

@@ -763,6 +763,8 @@ function TokensSection() {
         本文エディタのデバイス幅プレビューもこの値を参照する。
         サイトの最大表示幅は <TokenBadge>--container-main</TokenBadge>（globals.css）→
         {" "}<TokenBadge>max-w-main</TokenBadge> ユーティリティで Desktop / Main Width Max と同値。
+        作品詳細 v2 の枠（本文＋目次の列）は <TokenBadge>--container-wide</TokenBadge> →
+        {" "}<TokenBadge>max-w-wide</TokenBadge>（1120px・Wide Width Max）。本文の列は main のまま。
       </p>
       <div className="grid grid-cols-2 gap-3">
         {(

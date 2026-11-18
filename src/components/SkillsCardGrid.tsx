@@ -399,7 +399,7 @@ export default function SkillsCardGrid() {
     return (
       <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-0">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[274px] animate-pulse rounded-[14px] bg-surface-light" />
+          <div key={i} className="h-[274px] animate-pulse rounded-[16px] bg-surface-light" />
         ))}
       </div>
     );

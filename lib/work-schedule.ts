@@ -52,11 +52,18 @@ export const nextMonthStartOf = (day: number): number => {
   return m === 12 ? daysFromCivil(y + 1, 1, 1) : daysFromCivil(y, m + 1, 1);
 };
 
-/** `M/D` */
-export const formatMD = (day: number): string => {
-  const { m, d } = civilFromDays(day);
-  return `${m}/${d}`;
+/**
+ * 日付のおおまかな表示（厳密な日は出さない）: 1〜10 日 = `M月初旬`、11〜20 日 = `M月中旬`、21 日〜 = `M月下旬`、月の最終日 = `M月末`。
+ * withYear なら先頭に `YYYY年`
+ */
+export const formatRoughDay = (day: number, withYear = false): string => {
+  const { y, m, d } = civilFromDays(day);
+  const part = nextMonthStartOf(day) === day + 1 ? "末" : d <= 10 ? "初旬" : d <= 20 ? "中旬" : "下旬";
+  return `${withYear ? `${y}年` : ""}${m}月${part}`;
 };
+
+/** ラベルにすでに日付（`M/D` か `M月初旬` などのおおまかな表記）が書いてあるか。あれば自動の日付を添えない */
+export const labelHasDate = (label: string): boolean => /\d+\/\d+|\d+月(初旬|上旬|中旬|下旬|末)/.test(label);
 
 export type ScheduleSpan = { start: number; end: number; label: string };
 export type ScheduleMilestone = { day: number; label: string; text: string };
@@ -164,8 +171,8 @@ export function parseSchedule(body: string[]): ScheduleData | null {
     const day = parseScheduleDate(dateText);
     if (day === null) continue;
     const label = labelParts.join(" | ").trim();
-    // 日付は自動で添える。ただし本文に M/D の形がすでにあれば添えない
-    const text = /\d+\/\d+/.test(label) ? label : `${label} ${formatMD(day)}`.trim();
+    // 日付（おおまかな表記）は自動で添える。ただし本文に日付がすでにあれば添えない
+    const text = labelHasDate(label) ? label : `${label} ${formatRoughDay(day)}`.trim();
     lane().milestones.push({ day, label, text });
   }
 
@@ -200,16 +207,14 @@ export function parseSchedule(body: string[]): ScheduleData | null {
 }
 
 /**
- * 期間の表示。月の 1 日から翌月 1 日まで = `N月`。終わりが月の 1 日なら前日までとして `M/D – M/D`
- * （例: 8/1..9/1 → 8月、5/17..9/1 → 5/17 – 8/31、9/1..11/1 → 9/1 – 10/31）
+ * 期間の表示。月の 1 日から翌月 1 日まで = `N月`。終わりが月の 1 日なら前日までとして、両端をおおまかな表記で
+ * （例: 8/1..9/1 → 8月、5/17..9/1 → 5月中旬 – 8月末、9/1..11/1 → 9月初旬 – 10月末）
  */
 export function formatSpan(start: number, end: number, withYear = false): string {
   const s = civilFromDays(start);
   if (s.d === 1 && end === nextMonthStartOf(start)) return withYear ? `${s.y}年${s.m}月` : `${s.m}月`;
   const last = civilFromDays(end).d === 1 && end > start ? end - 1 : end;
-  const e = civilFromDays(last);
-  const head = withYear ? `${s.y}/${s.m}/${s.d}` : `${s.m}/${s.d}`;
-  return `${head} – ${withYear && e.y !== s.y ? `${e.y}/` : ""}${e.m}/${e.d}`;
+  return `${formatRoughDay(start, withYear)} – ${formatRoughDay(last, withYear && civilFromDays(last).y !== s.y)}`;
 }
 
 /** 軸が年をまたぐか（縦一覧で年を添えるかの判断に使う） */

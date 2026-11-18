@@ -1642,13 +1642,12 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkHero（v2）"
-          description="作品詳細 v2 の最上部。どの幅でも 1 列で、上にヒーロー画像（中央）、その下にカテゴリ・題名・制作内容・使用ツール（小さなアイコン列。アイコンが無いものは文字）。文字側は 3 つのまとまり: 見出し（カテゴリ・題名・リード）/ 事実（期間・役割。上下に細い線。幅 440px 以上は横に並べ、未満はラベル左・値右。体制の人数は本文の `::: team` の図に出る）/ 制作内容・ツール（画像が無ければ文字側だけ）"
+          description="作品詳細 v2 の最上部。どの幅でも 1 列で、上にヒーロー画像（中央）、その下にカテゴリ・題名・制作内容。使用ツールは v2 では出さない（v1 のメタ表には残る）。文字側は 3 つのまとまり: 見出し（カテゴリ・題名・リード）/ 事実（期間・役割。上下に細い線。幅 440px 以上は横に並べ、未満はラベル左・値右。体制の人数は本文の `::: team` の図に出る）/ 制作内容（画像が無ければ文字側だけ）"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface p-6">
             <WorkHero
               work={SAMPLE_WORK_DETAIL}
               contents={["UI Design", "UX Research", "PJ Management"]}
-              tools={["Figma", "React", "TypeScript"].map((name) => ({ name, icon_url: null }))}
               screenshots={(SAMPLE_WORK_DETAIL.hero_screenshots ?? []) as string[]}
             />
           </div>

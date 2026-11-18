@@ -2,11 +2,9 @@
 
 import { type FC, type ReactNode, useMemo, useState } from "react";
 import Tag from "./Tag";
-import Tooltip from "./Tooltip";
-import ProtectedImage from "./ProtectedImage";
 import { ScreenshotLightbox } from "./DeviceMock";
 import { EditButton } from "./WorkMarkdown";
-import { HeroLayoutShots, HeroShots, resolveToolIconSrc, splitFragment, type WorkDetailEditRegion, type WorkToolItem } from "./WorkDetailHeader";
+import { HeroLayoutShots, HeroShots, splitFragment, type WorkDetailEditRegion } from "./WorkDetailHeader";
 import { parseHeroLayout, parseHeroSlots } from "@/lib/work-content";
 import type { Tables } from "@/src/types/supabase";
 
@@ -22,8 +20,6 @@ type WorkHeroProps = {
   onEdit?: (region: WorkDetailEditRegion) => void;
   /** タイトルの下に出す 1〜2 文のリード（本文の `::: summary` の lead: を v2 で移したもの）。無ければ出さない */
   lead?: ReactNode;
-  /** 使用ツール。制作内容タグの下に小さなアイコン列で出す（アイコンが無いものは小さな文字）。空なら出さない */
-  tools?: WorkToolItem[];
 };
 
 /**
@@ -37,12 +33,11 @@ const FACTS_COLS: Record<string, string> = {
 };
 
 /**
- * 作品詳細 v2 の最上部。常に 1 列: ヒーロー画像（中央。無ければ出さない）→ カテゴリ・題名・リード → 期間・役割 → 制作内容・ツール。
+ * 作品詳細 v2 の最上部。常に 1 列: ヒーロー画像（中央。無ければ出さない）→ カテゴリ・題名・リード → 期間・役割 → 制作内容。
  * DOM の順は文字が先・画像が後（読み上げは見出しから）。画像は order-first で見た目だけ先頭にする。
  * ヒーローの選び方・端末枠・拡大表示は WorkDetailHeader と同じ部品を使う
  */
-const WorkHero: FC<WorkHeroProps> = ({ work, contents, screenshots, categoryHue, onEdit, lead, tools = [] }) => {
-  const [brokenIcons, setBrokenIcons] = useState<Record<string, boolean>>({});
+const WorkHero: FC<WorkHeroProps> = ({ work, contents, screenshots, categoryHue, onEdit, lead }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const heroLayout = parseHeroLayout(work.hero_layout);
   const heroSlots = useMemo(
@@ -59,7 +54,7 @@ const WorkHero: FC<WorkHeroProps> = ({ work, contents, screenshots, categoryHue,
     { key: "role", label: "役割", value: work.role?.trim() ?? "", editLabel: "役割", region: "roles" },
   ] satisfies Fact[]).filter((f) => f.value || onEdit);
   const factsCols = FACTS_COLS[`${facts[0]?.key === "period" ? "p" : "r"}${facts.length}`];
-  const hasMeta = contents.length > 0 || tools.length > 0 || !!onEdit;
+  const hasMeta = contents.length > 0 || !!onEdit;
   const rel = onEdit ? "relative " : "";
   const relPad = onEdit ? "relative pr-10 " : "";
 
@@ -93,41 +88,13 @@ const WorkHero: FC<WorkHeroProps> = ({ work, contents, screenshots, categoryHue,
             ))}
           </dl>
         )}
-        {/* 3. 付随情報: 制作内容タグ → 使用ツール */}
+        {/* 3. 付随情報: 制作内容タグ */}
         {hasMeta && (
-          <div className="flex flex-col gap-3">
-            {(contents.length > 0 || onEdit) && (
-              <div className={`${relPad}flex flex-wrap gap-2`}>
-                {contents.map((s) => (
-                  <Tag key={s} label={s} variant="content" />
-                ))}
-                {onEdit && <EditButton label="制作内容" onClick={() => onEdit("tags")} />}
-              </div>
-            )}
-            {tools.length > 0 && (
-              // ツールは静かな 1 行（見出しなし）。Tooltip が出るので、この列の祖先に overflow-hidden を付けない。編集は制作内容と同じ tags 領域
-              <ul aria-label="使用ツール" className="m-0 flex list-none flex-wrap items-center gap-3 p-0">
-                {tools.map((t) => {
-                  const iconSrc = resolveToolIconSrc(t, brokenIcons);
-                  return (
-                    <li key={t.name} className="flex items-center">
-                      {iconSrc ? (
-                        <Tooltip label={t.name} focusable={false}>
-                          <ProtectedImage
-                            src={iconSrc}
-                            alt={t.name}
-                            className="h-4 w-4 shrink-0 object-contain"
-                            onError={() => setBrokenIcons((prev) => ({ ...prev, [iconSrc]: true }))}
-                          />
-                        </Tooltip>
-                      ) : (
-                        <span className="text-caption-01-jp text-fg-muted">{t.name}</span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+          <div className={`${relPad}flex flex-wrap gap-2`}>
+            {contents.map((s) => (
+              <Tag key={s} label={s} variant="content" />
+            ))}
+            {onEdit && <EditButton label="制作内容" onClick={() => onEdit("tags")} />}
           </div>
         )}
       </div>

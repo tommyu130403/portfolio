@@ -108,7 +108,7 @@ export const TeamDots: FC<{ groups: TeamGroup[]; title: string; lead: string; fr
   );
   return (
     <BlockFrame framed={framed} title={title || (framed ? "体制" : "")} lead={lead} aside={legend} keyBase="team">
-      <div role="group" aria-label={`${title || "体制"} 計 ${total} 名`} className="grid grid-cols-1 gap-2 @min-[480px]:grid-cols-2">
+      <div role="group" aria-label={`${title || "体制"} 計 ${total} 名${sharedSelf ? "（自分は 1 名で計上）" : ""}`} className="grid grid-cols-1 gap-2 @min-[480px]:grid-cols-2">
         {groups.map((g, gi) => (
           <div key={gi} className={`flex min-w-0 flex-col gap-3 p-4 ${CELL[layout]}`}>
             <p className="text-[11px] text-fg-muted">{g.label}</p>

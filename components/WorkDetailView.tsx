@@ -94,10 +94,10 @@ const WorkDetailView: FC<WorkDetailViewProps> = ({
         screenshots={screenshots}
         categoryHue={categoryHue}
         onEdit={onEdit}
-        tools={tools}
         lead={summary?.lead ? renderInline(summary.lead, "hoist-lead") : undefined}
       />
-      <div className="xl:flex xl:items-start xl:gap-12">
+      {/* 冒頭(MV)と本文の間は、親の gap-12 に足して 72px / md 以上 96px(本文のセクション間と同じ)にする */}
+      <div className="mt-6 md:mt-12 xl:flex xl:items-start xl:gap-12">
         {toc && (
           <div className="hidden shrink-0 xl:block xl:self-stretch">
             <WorkTocColumn items={toc.items} activeIndex={toc.activeIndex} onSelect={toc.onSelect} />

@@ -7,6 +7,7 @@ import Tag from "./Tag";
 import ProtectedImage from "./ProtectedImage";
 import WorkThumbnail from "./WorkThumbnail";
 import { GUIDE_TEXT } from "./WorkBreadcrumb";
+import { useWorkLayout } from "./WorkLayoutContext";
 import type { WorkThumbnailData } from "@/lib/work-content";
 import { HOVER_CARD } from "@/lib/hover-card";
 
@@ -45,6 +46,9 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
   );
 
   const align = isNext ? "items-start text-left md:items-end md:text-right" : "items-start text-left";
+  // v2 は本文の関連作品カード（::: related）と同じ「塗り＋枠」にそろえる（オーナー判断 2026-11-19）。
+  // ホバーの地も関連カードと同じ indigo-800（HOVER_CARD の Action/hover より優先させる）。v1 は枠だけのまま
+  const v2Fill = useWorkLayout() === "v2" ? "bg-surface-light hover:bg-indigo-800!" : "";
 
   const body = (
     <>
@@ -67,7 +71,7 @@ const WorkPagerCard: FC<WorkPagerCardProps> = ({ direction, category, categoryHu
       href={href}
       prefetch={false}
       aria-label={direction ? `${isNext ? "次" : "前"}の作品: ${title}` : `作品: ${title}`}
-      className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border hover:border-border-light ${HOVER_CARD} ${
+      className={`flex h-full min-h-[44px] w-full min-w-0 overflow-hidden rounded-r8 border border-border hover:border-border-light ${HOVER_CARD} ${v2Fill} ${
         hasThumb
           ? `items-stretch ${isNext ? "md:flex-row-reverse" : ""}`
           : `flex-col gap-[6px] px-4 py-[14px] ${align}`

@@ -79,9 +79,12 @@ const LegendItem: FC<{ swatch: ReactNode; children: ReactNode }> = ({ swatch, ch
  * ------------------------------------------------------------------ */
 
 const MAX_DOTS = 10;
-const Dot: FC<{ self?: boolean }> = ({ self }) => (
-  <span aria-hidden className={`size-[10px] shrink-0 rounded-full ${self ? WORK_FIGURE_TONE.dotSelf : WORK_FIGURE_TONE.dotOther}`} />
-);
+// ほかのメンバーの印は v2 だけ中抜きの丸（WORK_FIGURE_TONE.dotOther）。v1 は従来の fg-caption の塗りのまま
+const DOT_OTHER = { v1: "bg-fg-caption", v2: WORK_FIGURE_TONE.dotOther } as const;
+const Dot: FC<{ self?: boolean }> = ({ self }) => {
+  const layout = useWorkLayout();
+  return <span aria-hidden className={`size-[10px] shrink-0 rounded-full ${self ? WORK_FIGURE_TONE.dotSelf : DOT_OTHER[layout]}`} />;
+};
 
 /** 作品の関係者データが渡されない場所で出す見本の枠 */
 export const TeamPlaceholder: FC = () => (
@@ -149,6 +152,7 @@ type ChartLabel = ScheduleLabelInput & { tone: string };
  * 両方を DOM に置き、親の @container で切り替える。チャートは見た目だけ（aria-hidden）で、一覧が読み上げ用（広い幅では視覚的に隠す）
  */
 export const ScheduleFigure: FC<{ data: ScheduleData; title: string; lead: string; framed: boolean; keyBase: string }> = ({ data, title, lead, framed, keyBase }) => {
+  const layout = useWorkLayout();
   const pct = (day: number) => schedulePct(day, data.start, data.end);
   const span = (start: number, end: number) => ({ left: `${pct(start)}%`, width: `${Math.max(0, pct(end) - pct(start))}%` });
   // 凡例は「計画」と「実際」を見分けるためのもの。計画の棒がどのレーンにも無い（実際の棒だけの工程表）ときは出さない
@@ -211,10 +215,23 @@ export const ScheduleFigure: FC<{ data: ScheduleData; title: string; lead: strin
                     style={{ left: pct(m.day) < 1.5 || pct(m.day) > 98.5 ? `clamp(6px, ${pct(m.day)}%, calc(100% - 6px))` : `${pct(m.day)}%` }}
                   />
                 ))}
+                {/* v2 は各ラベルから帯・点（上端 14px）へ細い引き出し線を引く。節目が近くラベルが 2〜3 段に積まれても、どの点のラベルかたどれるように（オーナー判断 2026-11-19） */}
+                {layout === "v2"
+                  ? labels.map((lb, bi) => (
+                      <span
+                        key={`lead-${bi}`}
+                        aria-hidden
+                        className="absolute top-[14px] w-px bg-border-light"
+                        // 端（1.5% 未満・98.5% 超）は節目の丸と同じく 6px 内側へ寄せ、丸の中心と線をそろえる
+                        style={{ left: lb.pct < 1.5 || lb.pct > 98.5 ? `clamp(6px, ${lb.pct}%, calc(100% - 6px))` : `${lb.pct}%`, height: 12 + placed[bi].row * 22 }}
+                      />
+                    ))
+                  : null}
                 {labels.map((lb, bi) => (
                   <span
                     key={bi}
-                    className={`absolute whitespace-nowrap text-[11px] leading-[1.6] ${lb.tone} ${placed[bi].alignRight ? "text-right" : placed[bi].clampLeft ? "" : "-ml-1.5"}`}
+                    // v2 はラベルの下に地の色を敷き（影で左右上下 2px 広げる。位置は変えない）、下の段から来る引き出し線を文字の後ろに隠す
+                    className={`absolute whitespace-nowrap text-[11px] leading-[1.6] ${lb.tone} ${placed[bi].alignRight ? "text-right" : placed[bi].clampLeft ? "" : "-ml-1.5"} ${layout === "v2" ? "bg-surface shadow-[0_0_0_2px_var(--color-surface)]" : ""}`}
                     style={{ top: 24 + placed[bi].row * 22, ...(placed[bi].alignRight ? { right: `${100 - lb.pct}%` } : { left: placed[bi].clampLeft ? 0 : `${lb.pct}%` }) }}
                   >
                     {renderInline(lb.text, `${keyBase}-L${li}-${bi}`)}

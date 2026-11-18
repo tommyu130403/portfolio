@@ -21,7 +21,7 @@ import { container, type DeviceMode } from "@/lib/design-tokens";
  * - 生 Markdown の textarea ＋ ツールバー ＋ 編集 / 分割 / プレビュー の3モード
  * - プレビューは公開側と同一の共有レンダラ（WorkMarkdownDocument）で描画
  * - プレビューはデバイス幅切替に対応（Figma Device コレクション = design-tokens の container を参照）
- * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから、生 HTML / SVG（`::: html`）は HTML ダイアログから、図版（`::: figure` / `beforeafter` / `flow` / `bars`）は図版ダイアログ（雛形を挿入して本文欄で書き換える）から
+ * - 画像・リンク・グリッド・表・カードは挿入ダイアログから（画像は幅 / 配置 / 倍率 / キャプション指定）、作品カード（`::: workcard`）は作品ピッカーから、モックアップ（`::: mockup phone|laptop src=…`）はモックアップダイアログから、生 HTML / SVG（`::: html`）は HTML ダイアログから、図版（`::: figure` / `beforeafter` / `flow` / `bars` / `team` / `schedule` / `stairs` / `summary` / `merge` / `triage` / `related`）は図版ダイアログ（雛形を挿入して本文欄で書き換える）から
  * - 分割表示では本文欄とプレビューのスクロール位置を割合で連動する
  * - 画像は本文欄への貼り付けでもアップロードできる（onUploadImage を渡した場合）。貼り付け画像は画像ダイアログ（配置・横幅・倍率）を経て挿入する
  *   貼り付け時は本文に仮の行（![画像をアップロード中…](uploading)）を置き、挿入時にその行を置き換える（キャンセル・失敗時は除去）。
@@ -1066,6 +1066,54 @@ const FIGURE_TEMPLATES = [
     label: "横棒グラフ",
     hint: "行は「ラベル | 補助 | 値 | 表示文 | up/down/flat」。base= で白い基準線、max= で右端の値",
     md: "\n::: bars base=1.0 max=1.4\n- 項目A | 補助文 | 1.3 | 約1.3倍 | up\n- 項目B |  | 0.9 | 約0.9倍\n- 項目C | 補助文 | 0.7 | 約0.7倍 | down\nlegend: 白線＝基準の水準\n:::\n",
+  },
+  {
+    key: "team",
+    label: "体制のドット図",
+    hint: "保存済みの「関係者」データから役割ごとのドット図を描く。「表示名 = 層名, 層名」の行で層を 1 つのグループにまとめられる（書かなかった層は層名のまま後ろに並ぶ）。見出しを省くと「体制」",
+    md: "\n::: team 体制と、自分が兼ねた役割\n- 意思決定・進行 = Product, Project\n- デザイン = Designer\n:::\n",
+  },
+  {
+    key: "schedule",
+    label: "計画と実際の年表",
+    hint: "日付は 2021-05-17 か 2021-05 の形。range: は月の範囲（省略すると日付から自動）。lane: ごとに plan（計画）・actual（実際）・delay（遅れ）と「- 日付 | 節目」。狭い幅では縦の一覧になる",
+    md: "\n::: schedule 計画と実際 | 補足文\nrange: 2021-05 .. 2021-11\nlane: 学生側\n- plan: 2021-05-17 .. 2021-09-01\n- actual: 2021-08-01 .. 2021-09-01 | 実際 8月\n- 2021-05-17 | 仕様すり合わせ\nlane: 企業側\n- plan: 2021-06-14 .. 2021-09-01\n- delay: 2021-09-01 .. 2021-11-01 | 約 2 か月遅れ\n- actual: 2021-11-01 .. 2021-12-01 | 実際 11月\n:::\n",
+  },
+  {
+    key: "flow-numbered",
+    label: "番号付きステップ",
+    hint: "横フローの numbered 版。見出しの末尾に numbered を付けると、番号つきで矢印なしの並びになる（highlight は効かない）",
+    md: "\n::: flow 進め方 numbered\n- 手順1\n- 手順2\n- 手順3\n:::\n",
+  },
+  {
+    key: "stairs",
+    label: "階段",
+    hint: "行は「名前 | タグ | 説明 | 右端の注記 | mid / accent」。上から順に右へずれていく（tone は省略可）。狭い幅ではずらさず縦に積む",
+    md: "\n::: stairs\n- 名前A | タグ | 説明 | 注記\n- 名前B | タグ | 説明 | 注記 | mid\n- 名前C | タグ | 説明 | 注記 | accent\n:::\n",
+  },
+  {
+    key: "summary",
+    label: "要約",
+    hint: "lead（1〜2 文）・problem・action・result を各 1 行で。新しいレイアウトでは lead だけタイトル下（ヒーロー）へ移り、3 つの枠は書いた位置に出る",
+    md: "\n::: summary\nlead: 作品を 1〜2 文で言い表す\nproblem: 課題\naction: 打ち手\nresult: 結果\n:::\n",
+  },
+  {
+    key: "merge",
+    label: "統合の流れ",
+    hint: "from: は「題 | 本文 | 注記」の枠（横に並ぶ）。into: は統合後の題。手順は「- タグ | 名前 | accent / dashed | 注記」（tone と注記は省略可）。開き行の文は矢印の横の説明",
+    md: "\n::: merge 統合の説明\nfrom: Before: A | 流れ | 補足\nfrom: Before: B | 流れ | 補足\ninto: After: 1 本の導線\n- STEP1 | 登録情報\n- 通過者のみ | 面談予約 | dashed\n- STEP3 | 会員登録 | accent | ここで認証\n:::\n",
+  },
+  {
+    key: "triage",
+    label: "入れた・削った・見送った",
+    hint: "in: / cut: / defer: の下に「- 項目」を並べる（「ラベル | 理由」で見出しと理由を変えられる）。note: は図の下の補足",
+    md: "\n::: triage 範囲決め\nin: 入れた\n- 項目\ncut: 削った | 理由\n- 項目\ndefer: 見送った\n- 項目\n:::\n",
+  },
+  {
+    key: "related",
+    label: "つながる作品",
+    hint: "「- 作品の ID | ラベル」の行（末尾に | accent で強調）。公開中の作品だけ文字のカードで出る。新しいレイアウトではページの末尾へ移る（本文のこの位置には出ない）。見出しを省くと「この作品とつながる作品」",
+    md: "\n::: related この作品とつながる作品\n- 作品の ID | 同時期のリサーチ\n- 作品の ID | 次の作品 | accent\n:::\n",
   },
 ] as const;
 

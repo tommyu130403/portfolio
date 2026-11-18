@@ -1,13 +1,17 @@
 "use client";
 
-import type { FC, RefObject } from "react";
+import { useMemo, type FC, type RefObject } from "react";
 import type { WorkTocItem } from "./WorkToc";
-import WorkDetailHeader, { type WorkDetailEditRegion, type WorkToolItem } from "./WorkDetailHeader";
-import WorkDetailContent from "./WorkDetailContent";
+import WorkDetailHeader, { parseStakeholderBreakdown, type WorkDetailEditRegion, type WorkToolItem } from "./WorkDetailHeader";
+import WorkDetailContent, { workSectionsOf } from "./WorkDetailContent";
 import WorkHero from "./WorkHero";
-import WorkSummaryStrip from "./WorkSummaryStrip";
 import WorkTocColumn from "./WorkTocColumn";
 import { useWorkLayout } from "./WorkLayoutContext";
+import { WorkBodyProvider, type WorkBodyData } from "./WorkBodyContext";
+import { parseStakeholders } from "./WorkViz";
+import { renderInline } from "./WorkInline";
+import { RelatedWorks } from "./WorkFigureBlocks";
+import { extractHoisted } from "@/lib/work-sections";
 import type { Tables } from "@/src/types/supabase";
 
 type Work = Tables<"works">;
@@ -45,17 +49,27 @@ const WorkDetailView: FC<WorkDetailViewProps> = ({
 }) => {
   const layout = useWorkLayout();
 
-  const content = contentRef ? (
-    <div ref={contentRef}>
-      <WorkDetailContent work={work} onEditSection={onEditSection} />
-    </div>
-  ) : (
-    <WorkDetailContent work={work} onEditSection={onEditSection} />
+  // v2 だけ、本文の `::: summary` の lead をヒーローへ、`::: related` をページ末尾へ移す（課題・打ち手・結果の 3 枚は本文の書いた場所のまま。v1 は本文のまま。個数・順序は変えない）
+  const hoisted = useMemo(() => (layout === "v2" ? extractHoisted(workSectionsOf(work)) : null), [layout, work]);
+
+  // 本文の `::: team` が読む関係者データ（公開ページ・admin プレビューとも、ここで作品の行から渡す）
+  const body = useMemo<WorkBodyData>(
+    () => ({
+      stakeholders: parseStakeholders(work.stakeholders),
+      breakdown: parseStakeholderBreakdown(work.stakeholder_breakdown),
+      // v2 ではヒーローに出す lead と同じ文を、本文の要約ブロックで繰り返さない
+      heroLead: hoisted?.summary?.lead || undefined,
+      onEditStakeholders: onEdit ? () => onEdit("stakeholders") : undefined,
+    }),
+    [work.stakeholders, work.stakeholder_breakdown, hoisted, onEdit],
   );
+
+  const detail = <WorkDetailContent work={work} onEditSection={onEditSection} sections={hoisted?.sections} />;
+  const content = contentRef ? <div ref={contentRef}>{detail}</div> : detail;
 
   if (layout === "v1") {
     return (
-      <>
+      <WorkBodyProvider value={body}>
         <WorkDetailHeader
           work={work}
           contents={contents}
@@ -65,23 +79,36 @@ const WorkDetailView: FC<WorkDetailViewProps> = ({
           onEdit={onEdit}
         />
         {content}
-      </>
+      </WorkBodyProvider>
     );
   }
 
+  const summary = hoisted?.summary ?? null;
+  const related = hoisted?.related ?? null;
+  const hasSections = (hoisted?.sections.length ?? 0) > 0;
   return (
-    <>
-      <WorkHero work={work} contents={contents} screenshots={screenshots} categoryHue={categoryHue} onEdit={onEdit} />
-      <WorkSummaryStrip work={work} tools={tools} onEdit={onEdit} />
+    <WorkBodyProvider value={body}>
+      <WorkHero
+        work={work}
+        contents={contents}
+        screenshots={screenshots}
+        categoryHue={categoryHue}
+        onEdit={onEdit}
+        tools={tools}
+        lead={summary?.lead ? renderInline(summary.lead, "hoist-lead") : undefined}
+      />
       <div className="xl:flex xl:items-start xl:gap-12">
         {toc && (
           <div className="hidden shrink-0 xl:block xl:self-stretch">
             <WorkTocColumn items={toc.items} activeIndex={toc.activeIndex} onSelect={toc.onSelect} />
           </div>
         )}
-        <div className="min-w-0 max-w-main flex-1">{content}</div>
+        <div className="mx-auto min-w-0 max-w-main flex-1 xl:mx-0">
+          {content}
+          {related ? <RelatedWorks data={related} hoisted className={hasSections ? "mt-24" : ""} /> : null}
+        </div>
       </div>
-    </>
+    </WorkBodyProvider>
   );
 };
 

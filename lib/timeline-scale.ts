@@ -117,7 +117,8 @@ export function buildScale(period: TimelinePeriod, minUnits: number, now: Date =
   return { mode: "week", totalUnits, unitsPerTick: 1, groups, ticks };
 }
 
-function locate(unit: number, start: YearMonth): { ym: YearMonth; week: number } {
+/** 1 始まりの週単位 → 年月と月内の週（1〜4）。工程の日付の換算（本文の `::: schedule` を作る道具）も使う */
+export function locate(unit: number, start: YearMonth): { ym: YearMonth; week: number } {
   const u = Math.max(1, unit);
   return { ym: fromIndex(ymIndex(start) + Math.floor((u - 1) / WEEKS_PER_MONTH)), week: ((u - 1) % WEEKS_PER_MONTH) + 1 };
 }

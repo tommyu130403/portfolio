@@ -230,7 +230,7 @@ export const HeroShots: FC<{ shots: string[]; onClick: () => void }> = ({ shots:
  * ツールのアイコン URL を決める。icon_url → スキル欄と同じ判定の public/logos のロゴ の順に、
  * 読み込みに失敗していない最初のものを返す。どちらも無い / 失敗済みなら null（文字 Tag にする）
  */
-const resolveToolIconSrc = (t: WorkToolItem, broken: Record<string, boolean>): string | null => {
+export const resolveToolIconSrc = (t: WorkToolItem, broken: Record<string, boolean>): string | null => {
   const slug = resolveLogoSlug(t);
   const candidates = [t.icon_url, slug ? `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/logos/${slug}.svg` : null];
   return candidates.find((src): src is string => Boolean(src) && !broken[src as string]) ?? null;

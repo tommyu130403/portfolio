@@ -17,6 +17,9 @@ const FRAME_CLASS = {
   v2: `flex flex-col gap-5 ${WORK_FIGURE_TONE.frame} px-4 py-6 @min-[560px]:px-6`,
 } as const;
 
+// 補足文: v1 は凍結。v2 は 13px・fg-muted（fg-caption は地との差が足りない）
+const LEAD_CLASS = { v1: "text-caption-01-jp text-fg-caption", v2: "text-[13px] leading-[1.6] text-fg-muted" } as const;
+
 const STEP_BASE_V1 =
   "flex min-w-0 items-center justify-center rounded-md border px-2 py-2 text-center @min-[560px]:flex-1";
 const STEP_BASE_V2 = "flex min-w-0 items-center justify-center px-2 py-2 text-center @min-[560px]:flex-1";
@@ -38,21 +41,31 @@ const STEP_CLASS = {
  * 枠
  * ------------------------------------------------------------------ */
 
-/** `::: figure 見出し | 補足文` の枠。中身（子）は任意の本文ブロック */
-export const FigureFrame: FC<{ title?: ReactNode; lead?: ReactNode; children?: ReactNode }> = ({
+/** `::: figure 見出し | 補足文` の枠。中身（子）は任意の本文ブロック。aside は見出し行の右端に置く凡例など */
+export const FigureFrame: FC<{ title?: ReactNode; lead?: ReactNode; aside?: ReactNode; children?: ReactNode }> = ({
   title,
   lead,
+  aside,
   children,
 }) => {
   const layout = useWorkLayout();
+  const head =
+    title || lead ? (
+      <div className="flex flex-col gap-0.5">
+        {title ? <p className="text-body-01-jp-bold text-fg-headline-01">{title}</p> : null}
+        {lead ? <p className={LEAD_CLASS[layout]}>{lead}</p> : null}
+      </div>
+    ) : null;
   return (
     <div className={FRAME_CLASS[layout]}>
-      {title || lead ? (
-        <div className="flex flex-col gap-0.5">
-          {title ? <p className="text-body-01-jp-bold text-fg-headline-01">{title}</p> : null}
-          {lead ? <p className="text-caption-01-jp text-fg-caption">{lead}</p> : null}
+      {aside ? (
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+          {head}
+          {aside}
         </div>
-      ) : null}
+      ) : (
+        head
+      )}
       {children}
     </div>
   );
@@ -93,6 +106,36 @@ export const FlowSteps: FC<{ label?: ReactNode; steps: FigureStep[] }> = ({ labe
     <StepRow steps={steps} gap="gap-2" />
   </div>
 );
+
+/** `::: flow ラベル numbered` — 番号つきステップ。番号・文の順に並べ、矢印は付けない（折り返しはコンテナ幅に任せる） */
+export const NumberedFlow: FC<{ label?: ReactNode; steps: ReactNode[] }> = ({ label, steps }) => {
+  const layout = useWorkLayout();
+  // 面は InfoCard と同じ（v2 = 共通のセル色調・角丸 8 / v1 = 枠線）。上線は引かない（角丸の箱に直線のアクセントは合わない）。強調は番号のミントだけ
+  const cell = layout === "v2" ? WORK_FIGURE_TONE.cell : "rounded-r8 border border-border";
+  return (
+    <div className="flex flex-col gap-2">
+      {label ? <p className="text-body-02-jp-bold text-fg-muted">{label}</p> : null}
+      <ol
+        style={{ "--steps": steps.length } as React.CSSProperties}
+        className={`m-0 grid list-none grid-cols-2 gap-2 p-0 @min-[480px]:grid-cols-3 ${
+          steps.length > 6 ? "@min-[640px]:grid-cols-4" : "@min-[640px]:grid-cols-[repeat(var(--steps),minmax(0,1fr))]"
+        }`}
+      >
+        {steps.map((s, i) => (
+          <li
+            key={i}
+            className={`flex min-w-0 flex-col gap-2 p-4 text-[13px] leading-[1.6] text-fg ${cell}`}
+          >
+            <span aria-hidden className="font-guide text-main-050">
+              {i + 1}
+            </span>
+            <span className="min-w-0 [word-break:break-word]">{s}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------------ *
  * Before / After
@@ -157,11 +200,21 @@ export type BarRowData = {
   tone: BarTone;
 };
 
-/** 棒の塗り: Figma WorkFigure Kind=bars（2026-11-13 照合）。up / down は色の 10% 地 + 60% 枠、flat は Indigo/850 地 + Border/Default 枠 */
-const FILL: Record<BarTone, string> = {
-  up: "border border-main-100-a60 bg-main-100-a10",
-  down: "border border-danger-300-a60 bg-danger-300-a10",
-  flat: "border border-border bg-surface-light",
+/**
+ * 棒の塗り。v1 は凍結: Figma WorkFigure Kind=bars（2026-11-13 照合）。up / down は色の 10% 地 + 60% 枠、flat は Indigo/850 地 + Border/Default 枠。
+ * v2 は塗らずに線だけ（up = 枠 Main、down = danger の破線、flat = 薄い枠）
+ */
+const FILL: Record<"v1" | "v2", Record<BarTone, string>> = {
+  v1: {
+    up: "border border-main-100-a60 bg-main-100-a10",
+    down: "border border-danger-300-a60 bg-danger-300-a10",
+    flat: "border border-border bg-surface-light",
+  },
+  v2: {
+    up: "border border-border-main",
+    down: "border border-dashed border-danger-200",
+    flat: "border border-border-light",
+  },
 };
 const VALUE: Record<BarTone, string> = { up: "text-primary", down: "text-danger-300", flat: "text-fg-muted" };
 
@@ -170,7 +223,9 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
   rows,
   base,
   legend,
-}) => (
+}) => {
+  const layout = useWorkLayout();
+  return (
   <div className="flex flex-col gap-3.5">
     {rows.map((r, i) => (
       <div key={i} className="grid grid-cols-[6rem_minmax(0,1fr)_4.5rem] items-center gap-3.5">
@@ -180,7 +235,7 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
         </div>
         <div className="relative h-[22px] rounded bg-surface">
           <div
-            className={`h-full rounded ${r.width > 0 ? `${FILL[r.tone]} min-w-1.5` : ""}`}
+            className={`h-full rounded ${r.width > 0 ? `${FILL[layout][r.tone]} min-w-1.5` : ""}`}
             style={{ width: `${r.width}%` }}
           />
           {base !== null ? (
@@ -192,4 +247,5 @@ export const BarChart: FC<{ rows: BarRowData[]; base: number | null; legend?: Re
     ))}
     {legend ? <p className="text-[12px] leading-[18px] tracking-[0.03em] text-fg-caption">{legend}</p> : null}
   </div>
-);
+  );
+};

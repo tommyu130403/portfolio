@@ -80,18 +80,21 @@ PR5(`WORK_DETAIL_LAYOUT` を `"v2"` にする)の前に片付ける項目の記�
   6. 1440px の年表で、11〜1 月の節目 4 つが近く、ラベルが 3 段に重なって読みにくい(ed9e)→ **対応済み**: v2 だけ、各ラベルから点・帯へ細い引き出し線(border-light)を引く。線が上の段の文字を横切らないよう、ラベルの下に地の色を敷いた。段の振り分けは変えていない
 - 深刻度 1: 目次の項目数が PC とスマホで違う・目次の現在地の切替が遅い・前後カードの右端が本文の列より広い・タグの文字 10px・894c のスマホの年表に日付の無い行が 1 つ・画像拡大ボタンの名前がすべて同じ。
 
-## 6. Figma への反映項目(未反映)
+## 6. Figma への反映項目(2026-11-19〜20 に反映)
 
-Figma 側の現状とは未照合。反映するときは `/figma-component-review` の token モードから。
+Library = `KpNwkdFy1usaO1sBR0dycv`(Publish 済み・2026-11-20 オーナーが実施)/ Master = `j0g2E1YFLJfikcrmW0PJC5`。値はコード(main 65be6ed 時点)を正とし、色・余白・角丸・文字は Library の変数とテキストスタイルに結び付けた。
 
-| 対象 | 部品 | 足す・直すこと |
-|---|---|---|
-| Library・変数 | Device / Container | `Wide Width Max = 1120` を追加(実装 `--container-wide`) |
-| Library | Headline | v2 の番号つき見出し(番号 17px main-050・見出し 22px 太字・下線)をバリアント追加 |
-| Library | WorkFigure の team | 「計 N 名」は実人数(自分の兼務は 1 人)と注記。自分のドットは各役割の先頭 |
-| Library | WorkFigure の新ブロック | schedule(年表)・stairs・summary・merge・triage・related の 6 種と、セルの地(surface-light・角丸 8px)・トーン(`WORK_FIGURE_TONE`) |
-| Library | InfoCard | v2 は角丸 8px(v1 は 14px のまま) |
-| Master | 作品詳細 v2 の画面 | 冒頭 1 カラム(タグ・題 32/36px・一行の説明・期間と役割・タグ・ツールの小アイコン)、左の目次の列(200px)、期間・体制モーダルの廃止 |
-| Master | 作品一覧・TOP | 価値観チップを「塗らずミントの細枠(Border/Main)・文字 main-050」に。カードは変更なし(2026-11-19) |
-| Library | WorkPagerCard | v2 用に「塗り surface-light+枠」のバリアント(ホバーの地 indigo-800)。v1 は枠のみ |
-| Library | WorkFigure の schedule・team | schedule のラベルに引き出し線(border-light 1px)とラベルの下の地、team のほかのメンバーのドットを中抜きの丸(線 fg-muted)に |
+| 対象 | 部品 | 状態 | 内容・メモ |
+|---|---|---|---|
+| Library・変数 | Device | 反映済み | `Wide/Max` = 1120(全モード・幅だけ・`var(--container-wide)`) |
+| Library | Headline | 反映済み | `type=section-numbered` を追加(番号 Afacad 17px Main/050・見出し 22px 太字・下線 1px Indigo/750・下余白 12)。既存 2 種は変更なし |
+| Library | WorkToc | 反映済み | `Type=column` を追加(幅 200・「Contents」11px・項目 13px・左線 2px) |
+| Library | WorkFigure の新ブロック | 反映済み | Kind に summary / team / flow-numbered / related / schedule / stairs / merge / triage を追加(幅 800 = Main/Max)。team は他メンバー = 中抜きの丸・計 N 名は実人数、schedule は引き出し線とラベルの下の地つき |
+| Library | WorkFigure の bars | 反映済み | `Kind=bars-v2` を追加(増加 = 線 Main/100-α40・減少 = 破線 Danger/200・変化なし = 線 Indigo/700) |
+| Library | InfoCard | 反映済み | 軸 `Layout=v1/v2` を追加。v2 default = 塗り Indigo/850・線なし、accent = 線 Main/100-α40・文字 Main/050、ともに角丸 8 |
+| Library | WorkPagerCard | できなかった | Avenir 入りでこの Mac では複製・編集できない。手順: Avenir のある環境で各バリアントに「塗り Indigo/850(ホバー Indigo/800)」の v2 版を足す |
+| Master | 作品詳細 v2 の画面(787:9916) | 反映済み | v1 の画面を v2 に書き換え: 幅 1120・冒頭 1 カラム(画像 → カテゴリ・題 36px・リード → 期間/役割(上下罫線)→ 制作内容)・表とツールアイコンを削除・左の目次の列・番号付き見出し・セクション間 96 / 見出しと本文 24・本文の左右余白 0・図版を v2 部品に差し替え/追加・末尾に「つながる作品」(上罫線) |
+| Master | 作品詳細 v2 の画面の残り | 見送り | カテゴリタグ・前後カード(WorkPagerCard)は Avenir 入りで動かせず v1 のまま。制作内容タグも部品(Tag-multi)が Avenir 入りのため、同じ見た目の枠で作った(角丸 999・余白 10/6・10px は変数なし) |
+| Master | 作品一覧・TOP | 反映済み | 価値観チップ 3 個を「塗りなし・線 Main/100-α40・文字 Main/050」に上書き(Library の Tag-single 本体は変更なし)。上下余白 6 は変数がないため直書き |
+
+実装画面(`?layout=v2`・見本データ)との見比べで、目次の列・番号付き見出し・本文の位置(左端 456px・幅 800)が一致することを確認した。

@@ -2,7 +2,10 @@
 # 公式は「1 日に数回の利用で足りる」としているため、1 日 2 回データベースへ読み取りの問い合わせを送る。
 # 公開の鍵(anon)で profile 表を読む。権限の規則で 0 件が返ることもあるが、問い合わせ自体はデータベースで実行される。
 # 応答の中身は表示しない(状態コードだけを見る)。
-# 注意: 公開リポジトリでは、60 日間コミットが無いと GitHub が定期実行を止める(docs/prod-test-result-stage5-20261112.md K5)
+# 公開リポジトリでは、60 日間コミットが無いと GitHub が定期実行を止める(docs/prod-test-result-stage5-20261112.md K5)。
+# その対策として、extend の仕事で「定期実行を有効にする」API をこの設定と控えの設定に毎回送る(期限が延びるのは広く使われる手法だが、GitHub 公式の保証は無い)。
+# 手動で止めたもの(disabled_manually)には送らない。
+# コミットは作らない(main を汚さないため)。この設定自体が一度止まると延長も止まるので、止まったら Actions 画面から手で有効に戻す。
 name: Supabase keep-alive
 on:
   schedule:
@@ -28,3 +31,24 @@ jobs:
             "${SUPABASE_URL%/}/rest/v1/profile?select=id&limit=1")
           echo "応答の状態コード: ${code}"
           [ "$code" = "200" ]
+  extend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: 定期実行の期限を延ばす(休止対策と月 1 回の控え)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for wf in supabase-keepalive.yml supabase-backup.yml; do
+            state=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${wf}" --jq .state)
+            # オーナーが Actions 画面で手動で止めたものは、勝手に再開しない
+            if [ "$state" = "disabled_manually" ]; then
+              echo "${wf}: 手動で止められているため送りません"
+              continue
+            fi
+            gh api --silent -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/${wf}/enable"
+            echo "${wf}: 有効化の合図を送りました(送る前の状態: ${state})"
+          done

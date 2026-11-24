@@ -78,10 +78,10 @@ note: LP と再登録をスキップ
 - 予約ページへ直接遷移
 :::
 ::: bars base=1.0 max=1.4
-- 優先度 4 | 最もアクティブ | 1.3 | 約1.3倍 | up
-- 優先度 3 |  | 0.9 | 約0.9倍
-- 優先度 2 | 非アクティブ中心 | 0.7 | 約0.7倍 | down
-legend: 白線＝リリース前の水準
+- 項目 A | 補足ラベル | 1.3 | 約1.3倍 | up
+- 項目 B |  | 0.9 | 約0.9倍
+- 項目 C | 補足ラベル | 0.7 | 約0.7倍 | down
+legend: 白線＝基準の水準
 :::
 ::: grid cols=2
 ::: card 考察
@@ -92,7 +92,7 @@ legend: 白線＝リリース前の水準
 強調カード（tone=accent）。
 :::
 :::
-::: caption 出典: サンプル
+::: caption 図版の補足のサンプル。
 :::
 `;
 
@@ -1816,7 +1816,7 @@ function ComponentsSection() {
 
         <ComponentPreview
           title="WorkDetailContent"
-          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg-muted（Text/Body-02 #9696A0・行間 27px）。図版の枠とカードの中だけ text-fg（Text/Body-01 #D6D6D8）。図版の枠とカードの中の段落・箇条書きは text-fg（Text/Body-01）。表の値のセルは text-fg（Text/Body-01）・ラベルは text-fg-headline-02（Text/Headline-02 #5D5D69）。流れ図の段は text-fg-muted のまま。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・出典は 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 12（見出し02 の上 56）/ 小ブロック間 40"
+          description="Works 詳細ページの本文（800px カラム）。セクションは 1 カラム（Claude Design「Works 詳細 1カラム 提案」B案）: 見出し（Library Headline type=01・22px Bold 白 + 右へ伸びる罫線）→ 32px → 本文 markdown。セクション間は 80px で、区切りは見出しの罫線が兼ねる。上部ブロック（メタ表）との間は 48px で罫線は引かない。本文ブロックはカラムの左右 16px 内側（幅 768）。本文の文字色は text-fg-muted（Text/Body-02 #9696A0・行間 27px）。図版の枠とカードの中だけ text-fg（Text/Body-01 #D6D6D8）。図版の枠とカードの中の段落・箇条書きは text-fg（Text/Body-01）。表の値のセルは text-fg（Text/Body-01）・ラベルは text-fg-headline-02（Text/Headline-02 #5D5D69）。流れ図の段は text-fg-muted のまま。align=left の画像は画像 200・角丸 16 → gap 24 → 右列（本文 15px → キャプション 12px、gap 8）。図版・表の中の文字は 13px（Body/02）・キャプションは 12px で、作品本文の中だけ 11px/10px から上げている（読みやすさ監査 S8）。見出しは作品名 h1・セクション h2・## と ### は同格の h3。見出し02→本文 12（見出し02 の上 56）/ 小ブロック間 40"
         >
           <div className="w-full rounded-[12px] border border-border-light bg-surface px-6">
             <WorkDetailContent work={SAMPLE_WORK_DETAIL} />
